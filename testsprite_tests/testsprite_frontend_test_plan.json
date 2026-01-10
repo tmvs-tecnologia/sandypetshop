@@ -1,0 +1,456 @@
+[
+  {
+    "id": "TC001",
+    "title": "Schedule Banho & Tosa appointment successfully",
+    "description": "Verify that a customer can schedule a Banho & Tosa appointment within operational hours with valid pet details and optional extra services.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open the scheduling page"
+      },
+      {
+        "type": "action",
+        "description": "Select service type Banho & Tosa"
+      },
+      {
+        "type": "action",
+        "description": "Choose a date and time within operational hours (e.g., 10:00 AM)"
+      },
+      {
+        "type": "action",
+        "description": "Input pet details with valid weight within allowed range"
+      },
+      {
+        "type": "action",
+        "description": "Select optional extra services"
+      },
+      {
+        "type": "action",
+        "description": "Submit the appointment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify appointment is confirmed and stored"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify pricing matches pet weight and selected extra services"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Prevent scheduling more than two appointments per time slot",
+    "description": "Ensure the system enforces a maximum of two simultaneous appointments for the same time slot.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Schedule two appointments for the same date and time slot"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to schedule a third appointment for the same date and time slot"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the third scheduling attempt is blocked with an appropriate error message"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Validate scheduling outside operational hours is rejected",
+    "description": "Check the scheduling system prevents booking appointments outside the allowed operational hours of 9am-11am and 1pm-5pm.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to scheduling page"
+      },
+      {
+        "type": "action",
+        "description": "Select a time before 9am (e.g., 8:00 AM) and attempt to schedule"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error message prohibits scheduling outside operational hours"
+      },
+      {
+        "type": "action",
+        "description": "Select a time after 5pm (e.g., 6:00 PM) and attempt to schedule"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error message prohibits scheduling outside operational hours"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Enforce pet weight constraints on scheduling",
+    "description": "Verify the system validates pet weight according to service requirements and rejects invalid entries.",
+    "category": "validation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Select Banho & Tosa service"
+      },
+      {
+        "type": "action",
+        "description": "Enter pet weight below minimum allowed limit"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to schedule the appointment"
+      },
+      {
+        "type": "assertion",
+        "description": "Display validation error preventing scheduling"
+      },
+      {
+        "type": "action",
+        "description": "Enter pet weight above maximum allowed limit"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to schedule the appointment"
+      },
+      {
+        "type": "assertion",
+        "description": "Display validation error preventing scheduling"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Schedule recurring monthly client subscription correctly",
+    "description": "Verify monthly clients can subscribe with recurrence types, and the system generates future appointments and tracks payments automatically.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as customer"
+      },
+      {
+        "type": "action",
+        "description": "Select subscription service with recurrence options"
+      },
+      {
+        "type": "action",
+        "description": "Provide required subscription data including pet details and recurrence frequency"
+      },
+      {
+        "type": "action",
+        "description": "Submit subscription"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify immediate appointment is scheduled and saved"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify future appointments are auto-generated according to recurrence"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify payment tracking records are created correctly"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Verify mobile pet service scheduling includes address validations",
+    "description": "Ensure scheduling Pet Móvel service requires condominium address input and validates address format correctly.",
+    "category": "validation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Select Pet Móvel service type"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to schedule without providing condominium address"
+      },
+      {
+        "type": "assertion",
+        "description": "Display validation error requiring condominium address"
+      },
+      {
+        "type": "action",
+        "description": "Provide invalid condominium address format"
+      },
+      {
+        "type": "assertion",
+        "description": "Display error for invalid address format"
+      },
+      {
+        "type": "action",
+        "description": "Provide valid condominium address and schedule appointment"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm appointment is successfully scheduled with correct address"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Enroll and manage pet daycare service with behavior and owner info",
+    "description": "Test enrolling pets in daycare capturing comprehensive pet behavior and owner information and confirm data persistence.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to daycare service enrollment"
+      },
+      {
+        "type": "action",
+        "description": "Fill pet information including behavior fields"
+      },
+      {
+        "type": "action",
+        "description": "Input owner personal and contact details"
+      },
+      {
+        "type": "action",
+        "description": "Submit daycare enrollment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify enrollment confirmation and stored data accuracy"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Perform check-in and check-out for pet hotel service with digital authorizations",
+    "description": "Validate hotel pet service workflows including check-in/out, adding optional services, and capturing digital signatures for authorizations.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access pet hotel service panel as administrator"
+      },
+      {
+        "type": "action",
+        "description": "Create new hotel booking with pet and owner data"
+      },
+      {
+        "type": "action",
+        "description": "Perform check-in process capturing digital authorization"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm check-in status updated and authorization saved"
+      },
+      {
+        "type": "action",
+        "description": "Add additional hotel services (e.g., grooming)"
+      },
+      {
+        "type": "action",
+        "description": "Complete check-out with final charges and digital signature"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify check-out finalizes booking and stores all relevant data"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Authenticate users with Supabase and role-based access control",
+    "description": "Verify login functionality using Supabase authentication and enforce session management with access control by user roles (customer, admin, staff).",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt login with valid customer credentials"
+      },
+      {
+        "type": "assertion",
+        "description": "Login succeeds and customer session is created"
+      },
+      {
+        "type": "action",
+        "description": "Attempt login with valid administrator credentials"
+      },
+      {
+        "type": "assertion",
+        "description": "Login succeeds and administrative panels are accessible"
+      },
+      {
+        "type": "action",
+        "description": "Attempt login with invalid credentials"
+      },
+      {
+        "type": "assertion",
+        "description": "Login is rejected with appropriate error message"
+      },
+      {
+        "type": "action",
+        "description": "Verify restricted pages redirect unauthorized users"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Verify Brazilian format validation for date, phone, and currency inputs",
+    "description": "Check that all date, phone numbers, and currency inputs conform to Brazilian formats on frontend and backend validation.",
+    "category": "validation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Enter invalid Brazilian date format in scheduling and submit"
+      },
+      {
+        "type": "assertion",
+        "description": "Display validation error for date format"
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid Brazilian phone number format in client details"
+      },
+      {
+        "type": "assertion",
+        "description": "Display validation error for phone number"
+      },
+      {
+        "type": "action",
+        "description": "Enter price with invalid currency format during payment"
+      },
+      {
+        "type": "assertion",
+        "description": "Display validation error for currency"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Verify PWA offline support and caching functionality",
+    "description": "Test PWA service worker enables offline usage and caches key resources including scheduling forms and static assets.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access the app online and verify loading of all static and dynamic resources"
+      },
+      {
+        "type": "action",
+        "description": "Simulate going offline in the browser"
+      },
+      {
+        "type": "action",
+        "description": "Navigate through scheduling pages and verify cached content is displayed without errors"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm users can complete scheduling operations offline where feasible or receive appropriate offline notifications"
+      },
+      {
+        "type": "action",
+        "description": "Check app install prompt is presented and app is installable"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Administrative dashboard displays accurate appointment and client data",
+    "description": "Verify the admin panel's dashboards, scheduling controls, client management, and reporting components display up-to-date and accurate information.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as administrator"
+      },
+      {
+        "type": "action",
+        "description": "Access dashboard overview"
+      },
+      {
+        "type": "assertion",
+        "description": "Dashboard shows current appointment counts with capacity usage"
+      },
+      {
+        "type": "assertion",
+        "description": "Client management panel lists all active and recurring clients correctly"
+      },
+      {
+        "type": "action",
+        "description": "Generate a report for monthly scheduling and revenue"
+      },
+      {
+        "type": "assertion",
+        "description": "Report data matches scheduled appointments and payments"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Prevent scheduling conflicts and verify error handling",
+    "description": "Ensure system detects and prevents double bookings for the same pet or owner within overlapping appointment times, displaying clear error messages.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Schedule appointment for a pet at a given time slot"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to schedule another appointment for the same pet overlapping previous time"
+      },
+      {
+        "type": "assertion",
+        "description": "Show error preventing conflicting appointment"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to schedule conflicting appointments under the same owner but different pets"
+      },
+      {
+        "type": "assertion",
+        "description": "Depending on business rule, verify system handles or rejects conflicts appropriately"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Verify UI responsiveness and modal behavior across mobile and desktop devices",
+    "description": "Check that the app's UI components, including service selection modals and confirmation dialogs, adapt correctly on various screen sizes and devices.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open app on desktop browser and navigate through scheduling process"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify modals open and close correctly, content is fully visible and interactions work smoothly"
+      },
+      {
+        "type": "action",
+        "description": "Open app on mobile device or emulator"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify UI components resize appropriately and modals maintain usability and clarity"
+      }
+    ]
+  }
+]
