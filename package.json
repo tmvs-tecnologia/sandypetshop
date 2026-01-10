@@ -1,0 +1,28 @@
+{
+  "name": "sandy-pet-shop---final-17/10/2025",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@supabase/supabase-js": "^2.78.0",
+    "class-variance-authority": "^0.7.1",
+    "lucide-react": "^0.553.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@testsprite/testsprite-mcp": "^0.0.18",
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "playwright": "^1.57.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}

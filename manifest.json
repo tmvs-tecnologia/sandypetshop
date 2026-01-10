@@ -1,0 +1,23 @@
+{
+  "name": "Sandy's Pet Shop - Agendamento",
+  "short_name": "Sandy's Pet Shop",
+  "description": "Um aplicativo web para agendar serviços de banho e tosa para pets no Sandy's Pet Shop.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF5F7",
+  "theme_color": "#DB2777",
+  "icons": [
+    {
+      "src": "https://i.imgur.com/M3Gt3OA.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.imgur.com/M3Gt3OA.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
