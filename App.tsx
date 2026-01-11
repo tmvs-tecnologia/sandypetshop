@@ -7108,7 +7108,7 @@ const DaycareEnrollmentCard: React.FC<{
                                     return (
                                         <div className="mt-1 flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md">
                                             <img src="https://cdn-icons-png.flaticon.com/512/564/564619.png" alt="Alerta" className="h-4 w-4" />
-                                            <span className="text-[11px] font-semibold">Última vacina há mais de um ano</span>
+                                            <span className="min-w-0 truncate whitespace-nowrap leading-none text-[10px] sm:text-[11px] font-semibold">Última vacina há mais de um ano</span>
                                         </div>
                                     );
                                 }
