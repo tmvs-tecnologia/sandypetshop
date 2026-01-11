@@ -7095,6 +7095,25 @@ const DaycareEnrollmentCard: React.FC<{
                         <div>
                             <p className="text-2xl font-bold leading-none">{pet_name}</p>
                             <p className="text-xs opacity-90">{tutor_name}</p>
+                            {(() => {
+                                const raw = String(enrollment.last_vaccine || '');
+                                if (!raw) return null;
+                                const datePart = raw.split('T')[0];
+                                const parts = datePart.split('-').map(Number);
+                                if (parts.length !== 3 || parts.some(isNaN)) return null;
+                                const last = new Date(parts[0], parts[1] - 1, parts[2]);
+                                const now = new Date();
+                                const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+                                if (diffDays > 365) {
+                                    return (
+                                        <div className="mt-1 flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md">
+                                            <img src="https://cdn-icons-png.flaticon.com/512/564/564619.png" alt="Alerta" className="h-4 w-4" />
+                                            <span className="text-[11px] font-semibold">Última vacina há mais de um ano</span>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
                         </div>
                     </div>
                     <div className="text-right">
