@@ -8,6 +8,7 @@ import { SERVICES, WORKING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_
 import { supabase } from './supabaseClient';
 import NotificationBell from './NotificationBell';
 import ExtraServicesModal from './ExtraServicesModal';
+import PriceTableModal from './PriceTableModal';
 import ActionChooserModal from './src/ActionChooserModal';
 import { Menu, MenuItem } from './src/components/ui/menu';
 import { Button } from './src/components/ui/button';
@@ -11277,13 +11278,23 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const isStep2Valid = serviceStepView !== 'main' && selectedService && (isVisitService || selectedWeight);
     const isStep3Valid = selectedTime !== null;
 
+    const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100">
             <header className="text-center mb-6 animate-fadeInUp">
                 <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-24 w-24 mx-auto mb-4 drop-shadow-lg" loading="eager" />
                 <h1 className="font-brand text-6xl text-pink-800 mb-2">Sandy's Pet Shop</h1>
                 <p className="text-gray-600 text-xl font-medium">Agendamento Online</p>
+                <button
+                    onClick={() => setIsPriceModalOpen(true)}
+                    className="mt-4 px-6 py-2 bg-white/80 hover:bg-white text-pink-700 font-semibold rounded-full shadow-sm hover:shadow-md transition-all border border-pink-200 flex items-center gap-2 mx-auto"
+                >
+                    <span className="text-xl">📋</span> Tabela de Preços
+                </button>
             </header>
+
+            <PriceTableModal isOpen={isPriceModalOpen} onClose={() => setIsPriceModalOpen(false)} />
 
             {serviceStepView === 'main' && (
                 <section className="w-full max-w-4xl bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100 rounded-3xl shadow-xl border border-pink-200/60 mb-6 p-6 sm:p-8 animate-fadeIn">
@@ -11495,6 +11506,12 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
                                             <h3 className="text-lg font-semibold text-gray-800">Creche Pet - Selecione uma opção</h3>
                                             <p className="text-base text-gray-600 mt-1">Escolha entre agendar uma visita ou fazer a matrícula</p>
+                                            <button
+                                                onClick={() => setIsPriceModalOpen(true)}
+                                                className="mt-4 px-6 py-2 bg-white/80 hover:bg-white text-pink-700 font-semibold rounded-full shadow-sm hover:shadow-md transition-all border border-pink-200 flex items-center gap-2"
+                                            >
+                                                <span className="text-xl">📋</span> Tabela de Preços
+                                            </button>
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <button type="button" onClick={() => { console.log('Clicou em Visita - Creche Pet'); setSelectedService(ServiceType.VISIT_DAYCARE); setView('appointment'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[80px] bg-white hover:bg-pink-50 border-gray-200">
