@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
 import { SERVICES, WORKING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
@@ -12,17 +12,47 @@ import ActionChooserModal from './src/ActionChooserModal';
 import { Menu, MenuItem } from './src/components/ui/menu';
 import { Button } from './src/components/ui/button';
 
+const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" fill=\"%23f3f4f6\"/><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-size=\"28\">🐾</text></svg>';
+
+const SafeImage: React.FC<{
+  src: string;
+  alt: string;
+  className?: string;
+  loading?: 'eager' | 'lazy';
+  onClick?: (e: React.MouseEvent) => void;
+}> = ({ src, alt, className, loading = 'lazy', onClick }) => {
+  const [currentSrc, setCurrentSrc] = useState<string>(src);
+  const [errored, setErrored] = useState<boolean>(false);
+  return (
+    <img
+      src={currentSrc}
+      alt={alt}
+      className={className}
+      loading={loading}
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onClick={onClick}
+      onError={() => {
+        if (!errored) {
+          setErrored(true);
+          setCurrentSrc(FALLBACK_IMG);
+        }
+      }}
+    />
+  );
+};
+
 
 const planLabels: Record<string, string> = {
-  '4x_month': '4 X MÊS',
-  '8x_month': '8 X MÊS',
-  '12x_month': '12 X MÊS',
-  '16x_month': '16 X MÊS',
-  '20x_month': '20 X MÊS',
-  '2x_week': '2 X SEMANA',
-  '3x_week': '3 X SEMANA',
-  '4x_week': '4 X SEMANA',
-  '5x_week': '5 X SEMANA',
+    '4x_month': '4 X MÊS',
+    '8x_month': '8 X MÊS',
+    '12x_month': '12 X MÊS',
+    '16x_month': '16 X MÊS',
+    '20x_month': '20 X MÊS',
+    '2x_week': '2 X SEMANA',
+    '3x_week': '3 X SEMANA',
+    '4x_week': '4 X SEMANA',
+    '5x_week': '5 X SEMANA',
 };
 
 const AiChatView: React.FC<{ key?: number }> = () => {
@@ -30,7 +60,7 @@ const AiChatView: React.FC<{ key?: number }> = () => {
         try {
             const cached = localStorage.getItem('ai_chat_messages');
             if (cached) return JSON.parse(cached);
-        } catch {}
+        } catch { }
         return [{ role: 'assistant', content: 'Olá! Sou sua assistente. Como posso ajudar hoje?' }];
     });
     const [input, setInput] = useState('');
@@ -38,7 +68,7 @@ const AiChatView: React.FC<{ key?: number }> = () => {
     const listRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        try { localStorage.setItem('ai_chat_messages', JSON.stringify(messages)); } catch {}
+        try { localStorage.setItem('ai_chat_messages', JSON.stringify(messages)); } catch { }
         if (listRef.current) {
             listRef.current.scrollTop = listRef.current.scrollHeight;
         }
@@ -92,7 +122,7 @@ const AiChatView: React.FC<{ key?: number }> = () => {
                 } else {
                     reply = await res.text();
                 }
-            } catch {}
+            } catch { }
             if (!ok) {
                 return { ok, status, message: reply || 'Falha ao enviar para webhook.', reply };
             }
@@ -204,16 +234,16 @@ const parseISODateAsSaoPaulo = (isoDate: string): Date => {
 };
 
 const isSameSaoPauloDay = (date1: Date, date2: Date): boolean => {
-  const d1 = date1.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
-  const d2 = date2.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
-  return d1 === d2;
+    const d1 = date1.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    const d2 = date2.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    return d1 === d2;
 };
 
 const isPastSaoPauloDate = (date: Date): boolean => {
     const now = new Date();
     const todaySaoPaulo = getSaoPauloTimeParts(now);
     const dateSaoPaulo = getSaoPauloTimeParts(date);
-    
+
     const today = new Date(Date.UTC(todaySaoPaulo.year, todaySaoPaulo.month, todaySaoPaulo.date));
     const compareDate = new Date(Date.UTC(dateSaoPaulo.year, dateSaoPaulo.month, dateSaoPaulo.date));
 
@@ -226,15 +256,15 @@ const isSaoPauloWeekend = (date: Date): boolean => {
 };
 
 const formatWhatsapp = (value: string): string => {
-  let digits = value.replace(/\D/g, '');
-  if (digits.startsWith('55')) {
-    digits = digits.slice(2);
-  }
-  digits = digits.slice(0, 11);
-  const formatted = digits
-    .replace(/^(\d{2})(\d)/, '($1) $2')
-    .replace(/(\d{5})(\d)/, '$1-$2');
-  return formatted.slice(0, 15);
+    let digits = value.replace(/\D/g, '');
+    if (digits.startsWith('55')) {
+        digits = digits.slice(2);
+    }
+    digits = digits.slice(0, 11);
+    const formatted = digits
+        .replace(/^(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{5})(\d)/, '$1-$2');
+    return formatted.slice(0, 15);
 };
 
 const formatDateToBR = (dateString: string | null): string => {
@@ -358,7 +388,7 @@ const getUnitPriceByType = (weightKey: PetWeight | null | undefined, type: Servi
 const formatCurrency = (value: string | number): string => {
     // Se o valor é um número, converte para string
     let stringValue = typeof value === 'number' ? value.toString() : value;
-    
+
     // Se é um valor numérico direto (como 50.00), formata diretamente
     if (typeof value === 'number') {
         return value.toLocaleString('pt-BR', {
@@ -366,16 +396,16 @@ const formatCurrency = (value: string | number): string => {
             currency: 'BRL'
         });
     }
-    
+
     // Remove tudo que não é dígito
     const numericValue = stringValue.replace(/\D/g, '');
-    
+
     // Se não há valor, retorna R$ 0,00
     if (!numericValue) return 'R$ 0,00';
-    
+
     // Converte para número e divide por 100 para ter centavos
     const number = parseInt(numericValue) / 100;
-    
+
     // Formata como moeda brasileira
     return number.toLocaleString('pt-BR', {
         style: 'currency',
@@ -389,7 +419,7 @@ const parseCurrencyToNumber = (value: string): number => {
         .replace(/[R$\s]/g, '')
         .replace(/\./g, '')
         .replace(',', '.');
-    
+
     const number = parseFloat(numericString);
     return isNaN(number) ? 0 : number;
 };
@@ -397,13 +427,13 @@ const parseCurrencyToNumber = (value: string): number => {
 const formatCurrencyInput = (value: string): string => {
     // Remove tudo que não é dígito
     const numericValue = value.replace(/\D/g, '');
-    
+
     // Se não há valor, retorna 0,00
     if (!numericValue) return '0,00';
-    
+
     // Converte para número e divide por 100 para ter centavos
     const number = parseInt(numericValue) / 100;
-    
+
     // Formata sem o símbolo R$, apenas com vírgula e pontos
     return number.toLocaleString('pt-BR', {
         minimumFractionDigits: 2,
@@ -414,31 +444,31 @@ const formatCurrencyInput = (value: string): string => {
 // Função para calcular o valor total dos serviços extras
 const calculateExtraServicesTotal = (extraServices: any): number => {
     let total = 0;
-    
+
     if (extraServices?.pernoite && extraServices.pernoite_quantity && extraServices.pernoite_price) {
         total += Number(extraServices.pernoite_quantity) * Number(extraServices.pernoite_price);
     }
-    
+
     if (extraServices?.banho_tosa && extraServices.banho_tosa_quantity && extraServices.banho_tosa_price) {
         total += Number(extraServices.banho_tosa_quantity) * Number(extraServices.banho_tosa_price);
     }
-    
+
     if (extraServices?.so_banho && extraServices.so_banho_quantity && extraServices.so_banho_price) {
         total += Number(extraServices.so_banho_quantity) * Number(extraServices.so_banho_price);
     }
-    
+
     if (extraServices?.adestrador && extraServices.adestrador_quantity && extraServices.adestrador_price) {
         total += Number(extraServices.adestrador_quantity) * Number(extraServices.adestrador_price);
     }
-    
+
     if (extraServices?.despesa_medica && extraServices.despesa_medica_quantity && extraServices.despesa_medica_price) {
         total += Number(extraServices.despesa_medica_quantity) * Number(extraServices.despesa_medica_price);
     }
-    
+
     if (extraServices?.dia_extra && extraServices.dia_extra_quantity && extraServices.dia_extra_price) {
         total += Number(extraServices.dia_extra_quantity) * Number(extraServices.dia_extra_price);
     }
-    
+
     return total;
 };
 
@@ -480,7 +510,7 @@ const calculateDaycareInvoiceTotal = (enrollment: DaycareRegistration): number =
 // Função para calcular o valor total da fatura do hotel pet
 const calculateHotelInvoiceTotal = (registration: HotelRegistration): number => {
     let total = 0;
-    
+
     // Calcular número de dias de hospedagem
     let days = 1; // Valor padrão
     if (registration.check_in_date && registration.check_out_date) {
@@ -489,10 +519,10 @@ const calculateHotelInvoiceTotal = (registration: HotelRegistration): number => 
         const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
         days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
     }
-    
+
     // Valor base por dia
     total += HOTEL_BASE_PRICE * days;
-    
+
     // Valor dos serviços extras
     if (registration.extra_services) {
         if (registration.extra_services.banho_tosa?.enabled) {
@@ -514,7 +544,7 @@ const calculateHotelInvoiceTotal = (registration: HotelRegistration): number => 
             total += registration.extra_services.dias_extras.quantity * (registration.extra_services.dias_extras.value || 30);
         }
     }
-    
+
     // Verificar serviços booleanos do registro
     if (registration.service_transport) {
         total += HOTEL_EXTRA_SERVICES_PRICES.transporte;
@@ -528,12 +558,12 @@ const calculateHotelInvoiceTotal = (registration: HotelRegistration): number => 
     if (registration.service_bath) {
         total += HOTEL_EXTRA_SERVICES_PRICES.banho_tosa;
     }
-    
+
     // Se existe um total_services_price definido, usar ele ao invés do calculado
     if (registration.total_services_price && registration.total_services_price > 0) {
         return registration.total_services_price;
     }
-    
+
     return total;
 };
 
@@ -687,26 +717,26 @@ const SignaturePad: React.FC<{ value?: string; onChange: (dataUrl: string) => vo
         </div>
     );
 };
-const PawIcon = () => <img src="https://static.thenounproject.com/png/pet-icon-6939415-512.png" alt="Pet Icon" className="h-7 w-7 opacity-60" />;
-const UserIcon = () => <img src="https://cdn-icons-png.flaticon.com/512/10754/10754012.png" alt="User Icon" className="h-7 w-7 opacity-60" />;
-const WhatsAppIcon = () => <img src="https://cdn-icons-png.flaticon.com/512/15713/15713434.png" alt="WhatsApp Icon" className="h-5 w-5 opacity-60" />;
+const PawIcon = () => <SafeImage src="https://static.thenounproject.com/png/pet-icon-6939415-512.png" alt="Pet Icon" className="h-7 w-7 opacity-60" />;
+const UserIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754012.png" alt="User Icon" className="h-7 w-7 opacity-60" />;
+const WhatsAppIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/15713/15713434.png" alt="WhatsApp Icon" className="h-5 w-5 opacity-60" />;
 const SuccessIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="min-h-[64px] w-24 text-green-500 mx-auto mb-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>;
 const ChartBarIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>;
-const FunnelIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}><path d="M3 4.5A1.5 1.5 0 014.5 3h15a1.5 1.5 0 011.2 2.4l-6.3 8.4v4.2a1.5 1.5 0 01-.9 1.37l-3 1.5A1.5 1.5 0 018 19.5v-5.7L1.3 5.4A1.5 1.5 0 013 4.5z"/></svg>;
-const BreedIcon = () => <img src="https://static.thenounproject.com/png/pet-icon-7326432-512.png" alt="Breed Icon" className="h-7 w-7 opacity-60" />;
-const AddressIcon = () => <img src="https://static.thenounproject.com/png/location-icon-7979305-512.png" alt="Address Icon" className="h-7 w-7 opacity-60" />;
+const FunnelIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}><path d="M3 4.5A1.5 1.5 0 014.5 3h15a1.5 1.5 0 011.2 2.4l-6.3 8.4v4.2a1.5 1.5 0 01-.9 1.37l-3 1.5A1.5 1.5 0 018 19.5v-5.7L1.3 5.4A1.5 1.5 0 013 4.5z" /></svg>;
+const BreedIcon = () => <SafeImage src="https://static.thenounproject.com/png/pet-icon-7326432-512.png" alt="Breed Icon" className="h-7 w-7 opacity-60" />;
+const AddressIcon = () => <SafeImage src="https://static.thenounproject.com/png/location-icon-7979305-512.png" alt="Address Icon" className="h-7 w-7 opacity-60" />;
 const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V5h10a1 1 0 100-2H3zm12.293 4.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L16.586 13H9a1 1 0 110-2h7.586l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
 const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>;
 const ClockIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 10.586V6z" clipRule="evenodd" /></svg>;
 const CameraAddIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" {...props}>
-    <rect x="3" y="6" width="18" height="13" rx="3" fill="currentColor" />
-    <rect x="8" y="3" width="4" height="3" rx="1" fill="currentColor" />
-    <circle cx="12" cy="12.5" r="5" fill="#ffffff" />
-    <circle cx="12" cy="12.5" r="2.6" fill="currentColor" />
-  </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" {...props}>
+        <rect x="3" y="6" width="18" height="13" rx="3" fill="currentColor" />
+        <rect x="8" y="3" width="4" height="3" rx="1" fill="currentColor" />
+        <circle cx="12" cy="12.5" r="5" fill="#ffffff" />
+        <circle cx="12" cy="12.5" r="2.6" fill="currentColor" />
+    </svg>
 );
-const TagIcon = () => <img src="https://cdn-icons-png.flaticon.com/512/13733/13733507.png" alt="Tag" className="h-5 w-5 mr-1.5" />;
+const TagIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/13733/13733507.png" alt="Tag" className="h-5 w-5 mr-1.5" />;
 const CheckCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>;
 const LoadingSpinner = () => <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>;
 const ListIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>;
@@ -725,24 +755,24 @@ const SuccessAlertIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className
 
 // FIX: CalendarIcon uses requested PNG asset instead of inline SVG
 const CalendarIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <img src="https://cdn-icons-png.flaticon.com/512/4288/4288266.png" alt="Calendário" className={className || 'h-6 w-6'} />
+    <SafeImage src="https://cdn-icons-png.flaticon.com/512/4288/4288266.png" alt="Calendário" className={className || 'h-6 w-6'} />
 );
 const LockClosedIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;
 const LockOpenIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>;
 
 // --- NEW ADMIN MENU ICONS ---
-const BathTosaIcon = () => <img src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa Icon" className="h-7 w-7" />;
+const BathTosaIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa Icon" className="h-7 w-7" />;
 const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
         <path d="M6 9l6 6 6-6" />
     </svg>
 );
 // ChevronRightIcon já está definido acima; evitando redefinição
-const DaycareIcon = () => <img src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet Icon" className="h-7 w-7" />;
-const ClientsMenuIcon = () => <img src="https://cdn-icons-png.flaticon.com/512/1192/1192913.png" alt="Clientes Icon" className="h-7 w-7" />;
-const MonthlyIcon = () => <img src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" alt="Mensalistas Icon" className="h-7 w-7" />;
-const HotelIcon = () => <img src="https://cdn-icons-png.flaticon.com/512/1131/1131938.png" alt="Hotel Pet Icon" className="h-7 w-7" />;
-const PetMovelIcon = () => <img src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel Icon" className="h-7 w-7" />;
+const DaycareIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet Icon" className="h-7 w-7" />;
+const ClientsMenuIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/1192/1192913.png" alt="Clientes Icon" className="h-7 w-7" />;
+const MonthlyIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" alt="Mensalistas Icon" className="h-7 w-7" />;
+const HotelIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/1131/1131938.png" alt="Hotel Pet Icon" className="h-7 w-7" />;
+const PetMovelIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel Icon" className="h-7 w-7" />;
 
 
 // --- ADMIN COMPONENTS ---
@@ -760,7 +790,7 @@ const AlertModal: React.FC<{
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10001] p-4 animate-fadeIn">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-full sm:max-w-md animate-scaleIn text-center border-4" style={{ borderColor: variant === 'success' ? '#86EFAC' : '#FCA5A5' }}>
                 <div className="p-8">
-                     <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full shadow-lg" style={{ backgroundColor: variant === 'success' ? '#D1FAE5' : '#FEE2E2' }}>
+                    <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full shadow-lg" style={{ backgroundColor: variant === 'success' ? '#D1FAE5' : '#FEE2E2' }}>
                         {variant === 'success' ? <SuccessAlertIcon /> : <ErrorIcon />}
                     </div>
                     <h2 className="mt-6 text-4xl font-bold text-gray-800">{title}</h2>
@@ -891,8 +921,8 @@ const ViewHotelRegistrationModal: React.FC<{
                         <div>
                             <h4 className="font-semibold text-gray-700 mb-2">Hospedagem</h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                                {registration.check_in_date && <div><span className="font-semibold">Check-in:</span> {formatDateToBR(registration.check_in_date)} {String(registration.check_in_time ?? '').split(':').slice(0,2).join(':')}</div>}
-                                {registration.check_out_date && <div><span className="font-semibold">Check-out:</span> {formatDateToBR(registration.check_out_date)} {String(registration.check_out_time ?? '').split(':').slice(0,2).join(':')}</div>}
+                                {registration.check_in_date && <div><span className="font-semibold">Check-in:</span> {formatDateToBR(registration.check_in_date)} {String(registration.check_in_time ?? '').split(':').slice(0, 2).join(':')}</div>}
+                                {registration.check_out_date && <div><span className="font-semibold">Check-out:</span> {formatDateToBR(registration.check_out_date)} {String(registration.check_out_time ?? '').split(':').slice(0, 2).join(':')}</div>}
                             </div>
                         </div>
                     )}
@@ -988,8 +1018,8 @@ const AdminLogin: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }
 
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
-             <header className="text-center mb-6">
-                <img src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-20 w-20 mx-auto mb-2"/>
+            <header className="text-center mb-6">
+                <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-20 w-20 mx-auto mb-2" loading="eager" />
                 <h1 className="font-brand text-5xl text-pink-800">Sandy's Pet Shop</h1>
                 <p className="text-gray-600 text-lg">Admin Login</p>
             </header>
@@ -997,11 +1027,11 @@ const AdminLogin: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div>
                         <label htmlFor="email" className="block text-base font-semibold text-gray-700">Email</label>
-                        <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500"/>
+                        <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500" />
                     </div>
                     <div>
                         <label htmlFor="password" className="block text-base font-semibold text-gray-700">Senha</label>
-                        <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500"/>
+                        <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500" />
                     </div>
                     {error && <p className="text-red-500 text-sm">{error}</p>}
                     <button type="submit" disabled={loading} className="w-full flex justify-center py-3.5 px-6 border border-transparent rounded-md shadow-sm text-base font-semibold text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:bg-gray-400 min-h-[56px]">
@@ -1026,10 +1056,122 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
     const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>({});
     const [packagePrice, setPackagePrice] = useState(0);
     const [recurrence, setRecurrence] = useState<{ type: 'weekly' | 'bi-weekly' | 'monthly', day: number, time: number }>({ type: 'weekly', day: 1, time: 9 });
-  
+
     const [serviceStartDate, setServiceStartDate] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [alertInfo, setAlertInfo] = useState<{ title: string; message: string; variant: 'success' | 'error' } | null>(null);
+
+    // Auto-fill states
+    const [isSearchingClient, setIsSearchingClient] = useState(false);
+    const [clientCache, setClientCache] = useState<Record<string, any>>({});
+    const [autoFilledFields, setAutoFilledFields] = useState<string[]>([]);
+    const [showAutoFillToast, setShowAutoFillToast] = useState(false);
+
+    useEffect(() => {
+        const phoneDigits = formData.whatsapp.replace(/\D/g, '');
+        // Require at least 8 digits to start searching to avoid too many noisy queries
+        if (phoneDigits.length < 8) return;
+
+        const timer = setTimeout(async () => {
+            console.log(`[AutoFill] Starting search for phone digits: ${phoneDigits} (Formatted: ${formData.whatsapp})`);
+
+            // Check cache first
+            if (clientCache[phoneDigits]) {
+                console.log(`[AutoFill] Found in cache`);
+                fillFormData(clientCache[phoneDigits]);
+                return;
+            }
+
+            setIsSearchingClient(true);
+            try {
+                // Robust Query Strategy:
+                // 1. Try exact match on 'whatsapp' column (which might be formatted like (11) 99999-9999)
+                // 2. AND try match on raw digits if possible (but we can't easily do OR across tables without complex queries or RPC)
+                // Solution: Query `appointments` with an OR filter if Supabase supports it cleanly in one go, or just try the formatted version first since that's what we store.
+                // Assuming most data is stored formatted as per formatWhatsapp.
+
+                // Let's try to search by the formatted version we have in formData.whatsapp
+                // AND also try a version without the country code if it exists.
+
+                // For simplicity and effectiveness given the "not working" report, we'll fetch based on the input string 
+                // but we will also try to fetch by just the digits if the formatted one fails.
+
+                let foundData = null;
+
+                // Attempt 1: Search in appointments by the exact string in the input (likely formatted)
+                console.log(`[AutoFill] Querying appointments with: ${formData.whatsapp}`);
+                const { data: apptData, error: apptError } = await supabase
+                    .from('appointments')
+                    .select('pet_name, owner_name, pet_breed, owner_address, condominium, whatsapp')
+                    .eq('whatsapp', formData.whatsapp)
+                    .order('appointment_time', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (apptError && apptError.code !== 'PGRST116') {
+                    console.error('[AutoFill] Error querying appointments:', apptError);
+                }
+
+                if (apptData) {
+                    console.log('[AutoFill] Found in appointments:', apptData);
+                    foundData = apptData;
+                } else {
+                    console.log('[AutoFill] Not found in appointments by exact match. Trying monthly_clients...');
+
+                    // Attempt 2: Search in monthly_clients
+                    const { data: clientData, error: clientError } = await supabase
+                        .from('monthly_clients')
+                        .select('pet_name, owner_name, pet_breed, owner_address, condominium, whatsapp')
+                        .eq('whatsapp', formData.whatsapp)
+                        .limit(1)
+                        .single();
+
+                    if (clientError && clientError.code !== 'PGRST116') {
+                        console.error('[AutoFill] Error querying monthly_clients:', clientError);
+                    }
+
+                    if (clientData) {
+                        console.log('[AutoFill] Found in monthly_clients:', clientData);
+                        foundData = clientData;
+                    }
+                }
+
+                if (foundData) {
+                    setClientCache(prev => ({ ...prev, [phoneDigits]: foundData }));
+                    fillFormData(foundData);
+                } else {
+                    console.log('[AutoFill] No client found for this number.');
+                }
+            } catch (err) {
+                console.error("[AutoFill] Unexpected error searching client:", err);
+            } finally {
+                setIsSearchingClient(false);
+            }
+        }, 800); // 800ms debounce
+
+        return () => clearTimeout(timer);
+    }, [formData.whatsapp]);
+
+    const fillFormData = (data: any) => {
+        const fieldsToFill = ['petName', 'ownerName', 'petBreed', 'ownerAddress', 'condominium'];
+        const newAutoFilled: string[] = [];
+
+        setFormData(prev => {
+            const next = { ...prev };
+            if (data.pet_name) { next.petName = data.pet_name; newAutoFilled.push('petName'); }
+            if (data.owner_name) { next.ownerName = data.owner_name; newAutoFilled.push('ownerName'); }
+            if (data.pet_breed) { next.petBreed = data.pet_breed; newAutoFilled.push('petBreed'); }
+            if (data.owner_address) { next.ownerAddress = data.owner_address; newAutoFilled.push('ownerAddress'); }
+            if (data.condominium) { next.condominium = data.condominium; newAutoFilled.push('condominium'); }
+            return next;
+        });
+
+        if (newAutoFilled.length > 0) {
+            setAutoFilledFields(newAutoFilled);
+            setShowAutoFillToast(true);
+            setTimeout(() => setShowAutoFillToast(false), 3000);
+        }
+    };
 
     useEffect(() => {
         const calculatePrice = () => {
@@ -1057,14 +1199,14 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                         // FIX: Explicitly cast to Number to prevent type errors in arithmetic operations.
                         servicePrice = Number(prices[serviceKey as keyof typeof prices]);
                     } else if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(serviceKey as ServiceType)) {
-                         if (serviceKey === ServiceType.PET_MOBILE_BATH) {
+                        if (serviceKey === ServiceType.PET_MOBILE_BATH) {
                             servicePrice = prices[ServiceType.BATH];
-                         } else if (serviceKey === ServiceType.PET_MOBILE_GROOMING_ONLY) {
-                             servicePrice = prices[ServiceType.GROOMING_ONLY];
-                         } else if (serviceKey === ServiceType.PET_MOBILE_BATH_AND_GROOMING) {
-                             // FIX: Operator '+' cannot be applied to types 'unknown' and 'number'. Cast values to `number` to ensure type-safe addition.
-                             servicePrice = Number(prices[ServiceType.BATH]) + Number(prices[ServiceType.GROOMING_ONLY]);
-                         }
+                        } else if (serviceKey === ServiceType.PET_MOBILE_GROOMING_ONLY) {
+                            servicePrice = prices[ServiceType.GROOMING_ONLY];
+                        } else if (serviceKey === ServiceType.PET_MOBILE_BATH_AND_GROOMING) {
+                            // FIX: Operator '+' cannot be applied to types 'unknown' and 'number'. Cast values to `number` to ensure type-safe addition.
+                            servicePrice = Number(prices[ServiceType.BATH]) + Number(prices[ServiceType.GROOMING_ONLY]);
+                        }
                     }
                     // Apply R$ 10 discount for each service in the monthly package
                     const discountedServicePrice = Math.max(0, servicePrice - 10);
@@ -1086,7 +1228,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
         };
         calculatePrice();
     }, [serviceQuantities, selectedWeight, selectedAddons]);
-    
+
     // Effect to reset incompatible addons when weight changes
     useEffect(() => {
         if (!selectedWeight) return;
@@ -1120,7 +1262,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
             return { ...prev, [service]: newQuantity };
         });
     };
-    
+
     const handleAddonToggle = (addonId: string) => {
         const newAddons = { ...selectedAddons };
         newAddons[addonId] = !newAddons[addonId];
@@ -1129,17 +1271,17 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
         setSelectedAddons(newAddons);
     };
 
-// FIX: Ensure recurrence day and time are stored as numbers to prevent comparison/arithmetic errors.
+    // FIX: Ensure recurrence day and time are stored as numbers to prevent comparison/arithmetic errors.
     const handleRecurrenceChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
         const { name, value } = e.target;
-        setRecurrence(prev => ({...prev, [name]: name === 'type' ? value : Number(value)}));
+        setRecurrence(prev => ({ ...prev, [name]: name === 'type' ? value : Number(value) }));
     };
-    
+
     const changeStep = (nextStep: number) => {
         setIsAnimating(true);
         setTimeout(() => {
-          setStep(nextStep);
-          setIsAnimating(false);
+            setStep(nextStep);
+            setIsAnimating(false);
         }, 300);
     };
 
@@ -1150,7 +1292,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
             onSuccess();
         }
     };
-    
+
     const getPackageDetails = () => {
         const serviceLabels: string[] = [];
         let totalDuration = 0;
@@ -1170,7 +1312,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
             .map(addon => addon.label);
 
         const fullServiceString = serviceLabels.join(', ') + (addonLabels.length > 0 ? ` + ${addonLabels.join(', ')}` : '');
-        
+
         return {
             serviceString: fullServiceString,
             duration: totalDuration,
@@ -1204,9 +1346,9 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                         } else if (serviceKey === ServiceType.BATH || serviceKey === ServiceType.GROOMING_ONLY) {
                             servicePrice = Number(prices[serviceKey as keyof typeof prices]);
                         } else if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(serviceKey as ServiceType)) {
-                             if (serviceKey === ServiceType.PET_MOBILE_BATH) servicePrice = prices[ServiceType.BATH];
-                             else if (serviceKey === ServiceType.PET_MOBILE_GROOMING_ONLY) servicePrice = prices[ServiceType.GROOMING_ONLY];
-                             else if (serviceKey === ServiceType.PET_MOBILE_BATH_AND_GROOMING) servicePrice = Number(prices[ServiceType.BATH]) + Number(prices[ServiceType.GROOMING_ONLY]);
+                            if (serviceKey === ServiceType.PET_MOBILE_BATH) servicePrice = prices[ServiceType.BATH];
+                            else if (serviceKey === ServiceType.PET_MOBILE_GROOMING_ONLY) servicePrice = prices[ServiceType.GROOMING_ONLY];
+                            else if (serviceKey === ServiceType.PET_MOBILE_BATH_AND_GROOMING) servicePrice = Number(prices[ServiceType.BATH]) + Number(prices[ServiceType.GROOMING_ONLY]);
                         }
                         // Apply R$ 10 discount for each service in the monthly package
                         const discountedServicePrice = Math.max(0, servicePrice - 10);
@@ -1239,7 +1381,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
             const recurrenceDay = parseInt(String(recurrence.day), 10);
             const recurrenceTime = parseInt(String(recurrence.time), 10);
             const now = new Date();
-            
+
             // Use service start date as the reference date instead of current date
             const serviceStartDateObj = serviceStartDate ? parseISODateAsSaoPaulo(serviceStartDate) : new Date();
 
@@ -1287,15 +1429,15 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                 const { error: insertError } = await supabase.from('clients').insert({ name: formData.ownerName, phone: formData.whatsapp });
                 if (insertError) throw new Error(`Erro ao criar novo cliente: ${insertError.message}`);
             }
-            
+
             const { data: newClient, error: clientError } = await supabase.from('monthly_clients').insert({
-                pet_name: formData.petName, 
-                pet_breed: formData.petBreed, 
-                owner_name: formData.ownerName, 
+                pet_name: formData.petName,
+                pet_breed: formData.petBreed,
+                owner_name: formData.ownerName,
                 owner_address: formData.ownerAddress,
-                whatsapp: formData.whatsapp, 
-                service: serviceString, 
-                weight: PET_WEIGHT_OPTIONS[selectedWeight!], 
+                whatsapp: formData.whatsapp,
+                service: serviceString,
+                weight: PET_WEIGHT_OPTIONS[selectedWeight!],
                 price: finalPrice,
                 recurrence_type: recurrence.type,
                 recurrence_day: recurrenceDay,
@@ -1329,10 +1471,10 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
 
             const existingTimes = new Set<string>();
             (existingAppts || []).forEach((r: any) => {
-                try { existingTimes.add(new Date(r.appointment_time).toISOString()); } catch {}
+                try { existingTimes.add(new Date(r.appointment_time).toISOString()); } catch { }
             });
             (existingPetMovelAppts || []).forEach((r: any) => {
-                try { existingTimes.add(new Date(r.appointment_time).toISOString()); } catch {}
+                try { existingTimes.add(new Date(r.appointment_time).toISOString()); } catch { }
             });
 
             const supabasePayloads = appointmentsToCreate
@@ -1353,8 +1495,8 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                 }));
 
             // Check if any of the selected services is a Pet Móvel service
-            const isPetMovelService = Object.keys(serviceQuantities).some(serviceKey => 
-                Number(serviceQuantities[serviceKey]) > 0 && 
+            const isPetMovelService = Object.keys(serviceQuantities).some(serviceKey =>
+                Number(serviceQuantities[serviceKey]) > 0 &&
                 [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(serviceKey as ServiceType)
             );
 
@@ -1377,13 +1519,13 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                             condominium: formData.condominium,
                             monthly_client_id: newClient.id
                         }));
-                    
+
                     // Insert into BOTH tables with appropriate payloads
                     const [appointmentsResult, petMovelResult] = await Promise.all([
                         supabase.from('appointments').insert(supabasePayloads),
                         supabase.from('pet_movel_appointments').insert(petMovelPayloads)
                     ]);
-                    
+
                     if (appointmentsResult.error || petMovelResult.error) {
                         const errorMsg = appointmentsResult.error?.message || petMovelResult.error?.message;
                         throw new Error(`Cadastro criado, mas erro ao gerar agendamentos: ${errorMsg}`);
@@ -1393,7 +1535,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                     const { error } = await supabase.from('appointments').insert(supabasePayloads);
                     if (error) throw new Error(`Cadastro criado, mas erro ao gerar agendamentos: ${error.message}`);
                 }
-                
+
                 setAlertInfo({ title: 'Mensalista Cadastrado!', message: `Mensalista ${formData.petName} cadastrado com sucesso! ${supabasePayloads.length} agendamentos foram criados.`, variant: 'success' });
             } else {
                 setAlertInfo({ title: 'Aviso', message: "Nenhum agendamento futuro pôde ser criado com as regras fornecidas.", variant: 'error' });
@@ -1413,7 +1555,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
         <>
             {alertInfo && <AlertModal isOpen={true} onClose={handleAlertClose} title={alertInfo.title} message={alertInfo.message} variant={alertInfo.variant} />}
             <div className="w-full max-w-3xl mx-auto bg-rose-50 rounded-2xl shadow-xl overflow-hidden animate-fadeIn">
-                 <div className="px-6 py-4 border-b border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
                     <div className="flex justify-between items-center text-sm font-semibold text-gray-500">
                         {['Dados', 'Serviços', 'Recorrência & Resumo'].map((name, index) => (
                             <div key={name} className={`flex items-center gap-3 ${step > index + 1 ? 'text-pink-600' : ''} ${step === index + 1 ? 'text-pink-600 font-bold' : ''}`}>
@@ -1428,14 +1570,58 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
 
                 <form onSubmit={handleSubmit} className={`relative p-6 sm:p-8 transition-all duration-300 ${isAnimating ? 'animate-slideOutToLeft' : 'animate-slideInFromRight'}`}>
                     {step === 1 && (
-                         <div className="space-y-7">
+                        <div className="space-y-7">
                             <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 truncate">Informações do Pet e Dono</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label><div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon/></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg"/></div></div>
-                                <div><label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label><div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon/></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg"/></div></div>
-                                <div><label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Nome do Dono</label><div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon/></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg"/></div></div>
-                                <div><label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label><div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><WhatsAppIcon/></span><input type="tel" name="whatsapp" id="whatsapp" value={formData.whatsapp} onChange={handleInputChange} required placeholder="(XX) XXXXX-XXXX" maxLength={15} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg"/></div></div>
-                                <div><label htmlFor="condominium" className="block text-base font-semibold text-gray-700">Condomínio</label><div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon/></span>
+                                <div>
+                                    <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span>
+                                        <input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg transition-all ${autoFilledFields.includes('petName') ? 'border-green-300 ring-1 ring-green-100' : 'border-gray-300'}`} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span>
+                                        <input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg transition-all ${autoFilledFields.includes('petBreed') ? 'border-green-300 ring-1 ring-green-100' : 'border-gray-300'}`} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Nome do Dono</label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span>
+                                        <input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg transition-all ${autoFilledFields.includes('ownerName') ? 'border-green-300 ring-1 ring-green-100' : 'border-gray-300'}`} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700 flex justify-between">
+                                        WhatsApp
+                                        {isSearchingClient && <span className="text-xs text-pink-600 animate-pulse">Buscando...</span>}
+                                    </label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><WhatsAppIcon /></span>
+                                        <input
+                                            type="tel"
+                                            name="whatsapp"
+                                            id="whatsapp"
+                                            value={formData.whatsapp}
+                                            onChange={handleInputChange}
+                                            required
+                                            placeholder="(XX) XXXXX-XXXX"
+                                            maxLength={15}
+                                            className={`block w-full pl-10 pr-10 py-4 bg-gray-50 border rounded-lg transition-colors ${autoFilledFields.includes('whatsapp') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                                        />
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                            {isSearchingClient ? (
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-500"></div>
+                                            ) : (
+                                                showAutoFillToast && <span className="text-green-500 text-xs font-bold animate-fadeIn">Encontrado!</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div><label htmlFor="condominium" className="block text-base font-semibold text-gray-700">Condomínio</label><div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span>
                                     <select name="condominium" id="condominium" value={formData.condominium} onChange={handleInputChange} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg">
                                         <option value="">Selecione um condomínio</option>
                                         <option value="Nenhum Condomínio">Banho & Tosa Fixo</option>
@@ -1444,38 +1630,44 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                                         <option value="Paseo">Paseo</option>
                                     </select>
                                 </div></div>
-                                <div className="md:col-span-2"><label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Endereço</label><div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon/></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg"/></div></div>
+                                <div className="md:col-span-2">
+                                    <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Endereço</label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span>
+                                        <input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg transition-all ${autoFilledFields.includes('ownerAddress') ? 'border-green-300 ring-1 ring-green-100' : 'border-gray-300'}`} />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
                     {step === 2 && (
-                         <div className="space-y-6">
+                        <div className="space-y-6">
                             <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 truncate">Escolha os Serviços do Pacote</h2>
                             <div>
                                 <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço(s)</h3>
                                 <div className="space-y-3">
-                                {Object.entries(SERVICES).filter(([key]) => [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_GROOMING_ONLY, ServiceType.PET_MOBILE_BATH_AND_GROOMING].includes(key as ServiceType)).map(([key, { label }]) => {
-                                    const displayLabel = (key === ServiceType.PET_MOBILE_BATH)
-                                        ? 'Banho'
-                                        : (key === ServiceType.PET_MOBILE_BATH_AND_GROOMING)
-                                            ? 'Banho & Tosa'
-                                            : (key === ServiceType.PET_MOBILE_GROOMING_ONLY)
-                                                ? 'Só Tosa'
-                                                : label;
-                                    return (
-                                    <div key={key} className="flex items-center justify-between p-6 sm:p-5 rounded-lg bg-white border-2 border-gray-200">
-                                        <span className="font-semibold text-gray-800">{displayLabel}</span>
-                                        <div className="flex items-center gap-2">
-                                            <button type="button" onClick={() => handleQuantityChange(key as ServiceType, -1)} className="w-8 h-8 rounded-full bg-gray-200 text-lg font-bold hover:bg-gray-300">-</button>
-                                            <span className="w-10 text-center font-semibold text-lg">{serviceQuantities[key] || 0}</span>
-                                            <button type="button" onClick={() => handleQuantityChange(key as ServiceType, 1)} className="w-8 h-8 rounded-full bg-pink-500 text-white text-lg font-bold hover:bg-pink-600">+</button>
-                                        </div>
-                                    </div>
-                                );
-                                })}
+                                    {Object.entries(SERVICES).filter(([key]) => [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_GROOMING_ONLY, ServiceType.PET_MOBILE_BATH_AND_GROOMING].includes(key as ServiceType)).map(([key, { label }]) => {
+                                        const displayLabel = (key === ServiceType.PET_MOBILE_BATH)
+                                            ? 'Banho'
+                                            : (key === ServiceType.PET_MOBILE_BATH_AND_GROOMING)
+                                                ? 'Banho & Tosa'
+                                                : (key === ServiceType.PET_MOBILE_GROOMING_ONLY)
+                                                    ? 'Só Tosa'
+                                                    : label;
+                                        return (
+                                            <div key={key} className="flex items-center justify-between p-6 sm:p-5 rounded-lg bg-white border-2 border-gray-200">
+                                                <span className="font-semibold text-gray-800">{displayLabel}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <button type="button" onClick={() => handleQuantityChange(key as ServiceType, -1)} className="w-8 h-8 rounded-full bg-gray-200 text-lg font-bold hover:bg-gray-300">-</button>
+                                                    <span className="w-10 text-center font-semibold text-lg">{serviceQuantities[key] || 0}</span>
+                                                    <button type="button" onClick={() => handleQuantityChange(key as ServiceType, 1)} className="w-8 h-8 rounded-full bg-pink-500 text-white text-lg font-bold hover:bg-pink-600">+</button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
-                             <div>
+                            <div>
                                 <label htmlFor="petWeight" className="block text-md font-semibold text-gray-700 mb-2">2. Peso do Pet</label>
                                 <select id="petWeight" value={selectedWeight || ''} onChange={e => setSelectedWeight(e.target.value as PetWeight)} required className="block w-full py-3 px-3 bg-gray-50 border border-gray-300 rounded-lg">
                                     <option value="" disabled>Selecione o peso</option>
@@ -1505,7 +1697,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                     {step === 3 && (
                         <div className="space-y-6">
                             <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 truncate">Recorrência e Resumo</h2>
-                             <div className="p-4 bg-white rounded-lg border space-y-6">
+                            <div className="p-4 bg-white rounded-lg border space-y-6">
                                 <h3 className="font-semibold text-gray-700">Regra de Recorrência</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <select name="type" onChange={handleRecurrenceChange} value={recurrence.type} className="w-full px-5 py-4 border rounded-lg bg-gray-50">
@@ -1518,31 +1710,31 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                                             <option value={1}>Segunda-feira</option><option value={2}>Terça-feira</option><option value={3}>Quarta-feira</option><option value={4}>Quinta-feira</option><option value={5}>Sexta-feira</option>
                                         </select>
                                     ) : (
-                                        <input type="number" name="day" min="1" max="31" value={recurrence.day} onChange={handleRecurrenceChange} placeholder="Dia do mês" className="w-full px-5 py-4 border rounded-lg bg-gray-50"/>
+                                        <input type="number" name="day" min="1" max="31" value={recurrence.day} onChange={handleRecurrenceChange} placeholder="Dia do mês" className="w-full px-5 py-4 border rounded-lg bg-gray-50" />
                                     )}
                                 </div>
                                 <select name="time" onChange={handleRecurrenceChange} value={recurrence.time} className="w-full px-5 py-4 border rounded-lg bg-gray-50">
                                     {WORKING_HOURS.map(h => <option key={h} value={h}>{`${h}:00`}</option>)}
                                 </select>
-                                
+
                                 <div>
-                                    <DatePicker 
-                                        value={serviceStartDate} 
+                                    <DatePicker
+                                        value={serviceStartDate}
                                         onChange={setServiceStartDate}
                                         label="Data de Início do Serviço"
                                         required
-                                        className="mt-1" 
+                                        className="mt-1"
                                     />
                                 </div>
                             </div>
-                             <div className="p-4 bg-white rounded-lg space-y-2 text-gray-700 border">
+                            <div className="p-4 bg-white rounded-lg space-y-2 text-gray-700 border">
                                 <h3 className="font-semibold mb-2 text-gray-700">Resumo</h3>
                                 <p><strong>Pet:</strong> {formData.petName} ({formData.petBreed})</p>
                                 <p><strong>Responsável:</strong> {formData.ownerName}</p>
                                 <p><strong>Serviços:</strong> {getPackageDetails().serviceString || 'Nenhum'}</p>
                                 <p><strong>Peso:</strong> {selectedWeight ? PET_WEIGHT_OPTIONS[selectedWeight] : 'Nenhum'}</p>
                                 <p className="mt-2 pt-2 border-t font-bold text-lg"><strong>Preço do Pacote: R$ {(packagePrice ?? 0).toFixed(2).replace('.', ',')}</strong></p>
-                             </div>
+                            </div>
                         </div>
                     )}
                     <div className="mt-8 flex justify-between items-center">
@@ -1716,7 +1908,7 @@ const StatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ 
                         <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl sm:text-2xl font-bold min-w-[44px] min-h-[44px] flex items-center justify-center">×</button>
                     </div>
                 </div>
-                
+
                 <div className="p-4 sm:p-6">
                     {loading ? (
                         <div className="flex justify-center py-12 sm:py-16">
@@ -1726,7 +1918,7 @@ const StatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ 
                         <div className="space-y-6 sm:space-y-8">
                             <div className="flex justify-end">
                                 <div className="w-full sm:w-80">
-                                    <DatePicker 
+                                    <DatePicker
                                         value={selectedDailyDate}
                                         onChange={setSelectedDailyDate}
                                         label="Selecione o dia"
@@ -1740,7 +1932,7 @@ const StatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ 
                                 <StatCard title="📊 Esta Semana" data={statistics.weekly} />
                                 <StatCard title="📈 Este Mês" data={statistics.monthly} />
                             </div>
-                            
+
                             {(statistics.daily.count === 0 && statistics.weekly.count === 0 && statistics.monthly.count === 0) && (
                                 <div className="text-center py-12 bg-gray-50 rounded-lg">
                                     <p className="text-gray-500 text-lg">Nenhum serviço concluído encontrado para exibir estatísticas.</p>
@@ -1824,7 +2016,7 @@ const MonthlyClientsStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => 
             const totalAppointments = (appointments || []).length;
             const completedAppointments = (appointments || []).filter(apt => apt.status === 'CONCLUÍDO').length;
             const pendingAppointments = (appointments || []).filter(apt => apt.status === 'AGENDADO').length;
-            
+
             // Calcular receita realizada (agendamentos concluídos)
             const realizedRevenue = appointmentsForMonthClients
                 .filter(apt => apt.status === 'CONCLUÍDO')
@@ -1916,9 +2108,9 @@ const MonthlyClientsStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => 
                     <div className="flex justify-between items-center">
                         <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">📊 Estatísticas dos Mensalistas</h2>
                         <div className="flex items-center gap-3">
-                            <MonthPicker 
-                                value={`${selectedMonth}-01`} 
-                                onChange={(v) => setSelectedMonth(v.slice(0, 7))} 
+                            <MonthPicker
+                                value={`${selectedMonth}-01`}
+                                onChange={(v) => setSelectedMonth(v.slice(0, 7))}
                                 placeholder="Selecione o mês"
                                 className="max-w-[240px]"
                             />
@@ -1926,7 +2118,7 @@ const MonthlyClientsStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => 
                         </div>
                     </div>
                 </div>
-                
+
                 <div className="p-4 sm:p-6">
                     {loading ? (
                         <div className="flex justify-center py-12 sm:py-16">
@@ -1945,7 +2137,7 @@ const MonthlyClientsStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => 
                                         <h3 className="text-sm font-medium text-green-600 mb-1">Receita Estimada</h3>
                                         <p className="text-2xl font-bold text-green-700">R$ {statistics.estimatedRevenue.toFixed(2).replace('.', ',')}</p>
                                     </div>
-                                    
+
                                 </div>
                             </div>
 
@@ -1954,31 +2146,31 @@ const MonthlyClientsStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => 
                                 <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200">
                                     <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">📍 Por Condomínio</h3>
                                     <div className="space-y-3">
-                                    {Object.entries(statistics.condominiumStats).map(([condo, stats]: [string, any]) => (
-                                        <div key={condo} className="bg-gray-50 rounded-lg">
-                                            <button type="button" onClick={() => toggleExpanded(condo)} className="w-full flex justify-between items-center p-3">
-                                                <div>
-                                                    <p className="font-semibold text-gray-800">{condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : condo}</p>
-                                                    <p className="text-sm text-gray-600">{stats.clients} mensalistas</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold text-green-600">R$ {stats.revenue.toFixed(2).replace('.', ',')}</p>
-                                                </div>
-                                            </button>
-                                            {expandedCondos[condo] && (
-                                                <div className="px-3 pb-3">
-                                                    <ul className="bg-white border border-gray-200 rounded-lg divide-y">
-                                                        {stats.members.map((m: any, idx: number) => (
-                                                            <li key={idx} className="py-2 px-3 flex justify-between">
-                                                                <span className="text-gray-800 font-medium">{m.pet}</span>
-                                                                <span className="text-gray-600">{m.owner}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+                                        {Object.entries(statistics.condominiumStats).map(([condo, stats]: [string, any]) => (
+                                            <div key={condo} className="bg-gray-50 rounded-lg">
+                                                <button type="button" onClick={() => toggleExpanded(condo)} className="w-full flex justify-between items-center p-3">
+                                                    <div>
+                                                        <p className="font-semibold text-gray-800">{condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : condo}</p>
+                                                        <p className="text-sm text-gray-600">{stats.clients} mensalistas</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold text-green-600">R$ {stats.revenue.toFixed(2).replace('.', ',')}</p>
+                                                    </div>
+                                                </button>
+                                                {expandedCondos[condo] && (
+                                                    <div className="px-3 pb-3">
+                                                        <ul className="bg-white border border-gray-200 rounded-lg divide-y">
+                                                            {stats.members.map((m: any, idx: number) => (
+                                                                <li key={idx} className="py-2 px-3 flex justify-between">
+                                                                    <span className="text-gray-800 font-medium">{m.pet}</span>
+                                                                    <span className="text-gray-600">{m.owner}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -2038,9 +2230,9 @@ const DaycareStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }
                 daily: { count: 0, revenue: 0, plans: {} as { [key: string]: number }, items: [] as { pet_name: string; plan: string }[] },
                 weekly: { count: 0, revenue: 0, plans: {} as { [key: string]: number }, items: [] as { pet_name: string; plan: string }[] },
                 monthly: { count: 0, revenue: 0, plans: {} as { [key: string]: number }, items: [] as { pet_name: string; plan: string }[] },
-                total: { 
-                    approved: 0, 
-                    pending: 0, 
+                total: {
+                    approved: 0,
+                    pending: 0,
                     rejected: 0,
                     totalRevenue: 0,
                     plans: {} as { [key: string]: number },
@@ -2174,7 +2366,7 @@ const DaycareStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }
                         <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl sm:text-2xl font-bold min-w-[44px] min-h-[44px] flex items-center justify-center">×</button>
                     </div>
                 </div>
-                
+
                 <div className="p-4 sm:p-6">
                     {loading ? (
                         <div className="flex justify-center py-12 sm:py-16">
@@ -2233,7 +2425,7 @@ const DaycareStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }
                                 <DaycareStatCard title="📊 Esta Semana" data={statistics.weekly} />
                                 <DaycareStatCard title="📈 Este Mês" data={statistics.monthly} />
                             </div>
-                            
+
                             {(statistics.daily.count === 0 && statistics.weekly.count === 0 && statistics.monthly.count === 0) && (
                                 <div className="text-center py-12 bg-gray-50 rounded-lg">
                                     <p className="text-gray-500 text-lg">Nenhuma matrícula encontrada para exibir estatísticas.</p>
@@ -2290,9 +2482,9 @@ const HotelStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> 
                 daily: { count: 0, revenue: 0, services: {} as { [key: string]: number } },
                 weekly: { count: 0, revenue: 0, services: {} as { [key: string]: number } },
                 monthly: { count: 0, revenue: 0, services: {} as { [key: string]: number }, details: [] as { pet: string; tutor: string; total: number; extras: string[] }[] },
-                total: { 
-                    checkedIn: 0, 
-                    checkedOut: 0, 
+                total: {
+                    checkedIn: 0,
+                    checkedOut: 0,
                     totalRevenue: 0,
                     services: {} as { [key: string]: number }
                 }
@@ -2333,7 +2525,7 @@ const HotelStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> 
                 if (registrationDate >= today && registrationDate <= endOfToday) {
                     stats.daily.count++;
                     stats.daily.revenue += price;
-                    
+
                     if (registration.extra_services) {
                         const services = registration.extra_services;
                         if (services.banho_tosa) {
@@ -2352,7 +2544,7 @@ const HotelStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> 
                 if (registrationDate >= weekStart) {
                     stats.weekly.count++;
                     stats.weekly.revenue += price;
-                    
+
                     if (registration.extra_services) {
                         const services = registration.extra_services;
                         if (services.banho_tosa) {
@@ -2367,8 +2559,8 @@ const HotelStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> 
                     }
                 }
 
-                const isInApprovedSection = isApproved 
-                    && String(registration.check_in_status || '').toLowerCase() !== 'checked_in' 
+                const isInApprovedSection = isApproved
+                    && String(registration.check_in_status || '').toLowerCase() !== 'checked_in'
                     && String(registration.check_in_status || '').toLowerCase() !== 'checked_out'
                     && String(registration.status || '') !== 'Concluído';
 
@@ -2477,9 +2669,9 @@ const HotelStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> 
                     <div className="flex justify-between items-center">
                         <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">🏨 Estatísticas do Hotel Pet</h2>
                         <div className="flex items-center gap-3">
-                            <MonthPicker 
-                                value={selectedMonthValue} 
-                                onChange={setSelectedMonthValue} 
+                            <MonthPicker
+                                value={selectedMonthValue}
+                                onChange={setSelectedMonthValue}
                                 placeholder="Selecione o mês"
                                 className="max-w-[240px]"
                             />
@@ -2487,7 +2679,7 @@ const HotelStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> 
                         </div>
                     </div>
                 </div>
-                
+
                 <div className="p-4 sm:p-6">
                     {loading ? (
                         <div className="flex justify-center py-12 sm:py-16">
@@ -2517,7 +2709,7 @@ const HotelStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> 
                             <div className="grid grid-cols-1 gap-4 sm:gap-6">
                                 <HotelStatCard title="📈 Este Mês" data={statistics.monthly} />
                             </div>
-                            
+
                             {(statistics.daily.count === 0 && statistics.weekly.count === 0 && statistics.monthly.count === 0) && (
                                 <div className="text-center py-12 bg-gray-50 rounded-lg">
                                     <p className="text-gray-500 text-lg">Nenhuma hospedagem encontrada para exibir estatísticas.</p>
@@ -2538,7 +2730,7 @@ const HotelStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> 
 const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: () => void; onAppointmentUpdated: (updatedAppointment: AdminAppointment) => void; }> = ({ appointment, onClose, onAppointmentUpdated }) => {
     const [formData, setFormData] = useState<Omit<AdminAppointment, 'id' | 'addons' | 'appointment_time'>>(appointment);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
     const initialSaoPauloDate = getSaoPauloTimeParts(new Date(appointment.appointment_time));
     const [datePart, setDatePart] = useState(new Date(Date.UTC(initialSaoPauloDate.year, initialSaoPauloDate.month, initialSaoPauloDate.date)).toISOString().split('T')[0]);
     const [timePart, setTimePart] = useState(initialSaoPauloDate.hour);
@@ -2546,24 +2738,95 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
     const visitHotelLabel = SERVICES[ServiceType.VISIT_HOTEL].label;
 
 
+    // State to store availability counts for the selected date
+    const [availabilityCounts, setAvailabilityCounts] = useState<Record<number, number>>({});
+
+    // Fetch availability for the selected date whenever date changes
+    useEffect(() => {
+        const fetchAvailability = async () => {
+            if (!datePart) return;
+            const [yStr, mStr, dStr] = datePart.split('-');
+            const year = Number(yStr);
+            const month = Number(mStr) - 1;
+            const day = Number(dStr);
+
+            // Fetch appointments for the whole day to check availability
+            // Since we don't have the full appointments list in props here (only the single appointment being edited),
+            // we need to fetch from DB or rely on a passed prop. 
+            // Ideally we should fetch, but for performance let's try to fetch just for the day.
+
+            const { data: regularData } = await supabase
+                .from('appointments')
+                .select('appointment_time, service')
+                .gte('appointment_time', `${yStr}-${mStr}-${dStr}T00:00:00`)
+                .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`); // Simple range check
+
+            const { data: petMovelData } = await supabase
+                .from('pet_movel_appointments')
+                .select('appointment_time, service')
+                .gte('appointment_time', `${yStr}-${mStr}-${dStr}T00:00:00`)
+                .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`);
+
+            const allApps = [...(regularData || []), ...(petMovelData || [])];
+
+            const counts: Record<number, number> = {};
+            const hoursToCheck = [...WORKING_HOURS, ...VISIT_WORKING_HOURS];
+
+            hoursToCheck.forEach(h => {
+                const targetTime = toSaoPauloUTC(year, month, day, h).toISOString();
+
+                let count = allApps.filter((app: any) => {
+                    // Don't count the appointment currently being edited!
+                    // Note: We don't have ID in the fetch result above to exclude easily unless we select ID.
+                    // But we can just count. If count >= MAX and one of them is THIS appointment, we are fine (we are just moving to same slot or keeping it).
+                    // BUT if we move to a NEW slot, we need to know if THAT slot is full.
+                    // The 'allApps' includes the current appointment if it's on the same day.
+                    // We should probably filter out the current appointment by ID if we fetched IDs.
+                    // Let's assume we didn't fetch IDs for simplicity in this snippet, 
+                    // but wait, if we are editing, we might be moving to a slot that has 0 appointments, so it's fine.
+                    // If we move to a slot that has 1 appointment (and MAX=1), we are blocked.
+                    // Unless that 1 appointment is US.
+                    // So we MUST exclude ourselves.
+                    return app.appointment_time === targetTime;
+                }).length;
+
+                // Correction: We need to exclude the current appointment from the count
+                // Since we didn't select ID, let's re-fetch with ID or just assume strict check.
+                // Actually, let's just use the count. 
+                // If I am at 10:00 and I want to stay at 10:00, count is 1 (me). Capacity is 1. I should be allowed.
+                // If I am at 10:00 and want to move to 11:00. 11:00 has count 1 (someone else). Capacity 1. I should be blocked.
+                // So: calculate count. If targetTime == currentAppointmentTime, count = count - 1.
+
+                if (targetTime === appointment.appointment_time) {
+                    count = Math.max(0, count - 1);
+                }
+
+                counts[h] = count;
+            });
+            setAvailabilityCounts(counts);
+        };
+
+        fetchAvailability();
+    }, [datePart, appointment.appointment_time]);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ 
-            ...prev, 
-            [name]: name === 'whatsapp' ? formatWhatsapp(value) : value 
+        setFormData(prev => ({
+            ...prev,
+            [name]: name === 'whatsapp' ? formatWhatsapp(value) : value
         }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        
+
         const [year, month, day] = datePart.split('-').map(Number);
         const newAppointmentTime = toSaoPauloUTC(year, month - 1, day, timePart);
 
         const { pet_name, owner_name, whatsapp, service, weight, price, status } = formData;
         const normalizedService = service === 'Creche Pet' ? visitDaycareLabel : (service === 'Hotel Pet' ? visitHotelLabel : service);
-        
+
         const updatePayload = {
             pet_name,
             owner_name,
@@ -2600,6 +2863,49 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
             setIsSubmitting(false);
         } else {
             const updatedData = (Array.isArray(appointmentsResult.data) && appointmentsResult.data[0]) || (Array.isArray(petMovelResult.data) && petMovelResult.data[0]) || null;
+
+            // Check for date/time changes and trigger webhook
+            const oldTime = new Date(appointment.appointment_time).getTime();
+            const newTime = newAppointmentTime.getTime();
+
+            if (oldTime !== newTime) {
+                console.log('Date/Time change detected. Triggering reschedule webhook...');
+
+                // Format WhatsApp number for webhook
+                // Removes non-digits, ensures 55 prefix for Brazil
+                let cleanPhone = whatsapp.replace(/\D/g, '');
+                // If it starts with 55 and is longer than 11 digits (e.g. 5571999999999 -> 13 digits), keep it.
+                // If it is 10 or 11 digits (e.g. 71999999999), add 55.
+                if (cleanPhone.length >= 10 && cleanPhone.length <= 11) {
+                    cleanPhone = '55' + cleanPhone;
+                }
+
+                const payload = {
+                    event: "reagendamento",
+                    agendamento_id: appointment.id,
+                    nova_data: datePart,
+                    nova_hora: `${String(timePart).padStart(2, '0')}:00`,
+                    modificado_por: "Admin", // Defaulting to Admin as auth context is not explicitly passed
+                    timestamp: new Date().toISOString(),
+                    customer_whatsapp_number: cleanPhone
+                };
+
+                // Non-blocking webhook call
+                fetch('https://n8n.intelektus.tech/webhook/reagendamento', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(response => {
+                    if (response.ok) {
+                        console.log('Reschedule webhook sent successfully');
+                    } else {
+                        console.error('Failed to send reschedule webhook', response.statusText);
+                    }
+                }).catch(err => {
+                    console.error('Error sending reschedule webhook:', err);
+                });
+            }
+
             if (updatedData) {
                 onAppointmentUpdated(updatedData as AdminAppointment);
             } else {
@@ -2617,25 +2923,48 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
                         <h2 className="text-3xl font-bold text-gray-800">Editar Agendamento</h2>
                     </div>
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div><label className="font-semibold text-gray-600">Nome do Pet</label><input name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
-                        <div><label className="font-semibold text-gray-600">Nome do Dono</label><input name="owner_name" value={formData.owner_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
-                        <div><label className="font-semibold text-gray-600">WhatsApp</label><input name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
-                        <div><label className="font-semibold text-gray-600">Serviço</label><input name="service" value={formData.service} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
-                        <div><label className="font-semibold text-gray-600">Peso</label><input name="weight" value={formData.weight} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
-                        <div><label className="font-semibold text-gray-600">Preço (R$)</label><input type="number" name="price" value={formData.price} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
+                        <div><label className="font-semibold text-gray-600">Nome do Pet</label><input name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
+                        <div><label className="font-semibold text-gray-600">Nome do Dono</label><input name="owner_name" value={formData.owner_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
+                        <div><label className="font-semibold text-gray-600">WhatsApp</label><input name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
+                        <div><label className="font-semibold text-gray-600">Serviço</label><input name="service" value={formData.service} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
+                        <div><label className="font-semibold text-gray-600">Peso</label><input name="weight" value={formData.weight} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
+                        <div><label className="font-semibold text-gray-600">Preço (R$)</label><input type="number" name="price" value={formData.price} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
                         <div><DatePicker value={datePart} onChange={setDatePart} label="Data" className="mt-1" /></div>
                         <div>
                             <label className="font-semibold text-gray-600">Hora</label>
-                            <select value={timePart} onChange={e => setTimePart(Number(e.target.value))} className="w-full mt-1 px-5 py-4 border rounded-lg bg-white">
-                                {( ['Creche Pet','Hotel Pet', visitDaycareLabel, visitHotelLabel].includes(formData.service) ? VISIT_WORKING_HOURS : WORKING_HOURS ).map(h => <option key={h} value={h}>{`${h}:00`}</option>)}
+                            <select
+                                value={timePart}
+                                onChange={e => {
+                                    const val = Number(e.target.value);
+                                    if (availabilityCounts[val] >= MAX_CAPACITY_PER_SLOT) {
+                                        alert('Horário indisponível! Por favor selecione outro.');
+                                        return;
+                                    }
+                                    setTimePart(val);
+                                }}
+                                className="w-full mt-1 px-5 py-4 border rounded-lg bg-white"
+                            >
+                                {(['Creche Pet', 'Hotel Pet', visitDaycareLabel, visitHotelLabel].includes(formData.service) ? VISIT_WORKING_HOURS : WORKING_HOURS).map(h => {
+                                    const isFull = (availabilityCounts[h] || 0) >= MAX_CAPACITY_PER_SLOT;
+                                    return (
+                                        <option
+                                            key={h}
+                                            value={h}
+                                            disabled={isFull}
+                                            className={isFull ? 'text-red-400 bg-gray-100' : ''}
+                                        >
+                                            {`${h}:00`} {isFull ? '(Indisponível)' : ''}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
                         <div className="md:col-span-2">
-                           <label className="font-semibold text-gray-600">Status</label>
-                           <select name="status" value={formData.status} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg bg-white">
-                              <option value="AGENDADO">Agendado</option>
-                              <option value="CONCLUÍDO">Concluído</option>
-                           </select>
+                            <label className="font-semibold text-gray-600">Status</label>
+                            <select name="status" value={formData.status} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg bg-white">
+                                <option value="AGENDADO">Agendado</option>
+                                <option value="CONCLUÍDO">Concluído</option>
+                            </select>
                         </div>
                     </div>
                     <div className="p-6 bg-gray-50 flex justify-end gap-4">
@@ -2650,18 +2979,18 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
     );
 };
 
-const AdminAddAppointmentModal: React.FC<{ 
-    isOpen: boolean; 
-    onClose: () => void; 
-    onAppointmentCreated: (created: AdminAppointment) => void; 
+const AdminAddAppointmentModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onAppointmentCreated: (created: AdminAppointment) => void;
 }> = ({ isOpen, onClose, onAppointmentCreated }) => {
     const [step, setStep] = useState(1);
-    const [formData, setFormData] = useState({ 
-        petName: '', 
-        ownerName: '', 
-        whatsapp: '', 
-        petBreed: '', 
-        ownerAddress: '' 
+    const [formData, setFormData] = useState({
+        petName: '',
+        ownerName: '',
+        whatsapp: '',
+        petBreed: '',
+        ownerAddress: ''
     });
     const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
     const [serviceStepView, setServiceStepView] = useState<'main' | 'bath_groom' | 'pet_movel' | 'pet_movel_condo' | 'hotel_pet' | 'daycare_options' | 'hotel_options'>('main');
@@ -2687,12 +3016,126 @@ const AdminAddAppointmentModal: React.FC<{
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [allowedDays, setAllowedDays] = useState<number[] | undefined>(undefined);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [isFetchingClient, setIsFetchingClient] = useState(false);
+    const [clientFound, setClientFound] = useState(false);
 
-    const isVisitService = useMemo(() => 
+    // Auto-fill client data based on WhatsApp
+    useEffect(() => {
+        const fetchClientData = async () => {
+            const cleanPhone = formData.whatsapp.replace(/\D/g, '');
+            if (cleanPhone.length < 10) return;
+
+            setIsFetchingClient(true);
+            setClientFound(false);
+
+            try {
+                // Try to find in appointments first (most recent)
+                const { data: appointmentData, error } = await supabase
+                    .from('appointments')
+                    .select('*')
+                    .eq('whatsapp', formData.whatsapp)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (appointmentData) {
+                    setFormData(prev => ({
+                        ...prev,
+                        petName: appointmentData.pet_name || prev.petName,
+                        ownerName: appointmentData.owner_name || prev.ownerName,
+                        petBreed: appointmentData.pet_breed || prev.petBreed,
+                        ownerAddress: appointmentData.owner_address || prev.ownerAddress
+                    }));
+
+                    // Map Service Label to Enum
+                    const foundServiceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === appointmentData.service) as ServiceType | undefined;
+
+                    // Map Weight Label to Enum
+                    const foundWeightKey = Object.keys(PET_WEIGHT_OPTIONS).find(key => PET_WEIGHT_OPTIONS[key as PetWeight] === appointmentData.weight) as PetWeight | undefined;
+
+                    if (foundServiceKey) {
+                        setSelectedService(foundServiceKey);
+
+                        // Determine View Step
+                        if (appointmentData.condominium) {
+                            setServiceStepView('pet_movel');
+                            setSelectedCondo(appointmentData.condominium);
+                        } else if ([ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(foundServiceKey)) {
+                            setServiceStepView('bath_groom');
+                        } else {
+                            setServiceStepView('main');
+                        }
+                    }
+
+                    if (foundWeightKey) {
+                        setSelectedWeight(foundWeightKey);
+                    }
+
+                    // Pre-fill addons if available (simple matching)
+                    if (appointmentData.addons && Array.isArray(appointmentData.addons)) {
+                        const newAddons: Record<string, boolean> = {};
+                        ADDON_SERVICES.forEach(addon => {
+                            if (appointmentData.addons.includes(addon.label)) {
+                                newAddons[addon.id] = true;
+                            }
+                        });
+                        setSelectedAddons(newAddons);
+                    }
+
+                    setClientFound(true);
+
+                    // Auto-advance to Step 3 (Date/Time) if we have enough data
+                    // We need a small timeout to let state updates propagate
+                    setTimeout(() => {
+                        // Check if we have minimal requirements for step 2 validity
+                        const hasService = !!foundServiceKey;
+                        const isVisit = foundServiceKey === ServiceType.VISIT_DAYCARE || foundServiceKey === ServiceType.VISIT_HOTEL;
+                        const hasWeight = !!foundWeightKey;
+                        const hasCondoIfMovel = !appointmentData.condominium || (appointmentData.condominium && !!appointmentData.condominium); // logic check
+
+                        if (hasService && (isVisit || hasWeight)) {
+                            setStep(3);
+                        }
+                    }, 100);
+
+                } else {
+                    // If not in appointments, check clients table
+                    const { data: clientData } = await supabase
+                        .from('clients')
+                        .select('*')
+                        .eq('phone', formData.whatsapp)
+                        .single();
+
+                    if (clientData) {
+                        setFormData(prev => ({
+                            ...prev,
+                            ownerName: clientData.name || prev.ownerName
+                        }));
+                        setClientFound(true);
+                        // Only step 1 data found, stay on step 1
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching client data:', error);
+            } finally {
+                setIsFetchingClient(false);
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            if (formData.whatsapp.length > 13) { // (XX) XXXXX-XXXX is 15 chars, so >13 is safe
+                fetchClientData();
+            }
+        }, 800);
+
+        return () => clearTimeout(timeoutId);
+    }, [formData.whatsapp]);
+
+    const isVisitService = useMemo(() =>
         selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
         [selectedService]
     );
-    
+
     const isPetMovel = useMemo(() => serviceStepView === 'pet_movel', [serviceStepView]);
 
     // Reset form when modal opens/closes
@@ -2733,18 +3176,18 @@ const AdminAddAppointmentModal: React.FC<{
                 console.error('Error fetching pet_movel_appointments:', petMovelError);
                 return;
             }
-            
-                const combinedData = [...(regularData || []), ...(petMovelData || [])];
 
-                if (combinedData.length > 0) {
+            const combinedData = [...(regularData || []), ...(petMovelData || [])];
+
+            if (combinedData.length > 0) {
                 const allAppointments: Appointment[] = combinedData
                     .map((dbRecord: any) => {
                         const serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === dbRecord.service) as ServiceType | undefined;
-                        
+
                         if (!serviceKey) {
                             return null;
                         }
-                
+
                         return {
                             id: dbRecord.id,
                             petName: dbRecord.pet_name,
@@ -2755,7 +3198,7 @@ const AdminAddAppointmentModal: React.FC<{
                         };
                     })
                     .filter(Boolean) as Appointment[];
-                
+
                 setAppointments(allAppointments);
             }
         };
@@ -2764,6 +3207,14 @@ const AdminAddAppointmentModal: React.FC<{
             fetchAppointments();
         }
     }, [isOpen]);
+
+    // State to store availability counts for the selected date
+    // const [availabilityCounts, setAvailabilityCounts] = useState<Record<number, number>>({});
+
+    // Fetch availability for the selected date whenever date changes
+    // useEffect(() => {
+    //     // Logic removed as per user request to disable blocking
+    // }, [selectedDate, appointments]);
 
     // Calendar day restrictions based on service type
     useEffect(() => {
@@ -2798,8 +3249,8 @@ const AdminAddAppointmentModal: React.FC<{
     }, [step, serviceStepView, allowedDays]);
 
     // Reset selected time when date or service changes
-    useEffect(() => { 
-        setSelectedTime(null); 
+    useEffect(() => {
+        setSelectedTime(null);
     }, [selectedDate, selectedService]);
 
     // Calculate total price
@@ -2808,14 +3259,14 @@ const AdminAddAppointmentModal: React.FC<{
             setTotalPrice(0);
             return;
         }
-        
+
         if (!selectedService || !selectedWeight) {
             setTotalPrice(0);
             return;
         }
 
         let basePrice = 0;
-        
+
         const isRegularService = [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService);
         const isMobileService = [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
 
@@ -2831,7 +3282,7 @@ const AdminAddAppointmentModal: React.FC<{
                 }
             }
         }
-        
+
         let addonsPrice = 0;
         Object.keys(selectedAddons).forEach(addonId => {
             if (selectedAddons[addonId]) {
@@ -2850,12 +3301,12 @@ const AdminAddAppointmentModal: React.FC<{
     const handleWeightChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newWeight = e.target.value as PetWeight;
         setSelectedWeight(newWeight);
-        const newAddons = {...selectedAddons};
+        const newAddons = { ...selectedAddons };
         ADDON_SERVICES.forEach(addon => {
             if (selectedAddons[addon.id]) {
                 const isExcluded = addon.excludesWeight?.includes(newWeight);
                 const requiresNotMet = addon.requiresWeight && !addon.requiresWeight.includes(newWeight);
-                if(isExcluded || requiresNotMet) newAddons[addon.id] = false;
+                if (isExcluded || requiresNotMet) newAddons[addon.id] = false;
             }
         });
         setSelectedAddons(newAddons);
@@ -2873,93 +3324,93 @@ const AdminAddAppointmentModal: React.FC<{
         e.preventDefault();
         if (!selectedService || !selectedTime) return;
         setIsSubmitting(true);
-        
+
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth();
         const day = selectedDate.getDate();
-    const appointmentTime = toSaoPauloUTC(year, month, day, selectedTime);
+        const appointmentTime = toSaoPauloUTC(year, month, day, selectedTime);
 
-    const isPetMovelSubmit = !!selectedCondo;
-    // All appointments go to the same table
-    const targetTable = 'appointments';
-    
-    // Capacity check com regra: Banho considera 1 slot consumido por Banho & Tosa do horário anterior
-    try {
-        if (selectedService === ServiceType.BATH) {
-            const { data: bathAtHour, error: bathErr } = await supabase
-                .from(targetTable)
-                .select('id')
-                .eq('appointment_time', appointmentTime.toISOString())
-                .eq('service', SERVICES[ServiceType.BATH].label);
-            if (bathErr) throw bathErr;
-            const prevHourTime = toSaoPauloUTC(year, month, day, selectedTime - 1);
-            const { data: bathGroomPrev, error: bgErr } = await supabase
-                .from(targetTable)
-                .select('id')
-                .eq('appointment_time', prevHourTime.toISOString())
-                .eq('service', SERVICES[ServiceType.BATH_AND_GROOMING].label);
-            if (bgErr) throw bgErr;
-            const total = (Array.isArray(bathAtHour) ? bathAtHour.length : 0) + (Array.isArray(bathGroomPrev) ? bathGroomPrev.length : 0);
-            if (total >= MAX_CAPACITY_PER_SLOT) {
-                alert('Este horário está completo para Banho. Selecione outro horário.');
-                setIsSubmitting(false);
-                return;
-            }
-        } else if (selectedService === ServiceType.BATH_AND_GROOMING) {
-            const { data: bgtAtHour, error: bgtErr } = await supabase
-                .from(targetTable)
-                .select('id')
-                .eq('appointment_time', appointmentTime.toISOString())
-                .eq('service', SERVICES[ServiceType.BATH_AND_GROOMING].label);
-            if (bgtErr) throw bgtErr;
-            const count = Array.isArray(bgtAtHour) ? bgtAtHour.length : 0;
-            if (count >= MAX_CAPACITY_PER_SLOT) {
-                alert('Este horário está completo para Banho & Tosa. Selecione outro horário.');
-                setIsSubmitting(false);
-                return;
-            }
-        } else {
-            const { data: existingAtTime, error: countError } = await supabase
-                .from(targetTable)
-                .select('id')
-                .eq('appointment_time', appointmentTime.toISOString())
-                .eq('service', SERVICES[selectedService].label);
-            if (countError) throw countError;
-            const count = Array.isArray(existingAtTime) ? existingAtTime.length : 0;
-            if (count >= MAX_CAPACITY_PER_SLOT) {
-                alert('Este horário está completo. Selecione outro horário.');
-                setIsSubmitting(false);
-                return;
-            }
-        }
-    } catch (err) {
-        console.error('Erro ao validar capacidade do horário:', err);
-        alert('Não foi possível validar a disponibilidade deste horário. Tente outro horário.');
-        setIsSubmitting(false);
-        return;
-    }
-    if (isPetMovelSubmit) {
+        const isPetMovelSubmit = !!selectedCondo;
+        // All appointments go to the same table
+        const targetTable = 'appointments';
+
+        // Capacity check com regra: Banho considera 1 slot consumido por Banho & Tosa do horário anterior
         try {
-            const { data: monthlyBathAtTime, error: mbErr } = await supabase
-                .from('appointments')
-                .select('id')
-                .eq('appointment_time', appointmentTime.toISOString())
-                .eq('service', SERVICES[ServiceType.BATH].label)
-                .not('monthly_client_id', 'is', null);
-            if (mbErr) throw mbErr;
-            const mbCount = Array.isArray(monthlyBathAtTime) ? monthlyBathAtTime.length : 0;
-            if (mbCount > 0) {
-                alert('Horário indisponível para Pet Móvel devido a mensalistas de banho. Selecione outro horário.');
-                setIsSubmitting(false);
-                return;
+            if (selectedService === ServiceType.BATH) {
+                const { data: bathAtHour, error: bathErr } = await supabase
+                    .from(targetTable)
+                    .select('id')
+                    .eq('appointment_time', appointmentTime.toISOString())
+                    .eq('service', SERVICES[ServiceType.BATH].label);
+                if (bathErr) throw bathErr;
+                const prevHourTime = toSaoPauloUTC(year, month, day, selectedTime - 1);
+                const { data: bathGroomPrev, error: bgErr } = await supabase
+                    .from(targetTable)
+                    .select('id')
+                    .eq('appointment_time', prevHourTime.toISOString())
+                    .eq('service', SERVICES[ServiceType.BATH_AND_GROOMING].label);
+                if (bgErr) throw bgErr;
+                const total = (Array.isArray(bathAtHour) ? bathAtHour.length : 0) + (Array.isArray(bathGroomPrev) ? bathGroomPrev.length : 0);
+                if (total >= MAX_CAPACITY_PER_SLOT) {
+                    alert('Este horário está completo para Banho. Selecione outro horário.');
+                    setIsSubmitting(false);
+                    return;
+                }
+            } else if (selectedService === ServiceType.BATH_AND_GROOMING) {
+                const { data: bgtAtHour, error: bgtErr } = await supabase
+                    .from(targetTable)
+                    .select('id')
+                    .eq('appointment_time', appointmentTime.toISOString())
+                    .eq('service', SERVICES[ServiceType.BATH_AND_GROOMING].label);
+                if (bgtErr) throw bgtErr;
+                const count = Array.isArray(bgtAtHour) ? bgtAtHour.length : 0;
+                if (count >= MAX_CAPACITY_PER_SLOT) {
+                    alert('Este horário está completo para Banho & Tosa. Selecione outro horário.');
+                    setIsSubmitting(false);
+                    return;
+                }
+            } else {
+                const { data: existingAtTime, error: countError } = await supabase
+                    .from(targetTable)
+                    .select('id')
+                    .eq('appointment_time', appointmentTime.toISOString())
+                    .eq('service', SERVICES[selectedService].label);
+                if (countError) throw countError;
+                const count = Array.isArray(existingAtTime) ? existingAtTime.length : 0;
+                if (count >= MAX_CAPACITY_PER_SLOT) {
+                    alert('Este horário está completo. Selecione outro horário.');
+                    setIsSubmitting(false);
+                    return;
+                }
             }
-        } catch (error) {
-            console.error('Erro ao verificar mensalistas de banho:', error);
-            alert('Não foi possível verificar disponibilidade por mensalistas. Tente outro horário.');
+        } catch (err) {
+            console.error('Erro ao validar capacidade do horário:', err);
+            alert('Não foi possível validar a disponibilidade deste horário. Tente outro horário.');
             setIsSubmitting(false);
             return;
         }
-    }
+        if (isPetMovelSubmit) {
+            try {
+                const { data: monthlyBathAtTime, error: mbErr } = await supabase
+                    .from('appointments')
+                    .select('id')
+                    .eq('appointment_time', appointmentTime.toISOString())
+                    .eq('service', SERVICES[ServiceType.BATH].label)
+                    .not('monthly_client_id', 'is', null);
+                if (mbErr) throw mbErr;
+                const mbCount = Array.isArray(monthlyBathAtTime) ? monthlyBathAtTime.length : 0;
+                if (mbCount > 0) {
+                    alert('Horário indisponível para Pet Móvel devido a mensalistas de banho. Selecione outro horário.');
+                    setIsSubmitting(false);
+                    return;
+                }
+            } catch (error) {
+                console.error('Erro ao verificar mensalistas de banho:', error);
+                alert('Não foi possível verificar disponibilidade por mensalistas. Tente outro horário.');
+                setIsSubmitting(false);
+                return;
+            }
+        }
 
         const basePayload = {
             appointment_time: appointmentTime.toISOString(),
@@ -2973,10 +3424,10 @@ const AdminAddAppointmentModal: React.FC<{
             price: totalPrice,
             status: 'AGENDADO'
         };
-        
+
         // Always include owner_address and condominium fields (they can be null for regular services)
         const supabasePayload = {
-            ...basePayload, 
+            ...basePayload,
             owner_address: formData.ownerAddress || null,
             condominium: selectedCondo || null
         };
@@ -2998,9 +3449,9 @@ const AdminAddAppointmentModal: React.FC<{
                 if (!existingClient) {
                     const { error: clientInsertError } = await supabase
                         .from('clients')
-                        .insert({ 
-                            name: supabasePayload.owner_name, 
-                            phone: supabasePayload.whatsapp 
+                        .insert({
+                            name: supabasePayload.owner_name,
+                            phone: supabasePayload.whatsapp
                         });
                     if (clientInsertError) {
                         console.error('Failed to auto-register client:', clientInsertError.message);
@@ -3009,7 +3460,7 @@ const AdminAddAppointmentModal: React.FC<{
             } catch (error) {
                 console.error('An error occurred during client auto-registration:', error);
             }
-            
+
             // Send webhook notification
             try {
                 // Choose webhook based on whether this is a Pet Móvel submission
@@ -3082,15 +3533,13 @@ const AdminAddAppointmentModal: React.FC<{
                         <div className="flex items-center space-x-4">
                             {[1, 2, 3].map((stepNumber) => (
                                 <div key={stepNumber} className="flex items-center">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                                        step >= stepNumber ? 'bg-pink-600 text-white' : 'bg-gray-200 text-gray-600'
-                                    }`}>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= stepNumber ? 'bg-pink-600 text-white' : 'bg-gray-200 text-gray-600'
+                                        }`}>
                                         {stepNumber}
                                     </div>
                                     {stepNumber < 3 && (
-                                        <div className={`w-12 h-1 mx-2 ${
-                                            step > stepNumber ? 'bg-pink-600' : 'bg-gray-200'
-                                        }`} />
+                                        <div className={`w-12 h-1 mx-2 ${step > stepNumber ? 'bg-pink-600' : 'bg-gray-200'
+                                            }`} />
                                     )}
                                 </div>
                             ))}
@@ -3102,7 +3551,7 @@ const AdminAddAppointmentModal: React.FC<{
                         {step === 1 && (
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Informações do Pet e Tutor</h3>
-                                
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Pet</label>
                                     <input
@@ -3110,7 +3559,7 @@ const AdminAddAppointmentModal: React.FC<{
                                         name="petName"
                                         value={formData.petName}
                                         onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
                                         required
                                     />
                                 </div>
@@ -3122,7 +3571,7 @@ const AdminAddAppointmentModal: React.FC<{
                                         name="petBreed"
                                         value={formData.petBreed}
                                         onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
                                         required
                                     />
                                 </div>
@@ -3134,22 +3583,42 @@ const AdminAddAppointmentModal: React.FC<{
                                         name="ownerName"
                                         value={formData.ownerName}
                                         onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
                                         required
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-                                    <input
-                                        type="tel"
-                                        name="whatsapp"
-                                        value={formData.whatsapp}
-                                        onChange={handleInputChange}
-                                        placeholder="(11) 99999-9999"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        required
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type="tel"
+                                            name="whatsapp"
+                                            value={formData.whatsapp}
+                                            onChange={handleInputChange}
+                                            placeholder="(11) 99999-9999"
+                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-500 ring-1 ring-green-500' : 'border-gray-300'
+                                                }`}
+                                            required
+                                        />
+                                        {isFetchingClient && (
+                                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-pink-600"></div>
+                                            </div>
+                                        )}
+                                        {clientFound && !isFetchingClient && (
+                                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
+                                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {clientFound && (
+                                        <p className="mt-1 text-xs text-green-600">
+                                            Dados do cliente preenchidos automaticamente.
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -3159,12 +3628,25 @@ const AdminAddAppointmentModal: React.FC<{
                                         name="ownerAddress"
                                         value={formData.ownerAddress}
                                         onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
                                         required
                                     />
                                 </div>
 
                                 <div className="flex justify-end pt-4">
+                                    {clientFound && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setClientFound(false);
+                                                setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
+                                                setStep(1);
+                                            }}
+                                            className="mr-auto px-4 py-2 text-sm text-red-600 hover:text-red-800 underline"
+                                        >
+                                            Limpar e novo cadastro
+                                        </button>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => setStep(2)}
@@ -3181,7 +3663,7 @@ const AdminAddAppointmentModal: React.FC<{
                         {step === 2 && (
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Seleção de Serviço</h3>
-                                
+
                                 {serviceStepView === 'main' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <button
@@ -3227,7 +3709,7 @@ const AdminAddAppointmentModal: React.FC<{
 
                                         <div className="space-y-3">
                                             {[ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING, ServiceType.VISIT_DAYCARE, ServiceType.VISIT_HOTEL].map((service) => (
-                                                <label key={service} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                                <label key={service} className={`flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer ${clientFound ? 'border-green-200 bg-green-50' : ''}`}>
                                                     <input
                                                         type="radio"
                                                         name="service"
@@ -3247,7 +3729,7 @@ const AdminAddAppointmentModal: React.FC<{
                                                 <select
                                                     value={selectedWeight || ''}
                                                     onChange={handleWeightChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
                                                     required
                                                 >
                                                     <option value="">Selecione o porte</option>
@@ -3267,7 +3749,7 @@ const AdminAddAppointmentModal: React.FC<{
                                                         const requiresNotMet = addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight);
                                                         return !isExcluded && !requiresNotMet;
                                                     }).map((addon) => (
-                                                        <label key={addon.id} className="flex items-center space-x-3 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                                                        <label key={addon.id} className={`flex items-center space-x-3 p-2 border rounded hover:bg-gray-50 cursor-pointer ${clientFound ? 'border-green-200 bg-green-50' : ''}`}>
                                                             <input
                                                                 type="checkbox"
                                                                 checked={selectedAddons[addon.id] || false}
@@ -3411,7 +3893,7 @@ const AdminAddAppointmentModal: React.FC<{
                         {step === 3 && (
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Data e Horário</h3>
-                                
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Data do Agendamento</label>
                                     <Calendar
@@ -3425,18 +3907,19 @@ const AdminAddAppointmentModal: React.FC<{
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Horário</label>
-                <TimeSlotPicker
-                  selectedDate={selectedDate}
-                  selectedService={selectedService}
-                  appointments={appointments}
-                  onTimeSelect={setSelectedTime}
-                  selectedTime={selectedTime}
-                  workingHours={isVisitService ? VISIT_WORKING_HOURS : WORKING_HOURS}
-                  isPetMovel={isPetMovel}
-                  allowedDays={allowedDays}
-                  selectedCondo={selectedCondo}
-                  disablePastTimes={false}
-                />
+                                    <TimeSlotPicker
+                                        isAdmin={true}
+                                        selectedDate={selectedDate}
+                                        selectedService={selectedService}
+                                        appointments={appointments}
+                                        onTimeSelect={setSelectedTime}
+                                        selectedTime={selectedTime}
+                                        workingHours={isVisitService ? VISIT_WORKING_HOURS : WORKING_HOURS}
+                                        isPetMovel={isPetMovel}
+                                        allowedDays={allowedDays}
+                                        selectedCondo={selectedCondo}
+                                        disablePastTimes={false}
+                                    />
                                 </div>
 
                                 <div className="flex justify-between pt-4">
@@ -3466,24 +3949,25 @@ const AdminAddAppointmentModal: React.FC<{
 };
 
 
-{/* FIX: Changed the `status` prop type from `string` to the specific union type to match the `AdminAppointment` interface. */}
-const AppointmentCard: React.FC<{ 
-    appointment: AdminAppointment; 
-    onUpdateStatus: (id: string, status: 'AGENDADO' | 'CONCLUÍDO') => void; 
-    isUpdating: boolean; 
-    onEdit: (appointment: AdminAppointment) => void; 
-    onDelete: (appointment: AdminAppointment) => void; 
-    isDeleting: boolean; 
+{/* FIX: Changed the `status` prop type from `string` to the specific union type to match the `AdminAppointment` interface. */ }
+const AppointmentCard: React.FC<{
+    appointment: AdminAppointment;
+    onUpdateStatus: (id: string, status: 'AGENDADO' | 'CONCLUÍDO') => void;
+    isUpdating: boolean;
+    onEdit: (appointment: AdminAppointment) => void;
+    onDelete: (appointment: AdminAppointment) => void;
+    isDeleting: boolean;
     onOpenActionMenu: (appointment: AdminAppointment, event: React.MouseEvent) => void;
     onDeleteObservation: (appointment: AdminAppointment) => void;
-}> = ({ appointment, onUpdateStatus, isUpdating, onEdit, onDelete, isDeleting, onOpenActionMenu, onDeleteObservation }) => {
+    onRequestCompletion: (id: string) => void;
+}> = ({ appointment, onUpdateStatus, isUpdating, onEdit, onDelete, isDeleting, onOpenActionMenu, onDeleteObservation, onRequestCompletion }) => {
     const { id, appointment_time, pet_name, owner_name, service, status, price, addons, whatsapp, monthly_client_id, observation } = appointment;
     const isCompleted = status === 'CONCLUÍDO';
     const rawPhone = String(whatsapp || '');
     const phoneDigits = rawPhone.replace(/\D/g, '');
     const phoneWithCountry = phoneDigits ? (phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`) : '';
     const whatsappHref = phoneWithCountry ? `https://api.whatsapp.com/send?phone=${phoneWithCountry}` : '#';
-    
+
     // Calcular total de serviços extras do agendamento (soma ao preço exibido)
     const es: any = (appointment as any).extra_services || null;
     const extrasTotal: number = (() => {
@@ -3509,7 +3993,7 @@ const AppointmentCard: React.FC<{
     );
     const monthlyDiscount = monthly_client_id ? 10 : 0;
     const displayPrice: number = Math.max(0, Number(price || 0) - monthlyDiscount) + extrasTotal;
-    
+
     const statusStyles: Record<string, string> = {
         'AGENDADO': 'bg-blue-100 text-blue-800',
         'CONCLUÍDO': 'bg-green-100 text-green-800',
@@ -3534,14 +4018,19 @@ const AppointmentCard: React.FC<{
                         <div className={`px-3 py-1 text-xs font-bold rounded-full ${statusStyles[status] || 'bg-gray-100 text-gray-800'}`}>
                             {status === 'pending' ? 'AGENDADO' : status}
                         </div>
-                         {monthly_client_id && (
+                        {monthly_client_id && (
                             <div className="px-3 py-1 text-xs font-bold rounded-full bg-yellow-100 text-yellow-800">
                                 Mensalista
                             </div>
                         )}
+                        {appointment.responsible && (
+                            <div className="px-3 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                                Responsável: {appointment.responsible}
+                            </div>
+                        )}
                     </div>
                 </div>
-                
+
                 <div className="mt-4 border-t border-gray-200 pt-4">
                     <div className="flex items-center justify-between text-base text-gray-700">
                         <div className="flex items-center">
@@ -3554,12 +4043,12 @@ const AppointmentCard: React.FC<{
                             </span>
                         )}
                     </div>
-                    {addons && addons.length > 0 && 
+                    {addons && addons.length > 0 &&
                         <div className="text-xs text-gray-500 mt-1 ml-6">
-                           + {addons.join(', ')}
+                            + {addons.join(', ')}
                         </div>
                     }
-                     <a
+                    <a
                         href={whatsappHref}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -3579,7 +4068,7 @@ const AppointmentCard: React.FC<{
                         )}
                     </p>
                     <div className="flex items-center gap-2">
-                        <button 
+                        <button
                             onClick={(e) => onOpenActionMenu(appointment, e)}
                             disabled={isUpdating || isDeleting}
                             className="p-2 rounded-full text-blue-500 hover:bg-blue-100 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -3589,7 +4078,7 @@ const AppointmentCard: React.FC<{
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
                         </button>
-                         <button 
+                        <button
                             onClick={() => onEdit(appointment)}
                             disabled={isUpdating || isDeleting}
                             className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -3598,7 +4087,7 @@ const AppointmentCard: React.FC<{
                             <EditIcon />
                         </button>
 
-                        <button 
+                        <button
                             onClick={() => onDelete(appointment)}
                             disabled={isUpdating || isDeleting}
                             className="p-2 rounded-full text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -3606,15 +4095,14 @@ const AppointmentCard: React.FC<{
                         >
                             <DeleteIcon />
                         </button>
-                        <button 
-                            onClick={() => onUpdateStatus(id, 'CONCLUÍDO')}
+                        <button
+                            onClick={() => onRequestCompletion(id)}
                             disabled={isCompleted || isUpdating || isDeleting}
-                            className={`p-2 rounded-full text-white transition-colors duration-200 disabled:cursor-not-allowed ${
-                                isCompleted ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
-                            }`}
+                            className={`p-2 rounded-full text-white transition-colors duration-200 disabled:cursor-not-allowed ${isCompleted ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
+                                }`}
                             aria-label="Concluir serviço"
                         >
-                            {isUpdating && !isDeleting ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <CheckCircleIcon/>}
+                            {isUpdating && !isDeleting ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <CheckCircleIcon />}
                         </button>
                     </div>
                 </div>
@@ -3624,7 +4112,7 @@ const AppointmentCard: React.FC<{
                             <p className="text-sm text-gray-600 flex-1">
                                 <strong className="text-gray-800">Observação:</strong> {observation}
                             </p>
-                            <button 
+                            <button
                                 onClick={() => onDeleteObservation(appointment)}
                                 disabled={isUpdating || isDeleting}
                                 className="p-2 rounded-full text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -3648,100 +4136,100 @@ const Calendar: React.FC<{
     disableWeekends?: boolean;
     allowedDays?: number[];
     disabledDates?: string[];
-  }> = ({ selectedDate, onDateChange, disablePast = false, disableWeekends = true, allowedDays, disabledDates }) => {
+}> = ({ selectedDate, onDateChange, disablePast = false, disableWeekends = true, allowedDays, disabledDates }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
-  
+
     useEffect(() => {
-      // Sync currentMonth with selectedDate if selectedDate's month changes from outside
-      if (selectedDate.getMonth() !== currentMonth.getMonth() || selectedDate.getFullYear() !== currentMonth.getFullYear()) {
-        setCurrentMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
-      }
-    }, [selectedDate]);
-  
-    const changeMonth = (offset: number) => {
-      const next = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1);
-      if (disablePast) {
-        const today = new Date();
-        const firstAllowedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        if (next < firstAllowedMonth) {
-          setCurrentMonth(firstAllowedMonth);
-          return;
+        // Sync currentMonth with selectedDate if selectedDate's month changes from outside
+        if (selectedDate.getMonth() !== currentMonth.getMonth() || selectedDate.getFullYear() !== currentMonth.getFullYear()) {
+            setCurrentMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
         }
-      }
-      setCurrentMonth(next);
-    };
-  
-    const renderDays = () => {
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const firstDay = new Date(year, month, 1).getDay(); // 0=Sun, 1=Mon, ...
-  
-      const days = [];
-      for (let i = 0; i < firstDay; i++) {
-        days.push(<div key={`empty-${i}`} className="p-2 w-10 h-10"></div>);
-      }
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        const { day: dayOfWeek } = getSaoPauloTimeParts(date);
-        const isSelected = isSameSaoPauloDay(date, selectedDate);
-        const todayLocal = new Date();
-        todayLocal.setHours(0, 0, 0, 0);
-        const candidateLocal = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        const isPastLocal = candidateLocal < todayLocal;
-        const sp = getSaoPauloTimeParts(date);
-        const y = String(sp.year);
-        const m = String(sp.month + 1).padStart(2, '0');
-        const d = String(sp.date).padStart(2, '0');
-        const ymd = `${y}-${m}-${d}`;
-        const isDisabled = (disablePast && (isPastSaoPauloDate(date) || isPastLocal)) ||
-                          (disableWeekends && isSaoPauloWeekend(date)) ||
-                          (allowedDays && !allowedDays.includes(dayOfWeek)) ||
-                          (!!disabledDates && disabledDates.includes(ymd));
-  
-        days.push(
-          <button
-            key={day}
-            type="button"
-            onClick={() => {
-              if (isDisabled) {
-                if (!!disabledDates && disabledDates.includes(ymd)) {
-                  alert('Atendimento Indisponível');
-                }
+    }, [selectedDate]);
+
+    const changeMonth = (offset: number) => {
+        const next = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1);
+        if (disablePast) {
+            const today = new Date();
+            const firstAllowedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            if (next < firstAllowedMonth) {
+                setCurrentMonth(firstAllowedMonth);
                 return;
-              }
-              onDateChange(date);
-            }}
-            className={`p-2 w-10 h-10 rounded-full text-center transition-colors flex items-center justify-center
+            }
+        }
+        setCurrentMonth(next);
+    };
+
+    const renderDays = () => {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDay = new Date(year, month, 1).getDay(); // 0=Sun, 1=Mon, ...
+
+        const days = [];
+        for (let i = 0; i < firstDay; i++) {
+            days.push(<div key={`empty-${i}`} className="p-2 w-10 h-10"></div>);
+        }
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const { day: dayOfWeek } = getSaoPauloTimeParts(date);
+            const isSelected = isSameSaoPauloDay(date, selectedDate);
+            const todayLocal = new Date();
+            todayLocal.setHours(0, 0, 0, 0);
+            const candidateLocal = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const isPastLocal = candidateLocal < todayLocal;
+            const sp = getSaoPauloTimeParts(date);
+            const y = String(sp.year);
+            const m = String(sp.month + 1).padStart(2, '0');
+            const d = String(sp.date).padStart(2, '0');
+            const ymd = `${y}-${m}-${d}`;
+            const isDisabled = (disablePast && (isPastSaoPauloDate(date) || isPastLocal)) ||
+                (disableWeekends && isSaoPauloWeekend(date)) ||
+                (allowedDays && !allowedDays.includes(dayOfWeek)) ||
+                (!!disabledDates && disabledDates.includes(ymd));
+
+            days.push(
+                <button
+                    key={day}
+                    type="button"
+                    onClick={() => {
+                        if (isDisabled) {
+                            if (!!disabledDates && disabledDates.includes(ymd)) {
+                                alert('Atendimento Indisponível');
+                            }
+                            return;
+                        }
+                        onDateChange(date);
+                    }}
+                    className={`p-2 w-10 h-10 rounded-full text-center transition-colors flex items-center justify-center
               ${isSelected ? 'bg-pink-300 text-black font-bold border border-pink-600' : 'hover:bg-pink-100'}
               ${isDisabled ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'}
             `}
-          >
-            {day}
-          </button>
-        );
-      }
-      return days;
+                >
+                    {day}
+                </button>
+            );
+        }
+        return days;
     };
-  
+
     return (
-      <div className="w-full max-w-full sm:max-w-sm mx-auto">
-        <div className="flex justify-between items-center mb-4 px-2">
-          <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-gray-100"><ChevronLeftIcon /></button>
-          <h3 className="font-semibold text-lg capitalize">
-            {currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
-          </h3>
-          <button type="button" onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-gray-100"><ChevronRightIcon /></button>
+        <div className="w-full max-w-full sm:max-w-sm mx-auto">
+            <div className="flex justify-between items-center mb-4 px-2">
+                <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-gray-100"><ChevronLeftIcon /></button>
+                <h3 className="font-semibold text-lg capitalize">
+                    {currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                </h3>
+                <button type="button" onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-gray-100"><ChevronRightIcon /></button>
+            </div>
+            <div className="grid grid-cols-7 gap-3 text-center text-base text-gray-500 mb-2 font-semibold">
+                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => <div key={i}>{d}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-3 place-items-center">
+                {renderDays()}
+            </div>
         </div>
-        <div className="grid grid-cols-7 gap-3 text-center text-base text-gray-500 mb-2 font-semibold">
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => <div key={i}>{d}</div>)}
-        </div>
-        <div className="grid grid-cols-7 gap-3 place-items-center">
-          {renderDays()}
-        </div>
-      </div>
     );
-  };
+};
 
 // DatePicker Component - Minimalist date picker with Calendar integration
 const DatePicker: React.FC<{
@@ -3755,114 +4243,114 @@ const DatePicker: React.FC<{
     disableWeekends?: boolean;
     allowedDays?: number[];
     disabledDates?: string[];
-}> = ({ 
-    value, 
-    onChange, 
-    label, 
-    placeholder = "Selecione uma data", 
-    required = false, 
-    className = "", 
+}> = ({
+    value,
+    onChange,
+    label,
+    placeholder = "Selecione uma data",
+    required = false,
+    className = "",
     disablePast = false,
     disableWeekends = true,
     allowedDays,
     disabledDates
 }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date>(() => {
-        if (value) {
-            const [year, month, day] = value.split('-').map(Number);
-            return new Date(year, month - 1, day);
-        }
-        return new Date();
-    });
+        const [isOpen, setIsOpen] = useState(false);
+        const [selectedDate, setSelectedDate] = useState<Date>(() => {
+            if (value) {
+                const [year, month, day] = value.split('-').map(Number);
+                return new Date(year, month - 1, day);
+            }
+            return new Date();
+        });
 
-    // Sync selectedDate when value prop changes
-    useEffect(() => {
-        if (value) {
-            const [year, month, day] = value.split('-').map(Number);
-            setSelectedDate(new Date(year, month - 1, day));
-        }
-    }, [value]);
+        // Sync selectedDate when value prop changes
+        useEffect(() => {
+            if (value) {
+                const [year, month, day] = value.split('-').map(Number);
+                setSelectedDate(new Date(year, month - 1, day));
+            }
+        }, [value]);
 
-    const handleDateChange = (date: Date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const dateString = `${year}-${month}-${day}`;
-        
-        onChange(dateString);
-        setSelectedDate(date);
-        setIsOpen(false);
-    };
+        const handleDateChange = (date: Date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateString = `${year}-${month}-${day}`;
 
-    const displayValue = value ? formatDateToBR(value) : '';
+            onChange(dateString);
+            setSelectedDate(date);
+            setIsOpen(false);
+        };
 
-    return (
-        <div className="relative">
-            {label && (
-                <label className="block text-base font-semibold text-gray-700 mb-1">
-                    {label}
-                    {required && <span className="text-red-500 ml-1">*</span>}
-                </label>
-            )}
+        const displayValue = value ? formatDateToBR(value) : '';
+
+        return (
             <div className="relative">
-                <input
-                    type="text"
-                    value={displayValue}
-                    placeholder={placeholder}
-                    readOnly
-                    required={required}
-                    onClick={() => setIsOpen(!isOpen)}
-                    className={`w-full px-5 py-4 border border-gray-300 rounded-lg bg-gray-50 cursor-pointer focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${className}`}
-                />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </div>
-            </div>
-            
-            {isOpen && (
-                <div className="absolute z-[10001] top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[320px] max-w-[90vw] left-0 right-0 mx-auto">
-                    <Calendar
-                        selectedDate={selectedDate}
-                        onDateChange={handleDateChange}
-                        disablePast={disablePast}
-                        disableWeekends={disableWeekends}
-                        allowedDays={allowedDays}
-                        disabledDates={disabledDates}
+                {label && (
+                    <label className="block text-base font-semibold text-gray-700 mb-1">
+                        {label}
+                        {required && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+                )}
+                <div className="relative">
+                    <input
+                        type="text"
+                        value={displayValue}
+                        placeholder={placeholder}
+                        readOnly
+                        required={required}
+                        onClick={() => setIsOpen(!isOpen)}
+                        className={`w-full px-5 py-4 border border-gray-300 rounded-lg bg-gray-50 cursor-pointer focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${className}`}
                     />
-                    <div className="flex justify-between mt-4 pt-3 border-t">
-                        <button
-                            type="button"
-                            onClick={() => setIsOpen(false)}
-                            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                const today = new Date();
-                                handleDateChange(today);
-                            }}
-                            className="px-4 py-2 text-sm bg-pink-600 text-white rounded hover:bg-pink-700"
-                        >
-                            Hoje
-                        </button>
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                     </div>
                 </div>
-            )}
-            
-            {isOpen && (
-                <div 
-                    className="fixed inset-0 z-[9998] bg-black bg-opacity-10" 
-                    onClick={() => setIsOpen(false)}
-                />
-            )}
-        </div>
-    );
-};
+
+                {isOpen && (
+                    <div className="absolute z-[10001] top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[320px] max-w-[90vw] left-0 right-0 mx-auto">
+                        <Calendar
+                            selectedDate={selectedDate}
+                            onDateChange={handleDateChange}
+                            disablePast={disablePast}
+                            disableWeekends={disableWeekends}
+                            allowedDays={allowedDays}
+                            disabledDates={disabledDates}
+                        />
+                        <div className="flex justify-between mt-4 pt-3 border-t">
+                            <button
+                                type="button"
+                                onClick={() => setIsOpen(false)}
+                                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const today = new Date();
+                                    handleDateChange(today);
+                                }}
+                                className="px-4 py-2 text-sm bg-pink-600 text-white rounded hover:bg-pink-700"
+                            >
+                                Hoje
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {isOpen && (
+                    <div
+                        className="fixed inset-0 z-[9998] bg-black bg-opacity-10"
+                        onClick={() => setIsOpen(false)}
+                    />
+                )}
+            </div>
+        );
+    };
 
 const MonthPicker: React.FC<{
     value: string;
@@ -3910,7 +4398,7 @@ const MonthPicker: React.FC<{
         }
     }, [isOpen]);
 
-    const monthNames = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
     const handleSelectMonth = (monthIndex: number) => {
         const y = displayYear;
@@ -3996,15 +4484,87 @@ const MonthPicker: React.FC<{
     );
 };
 
+const ResponsibleModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (responsibleName: string) => void;
+    isSubmitting?: boolean;
+}> = ({ isOpen, onClose, onConfirm, isSubmitting = false }) => {
+    const [name, setName] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setName('');
+            setTimeout(() => inputRef.current?.focus(), 100);
+        }
+    }, [isOpen]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (name.trim()) {
+            onConfirm(name.trim());
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-[10002] p-4 animate-fadeIn">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md animate-scaleIn">
+                <form onSubmit={handleSubmit}>
+                    <div className="p-6 border-b">
+                        <h2 className="text-2xl font-bold text-gray-800">Confirmar Conclusão</h2>
+                    </div>
+                    <div className="p-6">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Responsável
+                        </label>
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="Digite o nome do responsável"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                            required
+                        />
+                        <p className="mt-2 text-xs text-gray-500">
+                            Informe o nome de quem realizou ou supervisionou o serviço.
+                        </p>
+                    </div>
+                    <div className="p-6 bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition-colors"
+                            disabled={isSubmitting}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={!name.trim() || isSubmitting}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {isSubmitting ? 'Confirmando...' : 'Confirmar'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 // --- ADMIN DASHBOARD VIEWS ---
 
 interface AppointmentsViewProps {
-  refreshKey?: number;
-  onAddObservation: (appointment: AdminAppointment) => void;
-  appointments: AdminAppointment[];
-  setAppointments: React.Dispatch<React.SetStateAction<AdminAppointment[]>>;
-  onOpenActionMenu: (appointment: AdminAppointment, event: React.MouseEvent) => void;
-  onDeleteObservation: (appointment: AdminAppointment) => void;
+    refreshKey?: number;
+    onAddObservation: (appointment: AdminAppointment) => void;
+    appointments: AdminAppointment[];
+    setAppointments: React.Dispatch<React.SetStateAction<AdminAppointment[]>>;
+    onOpenActionMenu: (appointment: AdminAppointment, event: React.MouseEvent) => void;
+    onDeleteObservation: (appointment: AdminAppointment) => void;
 }
 
 const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation }) => {
@@ -4030,6 +4590,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     const [selectedCloseDays, setSelectedCloseDays] = useState<Set<string>>(new Set());
     const [applyBathGroom, setApplyBathGroom] = useState(true);
     const [applyPetMovel, setApplyPetMovel] = useState(true);
+    const [confirmingCompletionId, setConfirmingCompletionId] = useState<string | null>(null);
 
     useEffect(() => {
         // A busca de agendamentos agora é feita no componente App
@@ -4039,35 +4600,40 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     }, [refreshKey, appointments]);
 
     // FIX: Changed `newStatus` type from `string` to the specific union type to match `AdminAppointment['status']`.
-    const handleUpdateStatus = async (id: string, newStatus: 'AGENDADO' | 'CONCLUÍDO') => {
+    const handleUpdateStatus = async (id: string, newStatus: 'AGENDADO' | 'CONCLUÍDO', responsible?: string) => {
         const appointmentToUpdate = appointments.find(app => app.id === id);
         if (!appointmentToUpdate) return;
         setUpdatingStatusId(id);
-        
+
+        const updatePayload: any = { status: newStatus };
+        if (responsible) {
+            updatePayload.responsible = responsible;
+        }
+
         // Try to update in both tables since we don't know which table the appointment is in
         const [appointmentsResult, petMovelResult] = await Promise.all([
-            supabase.from('appointments').update({ status: newStatus }).eq('id', id),
-            supabase.from('pet_movel_appointments').update({ status: newStatus }).eq('id', id)
+            supabase.from('appointments').update(updatePayload).eq('id', id),
+            supabase.from('pet_movel_appointments').update(updatePayload).eq('id', id)
         ]);
 
         // Check if at least one update was successful
         const hasError = appointmentsResult.error && petMovelResult.error;
-        
+
         if (hasError) {
             console.error('Error updating in appointments:', appointmentsResult.error);
             console.error('Error updating in pet_movel_appointments:', petMovelResult.error);
             alert('Falha ao atualizar o status.');
         } else {
-            const updatedAppointment = { ...appointmentToUpdate, status: newStatus };
+            const updatedAppointment = { ...appointmentToUpdate, status: newStatus, ...(responsible ? { responsible } : {}) };
             setAppointments(prev => prev.map(app => app.id === id ? updatedAppointment : app));
             if (newStatus === 'CONCLUÍDO') {
                 // Dispara webhook específico quando for uma visita (Creche ou Hotel)
-            const visitLabels = [
-            SERVICES[ServiceType.VISIT_DAYCARE].label,
-            SERVICES[ServiceType.VISIT_HOTEL].label,
-            ];
-            // Só considera visita quando não for mensalista
-            const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
+                const visitLabels = [
+                    SERVICES[ServiceType.VISIT_DAYCARE].label,
+                    SERVICES[ServiceType.VISIT_HOTEL].label,
+                ];
+                // Só considera visita quando não for mensalista
+                const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
                 const url = isVisit
                     ? 'https://n8n.intelektus.tech/webhook/visitaRealizada'
                     : 'https://n8n.intelektus.tech/webhook/servicoConcluido';
@@ -4079,6 +4645,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                             ...updatedAppointment,
                             message: isVisit ? 'Visita Realizada' : 'Serviço Concluído',
                             isVisit,
+                            responsible: responsible || null // Inclui o responsável no payload do webhook
                         }),
                     });
                 } catch (webhookError) {
@@ -4088,7 +4655,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         }
         setUpdatingStatusId(null);
     };
-    
+
     const handleOpenEditModal = (appointment: AdminAppointment) => { setEditingAppointment(appointment); setIsEditModalOpen(true); };
     const handleCloseEditModal = () => { setEditingAppointment(null); setIsEditModalOpen(false); };
     const handleAppointmentUpdated = (updatedAppointment: AdminAppointment) => {
@@ -4097,7 +4664,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             const sp = getSaoPauloTimeParts(new Date(updatedAppointment.appointment_time));
             const nextSelected = new Date(Date.UTC(sp.year, sp.month, sp.date));
             setSelectedAdminDate(nextSelected);
-        } catch {}
+        } catch { }
         handleCloseEditModal();
     };
     const handleOpenAddModal = () => {
@@ -4112,16 +4679,16 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     const handleConfirmDelete = async () => {
         if (!appointmentToDelete) return;
         setDeletingAppointmentId(appointmentToDelete.id);
-        
+
         // Try to delete from both tables since we don't know which table the appointment is in
         const [appointmentsResult, petMovelResult] = await Promise.all([
             supabase.from('appointments').delete().eq('id', appointmentToDelete.id),
             supabase.from('pet_movel_appointments').delete().eq('id', appointmentToDelete.id)
         ]);
-        
+
         // Check if at least one deletion was successful
         const hasError = appointmentsResult.error && petMovelResult.error;
-        
+
         if (hasError) {
             console.error('Error deleting from appointments:', appointmentsResult.error);
             console.error('Error deleting from pet_movel_appointments:', petMovelResult.error);
@@ -4129,9 +4696,20 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         } else {
             setAppointments(prev => prev.filter(app => app.id !== appointmentToDelete.id));
         }
-        
+
         setDeletingAppointmentId(null);
         setAppointmentToDelete(null);
+    };
+
+    const handleRequestCompletion = (id: string) => {
+        setConfirmingCompletionId(id);
+    };
+
+    const handleConfirmCompletion = (responsible: string) => {
+        if (confirmingCompletionId) {
+            handleUpdateStatus(confirmingCompletionId, 'CONCLUÍDO', responsible);
+            setConfirmingCompletionId(null);
+        }
     };
 
     const handleToggleAdminView = () => {
@@ -4151,14 +4729,14 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             app.service.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [appointments, searchTerm]);
-    
+
     const dailyAppointments = useMemo(() => filteredAppointments.filter(app => isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate)).sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime()), [filteredAppointments, selectedAdminDate]);
     const dailyScheduled = useMemo(() => dailyAppointments.filter(a => String(a.status) === 'AGENDADO' || String(a.status) === 'pending'), [dailyAppointments]);
     const dailyCompleted = useMemo(() => dailyAppointments.filter(a => a.status === 'CONCLUÍDO'), [dailyAppointments]);
-    
+
     const { upcomingAppointments, pastAppointments } = useMemo(() => {
         if (adminView !== 'all') return { upcomingAppointments: [], pastAppointments: [] };
-        const today = new Date(); 
+        const today = new Date();
         const upcoming: AdminAppointment[] = []; const past: AdminAppointment[] = [];
         filteredAppointments.forEach(app => {
             if (new Date(app.appointment_time) >= today) upcoming.push(app); else past.push(app);
@@ -4167,10 +4745,16 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         return { upcomingAppointments: upcoming, pastAppointments: past };
     }, [filteredAppointments, adminView]);
 
-    const renderAppointments = (apps: AdminAppointment[]) => apps.map(app => <AppointmentCard key={app.id} appointment={app} onUpdateStatus={handleUpdateStatus} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} />);
+    const renderAppointments = (apps: AdminAppointment[]) => apps.map(app => <AppointmentCard key={app.id} appointment={app} onUpdateStatus={handleUpdateStatus} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />);
 
     return (
         <>
+            <ResponsibleModal
+                isOpen={!!confirmingCompletionId}
+                onClose={() => setConfirmingCompletionId(null)}
+                onConfirm={handleConfirmCompletion}
+                isSubmitting={!!updatingStatusId}
+            />
             {isEditModalOpen && editingAppointment && <EditAppointmentModal appointment={editingAppointment} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdated} />}
             {isAddModalOpen && <AdminAddAppointmentModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onAppointmentCreated={handleAppointmentCreated} />}
             {appointmentToDelete && <ConfirmationModal isOpen={!!appointmentToDelete} onClose={() => setAppointmentToDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o agendamento para ${appointmentToDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={deletingAppointmentId === appointmentToDelete.id} />}
@@ -4221,30 +4805,30 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                         <div className="p-6 bg-gray-50 flex justify-end items-center gap-2">
                             <button type="button" onClick={() => setIsCloseDayModalOpen(false)} className="inline-flex items-center justify-center h-10 w-1/2 sm:min-w-[140px] sm:w-auto rounded-lg text-sm font-bold whitespace-nowrap bg-gray-200 text-gray-800 hover:bg-gray-300">Cancelar</button>
                             <button
-                                    type="button"
-                                    onClick={async () => {
-                                        const rows: any[] = [];
-                                        selectedCloseDays.forEach((d) => {
-                                            if (applyBathGroom) rows.push({ date: d, service: 'BATH_GROOM' });
-                                            if (applyPetMovel) rows.push({ date: d, service: 'PET_MOVEL' });
-                                        });
-                                        if (rows.length === 0) { setIsCloseDayModalOpen(false); return; }
-                                        try {
-                                            const { error } = await supabase.from('disabled_dates').upsert(rows, { onConflict: 'date,service' });
-                                            if (!error) {
-                                                setIsCloseDayModalOpen(false);
-                                                setSelectedCloseDays(new Set());
-                                            } else {
-                                                alert('Falha ao salvar dias fechados.');
-                                            }
-                                        } catch (_e) {
+                                type="button"
+                                onClick={async () => {
+                                    const rows: any[] = [];
+                                    selectedCloseDays.forEach((d) => {
+                                        if (applyBathGroom) rows.push({ date: d, service: 'BATH_GROOM' });
+                                        if (applyPetMovel) rows.push({ date: d, service: 'PET_MOVEL' });
+                                    });
+                                    if (rows.length === 0) { setIsCloseDayModalOpen(false); return; }
+                                    try {
+                                        const { error } = await supabase.from('disabled_dates').upsert(rows, { onConflict: 'date,service' });
+                                        if (!error) {
+                                            setIsCloseDayModalOpen(false);
+                                            setSelectedCloseDays(new Set());
+                                        } else {
                                             alert('Falha ao salvar dias fechados.');
                                         }
-                                    }}
-                                    className="inline-flex items-center justify-center h-10 w-1/2 sm:min-w-[140px] sm:w-auto rounded-lg text-sm font-bold whitespace-nowrap bg-pink-600 text-white hover:bg-pink-700"
-                                >
-                                    Salvar
-                                </button>
+                                    } catch (_e) {
+                                        alert('Falha ao salvar dias fechados.');
+                                    }
+                                }}
+                                className="inline-flex items-center justify-center h-10 w-1/2 sm:min-w-[140px] sm:w-auto rounded-lg text-sm font-bold whitespace-nowrap bg-pink-600 text-white hover:bg-pink-700"
+                            >
+                                Salvar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -4253,12 +4837,12 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
                 <div className="space-y-3">
                     <div className="space-y-1">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{fontFamily: 'Lobster Two, cursive'}}>Banho & Tosa</h2>
+                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Banho & Tosa</h2>
                         <p className="text-sm text-gray-600 text-center">Agenda Banho & Tosa - Pet Móvel - Mensalistas</p>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-center">
                         <button onClick={handleOpenAddModal} title="Adicionar Agendamento" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
-                            <img alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" />
+                            <SafeImage alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" loading="eager" />
                         </button>
                         <button onClick={() => setIsStatisticsModalOpen(true)} title="Estatísticas" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4266,16 +4850,16 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                             </svg>
                         </button>
                         <button onClick={() => setIsCloseDayModalOpen(true)} title="Bloquear Dias" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
-                            <img
+                            <SafeImage
                                 alt="Bloquear Dias"
                                 className="h-6 w-6"
                                 src="https://i.imgur.com/BaVdolX.png"
-                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/16253/16253757.png'; }}
+                                loading="eager"
                             />
                         </button>
-                    <button onClick={handleToggleAdminView} title={adminView === 'daily' ? 'Ver Todos' : 'Ver Calendário'} className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
-                        <img alt="Ver Todos" className="h-6 w-6" src="https://i.imgur.com/y2cVM07.png" onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://i.imgur.com/iexNNE5.png'; }} />
-                    </button>
+                        <button onClick={handleToggleAdminView} title={adminView === 'daily' ? 'Ver Todos' : 'Ver Calendário'} className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
+                            <SafeImage alt="Ver Todos" className="h-6 w-6" src="https://i.imgur.com/y2cVM07.png" loading="eager" />
+                        </button>
                     </div>
                 </div>
 
@@ -4289,17 +4873,18 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                     <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-200 p-3 max-h-[50vh] overflow-y-auto">
                         {filteredAppointments.length > 0 ? (
                             <div className="space-y-3">
-                                {filteredAppointments.slice(0,5).map(app => (
+                                {filteredAppointments.slice(0, 5).map(app => (
                                     <div key={app.id} className="w-full">
-                                        <AppointmentCard 
-                                            appointment={app} 
-                                            onUpdateStatus={handleUpdateStatus} 
-                                            isUpdating={updatingStatusId === app.id} 
-                                            onEdit={handleOpenEditModal} 
-                                            onDelete={handleRequestDelete} 
+                                        <AppointmentCard
+                                            appointment={app}
+                                            onUpdateStatus={handleUpdateStatus}
+                                            isUpdating={updatingStatusId === app.id}
+                                            onEdit={handleOpenEditModal}
+                                            onDelete={handleRequestDelete}
                                             isDeleting={deletingAppointmentId === app.id}
                                             onOpenActionMenu={onOpenActionMenu}
                                             onDeleteObservation={onDeleteObservation}
+                                            onRequestCompletion={handleRequestCompletion}
                                         />
                                     </div>
                                 ))}
@@ -4333,47 +4918,47 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                     <>
                                         <h3 className="text-lg font-semibold text-gray-700 mb-3">Agendados</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                             {dailyScheduled.map(app => (
+                                            {dailyScheduled.map(app => (
                                                 <div key={app.id} className="w-full">
-                                                     <AppointmentCard appointment={app} onUpdateStatus={handleUpdateStatus} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} />
-                                                 </div>
-                                             ))}
-                                             </div>
+                                                    <AppointmentCard appointment={app} onUpdateStatus={handleUpdateStatus} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />
+                                                </div>
+                                            ))}
+                                        </div>
 
-                                            <div className="mt-8">
-                                                <h3 className="text-lg font-semibold text-gray-700 mb-3">Concluídos</h3>
-                                                {dailyCompleted.length > 0 ? (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                         {dailyCompleted.map(app => (
-                                                            <div key={app.id} className="w-full">
-                                                                 <AppointmentCard appointment={app} onUpdateStatus={handleUpdateStatus} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} />
-                                                             </div>
-                                                         ))}
-                                                         </div>
-                                                ) : (
-                                                    <div className="text-center py-6 bg-white rounded-lg shadow-sm">
-                                                        <p className="text-gray-500">Nenhum concluído para este dia.</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-center py-16 bg-white rounded-lg shadow-sm"><p className="text-gray-500 text-lg">Nenhum agendamento para este dia.</p></div>
-                                    )}
-                                </section>
-                            </>
-                        ) : (
-                            <div className="space-y-12 animate-fadeIn">
-                                <section>
-                                    <h2 className="text-2xl font-bold text-gray-700 mb-4 pb-2 border-b-2 border-pink-200">Próximos Agendamentos</h2>
-                                    {upcomingAppointments.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{renderAppointments(upcomingAppointments)}</div> : <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum próximo agendamento encontrado.</p></div>}
-                                </section>
-                                <section>
-                                    <h2 className="text-2xl font-bold text-gray-700 mb-4 pb-2 border-b-2 border-pink-200">Agendamentos Anteriores</h2>
-                                    {pastAppointments.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{renderAppointments(pastAppointments)}</div> : <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum agendamento anterior encontrado.</p></div>}
-                                </section>
-                            </div>
-                        )}
+                                        <div className="mt-8">
+                                            <h3 className="text-lg font-semibold text-gray-700 mb-3">Concluídos</h3>
+                                            {dailyCompleted.length > 0 ? (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                    {dailyCompleted.map(app => (
+                                                        <div key={app.id} className="w-full">
+                                                            <AppointmentCard appointment={app} onUpdateStatus={handleUpdateStatus} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-6 bg-white rounded-lg shadow-sm">
+                                                    <p className="text-gray-500">Nenhum concluído para este dia.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center py-16 bg-white rounded-lg shadow-sm"><p className="text-gray-500 text-lg">Nenhum agendamento para este dia.</p></div>
+                                )}
+                            </section>
+                        </>
+                    ) : (
+                        <div className="space-y-12 animate-fadeIn">
+                            <section>
+                                <h2 className="text-2xl font-bold text-gray-700 mb-4 pb-2 border-b-2 border-pink-200">Próximos Agendamentos</h2>
+                                {upcomingAppointments.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{renderAppointments(upcomingAppointments)}</div> : <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum próximo agendamento encontrado.</p></div>}
+                            </section>
+                            <section>
+                                <h2 className="text-2xl font-bold text-gray-700 mb-4 pb-2 border-b-2 border-pink-200">Agendamentos Anteriores</h2>
+                                {pastAppointments.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{renderAppointments(pastAppointments)}</div> : <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum agendamento anterior encontrado.</p></div>}
+                            </section>
+                        </div>
+                    )}
                 </>
             ))}
         </>
@@ -4387,28 +4972,28 @@ const EditPetMovelAppointmentModal: React.FC<{
 }> = ({ appointment, onClose, onAppointmentUpdated }) => {
     const [formData, setFormData] = useState<Omit<PetMovelAppointment, 'id' | 'addons' | 'appointment_time' | 'monthly_client_id'>>(appointment);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
     const initialSaoPauloDate = getSaoPauloTimeParts(new Date(appointment.appointment_time));
     const [datePart, setDatePart] = useState(new Date(Date.UTC(initialSaoPauloDate.year, initialSaoPauloDate.month, initialSaoPauloDate.date)).toISOString().split('T')[0]);
     const [timePart, setTimePart] = useState(initialSaoPauloDate.hour);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ 
-            ...prev, 
-            [name]: name === 'whatsapp' ? formatWhatsapp(value) : value 
+        setFormData(prev => ({
+            ...prev,
+            [name]: name === 'whatsapp' ? formatWhatsapp(value) : value
         }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        
+
         const [year, month, day] = datePart.split('-').map(Number);
         const newAppointmentTime = toSaoPauloUTC(year, month - 1, day, timePart);
 
         const { pet_name, owner_name, whatsapp, service, weight, price, status, owner_address, condominium } = formData;
-        
+
         const updatePayload = {
             pet_name,
             owner_name,
@@ -4448,26 +5033,26 @@ const EditPetMovelAppointmentModal: React.FC<{
                 <form onSubmit={handleSubmit}>
                     <div className="p-6 border-b"><h2 className="text-3xl font-bold text-gray-800">Editar Agendamento (Pet Móvel)</h2></div>
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div><label className="font-semibold text-gray-600">Nome do Pet</label><input name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
-                        <div><label className="font-semibold text-gray-600">Nome do Dono</label><input name="owner_name" value={formData.owner_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
-                        <div><label className="font-semibold text-gray-600">WhatsApp</label><input name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
-                        <div><label className="font-semibold text-gray-600">Serviço</label><input name="service" value={formData.service} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
-                        <div><label className="font-semibold text-gray-600">Endereço (Apto/Casa)</label><input name="owner_address" value={formData.owner_address} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
+                        <div><label className="font-semibold text-gray-600">Nome do Pet</label><input name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
+                        <div><label className="font-semibold text-gray-600">Nome do Dono</label><input name="owner_name" value={formData.owner_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
+                        <div><label className="font-semibold text-gray-600">WhatsApp</label><input name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
+                        <div><label className="font-semibold text-gray-600">Serviço</label><input name="service" value={formData.service} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
+                        <div><label className="font-semibold text-gray-600">Endereço (Apto/Casa)</label><input name="owner_address" value={formData.owner_address} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
                         <div>
-                           <label className="font-semibold text-gray-600">Condomínio</label>
-                           <select name="condominium" value={formData.condominium} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg bg-white">
-                              <option value="Vitta Parque">Vitta Parque</option>
-                              <option value="Max Haus">Max Haus</option>
-                              <option value="Paseo">Paseo</option>
-                           </select>
+                            <label className="font-semibold text-gray-600">Condomínio</label>
+                            <select name="condominium" value={formData.condominium} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg bg-white">
+                                <option value="Vitta Parque">Vitta Parque</option>
+                                <option value="Max Haus">Max Haus</option>
+                                <option value="Paseo">Paseo</option>
+                            </select>
                         </div>
-                        <div><label className="font-semibold text-gray-600">Preço (R$)</label><input type="number" name="price" value={formData.price || ''} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg"/></div>
+                        <div><label className="font-semibold text-gray-600">Preço (R$)</label><input type="number" name="price" value={formData.price || ''} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
                         <div>
-                           <label className="font-semibold text-gray-600">Status</label>
-                           <select name="status" value={formData.status} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg bg-white">
-                              <option value="AGENDADO">Agendado</option>
-                              <option value="CONCLUÍDO">Concluído</option>
-                           </select>
+                            <label className="font-semibold text-gray-600">Status</label>
+                            <select name="status" value={formData.status} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg bg-white">
+                                <option value="AGENDADO">Agendado</option>
+                                <option value="CONCLUÍDO">Concluído</option>
+                            </select>
                         </div>
                         <div><DatePicker value={datePart} onChange={setDatePart} label="Data" className="mt-1" /></div>
                         <div>
@@ -4519,7 +5104,7 @@ const PetMovelAppointmentDetailsModal: React.FC<{
                         <DetailItem label="Condomínio" value={appointment.condominium} />
                         <DetailItem label="Endereço" value={appointment.owner_address} />
                         <DetailItem label="Serviço" value={appointment.service} />
-                        <DetailItem label="Data e Hora" value={new Date(appointment.appointment_time).toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'})} />
+                        <DetailItem label="Data e Hora" value={new Date(appointment.appointment_time).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })} />
                         <DetailItem label="Preço" value={`R$ ${Number(appointment.price || 0).toFixed(2).replace('.', ',')}`} />
                         <DetailItem label="Status" value={appointment.status} />
                         <DetailItem label="Adicionais" value={appointment.addons && appointment.addons.length > 0 ? appointment.addons.join(', ') : 'Nenhum'} />
@@ -4556,6 +5141,45 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedAppointment, setSelectedAppointment] = useState<AdminAppointment | PetMovelAppointment | null>(null);
 
+    // Hotel registrations state for badge
+    const [activeHotelRegistrations, setActiveHotelRegistrations] = useState<HotelRegistration[]>([]);
+    // Daycare enrollments state for badge
+    const [activeDaycareEnrollments, setActiveDaycareEnrollments] = useState<DaycareRegistration[]>([]);
+
+    useEffect(() => {
+        fetchMonthlyClients();
+        fetchActiveHotelRegistrations();
+        fetchActiveDaycareEnrollments();
+    }, []);
+
+    const fetchActiveHotelRegistrations = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('hotel_registrations')
+                .select('*')
+                .or('approval_status.eq.Aprovado,approval_status.eq.aprovado');
+
+            if (error) throw error;
+            if (data) setActiveHotelRegistrations(data);
+        } catch (error) {
+            console.error('Error fetching active hotel registrations:', error);
+        }
+    };
+
+    const fetchActiveDaycareEnrollments = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('daycare_enrollments')
+                .select('*')
+                .eq('status', 'Aprovado');
+
+            if (error) throw error;
+            if (data) setActiveDaycareEnrollments(data);
+        } catch (error) {
+            console.error('Error fetching active daycare enrollments:', error);
+        }
+    };
+
     const fetchMonthlyClients = useCallback(async () => {
         setLoading(true);
         try {
@@ -4587,7 +5211,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                 if (petMovelClients && petMovelClients.length > 0) {
                     setExpandedCondos([petMovelClients[0].condominium || 'Nenhum Condomínio']);
                 }
-                try { localStorage.setItem('cached_monthly_clients', JSON.stringify(data || [])); } catch {}
+                try { localStorage.setItem('cached_monthly_clients', JSON.stringify(data || [])); } catch { }
             }
         } catch (_) {
             const cached = localStorage.getItem('cached_monthly_clients');
@@ -4624,7 +5248,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                 const map = new Map<string, AdminAppointment[]>();
                 for (const r of rows) {
                     const t = new Date(r.appointment_time);
-                    const key = `${t.getUTCFullYear()}-${String(t.getUTCMonth()+1).padStart(2,'0')}-${String(t.getUTCDate()).padStart(2,'0')} ${String(t.getUTCHours()).padStart(2,'0')}:${String(t.getUTCMinutes()).padStart(2,'0')}`;
+                    const key = `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')} ${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')}`;
                     const g = map.get(key) || [];
                     g.push(r);
                     map.set(key, g);
@@ -4674,7 +5298,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
 
     const handleConfirmDeleteAppointment = async () => {
         if (!selectedAppointmentForDelete) return;
-        
+
         setIsDeleting(true);
         const { error } = await supabase
             .from('pet_movel_appointments')
@@ -4687,7 +5311,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
         } else {
             setCalendarAppointments(prev => prev.filter(appt => appt.id !== selectedAppointmentForDelete.id));
         }
-        
+
         setIsDeleting(false);
         setSelectedAppointmentForDelete(null);
     };
@@ -4713,26 +5337,26 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                     return isMonthly || isVisit;
                 });
                 const enrichedAppointments = filtered.map(appointment => {
-                    const monthlyClient = monthlyClients.find(client => 
+                    const monthlyClient = monthlyClients.find(client =>
                         client.pet_name && client.pet_name.trim().toLowerCase() === appointment.pet_name.trim().toLowerCase()
                     );
-                    
+
                     // Extrair condomínio e apartamento do endereço
                     let condominium = 'Não informado';
                     let apartment = '';
-                    
+
                     if (monthlyClient?.owner_address || appointment.owner_address) {
                         const address = monthlyClient?.owner_address || appointment.owner_address || '';
                         // Tentar extrair apartamento (padrões comuns: "Apt 123", "Apto 123", "123")
-                        const aptMatch = address.match(/(?:apt|apto|apartamento)\s*\.?\s*(\d+)/i) || 
-                                       address.match(/\b(\d{2,4})\b/);
+                        const aptMatch = address.match(/(?:apt|apto|apartamento)\s*\.?\s*(\d+)/i) ||
+                            address.match(/\b(\d{2,4})\b/);
                         if (aptMatch) {
                             apartment = aptMatch[1];
                         }
-                        
+
                         condominium = address;
                     }
-                    
+
                     return {
                         ...appointment,
                         condominium,
@@ -4742,7 +5366,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                         time: appointment.appointment_time.split('T')[1]?.substring(0, 5) || '00:00'
                     } as PetMovelAppointment;
                 });
-                
+
                 setCalendarAppointments(enrichedAppointments);
             }
         } catch (error) {
@@ -4787,23 +5411,23 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
         const ALL_CONDOS = ['Vitta Parque', 'Paseo', 'Max Haus', 'Nenhum Condomínio'];
         ALL_CONDOS.forEach(c => { groups[c] = {}; });
         const extractNumber = (address: string | null) => address ? `Apto/Casa ${address.match(/\d+/)?.[0] || address}` : 'Endereço não informado';
-        
+
         // Filtrar clientes baseado no termo de busca
         const filteredClients = monthlyClients.filter(client => {
             if (!searchTerm.trim()) return true;
-            
+
             const searchLower = searchTerm.toLowerCase().trim();
             const petName = (client.pet_name || '').toLowerCase();
             const ownerName = (client.owner_name || '').toLowerCase();
             const condominium = (client.condominium || '').toLowerCase();
             const address = (client.owner_address || '').toLowerCase();
-            
-            return petName.includes(searchLower) || 
-                   ownerName.includes(searchLower) || 
-                   condominium.includes(searchLower) ||
-                   address.includes(searchLower);
+
+            return petName.includes(searchLower) ||
+                ownerName.includes(searchLower) ||
+                condominium.includes(searchLower) ||
+                address.includes(searchLower);
         });
-        
+
         filteredClients.forEach(client => {
             const condo = client.condominium || 'Nenhum Condomínio';
             const number = extractNumber(client.owner_address);
@@ -4861,11 +5485,11 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
         <div className="animate-fadeIn bg-gray-50 min-h-screen px-0 sm:px-2 py-4">
             {selectedForEdit && <EditMonthlyClientAdvancedModal client={selectedForEdit} onClose={() => setSelectedForEdit(null)} onMonthlyClientUpdated={handleClientUpdated} />}
             {selectedForDelete && <ConfirmationModal isOpen={!!selectedForDelete} onClose={() => setSelectedForDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o mensalista ${selectedForDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={isDeleting} />}
-            
+
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
                 <div className="space-y-3">
                     <div className="space-y-1">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{fontFamily: 'Lobster Two, cursive'}}>Pet Móvel</h2>
+                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Pet Móvel</h2>
                         <p className="text-sm text-gray-600 text-center">Gerencie seus clientes Pet Móvel</p>
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:gap-4">
@@ -4890,8 +5514,8 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                 </div>
             </div>
 
-            
-            
+
+
             {loading ? (
                 <div className="flex justify-center py-16">
                     <LoadingSpinner />
@@ -4906,13 +5530,13 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                             {searchTerm.trim() ? 'Nenhum resultado encontrado' : 'Nenhum cliente encontrado'}
                         </h3>
                         <p className="text-gray-500 mb-4">
-                            {searchTerm.trim() ? 
-                                `Não encontramos resultados para "${searchTerm}"` : 
+                            {searchTerm.trim() ?
+                                `Não encontramos resultados para "${searchTerm}"` :
                                 'Não há mensalistas Pet Móvel cadastrados ainda.'
                             }
                         </p>
                         {searchTerm.trim() && (
-                            <button 
+                            <button
                                 onClick={() => setSearchTerm('')}
                                 className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
                             >
@@ -4931,106 +5555,164 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                             return a.localeCompare(b);
                         })
                         .map(([condo, clients]) => (
-                        <div key={condo} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 w-full">
-                            <button 
-                                onClick={() => toggleCondo(condo)} 
-                                className="w-full text-left p-6 flex justify-between items-center hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <img 
-                                        src="https://cdn-icons-png.flaticon.com/512/6917/6917662.png" 
-                                        alt={condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : `Condomínio ${condo}`} 
-                                        className="w-12 h-12 rounded-lg object-cover"
-                                    />
-                                    <div>
-                                        <h3 className="text-xl font-bold text-gray-800">{condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : condo}</h3>
-                                        <p className="text-sm text-gray-500">
-                                            {Object.values(clients).reduce((sum, list) => sum + list.length, 0)} clientes
-                                        </p>
+                            <div key={condo} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 w-full">
+                                <button
+                                    onClick={() => toggleCondo(condo)}
+                                    className="w-full text-left p-6 flex justify-between items-center hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <img
+                                            src="https://cdn-icons-png.flaticon.com/512/6917/6917662.png"
+                                            alt={condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : `Condomínio ${condo}`}
+                                            className="w-12 h-12 rounded-lg object-cover"
+                                        />
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-800">{condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : condo}</h3>
+                                            <p className="text-sm text-gray-500">
+                                                {Object.values(clients).reduce((sum, list) => sum + list.length, 0)} clientes
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                                <ChevronRightIcon className={`h-6 w-6 text-gray-400 transform transition-transform ${expandedCondos.includes(condo) ? 'rotate-90' : ''}`} />
-                            </button>
-                            
-                            {expandedCondos.includes(condo) && (
-                                <div className="border-t border-gray-100 bg-gray-50/50 animate-fadeIn">
-                                    <div className="p-6">
-                                        <div className="overflow-x-auto snap-x snap-mandatory -mx-6" ref={(el) => { condoScrollRefs.current[condo] = el; }}>
-                                            <div className="flex gap-4 pb-2 justify-start">
-                                                {Object.values(clients).flat().map((client) => (
-                                                    <div key={client.id} data-card-item className="flex-none min-w-full snap-center" style={{ scrollSnapStop: 'always' }}>
-                                                        <div 
-                                                            className="bg-white rounded-2xl shadow-sm p-6 min-h-[380px] hover:shadow-md transition-shadow border border-gray-200 cursor-pointer flex flex-col"
-                                                            onClick={() => handleOpenAppointmentsModal(client)}
-                                                        >
-                                                            <div className="rounded-xl mb-3 p-5 bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-between">
-                                                                <div className="flex items-center gap-3">
-                                                                    <img
-                                                                        src="https://cdn-icons-png.flaticon.com/512/2171/2171990.png"
-                                                                        alt={`Pet ${client.pet_name}`}
-                                                                        className="w-10 h-10 rounded-full object-cover"
-                                                                    />
-                                                                    <div>
-                                                                        <h5 className="text-lg font-bold leading-none">{client.pet_name}</h5>
-                                                                        <p className="text-xs opacity-90">{client.owner_name}</p>
+                                    <ChevronRightIcon className={`h-6 w-6 text-gray-400 transform transition-transform ${expandedCondos.includes(condo) ? 'rotate-90' : ''}`} />
+                                </button>
+
+                                {expandedCondos.includes(condo) && (
+                                    <div className="border-t border-gray-100 bg-gray-50/50 animate-fadeIn">
+                                        <div className="p-6">
+                                            <div className="overflow-x-auto snap-x snap-mandatory -mx-6" ref={(el) => { condoScrollRefs.current[condo] = el; }}>
+                                                <div className="flex gap-4 pb-2 justify-start">
+                                                    {Object.values(clients).flat().map((client) => {
+                                                        const normalizeStr = (str: string | undefined | null) => str ? str.toLowerCase().trim() : '';
+                                                        const normalizePhone = (phone: string | undefined | null) => phone ? phone.replace(/\D/g, '') : '';
+
+                                                        // Helper to check if phones match (handles country codes e.g. 5571... vs 71...)
+                                                        const checkPhoneMatch = (p1: string, p2: string) => {
+                                                            if (!p1 || !p2) return false;
+                                                            // If exact match
+                                                            if (p1 === p2) return true;
+                                                            // If one ends with the other (and is at least 8 digits long to avoid false positives with short numbers)
+                                                            if (p1.length >= 8 && p2.length >= 8) {
+                                                                return p1.endsWith(p2) || p2.endsWith(p1);
+                                                            }
+                                                            return false;
+                                                        };
+
+                                                        const clientPet = normalizeStr(client.pet_name);
+                                                        const clientOwner = normalizeStr(client.owner_name);
+                                                        const clientPhone = normalizePhone(client.whatsapp);
+
+                                                        // Check for active Hotel Registration
+                                                        const hasActiveHotel = activeHotelRegistrations.some(reg => {
+                                                            const regPet = normalizeStr(reg.pet_name);
+                                                            const regOwner = normalizeStr(reg.tutor_name || reg.owner_name);
+                                                            const regPhone = normalizePhone(reg.tutor_phone);
+
+                                                            // Match logic: Pet name matches AND (Owner name matches OR Phone matches)
+                                                            const nameMatch = regPet === clientPet && regOwner === clientOwner;
+                                                            const phoneMatch = regPet === clientPet && checkPhoneMatch(clientPhone, regPhone);
+
+                                                            return nameMatch || phoneMatch;
+                                                        });
+
+                                                        // Check for active Daycare Enrollment
+                                                        const hasActiveDaycare = activeDaycareEnrollments.some(enroll => {
+                                                            const enrollPet = normalizeStr(enroll.pet_name);
+                                                            const enrollOwner = normalizeStr(enroll.tutor_name);
+                                                            const enrollPhone = normalizePhone(enroll.contact_phone);
+
+                                                            const nameMatch = enrollPet === clientPet && enrollOwner === clientOwner;
+                                                            const phoneMatch = enrollPet === clientPet && checkPhoneMatch(clientPhone, enrollPhone);
+
+                                                            return nameMatch || phoneMatch;
+                                                        });
+
+                                                        return (
+                                                            <div key={client.id} data-card-item className="flex-none min-w-full snap-center" style={{ scrollSnapStop: 'always' }}>
+                                                                <div
+                                                                    className="bg-white rounded-2xl shadow-sm p-6 min-h-[380px] hover:shadow-md transition-shadow border border-gray-200 cursor-pointer flex flex-col"
+                                                                    onClick={() => handleOpenAppointmentsModal(client)}
+                                                                >
+                                                                    <div className="rounded-xl mb-3 p-5 bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-between">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <img
+                                                                                src="https://cdn-icons-png.flaticon.com/512/2171/2171990.png"
+                                                                                alt={`Pet ${client.pet_name}`}
+                                                                                className="w-10 h-10 rounded-full object-cover"
+                                                                            />
+                                                                            <div>
+                                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                                    <h5 className="text-lg font-bold leading-none">{client.pet_name}</h5>
+                                                                                    {hasActiveHotel && (
+                                                                                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full shadow-sm flex items-center gap-1">
+                                                                                            <span>🏨</span> Hotel
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {hasActiveDaycare && (
+                                                                                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-[10px] font-bold rounded-full shadow-sm flex items-center gap-1">
+                                                                                            <span>🏠</span> Creche
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <p className="text-xs opacity-90">{client.owner_name}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <p className="text-xs opacity-90">Preço</p>
+                                                                            <p className="text-lg font-extrabold">R$ {(client.price ?? 0).toFixed(2).replace('.', ',')}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="space-y-2 text-sm">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full">{client.service}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 text-gray-600">
+                                                                            <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                                                                            <span>{client.recurrence_type === 'weekly' ? 'Semanal' : client.recurrence_type === 'bi-weekly' ? 'Quinzenal' : 'Mensal'}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 text-gray-600">
+                                                                            <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                                                                            <span className="text-xs">Agendamentos: toque para ver datas</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="mt-auto pt-4">
+                                                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); handleOpenAppointmentsModal(client); }}
+                                                                                className="w-full bg-gray-100 text-gray-700 py-1.5 px-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                                                                                title="Visualizar"
+                                                                            >
+                                                                                <EyeOutlineIcon className="w-4 h-4" />
+                                                                                <span>Visualizar</span>
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); setSelectedForEdit(client); }}
+                                                                                className="w-full bg-blue-100 text-blue-700 py-1.5 px-2 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                                                                                aria-label="Editar"
+                                                                            >
+                                                                                <EditIcon className="w-4 h-4" />
+                                                                                <span>Editar</span>
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); setSelectedForDelete(client); }}
+                                                                                className="w-full bg-red-50 text-red-600 py-1.5 px-2 rounded-md hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                                                                                aria-label="Excluir"
+                                                                            >
+                                                                                <DeleteIcon className="w-4 h-4" />
+                                                                                <span>Excluir</span>
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                                <div className="text-right">
-                                                                    <p className="text-xs opacity-90">Preço</p>
-                                                                    <p className="text-lg font-extrabold">R$ {(client.price ?? 0).toFixed(2).replace('.', ',')}</p>
-                                                                </div>
                                                             </div>
-                                                            <div className="space-y-2 text-sm">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full">{client.service}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2 text-gray-600">
-                                                                    <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                                                                    <span>{client.recurrence_type === 'weekly' ? 'Semanal' : client.recurrence_type === 'bi-weekly' ? 'Quinzenal' : 'Mensal'}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2 text-gray-600">
-                                                                    <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                                                                    <span className="text-xs">Agendamentos: toque para ver datas</span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="mt-auto pt-4">
-                                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); handleOpenAppointmentsModal(client); }}
-                                                                        className="w-full bg-gray-100 text-gray-700 py-1.5 px-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
-                                                                        title="Visualizar"
-                                                                    >
-                                                                        <EyeOutlineIcon className="w-4 h-4" />
-                                                                        <span>Visualizar</span>
-                                                                    </button>
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); setSelectedForEdit(client); }} 
-                                                                        className="w-full bg-blue-100 text-blue-700 py-1.5 px-2 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
-                                                                        aria-label="Editar"
-                                                                    >
-                                                                        <EditIcon className="w-4 h-4" />
-                                                                        <span>Editar</span>
-                                                                    </button>
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); setSelectedForDelete(client); }} 
-                                                                        className="w-full bg-red-50 text-red-600 py-1.5 px-2 rounded-md hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
-                                                                        aria-label="Excluir"
-                                                                    >
-                                                                        <DeleteIcon className="w-4 h-4" />
-                                                                        <span>Excluir</span>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                )}
+                            </div>
+                        ))}
                 </div>
             )}
 
@@ -5053,13 +5735,12 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <h3 className="font-semibold text-lg text-gray-800">{appointment.pet_name}</h3>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                                                     appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-red-100 text-red-800'
-                                                }`}>
+                                                        'bg-red-100 text-red-800'
+                                                    }`}>
                                                     {appointment.status === 'confirmed' ? 'Confirmado' :
-                                                     appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                                                        appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
                                                 </span>
                                                 {((appointment.service === 'Creche Pet' || appointment.service === 'Hotel Pet') && !appointment.monthly_client_id) && (
                                                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -5067,7 +5748,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                                     </span>
                                                 )}
                                             </div>
-                                            
+
                                             <div className="space-y-1 text-sm text-gray-600">
                                                 <p><span className="font-medium">Dono:</span> {appointment.owner_name}</p>
                                                 <p><span className="font-medium">Serviço:</span> {appointment.service}</p>
@@ -5079,7 +5760,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                                 <p><span className="font-medium">Preço:</span> R$ {(appointment.price ?? 0).toFixed(2).replace('.', ',')}</p>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex gap-2 ml-4">
                                             <button
                                                 onClick={() => setSelectedAppointmentForDetails(appointment)}
@@ -5117,7 +5798,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                     )}
                 </div>
             )}
-            
+
             {/* Modal de Agendamentos do Cliente */}
             {selectedClientForAppointments && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
@@ -5128,15 +5809,15 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                     <h2 className="text-2xl font-bold">Agendamentos de {selectedClientForAppointments.pet_name}</h2>
                                     <p className="text-pink-100 mt-1">Tutor: {selectedClientForAppointments.owner_name}</p>
                                 </div>
-                                <button 
-                                    onClick={handleCloseAppointmentsModal} 
+                                <button
+                                    onClick={handleCloseAppointmentsModal}
                                     className="p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors"
                                 >
                                     <CloseIcon className="w-6 h-6" />
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                             {loadingAppointments ? (
                                 <div className="flex justify-center py-12">
@@ -5149,9 +5830,9 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                             <div key={appointment.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                                 <div className="flex items-center justify-between mb-3">
                                                     <div className="flex items-center gap-3">
-                                                        <img 
-                                                            src="https://cdn-icons-png.flaticon.com/512/2171/2171990.png" 
-                                                            alt="Ícone do pet" 
+                                                        <img
+                                                            src="https://cdn-icons-png.flaticon.com/512/2171/2171990.png"
+                                                            alt="Ícone do pet"
                                                             className="w-10 h-10 rounded-full object-cover"
                                                         />
                                                         <div>
@@ -5173,21 +5854,20 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                                            appointment.status === 'CONCLUÍDO' 
-                                                                ? 'bg-green-100 text-green-800' 
-                                                                : 'bg-blue-100 text-blue-800'
-                                                        }`}>
+                                                        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${appointment.status === 'CONCLUÍDO'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-blue-100 text-blue-800'
+                                                            }`}>
                                                             {appointment.status}
                                                         </div>
                                                         {((appointment.service === 'Creche Pet' || appointment.service === 'Hotel Pet') && !appointment.monthly_client_id) && (
-                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                    🏠 Visita
-                                                </span>
-                                            )}
+                                                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                🏠 Visita
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                                     <div>
                                                         <p className="text-gray-500 font-medium">Serviço</p>
@@ -5204,7 +5884,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                                         </p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {appointment.addons && appointment.addons.length > 0 && (
                                                     <div className="mt-3 pt-3 border-t border-gray-200">
                                                         <p className="text-gray-500 font-medium text-sm mb-2">Adicionais</p>
@@ -5234,7 +5914,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                     </div>
                 </div>
             )}
-            
+
             {/* Modal de Detalhes do Agendamento do Calendário */}
             {selectedAppointment && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001] p-4">
@@ -5249,38 +5929,37 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                     ×
                                 </button>
                             </div>
-                            
+
                             <div className="space-y-4">
                                 <div>
                                     <h4 className="font-medium text-gray-900 mb-2">Pet</h4>
                                     <p className="text-gray-700">{selectedAppointment.pet_name}</p>
                                     <p className="text-sm text-gray-500">{selectedAppointment.pet_breed}</p>
                                 </div>
-                                
+
                                 <div>
                                     <h4 className="font-medium text-gray-900 mb-2">Tutor</h4>
                                     <p className="text-gray-700">{selectedAppointment.owner_name}</p>
                                     <p className="text-sm text-gray-500">{selectedAppointment.whatsapp}</p>
                                 </div>
-                                
+
                                 <div>
                                     <h4 className="font-medium text-gray-900 mb-2">Serviço</h4>
                                     <p className="text-gray-700">{selectedAppointment.service}</p>
                                     <p className="text-sm text-green-600 font-medium">R$ {selectedAppointment.price}</p>
                                 </div>
-                                
+
                                 <div>
                                     <h4 className="font-medium text-gray-900 mb-2">Status</h4>
-                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                        selectedAppointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${selectedAppointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                                         selectedAppointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                        'bg-red-100 text-red-800'
-                                    }`}>
+                                            'bg-red-100 text-red-800'
+                                        }`}>
                                         {selectedAppointment.status === 'confirmed' ? 'Confirmado' :
-                                         selectedAppointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                                            selectedAppointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
                                     </span>
                                 </div>
-                                
+
                                 {selectedAppointment.pet_movel_appointments && (
                                     <div>
                                         <h4 className="font-medium text-gray-900 mb-2">Pet Móvel</h4>
@@ -5290,7 +5969,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                         )}
                                     </div>
                                 )}
-                                
+
                                 {selectedAppointment.addons && selectedAppointment.addons.length > 0 && (
                                     <div>
                                         <h4 className="font-medium text-gray-900 mb-2">Adicionais</h4>
@@ -5301,7 +5980,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                         </ul>
                                     </div>
                                 )}
-                                
+
                                 {selectedAppointment.notes && (
                                     <div>
                                         <h4 className="font-medium text-gray-900 mb-2">Observações</h4>
@@ -5382,7 +6061,7 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                 if (cached) setClients(JSON.parse(cached));
             } else {
                 setClients(data as Client[]);
-                try { localStorage.setItem('cached_clients', JSON.stringify(data || [])); } catch {}
+                try { localStorage.setItem('cached_clients', JSON.stringify(data || [])); } catch { }
             }
         } catch (_) {
             const cached = localStorage.getItem('cached_clients');
@@ -5403,12 +6082,12 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
         if (error) {
             alert("Erro ao adicionar cliente. Verifique se a tabela 'clients' existe e tem as políticas de segurança corretas.");
         } else {
-            setClients(prev => [...prev, data as Client].sort((a,b) => a.name.localeCompare(b.name)));
+            setClients(prev => [...prev, data as Client].sort((a, b) => a.name.localeCompare(b.name)));
             setName(''); setPhone('');
         }
         setIsSubmitting(false);
     };
-    
+
     const handleConfirmDelete = async () => {
         if (!clientToDelete) return;
         setIsDeleting(true);
@@ -5423,7 +6102,7 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     };
 
     const handleClientUpdated = (updatedClient: Client) => {
-        setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c).sort((a,b) => a.name.localeCompare(b.name)));
+        setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c).sort((a, b) => a.name.localeCompare(b.name)));
         setEditingClient(null);
     };
 
@@ -5435,7 +6114,7 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
                 <div className="space-y-3">
                     <div className="space-y-1">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{fontFamily: 'Lobster Two, cursive'}}>Meus Clientes</h2>
+                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Meus Clientes</h2>
                         <p className="text-sm text-gray-600 text-center">Agenda de Clientes</p>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-center">
@@ -5444,12 +6123,12 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                             title="Adicionar Cliente"
                             className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
                         >
-                            <img alt="Adicionar Cliente" className="h-6 w-6" src="https://i.imgur.com/19QrZ6g.png" />
+                            <SafeImage alt="Adicionar Cliente" className="h-6 w-6" src="https://i.imgur.com/19QrZ6g.png" loading="eager" />
                         </button>
                     </div>
                 </div>
             </div>
-            
+
 
             {/* Formulário: oculto no mobile até clicar no botão; visível sempre em sm+ */}
             <div className={`p-6 bg-white rounded-2xl shadow-sm ${isAddClientOpenMobile ? 'block' : 'hidden sm:block'}`}>
@@ -5462,9 +6141,9 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                     </button>
                 </form>
             </div>
-            
+
             <div className="p-6 bg-white rounded-2xl shadow-sm">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4 text-center" style={{fontFamily: 'Inter, sans-serif'}}>Lista de Clientes</h2>
+                <h2 className="text-3xl font-bold text-gray-800 mb-4 text-center" style={{ fontFamily: 'Inter, sans-serif' }}>Lista de Clientes</h2>
                 {loading ? <div className="flex justify-center py-6 sm:py-8"><LoadingSpinner /></div> : (
                     <div className="divide-y divide-gray-200">
                         {clients.length > 0 ? clients.map(client => (
@@ -5493,12 +6172,12 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
 const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => void; onMonthlyClientUpdated: () => void; }> = ({ client, onClose, onMonthlyClientUpdated }) => {
     const serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === client.service) as ServiceType | undefined;
     const weightKey = Object.keys(PET_WEIGHT_OPTIONS).find(key => PET_WEIGHT_OPTIONS[key as PetWeight] === (client as any).weight) as PetWeight | undefined;
-    
-    const [formData, setFormData] = useState({ 
-        petName: client.pet_name, 
-        ownerName: client.owner_name, 
-        whatsapp: client.whatsapp, 
-        petBreed: (client as any).pet_breed || '', 
+
+    const [formData, setFormData] = useState({
+        petName: client.pet_name,
+        ownerName: client.owner_name,
+        whatsapp: client.whatsapp,
+        petBreed: (client as any).pet_breed || '',
         ownerAddress: (client as any).owner_address || '',
         condominium: (client as any).condominium || ''
     });
@@ -5523,7 +6202,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
         }
     };
 
-// FIX: Ensure recurrence day and time are stored as numbers to prevent comparison/arithmetic errors.
+    // FIX: Ensure recurrence day and time are stored as numbers to prevent comparison/arithmetic errors.
     const handleRecurrenceChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
         const { name, value } = e.target;
         setRecurrence(prev => ({ ...prev, [name]: name === 'type' ? value : Number(value) }));
@@ -5761,7 +6440,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
                 setAlertInfo({ title: 'Sucesso', message: `${baseSuccessMessage} Nenhum agendamento futuro foi criado.`, variant: 'success' });
             }
         } else {
-             setAlertInfo({ title: 'Sucesso', message: baseSuccessMessage, variant: 'success' });
+            setAlertInfo({ title: 'Sucesso', message: baseSuccessMessage, variant: 'success' });
         }
 
         setIsSubmitting(false);
@@ -5775,39 +6454,39 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
                     <form onSubmit={handleSubmit}>
                         <div className="p-6 border-b"><h2 className="text-3xl font-bold text-gray-800">Editar Mensalista</h2></div>
                         <div className="p-6 space-y-6">
-                            <input type="text" name="petName" placeholder="Nome do Pet" value={formData.petName} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg"/>
-                            <input type="text" name="ownerName" placeholder="Nome do Dono" value={formData.ownerName} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg"/>
-                            <input type="text" name="whatsapp" placeholder="WhatsApp" value={formData.whatsapp} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg"/>
-                            <input type="text" name="condominium" placeholder="Nome do Condomínio" value={formData.condominium} onChange={handleInputChange} className="w-full px-5 py-4 border rounded-lg"/>
+                            <input type="text" name="petName" placeholder="Nome do Pet" value={formData.petName} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg" />
+                            <input type="text" name="ownerName" placeholder="Nome do Dono" value={formData.ownerName} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg" />
+                            <input type="text" name="whatsapp" placeholder="WhatsApp" value={formData.whatsapp} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg" />
+                            <input type="text" name="condominium" placeholder="Nome do Condomínio" value={formData.condominium} onChange={handleInputChange} className="w-full px-5 py-4 border rounded-lg" />
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <select name="service" value={selectedService || ''} onChange={e => setSelectedService(e.target.value as ServiceType || null)} className="w-full px-5 py-4 border rounded-lg bg-white">
                                     <option value="">Selecione o serviço (opcional)</option>
-                                    {Object.entries(SERVICES).map(([key, {label}]) => <option key={key} value={key}>{label}</option>)}
+                                    {Object.entries(SERVICES).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
                                 </select>
                                 <select name="weight" value={selectedWeight || ''} onChange={e => setSelectedWeight(e.target.value as PetWeight || null)} className="w-full px-5 py-4 border rounded-lg bg-white">
                                     <option value="">Selecione o peso (opcional)</option>
                                     {Object.entries(PET_WEIGHT_OPTIONS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                                 </select>
                             </div>
-                            <input type="number" name="price" placeholder="Preço Fixo (R$)" value={price} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg"/>
+                            <input type="number" name="price" placeholder="Preço Fixo (R$)" value={price} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg" />
                             <div className="p-4 bg-gray-50 rounded-lg border">
                                 <h3 className="font-semibold mb-2">Regra de Recorrência</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <select name="type" onChange={handleRecurrenceChange} value={recurrence.type} className="w-full px-5 py-4 border rounded-lg bg-white">
-                                       <option value="weekly">Semanal</option>
-                                       <option value="bi-weekly">Quinzenal</option>
-                                       <option value="monthly">Mensal</option>
+                                        <option value="weekly">Semanal</option>
+                                        <option value="bi-weekly">Quinzenal</option>
+                                        <option value="monthly">Mensal</option>
                                     </select>
                                     {recurrence.type === 'weekly' || recurrence.type === 'bi-weekly' ? (
                                         <select name="day" onChange={handleRecurrenceChange} value={recurrence.day} className="w-full px-5 py-4 border rounded-lg bg-white">
-                                           <option value={1}>Segunda-feira</option><option value={2}>Terça-feira</option><option value={3}>Quarta-feira</option><option value={4}>Quinta-feira</option><option value={5}>Sexta-feira</option>
+                                            <option value={1}>Segunda-feira</option><option value={2}>Terça-feira</option><option value={3}>Quarta-feira</option><option value={4}>Quinta-feira</option><option value={5}>Sexta-feira</option>
                                         </select>
-                                    ) : <input type="number" name="day" min="1" max="31" value={recurrence.day} onChange={handleRecurrenceChange} className="w-full px-5 py-4 border rounded-lg"/>}
+                                    ) : <input type="number" name="day" min="1" max="31" value={recurrence.day} onChange={handleRecurrenceChange} className="w-full px-5 py-4 border rounded-lg" />}
                                 </div>
                                 <select name="time" onChange={handleRecurrenceChange} value={recurrence.time} className="w-full px-5 py-4 border rounded-lg mt-4 bg-white">{WORKING_HOURS.map(h => <option key={h} value={h}>{`${h}:00`}</option>)}</select>
                                 <div className="mt-4">
-                                    <DatePicker 
-                                        value={paymentDueDate} 
+                                    <DatePicker
+                                        value={paymentDueDate}
                                         onChange={setPaymentDueDate}
                                         label="Data de Vencimento do Pagamento"
                                         required
@@ -5819,7 +6498,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
                             <div className="p-4 bg-gray-50 rounded-lg border">
                                 <h3 className="font-semibold mb-2">Status</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                     <div>
+                                    <div>
                                         <label className="font-semibold text-gray-700 text-sm">Status do Pagamento</label>
                                         <select value={paymentStatus} onChange={e => setPaymentStatus(e.target.value as 'Pendente' | 'Pago')} className="w-full px-5 py-4 border rounded-lg bg-white mt-1">
                                             <option value="Pendente">Pendente</option>
@@ -6030,7 +6709,7 @@ const EditMonthlyClientAdvancedModal: React.FC<{ client: MonthlyClient; onClose:
         delete payload.id;
         if (payload.payment_due_date === '') payload.payment_due_date = null;
         if (typeof payload.extra_services === 'string') {
-            try { payload.extra_services = JSON.parse(payload.extra_services); } catch {}
+            try { payload.extra_services = JSON.parse(payload.extra_services); } catch { }
         }
         const { error } = await supabase.from('monthly_clients').update(payload).eq('id', client.id);
         if (error) {
@@ -6120,22 +6799,25 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     const [isUploadingMonthlyPhoto, setIsUploadingMonthlyPhoto] = useState(false);
     const [monthlyUploadError, setMonthlyUploadError] = useState<string | null>(null);
     const [selectedMonthlyPhotoName, setSelectedMonthlyPhotoName] = useState<string>('');
-    
+
     // Estados para filtros
     const [showFilterPanel, setShowFilterPanel] = useState(false);
     const [filterCondominium, setFilterCondominium] = useState('');
     const [filterDueDate, setFilterDueDate] = useState('');
     const [sortBy, setSortBy] = useState(''); // 'pet-az', 'owner-az'
-    
+
     // Estados para modal de serviços extras
     const [isMonthlyExtraServicesModalOpen, setIsMonthlyExtraServicesModalOpen] = useState(false);
     const [monthlyClientForExtraServices, setMonthlyClientForExtraServices] = useState<MonthlyClient | null>(null);
-    
+
     // Estado para modal de estatísticas
     const [showStatisticsModal, setShowStatisticsModal] = useState(false);
-    
+
     // Estado para dados de creche
     const [daycareEnrollments, setDaycareEnrollments] = useState<DaycareRegistration[]>([]);
+
+    const [activeHotelRegistrations, setActiveHotelRegistrations] = useState<HotelRegistration[]>([]);
+    const [activeDaycareEnrollments, setActiveDaycareEnrollments] = useState<DaycareRegistration[]>([]);
 
     const archivedCount = useMemo(() => monthlyClients.filter(c => c.payment_status === 'Pago').length, [monthlyClients]);
     const pendingCount = useMemo(() => monthlyClients.filter(c => c.payment_status === 'Pendente').length, [monthlyClients]);
@@ -6202,7 +6884,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                     }
                 }
                 setMonthlyClients(sortedData);
-                try { localStorage.setItem('cached_monthly_clients', JSON.stringify(sortedData || [])); } catch {}
+                try { localStorage.setItem('cached_monthly_clients', JSON.stringify(sortedData || [])); } catch { }
             }
         } catch (_) {
             const cached = localStorage.getItem('cached_monthly_clients');
@@ -6220,7 +6902,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                 if (cached) setDaycareEnrollments(JSON.parse(cached));
             } else {
                 setDaycareEnrollments(data as DaycareRegistration[]);
-                try { localStorage.setItem('cached_daycare_enrollments', JSON.stringify(data || [])); } catch {}
+                try { localStorage.setItem('cached_daycare_enrollments', JSON.stringify(data || [])); } catch { }
             }
         } catch (_) {
             const cached = localStorage.getItem('cached_daycare_enrollments');
@@ -6228,11 +6910,46 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         }
     }, []);
 
+    const fetchActiveHotelRegistrations = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('hotel_registrations')
+                .select('*')
+                .or('approval_status.eq.Aprovado,approval_status.eq.aprovado');
+            if (error) {
+                // fallback sem cache, apenas log
+                console.error('Erro ao buscar registros de hotel aprovados:', error);
+            } else {
+                setActiveHotelRegistrations((data || []) as HotelRegistration[]);
+            }
+        } catch (err) {
+            console.error('Erro inesperado ao buscar registros de hotel aprovados:', err);
+        }
+    }, []);
+
+    const fetchActiveDaycareApproved = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('daycare_enrollments')
+                .select('*')
+                .eq('status', 'Aprovado');
+            if (error) {
+                console.error('Erro ao buscar matrículas de creche aprovadas:', error);
+            } else {
+                setActiveDaycareEnrollments((data || []) as DaycareRegistration[]);
+            }
+        } catch (err) {
+            console.error('Erro inesperado ao buscar matrículas de creche aprovadas:', err);
+        }
+    }, []);
+
     useEffect(() => {
         fetchMonthlyClients();
         fetchDaycareEnrollments();
-    }, [fetchMonthlyClients, fetchDaycareEnrollments]);
-    
+        fetchActiveHotelRegistrations();
+        fetchActiveDaycareApproved();
+    }, [fetchMonthlyClients, fetchDaycareEnrollments, fetchActiveHotelRegistrations, fetchActiveDaycareApproved]);
+
     const ensureCurrentMonthDueDate = useCallback(async () => {
         const due = getCurrentMonthPaymentDueDate();
         const monthKey = due.slice(0, 7);
@@ -6240,7 +6957,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         if (last === monthKey) return;
         const { error } = await supabase.from('monthly_clients').update({ payment_due_date: due });
         if (!error) {
-            try { localStorage.setItem('last_payment_due_update_month', monthKey); } catch {}
+            try { localStorage.setItem('last_payment_due_update_month', monthKey); } catch { }
             setMonthlyClients(prev => prev.map(c => ({ ...c, payment_due_date: due })));
             onDataChanged();
         }
@@ -6249,10 +6966,10 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     useEffect(() => {
         ensureCurrentMonthDueDate();
     }, [ensureCurrentMonthDueDate]);
-    
+
     // Função para verificar se um cliente mensalista também é cliente de creche
     const isClientInDaycare = useCallback((monthlyClient: MonthlyClient): boolean => {
-        return daycareEnrollments.some(enrollment => 
+        return daycareEnrollments.some(enrollment =>
             enrollment.pet_name.toLowerCase() === monthlyClient.pet_name.toLowerCase() &&
             enrollment.tutor_name.toLowerCase() === monthlyClient.owner_name.toLowerCase()
         );
@@ -6282,10 +6999,10 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         }
     };
 
-    
-    
+
+
     const weekDays: Record<number, string> = { 1: "Segunda", 2: "Terça", 3: "Quarta", 4: "Quinta", 5: "Sexta" };
-    
+
     const getRecurrenceText = (client: MonthlyClient) => {
         const time = `às ${client.recurrence_time}:00`;
         const day = client.recurrence_day;
@@ -6300,7 +7017,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     // Filter and sort clients based on search term, filters and archive toggle
     const filteredClients = useMemo(() => {
         let filtered = monthlyClients;
-        
+
         // Filtro por termo de busca
         if (searchTerm.trim()) {
             const searchLower = searchTerm.toLowerCase().trim();
@@ -6309,12 +7026,12 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                 client.owner_name.toLowerCase().includes(searchLower)
             );
         }
-        
+
         // Filtro por condomínio
         if (filterCondominium) {
             filtered = filtered.filter(client => client.condominium === filterCondominium);
         }
-        
+
         // Filtro por data de vencimento
         if (filterDueDate) {
             console.log('Filtro por data:', filterDueDate);
@@ -6334,7 +7051,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         if (filterPaymentStatus) {
             filtered = filtered.filter(client => client.payment_status === filterPaymentStatus);
         }
-        
+
         // Ordenação
         if (sortBy === 'pet-az') {
             filtered = [...filtered].sort((a, b) => a.pet_name.localeCompare(b.pet_name));
@@ -6344,7 +7061,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
             // Ordenação padrão por nome do tutor
             filtered = [...filtered].sort((a, b) => a.owner_name.localeCompare(b.owner_name));
         }
-        
+
         return filtered;
     }, [monthlyClients, searchTerm, filterCondominium, filterDueDate, sortBy, filterPaymentStatus]);
 
@@ -6403,7 +7120,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         try {
             const mc = uploadTargetMonthlyClient as MonthlyClient;
             const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-            const base = (mc.id || mc.pet_name.replace(/\s+/g,'_'));
+            const base = (mc.id || mc.pet_name.replace(/\s+/g, '_'));
             const path = `${base}_${Date.now()}.${ext}`;
             const oldUrl = (mc as any).pet_photo_url as string | undefined;
             if (oldUrl) {
@@ -6415,7 +7132,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                         const oldPath = u.pathname.substring(idx + prefix.length);
                         await supabase.storage.from('monthly_pet_photos').remove([oldPath]);
                     }
-                } catch {}
+                } catch { }
             }
             const { error: upErr } = await supabase.storage.from('monthly_pet_photos').upload(path, file, { upsert: true, contentType: file.type });
             if (upErr) throw upErr;
@@ -6439,11 +7156,11 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
             {alertInfo && <AlertModal isOpen={!!alertInfo} onClose={() => setAlertInfo(null)} title={alertInfo.title} message={alertInfo.message} variant={alertInfo.variant} />}
             {editingClient && <EditMonthlyClientAdvancedModal client={editingClient} onClose={() => setEditingClient(null)} onMonthlyClientUpdated={handleUpdateSuccess} />}
             {deletingClient && <ConfirmationModal isOpen={!!deletingClient} onClose={() => setDeletingClient(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o mensalista ${deletingClient.pet_name}? Todos os seus agendamentos futuros também serão removidos.`} confirmText="Excluir" variant="danger" isLoading={isDeleting} />}
-            
+
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
                 <div className="space-y-3">
                     <div className="space-y-1">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{fontFamily: 'Lobster Two, cursive'}}>Mensalistas</h2>
+                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Mensalistas</h2>
                         <p className="text-sm text-gray-600 text-center">Meus Clientes Mensalistas</p>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-center">
@@ -6452,22 +7169,22 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                             title="Adicionar Mensalista"
                             className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
                         >
-                            <img alt="Adicionar Mensalista" className="h-6 w-6" src="https://i.imgur.com/19QrZ6g.png" />
+                            <SafeImage alt="Adicionar Mensalista" className="h-6 w-6" src="https://i.imgur.com/19QrZ6g.png" />
                         </button>
-                        
+
                         <button
                             onClick={() => setShowFilterPanel(!showFilterPanel)}
                             title="Filtros"
                             className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-gray-100 text-gray-700 font-semibold h-11 px-5 text-base rounded-lg hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
                         >
-                            <img alt="Filtros" className="h-6 w-6" src="https://cdn-icons-png.flaticon.com/512/9702/9702724.png" />
+                            <SafeImage alt="Filtros" className="h-6 w-6" src="https://cdn-icons-png.flaticon.com/512/9702/9702724.png" />
                         </button>
                         <button
                             onClick={() => setViewMode(prev => prev === 'cards' ? 'stack' : prev === 'stack' ? 'list' : 'cards')}
                             title="Visualização"
                             className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
                         >
-                            <img alt="Visualização" className="w-6 h-6" src={viewMode === 'cards' ? 'https://i.imgur.com/JsRhJWq.png' : (viewMode === 'stack' ? 'https://i.imgur.com/oz6qjaI.png' : 'https://i.imgur.com/vRrOtbI.png')} />
+                            <SafeImage alt="Visualização" className="w-6 h-6" src={viewMode === 'cards' ? 'https://i.imgur.com/JsRhJWq.png' : (viewMode === 'stack' ? 'https://i.imgur.com/oz6qjaI.png' : 'https://i.imgur.com/vRrOtbI.png')} />
                         </button>
                         <button
                             onClick={() => setShowStatisticsModal(true)}
@@ -6491,7 +7208,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                     />
                 </div>
             </div>
-            
+
             {/* Painel de Filtros */}
             {showFilterPanel && (
                 <div className="mb-6 bg-white rounded-lg shadow-md border border-gray-200 p-4">
@@ -6501,7 +7218,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                         </svg>
                         Filtros e Ordenação
                     </h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Filtro por Condomínio */}
                         <div>
@@ -6517,7 +7234,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                 ))}
                             </select>
                         </div>
-                        
+
                         {/* Filtro por Data de Vencimento */}
                         <div>
                             <DatePicker
@@ -6528,7 +7245,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                 disableWeekends={false}
                             />
                         </div>
-                        
+
                         {/* Filtro por Status de Pagamento */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Status de Pagamento</label>
@@ -6556,7 +7273,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                 <option value="owner-az">Tutor A-Z</option>
                             </select>
                         </div>
-                        
+
                         {/* Botão Limpar Filtros */}
                         <div className="flex items-end">
                             <button
@@ -6577,43 +7294,107 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                     </div>
                 </div>
             )}
-            
+
             {loading ? <div className="flex justify-center py-16"><LoadingSpinner /></div> : (
                 filteredClients.length > 0 ? (
                     viewMode === 'cards' ? (
                         // Visualização em Cards com carrossel horizontal no mobile
                         <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:mx-0 md:px-0 md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                            {filteredClients.map(client => (
-                                <div key={client.id} className="flex-none w-full max-w-[420px] lg:max-w-[460px] md:min-w-0 snap-center px-4">
-                                    <MonthlyClientCard
-                                        client={client}
-                                        onEdit={() => setEditingClient(client)}
-                                        onDelete={() => setDeletingClient(client)}
-                                        onAddExtraServices={() => handleAddExtraServices(client)}
-                                        onTogglePaymentStatus={(clientArg, e) => handleTogglePaymentStatus(clientArg, e)}
-                                        isClientInDaycare={isClientInDaycare(client)}
-                                        onChangePhoto={(mc) => { setUploadTargetMonthlyClient(mc); setIsUploadMonthlyPhotoModalOpen(true); }}
-                                        onView={(mc) => setViewingClient(mc)}
-                                    />
-                                </div>
-                            ))}
+                            {filteredClients.map(client => {
+                                const normalizeStr = (str: string | undefined | null) => str ? str.toLowerCase().trim() : '';
+                                const normalizePhone = (phone: string | undefined | null) => phone ? phone.replace(/\D/g, '') : '';
+                                const checkPhoneMatch = (p1: string, p2: string) => {
+                                    if (!p1 || !p2) return false;
+                                    if (p1 === p2) return true;
+                                    if (p1.length >= 8 && p2.length >= 8) {
+                                        return p1.endsWith(p2) || p2.endsWith(p1);
+                                    }
+                                    return false;
+                                };
+                                const clientPet = normalizeStr(client.pet_name);
+                                const clientOwner = normalizeStr(client.owner_name);
+                                const clientPhone = normalizePhone(client.whatsapp);
+                                const hasActiveHotel = activeHotelRegistrations.some(reg => {
+                                    const regPet = normalizeStr(reg.pet_name);
+                                    const regOwner = normalizeStr(reg.tutor_name || (reg as any).owner_name);
+                                    const regPhone = normalizePhone(reg.tutor_phone);
+                                    const nameMatch = regPet === clientPet && regOwner === clientOwner;
+                                    const phoneMatch = regPet === clientPet && checkPhoneMatch(clientPhone, regPhone);
+                                    return phoneMatch || (!clientPhone && nameMatch);
+                                });
+                                const hasActiveDaycare = activeDaycareEnrollments.some(enroll => {
+                                    const enrollPet = normalizeStr(enroll.pet_name);
+                                    const enrollOwner = normalizeStr(enroll.tutor_name);
+                                    const enrollPhone = normalizePhone(enroll.contact_phone);
+                                    const nameMatch = enrollPet === clientPet && enrollOwner === clientOwner;
+                                    const phoneMatch = enrollPet === clientPet && checkPhoneMatch(clientPhone, enrollPhone);
+                                    return phoneMatch || (!clientPhone && nameMatch);
+                                });
+                                return (
+                                    <div key={client.id} className="flex-none w-full max-w-[420px] lg:max-w-[460px] md:min-w-0 snap-center px-4">
+                                        <MonthlyClientCard
+                                            client={client}
+                                            onEdit={() => setEditingClient(client)}
+                                            onDelete={() => setDeletingClient(client)}
+                                            onAddExtraServices={() => handleAddExtraServices(client)}
+                                            onTogglePaymentStatus={(clientArg, e) => handleTogglePaymentStatus(clientArg, e)}
+                                            hasActiveHotel={hasActiveHotel}
+                                            hasActiveDaycare={hasActiveDaycare}
+                                            onChangePhoto={(mc) => { setUploadTargetMonthlyClient(mc); setIsUploadMonthlyPhotoModalOpen(true); }}
+                                            onView={(mc) => setViewingClient(mc)}
+                                        />
+                                    </div>
+                                );
+                            })}
                         </div>
                     ) : viewMode === 'stack' ? (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {filteredClients.map(client => (
-                                <div key={client.id} className="px-4">
-                                    <MonthlyClientCard
-                                        client={client}
-                                        onEdit={() => setEditingClient(client)}
-                                        onDelete={() => setDeletingClient(client)}
-                                        onAddExtraServices={() => handleAddExtraServices(client)}
-                                        onTogglePaymentStatus={(clientArg, e) => handleTogglePaymentStatus(clientArg, e)}
-                                        isClientInDaycare={isClientInDaycare(client)}
-                                        onChangePhoto={(mc) => { setUploadTargetMonthlyClient(mc); setIsUploadMonthlyPhotoModalOpen(true); }}
-                                        onView={(mc) => setViewingClient(mc)}
-                                    />
-                                </div>
-                            ))}
+                            {filteredClients.map(client => {
+                                const normalizeStr = (str: string | undefined | null) => str ? str.toLowerCase().trim() : '';
+                                const normalizePhone = (phone: string | undefined | null) => phone ? phone.replace(/\D/g, '') : '';
+                                const checkPhoneMatch = (p1: string, p2: string) => {
+                                    if (!p1 || !p2) return false;
+                                    if (p1 === p2) return true;
+                                    if (p1.length >= 8 && p2.length >= 8) {
+                                        return p1.endsWith(p2) || p2.endsWith(p1);
+                                    }
+                                    return false;
+                                };
+                                const clientPet = normalizeStr(client.pet_name);
+                                const clientOwner = normalizeStr(client.owner_name);
+                                const clientPhone = normalizePhone(client.whatsapp);
+                                const hasActiveHotel = activeHotelRegistrations.some(reg => {
+                                    const regPet = normalizeStr(reg.pet_name);
+                                    const regOwner = normalizeStr(reg.tutor_name || (reg as any).owner_name);
+                                    const regPhone = normalizePhone(reg.tutor_phone);
+                                    const nameMatch = regPet === clientPet && regOwner === clientOwner;
+                                    const phoneMatch = regPet === clientPet && checkPhoneMatch(clientPhone, regPhone);
+                                    return phoneMatch || (!clientPhone && nameMatch);
+                                });
+                                const hasActiveDaycare = activeDaycareEnrollments.some(enroll => {
+                                    const enrollPet = normalizeStr(enroll.pet_name);
+                                    const enrollOwner = normalizeStr(enroll.tutor_name);
+                                    const enrollPhone = normalizePhone(enroll.contact_phone);
+                                    const nameMatch = enrollPet === clientPet && enrollOwner === clientOwner;
+                                    const phoneMatch = enrollPet === clientPet && checkPhoneMatch(clientPhone, enrollPhone);
+                                    return phoneMatch || (!clientPhone && nameMatch);
+                                });
+                                return (
+                                    <div key={client.id} className="px-4">
+                                        <MonthlyClientCard
+                                            client={client}
+                                            onEdit={() => setEditingClient(client)}
+                                            onDelete={() => setDeletingClient(client)}
+                                            onAddExtraServices={() => handleAddExtraServices(client)}
+                                            onTogglePaymentStatus={(clientArg, e) => handleTogglePaymentStatus(clientArg, e)}
+                                            hasActiveHotel={hasActiveHotel}
+                                            hasActiveDaycare={hasActiveDaycare}
+                                            onChangePhoto={(mc) => { setUploadTargetMonthlyClient(mc); setIsUploadMonthlyPhotoModalOpen(true); }}
+                                            onView={(mc) => setViewingClient(mc)}
+                                        />
+                                    </div>
+                                );
+                            })}
                         </div>
                     ) : (
                         // Visualização em Lista
@@ -6631,30 +7412,29 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                             )}
                                         </div>
                                         <div className="w-full sm:w-auto flex items-center justify-between mt-2 sm:mt-0">
-                                           <div className="flex items-center gap-3 flex-wrap">
+                                            <div className="flex items-center gap-3 flex-wrap">
                                                 <p className="text-xs text-pink-800 bg-pink-100 font-semibold py-1 px-2 rounded-full truncate">
-                                                   {getRecurrenceText(client)}
-                                               </p>
-                                               <p className="text-xs text-purple-800 bg-purple-100 font-semibold py-1 px-2 rounded-full truncate">
-                                                   Plano: {getPlanLabel(client)}
-                                               </p>
-                                               <p className="text-xs text-green-800 bg-green-100 font-semibold py-1 px-2 rounded-full truncate">
-                                                   Próximo: {getNextAppointmentDateText(client)}
-                                               </p>
-                                               <p className="text-xs text-blue-800 bg-blue-100 font-semibold py-1 px-2 rounded-full truncate">
-                                                   Vencimento: {formatDateToBR(getCurrentMonthPaymentDueISO())}
-                                               </p>
-                                               <button
+                                                    {getRecurrenceText(client)}
+                                                </p>
+                                                <p className="text-xs text-purple-800 bg-purple-100 font-semibold py-1 px-2 rounded-full truncate">
+                                                    Plano: {getPlanLabel(client)}
+                                                </p>
+                                                <p className="text-xs text-green-800 bg-green-100 font-semibold py-1 px-2 rounded-full truncate">
+                                                    Próximo: {getNextAppointmentDateText(client)}
+                                                </p>
+                                                <p className="text-xs text-blue-800 bg-blue-100 font-semibold py-1 px-2 rounded-full truncate">
+                                                    Vencimento: {formatDateToBR(getCurrentMonthPaymentDueISO())}
+                                                </p>
+                                                <button
                                                     onClick={(e) => handleTogglePaymentStatus(client, e)}
-                                                    className={`px-2 py-1 text-xs font-bold rounded-full whitespace-nowrap transition-colors ${
-                                                        client.payment_status === 'Pendente' 
-                                                        ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
+                                                    className={`px-2 py-1 text-xs font-bold rounded-full whitespace-nowrap transition-colors ${client.payment_status === 'Pendente'
+                                                        ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                                                         : 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {client.payment_status === 'Pendente' ? 'Pagamento Pendente' : 'Pagamento Realizado'}
                                                 </button>
-                                           </div>
+                                            </div>
                                             <div className="flex-shrink-0 flex items-center gap-1 sm:ml-4" onClick={e => e.stopPropagation()}>
                                                 <button onClick={() => setEditingClient(client)} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-blue-700 transition-colors" aria-label="Editar mensalista"><EditIcon /></button>
                                                 <button onClick={() => setDeletingClient(client)} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-red-700 transition-colors" aria-label="Excluir mensalista"><DeleteIcon /></button>
@@ -6676,8 +7456,8 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                             {searchTerm.trim() ? 'Nenhum resultado encontrado' : 'Nenhum mensalista cadastrado'}
                         </h3>
                         <p className="text-gray-500">
-                            {searchTerm.trim() 
-                                ? `Não encontramos mensalistas para "${searchTerm}".` 
+                            {searchTerm.trim()
+                                ? `Não encontramos mensalistas para "${searchTerm}".`
                                 : 'Comece adicionando seu primeiro cliente mensalista.'
                             }
                         </p>
@@ -6736,6 +7516,81 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
 
 // Add Extra Services Modal for Hotel
 // Monthly Client Card Component
+// Hook para validação de serviços ativos
+const useServiceValidation = (phone: string | null | undefined) => {
+    const [hasDaycare, setHasDaycare] = useState(false);
+    const [hasHotel, setHasHotel] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        const checkServices = async () => {
+            if (!phone) {
+                if (isMounted) {
+                    setHasDaycare(false);
+                    setHasHotel(false);
+                }
+                return;
+            }
+
+            // Normaliza o telefone mantendo apenas dígitos
+            const cleanPhone = phone.replace(/\D/g, '');
+            // Se o telefone for muito curto, ignora
+            if (cleanPhone.length < 8) {
+                if (isMounted) {
+                    setHasDaycare(false);
+                    setHasHotel(false);
+                }
+                return;
+            }
+
+            // Busca pelos últimos 8 dígitos
+            const last8 = cleanPhone.slice(-8);
+            const termPlain = `%${last8}`;
+            // Formato com hífen (comum no banco: XXXX-XXXX)
+            const termHyphen = `%${last8.slice(0, 4)}-${last8.slice(4)}`;
+
+            // Query combinada: busca formato limpo OU formato com hífen
+            const orQueryDaycare = `contact_phone.ilike.${termPlain},contact_phone.ilike.${termHyphen}`;
+            const orQueryHotel = `tutor_phone.ilike.${termPlain},tutor_phone.ilike.${termHyphen}`;
+
+            if (isMounted) setLoading(true);
+
+            try {
+                // Verifica Creche
+                const { data: daycareData } = await supabase
+                    .from('daycare_enrollments')
+                    .select('id')
+                    .or(orQueryDaycare)
+                    .eq('status', 'Aprovado')
+                    .limit(1);
+
+                // Verifica Hotel
+                const { data: hotelData } = await supabase
+                    .from('hotel_registrations')
+                    .select('id')
+                    .or(orQueryHotel)
+                    .or('status.eq.Ativo,status.eq.Aprovado,approval_status.eq.Aprovado,approval_status.eq.aprovado')
+                    .limit(1);
+
+                if (isMounted) {
+                    setHasDaycare(!!(daycareData && daycareData.length > 0));
+                    setHasHotel(!!(hotelData && hotelData.length > 0));
+                }
+            } catch (err) {
+                console.error('Erro ao validar serviços:', err);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+
+        checkServices();
+        return () => { isMounted = false; };
+    }, [phone]);
+
+    return { hasDaycare, hasHotel, loading };
+};
+
 const MonthlyClientCard: React.FC<{
     client: MonthlyClient;
     onClick?: (client: MonthlyClient) => void;
@@ -6743,11 +7598,19 @@ const MonthlyClientCard: React.FC<{
     onDelete: (client: MonthlyClient) => void;
     onAddExtraServices: (client: MonthlyClient) => void;
     onTogglePaymentStatus: (client: MonthlyClient, e: React.MouseEvent) => void;
-    isClientInDaycare?: boolean;
+    hasActiveHotel?: boolean; // Mantido para compatibilidade, mas o hook tem precedência
+    hasActiveDaycare?: boolean; // Mantido para compatibilidade, mas o hook tem precedência
     onChangePhoto: (client: MonthlyClient) => void;
     onView: (client: MonthlyClient) => void;
-}> = ({ client, onClick, onEdit, onDelete, onAddExtraServices, onTogglePaymentStatus, isClientInDaycare = false, onChangePhoto, onView }) => {
-    
+}> = ({ client, onClick, onEdit, onDelete, onAddExtraServices, onTogglePaymentStatus, onChangePhoto, onView }) => {
+
+    // Validação dinâmica dos serviços
+    const { hasDaycare: dynamicHasDaycare, hasHotel: dynamicHasHotel } = useServiceValidation(client.whatsapp);
+
+    // Usa o valor dinâmico
+    const hasActiveDaycare = dynamicHasDaycare;
+    const hasActiveHotel = dynamicHasHotel;
+
     const getRecurrenceText = (client: MonthlyClient) => {
         if (client.recurrence_type === 'weekly') return 'Semanal';
         if (client.recurrence_type === 'bi-weekly') return 'Quinzenal';
@@ -6766,7 +7629,7 @@ const MonthlyClientCard: React.FC<{
 
     const calculateTotalInvoiceValue = (client: MonthlyClient) => {
         let total = Number(client.price || 0);
-        
+
         if (client.extra_services) {
             // Usar os valores dinâmicos dos serviços extras
             if (client.extra_services.pernoite?.enabled) {
@@ -6791,7 +7654,7 @@ const MonthlyClientCard: React.FC<{
                 total += (client.extra_services.dias_extras.quantity * Number(client.extra_services.dias_extras.value || 0));
             }
         }
-        
+
         return total;
     };
 
@@ -6813,7 +7676,7 @@ const MonthlyClientCard: React.FC<{
     const condoLabel = client.condominium ? (client.condominium === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : client.condominium) : null;
 
     return (
-        <div 
+        <div
             className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform md:hover:scale-[1.02] cursor-pointer overflow-hidden border border-gray-100 w-full max-w-full mx-auto min-h-0 md:min-h-[65vh] flex flex-col"
             onClick={() => onClick(client)}
         >
@@ -6821,20 +7684,16 @@ const MonthlyClientCard: React.FC<{
             <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-3 sm:p-4 text-white">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                        <img
+                        <SafeImage
                             src={client.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'}
                             alt={client.pet_name}
                             className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover cursor-pointer"
+                            loading="eager"
                             onClick={(e) => { e.stopPropagation(); onChangePhoto(client); }}
                         />
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
                                 <h3 className="text-lg sm:text-xl font-bold truncate">{client.pet_name}</h3>
-                                {isClientInDaycare && (
-                                    <span className="px-2 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full">
-                                        🏠 Creche
-                                    </span>
-                                )}
                             </div>
                             <div className="mt-0.5">
                                 <span className="text-[11px] sm:text-xs font-semibold text-pink-100 bg-pink-600/30 px-2 sm:px-3 py-0.5 rounded-full">
@@ -6856,6 +7715,20 @@ const MonthlyClientCard: React.FC<{
 
             {/* Conteúdo do Card */}
             <div className="p-4 sm:p-5 space-y-4 flex-1 overflow-y-auto">
+                {(hasActiveHotel || hasActiveDaycare) && (
+                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                        {hasActiveHotel && (
+                            <span className="px-1.5 py-[2px] bg-blue-50 text-blue-700 text-[10px] font-semibold rounded-full border border-blue-200">
+                                🏨 Hotel
+                            </span>
+                        )}
+                        {hasActiveDaycare && (
+                            <span className="px-1.5 py-[2px] bg-yellow-50 text-yellow-700 text-[10px] font-semibold rounded-full border border-yellow-200">
+                                🏠 Creche
+                            </span>
+                        )}
+                    </div>
+                )}
                 {condoLabel && (
                     <div className="flex items-center space-x-2 text-gray-600">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6865,7 +7738,7 @@ const MonthlyClientCard: React.FC<{
                         <span className="text-sm truncate">{condoLabel}</span>
                     </div>
                 )}
-                
+
                 {/* Informações básicas */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
@@ -6896,7 +7769,7 @@ const MonthlyClientCard: React.FC<{
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Preço Base</p>
                         <p className="text-gray-800 font-medium">R$ {Number(client.price || 0).toFixed(2).replace('.', ',')}</p>
                     </div>
-                    
+
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -6974,11 +7847,10 @@ const MonthlyClientCard: React.FC<{
                     <span className="text-sm font-medium text-gray-600">Status do Pagamento:</span>
                     <button
                         onClick={(e) => onTogglePaymentStatus(client, e)}
-                        className={`px-4 py-2 text-sm font-bold rounded-full transition-all duration-200 ${
-                            client.payment_status === 'Pendente' 
-                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 hover:shadow-md' 
+                        className={`px-4 py-2 text-sm font-bold rounded-full transition-all duration-200 ${client.payment_status === 'Pendente'
+                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 hover:shadow-md'
                             : 'bg-green-100 text-green-800 hover:bg-green-200 hover:shadow-md'
-                        }`}
+                            }`}
                     >
                         {client.payment_status === 'Pendente' ? '⏳ Pendente' : '✅ Pago'}
                     </button>
@@ -6987,7 +7859,7 @@ const MonthlyClientCard: React.FC<{
 
             <div className="p-2 bg-gray-50 border-t border-gray-100">
                 <div className="grid grid-cols-4 gap-1.5">
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); onAddExtraServices(client); }}
                         className="w-full bg-purple-100 text-purple-700 py-1.5 px-2 rounded-md hover:bg-purple-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
                     >
@@ -6996,7 +7868,7 @@ const MonthlyClientCard: React.FC<{
                         </svg>
                         <span>Extras</span>
                     </button>
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); onView(client); }}
                         className="w-full bg-blue-100 text-blue-700 py-1.5 px-2 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
                         aria-label="Visualizar mensalista"
@@ -7007,7 +7879,7 @@ const MonthlyClientCard: React.FC<{
                         </svg>
                         <span>Visualizar</span>
                     </button>
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); onEdit(client); }}
                         className="w-full bg-gray-100 text-gray-700 py-1.5 px-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
                         aria-label="Editar mensalista"
@@ -7015,7 +7887,7 @@ const MonthlyClientCard: React.FC<{
                         <EditIcon className="w-4 h-4" />
                         <span>Editar</span>
                     </button>
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); onDelete(client); }}
                         className="w-full bg-red-50 text-red-600 py-1.5 px-2 rounded-md hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
                         aria-label="Excluir mensalista"
@@ -7049,7 +7921,7 @@ const DaycareEnrollmentCard: React.FC<{
         if (!time) return 'Não definido';
         const s = String(time);
         const m = s.match(/^(\d{1,2}):(\d{2})/);
-        return m ? `${m[1].padStart(2,'0')}:${m[2]}` : s;
+        return m ? `${m[1].padStart(2, '0')}:${m[2]}` : s;
     };
     const checkInTimeText = formatTimeText(enrollment.check_in_time);
     const checkOutTimeText = formatTimeText(enrollment.check_out_time);
@@ -7061,15 +7933,15 @@ const DaycareEnrollmentCard: React.FC<{
     };
 
     const planLabels: Record<string, string> = {
-      '4x_month': '4x no Mês',
-      '8x_month': '8x no Mês',
-      '12x_month': '12x no Mês',
-      '16x_month': '16x no Mês',
-      '20x_month': '20x no Mês',
-      '2x_week': '2x por Semana',
-      '3x_week': '3x por Semana',
-      '4x_week': '4x por Semana',
-      '5x_week': '5x por Semana',
+        '4x_month': '4x no Mês',
+        '8x_month': '8x no Mês',
+        '12x_month': '12x no Mês',
+        '16x_month': '16x no Mês',
+        '20x_month': '20x no Mês',
+        '2x_week': '2x por Semana',
+        '3x_week': '3x por Semana',
+        '4x_week': '4x por Semana',
+        '5x_week': '5x por Semana',
     };
 
     const buildWhatsAppLink = (phone: string) => {
@@ -7082,7 +7954,7 @@ const DaycareEnrollmentCard: React.FC<{
     const invoiceTotal = calculateDaycareInvoiceTotal(enrollment);
 
     return (
-        <div 
+        <div
             draggable={isDraggable}
             onDragStart={isDraggable ? onDragStart : undefined}
             onClick={onClick}
@@ -7091,7 +7963,7 @@ const DaycareEnrollmentCard: React.FC<{
             <div className="p-5 flex-grow">
                 <div className="rounded-xl mb-3 p-5 bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src={enrollment.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'} alt={enrollment.pet_name} className="w-10 h-10 rounded-full object-cover cursor-pointer" onClick={(e) => { e.stopPropagation(); onChangePhoto(enrollment); }} />
+                        <SafeImage src={enrollment.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'} alt={enrollment.pet_name} className="w-10 h-10 rounded-full object-cover cursor-pointer" loading="eager" onClick={(e) => { e.stopPropagation(); onChangePhoto(enrollment); }} />
                         <div>
                             <p className="text-2xl font-bold leading-none">{pet_name}</p>
                             <p className="text-xs opacity-90">{tutor_name}</p>
@@ -7149,7 +8021,7 @@ const DaycareEnrollmentCard: React.FC<{
                         <span className="font-semibold mr-2">Plano</span> {contracted_plan ? planLabels[contracted_plan] : 'Não informado'}
                     </div>
                 </div>
-                
+
                 <div className="mt-4 border-t border-gray-200 pt-4">
                     <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2 text-gray-600">
@@ -7180,13 +8052,13 @@ const DaycareEnrollmentCard: React.FC<{
                         <div className="flex items-center gap-2 text-gray-600">
                             <CalendarIcon className="h-5 w-5" />
                             <span>
-                                Dias da semana: {(enrollment.attendance_days && enrollment.attendance_days.length > 0) 
-                                    ? (enrollment.attendance_days as any[]).map((idx: number) => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][idx]).join(', ') 
+                                Dias da semana: {(enrollment.attendance_days && enrollment.attendance_days.length > 0)
+                                    ? (enrollment.attendance_days as any[]).map((idx: number) => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][idx]).join(', ')
                                     : 'Não informado'}
                             </span>
                         </div>
                     </div>
-                    
+
                     {/* Serviços Extras */}
                     {enrollment.extra_services && (
                         <div className="mt-3 pt-3 border-t border-gray-100">
@@ -7223,7 +8095,7 @@ const DaycareEnrollmentCard: React.FC<{
             <div className="p-3 bg-gray-50 border-t border-gray-100">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
                     {status === 'Pendente' && onApprove && (
-                        <button 
+                        <button
                             onClick={(e) => { e.stopPropagation(); onApprove(enrollment); }}
                             className="w-full bg-green-100 text-green-700 py-1.5 px-2 rounded-md hover:bg-green-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
                         >
@@ -7233,7 +8105,7 @@ const DaycareEnrollmentCard: React.FC<{
                             <span>Aprovar</span>
                         </button>
                     )}
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); onAddExtraServices(enrollment); }}
                         className="w-full bg-green-100 text-green-700 py-1.5 px-2 rounded-md hover:bg-green-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
                         title="Adicionar Serviços Extras"
@@ -7258,7 +8130,7 @@ const DaycareEnrollmentCard: React.FC<{
                             <span>Diário</span>
                         </button>
                     )}
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); onEdit(enrollment); }}
                         className="w-full bg-blue-100 text-blue-700 py-1.5 px-2 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
                         aria-label="Editar matrícula"
@@ -7266,7 +8138,7 @@ const DaycareEnrollmentCard: React.FC<{
                         <EditIcon className="w-4 h-4" />
                         <span>Editar</span>
                     </button>
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); onDelete(enrollment); }}
                         className="w-full bg-red-50 text-red-600 py-1.5 px-2 rounded-md hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
                         aria-label="Excluir matrícula"
@@ -7275,7 +8147,7 @@ const DaycareEnrollmentCard: React.FC<{
                         <span>Excluir</span>
                     </button>
                 </div>
-             </div>
+            </div>
         </div>
     );
 };
@@ -7330,10 +8202,10 @@ const DaycareEnrollmentDetailsModal: React.FC<{
                             <DetailItem label="Sexo" value={enrollment.pet_sex} />
                             <DetailItem label="Castrado(a)" value={enrollment.is_neutered ? 'Sim' : 'Não'} />
                             <DetailItem label="Desconto Irmão" value={enrollment.has_sibling_discount ? 'Sim (10%)' : 'Não'} />
-        </div>
-        
-      </section>
-                     {/* Tutor Info */}
+                        </div>
+
+                    </section>
+                    {/* Tutor Info */}
                     <section>
                         <h3 className="text-lg font-semibold text-pink-700 border-b pb-2 mb-4">Dados do Tutor</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
@@ -7343,46 +8215,46 @@ const DaycareEnrollmentDetailsModal: React.FC<{
                             <DetailItem label="Contato de Emergência" value={enrollment.emergency_contact_name} />
                             <DetailItem label="Telefone do Veterinário" value={enrollment.vet_phone} />
                             <DetailItem label="Endereço" value={enrollment.address} />
-          </div>
-          
-        </section>
-                     {/* Health Info */}
+                        </div>
+
+                    </section>
+                    {/* Health Info */}
                     <section>
                         <h3 className="text-lg font-semibold text-pink-700 border-b pb-2 mb-4">Saúde e Comportamento</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 text-sm">
-                           <DetailItem label="Se dá bem com outros animais?" value={enrollment.gets_along_with_others ? 'Sim' : 'Não'} />
-                           <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                              <DetailItem label="Última Vacina" value={formatDateToBR(enrollment.last_vaccine)} />
-                              <DetailItem label="Último Vermífugo" value={formatDateToBR(enrollment.last_deworming)} />
-                              <DetailItem label="Último Antipulgas" value={formatDateToBR(enrollment.last_flea_remedy)} />
-                           </div>
-                           <DetailItem label="Possui Alergias?" value={enrollment.has_allergies ? 'Sim' : 'Não'} />
-                           {enrollment.has_allergies && <DetailItem label="Descrição da Alergia" value={enrollment.allergies_description} />}
-                           <DetailItem label="Necessita de Cuidados Especiais?" value={enrollment.needs_special_care ? 'Sim' : 'Não'} />
-                           {enrollment.needs_special_care && <DetailItem label="Descrição do Cuidado" value={enrollment.special_care_description} />}
-          </div>
-          
-        </section>
+                            <DetailItem label="Se dá bem com outros animais?" value={enrollment.gets_along_with_others ? 'Sim' : 'Não'} />
+                            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <DetailItem label="Última Vacina" value={formatDateToBR(enrollment.last_vaccine)} />
+                                <DetailItem label="Último Vermífugo" value={formatDateToBR(enrollment.last_deworming)} />
+                                <DetailItem label="Último Antipulgas" value={formatDateToBR(enrollment.last_flea_remedy)} />
+                            </div>
+                            <DetailItem label="Possui Alergias?" value={enrollment.has_allergies ? 'Sim' : 'Não'} />
+                            {enrollment.has_allergies && <DetailItem label="Descrição da Alergia" value={enrollment.allergies_description} />}
+                            <DetailItem label="Necessita de Cuidados Especiais?" value={enrollment.needs_special_care ? 'Sim' : 'Não'} />
+                            {enrollment.needs_special_care && <DetailItem label="Descrição do Cuidado" value={enrollment.special_care_description} />}
+                        </div>
+
+                    </section>
                     {/* Plan & Belongings */}
                     <section>
-                         <h3 className="text-lg font-semibold text-pink-700 border-b pb-2 mb-4">Plano, Pertences e Detalhes Financeiros</h3>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                             <DetailItem label="Plano Contratado" value={enrollment.contracted_plan ? planLabels[enrollment.contracted_plan] : 'N/A'} />
+                        <h3 className="text-lg font-semibold text-pink-700 border-b pb-2 mb-4">Plano, Pertences e Detalhes Financeiros</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                            <DetailItem label="Plano Contratado" value={enrollment.contracted_plan ? planLabels[enrollment.contracted_plan] : 'N/A'} />
                             <DetailItem label="Itens Entregues" value={(enrollment.delivered_items?.items ?? []).join(', ')} />
                             <DetailItem label="Outros Itens" value={enrollment.delivered_items?.other ?? ''} />
-                             <DetailItem label="Valor Total" value={enrollment.total_price ? `R$ ${Number(enrollment.total_price).toFixed(2).replace('.', ',')}` : 'N/A'} />
-                             <DetailItem label="Data Pagamento" value={formatDateToBR(enrollment.payment_date || null)} />
-                         </div>
+                            <DetailItem label="Valor Total" value={enrollment.total_price ? `R$ ${Number(enrollment.total_price).toFixed(2).replace('.', ',')}` : 'N/A'} />
+                            <DetailItem label="Data Pagamento" value={formatDateToBR(enrollment.payment_date || null)} />
+                        </div>
                     </section>
-                    
+
                     {/* Dates & Attendance */}
                     <section>
                         <h3 className="text-lg font-semibold text-pink-700 border-b pb-2 mb-4">Datas, Horários e Dias</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                             <DetailItem label="Data de Matrícula" value={formatDateToBR(enrollment.enrollment_date || null)} />
-                            <DetailItem label="Entrada" value={(enrollment.check_in_date ? `${formatDateToBR(enrollment.check_in_date)} ${String(enrollment.check_in_time ?? '').split(':').slice(0,2).join(':')}` : 'Não informado')} />
-                            <DetailItem label="Saída" value={(enrollment.check_out_date ? `${formatDateToBR(enrollment.check_out_date)} ${String(enrollment.check_out_time ?? '').split(':').slice(0,2).join(':')}` : 'Não informado')} />
-                            <DetailItem label="Dias da Semana" value={(enrollment.attendance_days && enrollment.attendance_days.length > 0) ? (enrollment.attendance_days as any[]).map((idx: number) => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][idx]).join(', ') : 'Não informado'} />
+                            <DetailItem label="Entrada" value={(enrollment.check_in_date ? `${formatDateToBR(enrollment.check_in_date)} ${String(enrollment.check_in_time ?? '').split(':').slice(0, 2).join(':')}` : 'Não informado')} />
+                            <DetailItem label="Saída" value={(enrollment.check_out_date ? `${formatDateToBR(enrollment.check_out_date)} ${String(enrollment.check_out_time ?? '').split(':').slice(0, 2).join(':')}` : 'Não informado')} />
+                            <DetailItem label="Dias da Semana" value={(enrollment.attendance_days && enrollment.attendance_days.length > 0) ? (enrollment.attendance_days as any[]).map((idx: number) => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][idx]).join(', ') : 'Não informado'} />
                         </div>
                     </section>
 
@@ -7429,7 +8301,7 @@ const DaycareEnrollmentDetailsModal: React.FC<{
                     <div className="flex justify-between items-center">
                         {/* Botão Adicionar Serviços Extras */}
                         {onAddExtraServices && (
-                            <button 
+                            <button
                                 onClick={() => onAddExtraServices(enrollment)}
                                 className="bg-purple-500 text-white font-bold py-3.5 px-4 rounded-lg hover:bg-purple-600 transition-colors flex items-center gap-2"
                             >
@@ -7437,7 +8309,7 @@ const DaycareEnrollmentDetailsModal: React.FC<{
                                 Adicionar Serviços Extras
                             </button>
                         )}
-                        
+
                         {/* Botões de Status */}
                         {status === 'Pendente' ? (
                             <div className="flex items-center gap-3">
@@ -7445,11 +8317,11 @@ const DaycareEnrollmentDetailsModal: React.FC<{
                                 <button onClick={() => onUpdateStatus(id!, 'Aprovado')} disabled={isUpdating} className="bg-green-500 text-white font-bold py-3.5 px-4 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-300">{isUpdating ? <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-white mx-auto"></div> : 'Aprovar'}</button>
                             </div>
                         ) : (
-                             <div className="text-gray-600 font-semibold">Esta matrícula já foi {status === 'Aprovado' ? 'aprovada' : 'rejeitada'}.</div>
+                            <div className="text-gray-600 font-semibold">Esta matrícula já foi {status === 'Aprovado' ? 'aprovada' : 'rejeitada'}.</div>
                         )}
                     </div>
                 </div>
-                </div>
+            </div>
         </div>,
         document.body
     );
@@ -7475,8 +8347,8 @@ const EditDaycareEnrollmentModal: React.FC<{
             enrollment_date: (enrollment.enrollment_date || '').split('T')[0] || '',
             check_in_date: (enrollment.check_in_date || '').split('T')[0] || '',
             check_out_date: (enrollment.check_out_date || '').split('T')[0] || '',
-            check_in_time: enrollment.check_in_time ? String(enrollment.check_in_time).split(':').slice(0,2).join(':') : '',
-            check_out_time: enrollment.check_out_time ? String(enrollment.check_out_time).split(':').slice(0,2).join(':') : '',
+            check_in_time: enrollment.check_in_time ? String(enrollment.check_in_time).split(':').slice(0, 2).join(':') : '',
+            check_out_time: enrollment.check_out_time ? String(enrollment.check_out_time).split(':').slice(0, 2).join(':') : '',
         };
         const es: any = (enrollment as any).extra_services || {};
         const flattenEs: any = {
@@ -7532,12 +8404,12 @@ const EditDaycareEnrollmentModal: React.FC<{
         const { value } = e.target;
         setFormData(prev => ({ ...prev, delivered_items: { ...prev.delivered_items, other: value } }));
     };
-    
+
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-                const payload: Partial<DaycareRegistration> & { extra_services?: any } = {
+            const payload: Partial<DaycareRegistration> & { extra_services?: any } = {
                 pet_name: formData.pet_name || '',
                 pet_breed: formData.pet_breed || '',
                 is_neutered: formData.is_neutered,
@@ -7595,10 +8467,10 @@ const EditDaycareEnrollmentModal: React.FC<{
                 };
             })();
             delete (payload as any).created_at; // Do not send created_at on update
-            
+
             const { data, error } = await supabase.from('daycare_enrollments').update(payload).eq('id', enrollment.id).select().single();
             if (error) throw error;
-            
+
             onUpdated(data as DaycareRegistration);
 
         } catch (error: any) {
@@ -7621,7 +8493,7 @@ const EditDaycareEnrollmentModal: React.FC<{
             </div>
         </div>
     );
-    
+
     return createPortal(
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-fadeIn">
             <form onSubmit={handleUpdate} className="bg-rose-50 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col animate-scaleIn">
@@ -7630,51 +8502,51 @@ const EditDaycareEnrollmentModal: React.FC<{
                 </div>
                 <div className="p-6 space-y-6 overflow-y-auto">
                     {/* Pet and Tutor Info */}
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                         <h3 className="md:col-span-2 text-lg font-semibold text-pink-700 border-b pb-2 mb-2">Dados do Pet</h3>
-                        <div><label className="block text-base font-semibold text-gray-700">Nome</label><input type="text" name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                        <div><label className="block text-base font-semibold text-gray-700">Raça</label><input type="text" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                        <div><label className="block text-base font-semibold text-gray-700">Idade</label><input type="text" name="pet_age" value={formData.pet_age} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                        <div><label className="block text-base font-semibold text-gray-700">Sexo</label><input type="text" name="pet_sex" value={formData.pet_sex} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                        {renderRadioGroup('Castrado (a)', 'is_neutered', [{label: 'Sim', value: true}, {label: 'Não', value: false}])}
-                        <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Foto do Pet (URL)</label><input type="url" name="pet_photo_url" value={formData.pet_photo_url || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
+                        <div><label className="block text-base font-semibold text-gray-700">Nome</label><input type="text" name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div><label className="block text-base font-semibold text-gray-700">Raça</label><input type="text" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div><label className="block text-base font-semibold text-gray-700">Idade</label><input type="text" name="pet_age" value={formData.pet_age} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div><label className="block text-base font-semibold text-gray-700">Sexo</label><input type="text" name="pet_sex" value={formData.pet_sex} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        {renderRadioGroup('Castrado (a)', 'is_neutered', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
+                        <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Foto do Pet (URL)</label><input type="url" name="pet_photo_url" value={formData.pet_photo_url || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
                         <h3 className="md:col-span-2 text-lg font-semibold text-pink-700 border-b pb-2 mb-2 mt-4">Dados do Tutor</h3>
-                        <div><label className="block text-base font-semibold text-gray-700">Tutor</label><input type="text" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                        <div><label className="block text-base font-semibold text-gray-700">RG</label><input type="text" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                        <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Endereço</label><input type="text" name="address" value={formData.address} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                        <div><label className="block text-base font-semibold text-gray-700">Telefone</label><input type="tel" name="contact_phone" value={formData.contact_phone} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                        <div><label className="block text-base font-semibold text-gray-700">Emergência</label><input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                        <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Telefone Vet.</label><input type="text" name="vet_phone" value={formData.vet_phone} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
+                        <div><label className="block text-base font-semibold text-gray-700">Tutor</label><input type="text" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div><label className="block text-base font-semibold text-gray-700">RG</label><input type="text" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Endereço</label><input type="text" name="address" value={formData.address} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div><label className="block text-base font-semibold text-gray-700">Telefone</label><input type="tel" name="contact_phone" value={formData.contact_phone} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div><label className="block text-base font-semibold text-gray-700">Emergência</label><input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Telefone Vet.</label><input type="text" name="vet_phone" value={formData.vet_phone} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
                     </div>
-                     {/* Health & Plan */}
-                     <div className="space-y-6">
-                       <h3 className="text-lg font-semibold text-pink-700 border-b pb-2 mb-2">Saúde, Plano e Status</h3>
-                       {renderRadioGroup('Se dá bem com outros animais', 'gets_along_with_others', [{label: 'Sim', value: true}, {label: 'Não', value: false}])}
-                       {renderRadioGroup('Alergias', 'has_allergies', [{label: 'Sim', value: true}, {label: 'Não', value: false}])}
-                       {formData.has_allergies && (
-                           <div>
-                               <label className="block text-base font-semibold text-gray-700 mb-1">Alergias (descreva)</label>
-                               <textarea name="allergies_description" value={formData.allergies_description || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" rows={2} />
-                           </div>
-                       )}
-                       {renderRadioGroup('Cuidados especiais', 'needs_special_care', [{label: 'Sim', value: true}, {label: 'Não', value: false}])}
-                       {formData.needs_special_care && (
-                           <div>
-                               <label className="block text-base font-semibold text-gray-700 mb-1">Cuidado especial (descreva)</label>
-                               <textarea name="special_care_description" value={formData.special_care_description || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" rows={2} />
-                           </div>
-                       )}
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                           <div><label className="block text-base font-semibold text-gray-700">Última vacina</label><input type="date" name="last_vaccine" value={formData.last_vaccine} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                           <div><label className="block text-base font-semibold text-gray-700">Último vermífugo</label><input type="date" name="last_deworming" value={formData.last_deworming} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                           <div><label className="block text-base font-semibold text-gray-700">Último antipulgas</label><input type="date" name="last_flea_remedy" value={formData.last_flea_remedy} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md"/></div>
-                       </div>
-                        {renderRadioGroup('Plano (Mensal)', 'contracted_plan', [ {label: '4 X MÊS', value: '4x_month'}, {label: '8 X MÊS', value: '8x_month'}, {label: '12 X MÊS', value: '12x_month'}, {label: '16 X MÊS', value: '16x_month'}, {label: '20 X MÊS', value: '20x_month'}])}
-                        
+                    {/* Health & Plan */}
+                    <div className="space-y-6">
+                        <h3 className="text-lg font-semibold text-pink-700 border-b pb-2 mb-2">Saúde, Plano e Status</h3>
+                        {renderRadioGroup('Se dá bem com outros animais', 'gets_along_with_others', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
+                        {renderRadioGroup('Alergias', 'has_allergies', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
+                        {formData.has_allergies && (
+                            <div>
+                                <label className="block text-base font-semibold text-gray-700 mb-1">Alergias (descreva)</label>
+                                <textarea name="allergies_description" value={formData.allergies_description || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" rows={2} />
+                            </div>
+                        )}
+                        {renderRadioGroup('Cuidados especiais', 'needs_special_care', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
+                        {formData.needs_special_care && (
+                            <div>
+                                <label className="block text-base font-semibold text-gray-700 mb-1">Cuidado especial (descreva)</label>
+                                <textarea name="special_care_description" value={formData.special_care_description || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" rows={2} />
+                            </div>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                            <div><label className="block text-base font-semibold text-gray-700">Última vacina</label><input type="date" name="last_vaccine" value={formData.last_vaccine} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                            <div><label className="block text-base font-semibold text-gray-700">Último vermífugo</label><input type="date" name="last_deworming" value={formData.last_deworming} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                            <div><label className="block text-base font-semibold text-gray-700">Último antipulgas</label><input type="date" name="last_flea_remedy" value={formData.last_flea_remedy} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        </div>
+                        {renderRadioGroup('Plano (Mensal)', 'contracted_plan', [{ label: '4 X MÊS', value: '4x_month' }, { label: '8 X MÊS', value: '8x_month' }, { label: '12 X MÊS', value: '12x_month' }, { label: '16 X MÊS', value: '16x_month' }, { label: '20 X MÊS', value: '20x_month' }])}
+
                         <div className="space-y-6">
                             <h4 className="text-base font-semibold text-pink-700 border-b pb-1">Objetos entregues</h4>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                {['Bolinha','Pelucia','Cama','Coleira','Comedouro'].map(item => (
+                                {['Bolinha', 'Pelucia', 'Cama', 'Coleira', 'Comedouro'].map(item => (
                                     <label key={item} className="flex items-center gap-2 text-gray-700 font-medium bg-white p-3 rounded-lg border-2 border-gray-200">
                                         <input type="checkbox" value={item} checked={formData.delivered_items.items.includes(item)} onChange={handleBelongingsChange} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                                         {item}
@@ -7705,7 +8577,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                         {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
                                             const h = 7 + Math.floor(i / 2);
                                             const m = i % 2 ? '30' : '00';
-                                            const t = `${String(h).padStart(2,'0')}:${m}`;
+                                            const t = `${String(h).padStart(2, '0')}:${m}`;
                                             return (<option key={t} value={t}>{t}</option>);
                                         })}
                                     </select>
@@ -7721,7 +8593,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                         {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
                                             const h = 7 + Math.floor(i / 2);
                                             const m = i % 2 ? '30' : '00';
-                                            const t = `${String(h).padStart(2,'0')}:${m}`;
+                                            const t = `${String(h).padStart(2, '0')}:${m}`;
                                             return (<option key={t} value={t}>{t}</option>);
                                         })}
                                     </select>
@@ -7730,7 +8602,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                             <div>
                                 <label className="block text-base font-semibold text-gray-700 mb-1">Dias da Semana</label>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                    {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((label, idx) => (
+                                    {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((label, idx) => (
                                         <label key={label} className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold bg-white text-gray-700">
                                             <input type="checkbox" checked={(formData.attendance_days || []).includes(idx)} onChange={() => {
                                                 setFormData(prev => {
@@ -7746,7 +8618,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Extra Services */}
                         <div className="space-y-4">
                             <h4 className="text-base font-semibold text-pink-700 border-b pb-1">Serviços Extras</h4>
@@ -7754,8 +8626,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                 {/* Pernoite */}
                                 <div className="bg-white p-4 rounded-lg border">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             checked={formData.pernoite || false}
                                             onChange={(e) => setFormData(prev => ({
                                                 ...prev,
@@ -7763,7 +8635,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                                 pernoite_quantity: e.target.checked ? (prev.pernoite_quantity || 1) : undefined,
                                                 pernoite_price: e.target.checked ? (prev.pernoite_price || 0) : undefined
                                             }))}
-                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                         />
                                         <span className="text-gray-700 font-medium">Pernoite</span>
                                     </div>
@@ -7771,8 +8643,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                         <div className="flex gap-2 ml-6">
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">Qtd:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="1"
                                                     value={formData.pernoite_quantity || 1}
                                                     onChange={(e) => setFormData(prev => ({
@@ -7784,8 +8656,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">R$:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="0"
                                                     step="0.01"
                                                     value={formData.pernoite_price || 0}
@@ -7803,8 +8675,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                 {/* Banho & Tosa */}
                                 <div className="bg-white p-4 rounded-lg border">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             checked={formData.banho_tosa || false}
                                             onChange={(e) => setFormData(prev => ({
                                                 ...prev,
@@ -7812,7 +8684,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                                 banho_tosa_quantity: e.target.checked ? (prev.banho_tosa_quantity || '') : undefined,
                                                 banho_tosa_price: e.target.checked ? (prev.banho_tosa_price || '') : undefined
                                             }))}
-                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                         />
                                         <span className="text-gray-700 font-medium">Banho & Tosa</span>
                                     </div>
@@ -7820,8 +8692,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                         <div className="flex gap-2 ml-6">
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">Qtd:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="1"
                                                     value={formData.banho_tosa_quantity || ''}
                                                     onChange={(e) => setFormData(prev => ({
@@ -7833,8 +8705,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">R$:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="0"
                                                     step="0.01"
                                                     value={formData.banho_tosa_price || ''}
@@ -7852,8 +8724,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                 {/* Só banho */}
                                 <div className="bg-white p-4 rounded-lg border">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             checked={formData.so_banho || false}
                                             onChange={(e) => setFormData(prev => ({
                                                 ...prev,
@@ -7861,7 +8733,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                                 so_banho_quantity: e.target.checked ? (prev.so_banho_quantity || '') : undefined,
                                                 so_banho_price: e.target.checked ? (prev.so_banho_price || '') : undefined
                                             }))}
-                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                         />
                                         <span className="text-gray-700 font-medium">Só banho</span>
                                     </div>
@@ -7869,8 +8741,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                         <div className="flex gap-2 ml-6">
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">Qtd:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="1"
                                                     value={formData.so_banho_quantity || ''}
                                                     onChange={(e) => setFormData(prev => ({
@@ -7882,8 +8754,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">R$:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="0"
                                                     step="0.01"
                                                     value={formData.so_banho_price || ''}
@@ -7901,8 +8773,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                 {/* Adestrador */}
                                 <div className="bg-white p-4 rounded-lg border">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             checked={formData.adestrador || false}
                                             onChange={(e) => setFormData(prev => ({
                                                 ...prev,
@@ -7910,7 +8782,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                                 adestrador_quantity: e.target.checked ? (prev.adestrador_quantity || '') : undefined,
                                                 adestrador_price: e.target.checked ? (prev.adestrador_price || '') : undefined
                                             }))}
-                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                         />
                                         <span className="text-gray-700 font-medium">Adestrador</span>
                                     </div>
@@ -7918,8 +8790,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                         <div className="flex gap-2 ml-6">
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">Qtd:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="1"
                                                     value={formData.adestrador_quantity || ''}
                                                     onChange={(e) => setFormData(prev => ({
@@ -7931,8 +8803,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">R$:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="0"
                                                     step="0.01"
                                                     value={formData.adestrador_price || ''}
@@ -7950,8 +8822,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                 {/* Despesa médica */}
                                 <div className="bg-white p-4 rounded-lg border">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             checked={formData.despesa_medica || false}
                                             onChange={(e) => setFormData(prev => ({
                                                 ...prev,
@@ -7959,7 +8831,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                                 despesa_medica_quantity: e.target.checked ? (prev.despesa_medica_quantity || '') : undefined,
                                                 despesa_medica_price: e.target.checked ? (prev.despesa_medica_price || '') : undefined
                                             }))}
-                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                         />
                                         <span className="text-gray-700 font-medium">Despesa médica</span>
                                     </div>
@@ -7967,8 +8839,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                         <div className="flex gap-2 ml-6">
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">Qtd:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="1"
                                                     value={formData.despesa_medica_quantity || ''}
                                                     onChange={(e) => setFormData(prev => ({
@@ -7980,8 +8852,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">R$:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="0"
                                                     step="0.01"
                                                     value={formData.despesa_medica_price || ''}
@@ -7999,16 +8871,16 @@ const EditDaycareEnrollmentModal: React.FC<{
                                 {/* Dia extra */}
                                 <div className="bg-white p-4 rounded-lg border">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             checked={formData.dia_extra || false}
                                             onChange={(e) => setFormData(prev => ({
                                                 ...prev,
                                                 dia_extra: e.target.checked,
                                                 dia_extra_quantity: e.target.checked ? (prev.dia_extra_quantity || '') : undefined,
-                                dia_extra_price: e.target.checked ? (prev.dia_extra_price || '') : undefined
+                                                dia_extra_price: e.target.checked ? (prev.dia_extra_price || '') : undefined
                                             }))}
-                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                            className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                         />
                                         <span className="text-gray-700 font-medium">Dia extra</span>
                                     </div>
@@ -8016,8 +8888,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                         <div className="flex gap-2 ml-6">
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">Qtd:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="1"
                                                     value={formData.dia_extra_quantity || ''}
                                                     onChange={(e) => setFormData(prev => ({
@@ -8029,8 +8901,8 @@ const EditDaycareEnrollmentModal: React.FC<{
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <span className="text-sm text-gray-600">R$:</span>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="0"
                                                     step="0.01"
                                                     value={formData.dia_extra_price || ''}
@@ -8046,7 +8918,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div>
                             <label className="block text-base font-semibold text-gray-700">Status</label>
                             <select name="status" value={formData.status} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md">
@@ -8055,7 +8927,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                 <option value="Rejeitado">Rejeitado</option>
                             </select>
                         </div>
-                        
+
                         <div>
                             <label className="block text-base font-semibold text-gray-700">Valor Total</label>
                             <input type="number" name="total_price" value={formData.total_price ?? ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" />
@@ -8100,9 +8972,111 @@ const HotelRegistrationForm: React.FC<{
             dias_extras: false, dias_extras_quantity: 0, dias_extras_price: 0
         }
     });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const formRef = useRef<HTMLFormElement | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const formRef = useRef<HTMLFormElement | null>(null);
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [isFetchingClient, setIsFetchingClient] = useState(false);
+    const [clientFound, setClientFound] = useState(false);
+
+    // Auto-fill hotel registration data based on tutor_phone
+    useEffect(() => {
+        const fetchHotelClientData = async () => {
+            const cleanPhone = formData.tutor_phone.replace(/\D/g, '');
+            if (cleanPhone.length < 10) return;
+
+            setIsFetchingClient(true);
+            setClientFound(false);
+
+            try {
+                // Try to find in hotel_registrations first (most recent)
+                const { data: registrationData, error } = await supabase
+                    .from('hotel_registrations')
+                    .select('*')
+                    .eq('tutor_phone', formData.tutor_phone)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (registrationData) {
+                    setFormData(prev => ({
+                        ...prev,
+                        pet_name: registrationData.pet_name || prev.pet_name,
+                        pet_sex: registrationData.pet_sex || prev.pet_sex,
+                        pet_weight: registrationData.pet_weight || prev.pet_weight,
+                        pet_breed: registrationData.pet_breed || prev.pet_breed,
+                        pet_age: registrationData.pet_age || prev.pet_age,
+                        tutor_rg: registrationData.tutor_rg || prev.tutor_rg,
+                        tutor_name: registrationData.tutor_name || prev.tutor_name,
+                        tutor_email: registrationData.tutor_email || prev.tutor_email,
+                        tutor_address: registrationData.tutor_address || prev.tutor_address,
+                        tutor_social_media: registrationData.tutor_social_media || prev.tutor_social_media,
+                        emergency_contact_name: registrationData.emergency_contact_name || prev.emergency_contact_name,
+                        emergency_contact_phone: registrationData.emergency_contact_phone || prev.emergency_contact_phone,
+                        emergency_contact_relation: registrationData.emergency_contact_relation || prev.emergency_contact_relation,
+                        veterinarian: registrationData.veterinarian || prev.veterinarian,
+                        vet_phone: registrationData.vet_phone || prev.vet_phone,
+                        is_neutered: registrationData.is_neutered ?? prev.is_neutered,
+                        preexisting_disease: registrationData.preexisting_disease || prev.preexisting_disease,
+                        behavior: registrationData.behavior || prev.behavior,
+                        fears_traumas: registrationData.fears_traumas || prev.fears_traumas,
+                        wounds_marks: registrationData.wounds_marks || prev.wounds_marks,
+                        allergies: registrationData.allergies || prev.allergies,
+                        food_brand: registrationData.food_brand || prev.food_brand,
+                        food_quantity: registrationData.food_quantity || prev.food_quantity,
+                        feeding_frequency: registrationData.feeding_frequency || prev.feeding_frequency,
+                        food_observations: registrationData.food_observations || prev.food_observations,
+                        accepts_treats: registrationData.accepts_treats || prev.accepts_treats,
+                        special_food_care: registrationData.special_food_care || prev.special_food_care,
+
+                        // New fields added for complete autofill
+                        last_vaccination_date: registrationData.last_vaccination_date || prev.last_vaccination_date,
+                        has_rg_document: registrationData.has_rg_document ?? prev.has_rg_document,
+                        has_residence_proof: registrationData.has_residence_proof ?? prev.has_residence_proof,
+                        has_vaccination_card: registrationData.has_vaccination_card ?? prev.has_vaccination_card,
+                        has_vet_certificate: registrationData.has_vet_certificate ?? prev.has_vet_certificate,
+                        has_flea_tick_remedy: registrationData.has_flea_tick_remedy ?? prev.has_flea_tick_remedy,
+                        flea_tick_remedy_date: registrationData.flea_tick_remedy_date || prev.flea_tick_remedy_date,
+                        photo_authorization: registrationData.photo_authorization ?? prev.photo_authorization,
+                        retrieve_at_checkout: registrationData.retrieve_at_checkout ?? prev.retrieve_at_checkout,
+
+                        // Service preferences (boolean flags)
+                        service_bath: registrationData.service_bath ?? prev.service_bath,
+                        service_transport: registrationData.service_transport ?? prev.service_transport,
+                        service_daily_rate: registrationData.service_daily_rate ?? prev.service_daily_rate,
+                        service_extra_hour: registrationData.service_extra_hour ?? prev.service_extra_hour,
+                        service_vet: registrationData.service_vet ?? prev.service_vet,
+                        service_training: registrationData.service_training ?? prev.service_training,
+
+                        // Extra services (complex object)
+                        extra_services: registrationData.extra_services || prev.extra_services,
+                        additional_info: registrationData.additional_info || prev.additional_info
+                    }));
+                    setClientFound(true);
+
+                    // Update local boolean states for checkboxes
+                    if (registrationData.preexisting_disease) setHasPreexistingDisease(true);
+                    if (registrationData.behavior) setHasBehavior(true);
+                    if (registrationData.fears_traumas) setHasFearsTraumas(true);
+                    if (registrationData.wounds_marks) setHasWoundsMarks(true);
+                    if (registrationData.allergies) setHasAllergies(true);
+                    if (registrationData.special_food_care) setNeedsSpecialFoodCare(true);
+                }
+            } catch (error) {
+                console.error('Error fetching hotel client data:', error);
+            } finally {
+                setIsFetchingClient(false);
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            const cleanPhone = formData.tutor_phone.replace(/\D/g, '');
+            if (cleanPhone.length >= 10) {
+                fetchHotelClientData();
+            }
+        }, 800);
+
+        return () => clearTimeout(timeoutId);
+    }, [formData.tutor_phone]);
 
     useEffect(() => {
         if (!formData.payment_date) {
@@ -8133,7 +9107,7 @@ const HotelRegistrationForm: React.FC<{
     const [showContractModal, setShowContractModal] = useState(false);
     const [showCheckinWarning, setShowCheckinWarning] = useState(false);
 
-    const holidaySet = new Set(['12-23','12-24','12-25','12-30','12-31','1-1']);
+    const holidaySet = new Set(['12-23', '12-24', '12-25', '12-30', '12-31', '1-1']);
     function addDays(base: Date, days: number) {
         const r = new Date(base);
         r.setDate(r.getDate() + days);
@@ -8272,7 +9246,7 @@ const HotelRegistrationForm: React.FC<{
         setIsSubmitting(true);
         try {
             const { total: computedTotal } = calculateTotal(formData.check_in_date || null, formData.check_out_date || null, formData.pet_weight);
-            
+
             const payload = {
                 pet_name: formData.pet_name || '',
                 pet_sex: formData.pet_sex,
@@ -8339,9 +9313,9 @@ const HotelRegistrationForm: React.FC<{
                 responsible_signature: formData.tutor_signature || '', // Usar tutor_signature como fallback
                 veterinarian: formData.veterinarian || ''
             };
-            
+
             console.log('Payload completo:', payload);
-            
+
             let { error } = await supabase.from('hotel_registrations').insert(payload);
             if (error) {
                 const msg = String(error.message || '');
@@ -8363,7 +9337,7 @@ const HotelRegistrationForm: React.FC<{
             setIsSubmitting(false);
         }
     };
-    
+
     if (isSuccess) {
         return (
             <div className="fixed inset-0 bg-pink-600 bg-opacity-90 flex items-center justify-center z-50 animate-fadeIn p-4">
@@ -8382,10 +9356,10 @@ const HotelRegistrationForm: React.FC<{
             <label className="block text-base font-semibold text-gray-700 mb-2">{label}</label>
             <div className="flex flex-wrap gap-2">
                 {options.map(opt => (
-                <button type="button" key={opt.label} onClick={() => handleRadioChange(name, opt.value)}
-                    className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${formData[name as keyof typeof formData] === opt.value ? 'bg-pink-300 text-black border-pink-600' : 'bg-white text-gray-700 border-gray-300 hover:border-pink-400'}`}>
-                    {opt.label}
-                </button>
+                    <button type="button" key={opt.label} onClick={() => handleRadioChange(name, opt.value)}
+                        className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${formData[name as keyof typeof formData] === opt.value ? 'bg-pink-300 text-black border-pink-600' : 'bg-white text-gray-700 border-gray-300 hover:border-pink-400'}`}>
+                        {opt.label}
+                    </button>
                 ))}
             </div>
         </div>
@@ -8461,7 +9435,33 @@ const HotelRegistrationForm: React.FC<{
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Telefone *</label>
-                            <input type="tel" name="tutor_phone" value={formData.tutor_phone} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
+                            <div className="relative">
+                                <input
+                                    type="tel"
+                                    name="tutor_phone"
+                                    value={formData.tutor_phone}
+                                    onChange={handleInputChange}
+                                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${clientFound ? 'border-green-500 ring-1 ring-green-500' : 'border-gray-300'}`}
+                                    required
+                                />
+                                {isFetchingClient && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-600"></div>
+                                    </div>
+                                )}
+                                {clientFound && !isFetchingClient && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
+                                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                )}
+                            </div>
+                            {clientFound && (
+                                <p className="mt-1 text-xs text-green-600">
+                                    Dados preenchidos automaticamente.
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -8509,11 +9509,11 @@ const HotelRegistrationForm: React.FC<{
                             <input type="date" name="last_vaccination_date" value={formData.last_vaccination_date || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                         </div>
                         <div className="flex items-center gap-3">
-                            <input type="checkbox" checked={!!formData.is_neutered} onChange={(e) => setFormData(prev => ({...prev, is_neutered: e.target.checked}))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                            <input type="checkbox" checked={!!formData.is_neutered} onChange={(e) => setFormData(prev => ({ ...prev, is_neutered: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                             <label className="text-sm font-medium text-gray-700">Castrado</label>
                         </div>
                         <div className="flex items-center gap-3">
-                            <input type="checkbox" checked={hasPreexistingDisease} onChange={(e) => { setHasPreexistingDisease(e.target.checked); if (!e.target.checked) setFormData(prev => ({...prev, preexisting_disease: null})); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                            <input type="checkbox" checked={hasPreexistingDisease} onChange={(e) => { setHasPreexistingDisease(e.target.checked); if (!e.target.checked) setFormData(prev => ({ ...prev, preexisting_disease: null })); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                             <label className="text-sm font-medium text-gray-700">Doença pré-existente</label>
                         </div>
                         {hasPreexistingDisease && (
@@ -8524,7 +9524,7 @@ const HotelRegistrationForm: React.FC<{
                         )}
 
                         <div className="flex items-center gap-3">
-                            <input type="checkbox" checked={hasBehavior} onChange={(e) => { setHasBehavior(e.target.checked); if (!e.target.checked) setFormData(prev => ({...prev, behavior: null})); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                            <input type="checkbox" checked={hasBehavior} onChange={(e) => { setHasBehavior(e.target.checked); if (!e.target.checked) setFormData(prev => ({ ...prev, behavior: null })); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                             <label className="text-sm font-medium text-gray-700">Comportamento</label>
                         </div>
                         {hasBehavior && (
@@ -8535,7 +9535,7 @@ const HotelRegistrationForm: React.FC<{
                         )}
 
                         <div className="flex items-center gap-3">
-                            <input type="checkbox" checked={hasFearsTraumas} onChange={(e) => { setHasFearsTraumas(e.target.checked); if (!e.target.checked) setFormData(prev => ({...prev, fears_traumas: null})); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                            <input type="checkbox" checked={hasFearsTraumas} onChange={(e) => { setHasFearsTraumas(e.target.checked); if (!e.target.checked) setFormData(prev => ({ ...prev, fears_traumas: null })); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                             <label className="text-sm font-medium text-gray-700">Medos/Traumas</label>
                         </div>
                         {hasFearsTraumas && (
@@ -8546,7 +9546,7 @@ const HotelRegistrationForm: React.FC<{
                         )}
 
                         <div className="flex items-center gap-3">
-                            <input type="checkbox" checked={hasWoundsMarks} onChange={(e) => { setHasWoundsMarks(e.target.checked); if (!e.target.checked) setFormData(prev => ({...prev, wounds_marks: null})); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                            <input type="checkbox" checked={hasWoundsMarks} onChange={(e) => { setHasWoundsMarks(e.target.checked); if (!e.target.checked) setFormData(prev => ({ ...prev, wounds_marks: null })); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                             <label className="text-sm font-medium text-gray-700">Feridas/Marcas</label>
                         </div>
                         {hasWoundsMarks && (
@@ -8557,7 +9557,7 @@ const HotelRegistrationForm: React.FC<{
                         )}
 
                         <div className="flex items-center gap-3">
-                            <input type="checkbox" checked={hasAllergies} onChange={(e) => { setHasAllergies(e.target.checked); if (!e.target.checked) setFormData(prev => ({...prev, allergies: null})); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                            <input type="checkbox" checked={hasAllergies} onChange={(e) => { setHasAllergies(e.target.checked); if (!e.target.checked) setFormData(prev => ({ ...prev, allergies: null })); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                             <label className="text-sm font-medium text-gray-700">Alergias</label>
                         </div>
                         {hasAllergies && (
@@ -8592,11 +9592,11 @@ const HotelRegistrationForm: React.FC<{
                             </select>
                         </div>
                         <div className="flex items-center gap-3">
-                            <input type="checkbox" checked={(formData.accepts_treats || '') === 'Sim'} onChange={(e) => setFormData(prev => ({...prev, accepts_treats: e.target.checked ? 'Sim' : 'Não'}))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                            <input type="checkbox" checked={(formData.accepts_treats || '') === 'Sim'} onChange={(e) => setFormData(prev => ({ ...prev, accepts_treats: e.target.checked ? 'Sim' : 'Não' }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                             <label className="text-sm font-medium text-gray-700">Aceita petiscos</label>
                         </div>
                         <div className="flex items-center gap-3">
-                            <input type="checkbox" checked={needsSpecialFoodCare} onChange={(e) => { setNeedsSpecialFoodCare(e.target.checked); if (!e.target.checked) setFormData(prev => ({...prev, special_food_care: null})); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                            <input type="checkbox" checked={needsSpecialFoodCare} onChange={(e) => { setNeedsSpecialFoodCare(e.target.checked); if (!e.target.checked) setFormData(prev => ({ ...prev, special_food_care: null })); }} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                             <label className="text-sm font-medium text-gray-700">Cuidado especial</label>
                         </div>
                         {needsSpecialFoodCare && (
@@ -8628,7 +9628,7 @@ const HotelRegistrationForm: React.FC<{
                                 {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
                                     const h = 7 + Math.floor(i / 2);
                                     const m = i % 2 ? '30' : '00';
-                                    const t = `${String(h).padStart(2,'0')}:${m}`;
+                                    const t = `${String(h).padStart(2, '0')}:${m}`;
                                     return (<option key={t} value={t}>{t}</option>);
                                 })}
                             </select>
@@ -8644,7 +9644,7 @@ const HotelRegistrationForm: React.FC<{
                                 {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
                                     const h = 7 + Math.floor(i / 2);
                                     const m = i % 2 ? '30' : '00';
-                                    const t = `${String(h).padStart(2,'0')}:${m}`;
+                                    const t = `${String(h).padStart(2, '0')}:${m}`;
                                     return (<option key={t} value={t}>{t}</option>);
                                 })}
                             </select>
@@ -8654,7 +9654,7 @@ const HotelRegistrationForm: React.FC<{
 
                 {/* Seção 5: Serviços Adicionais */}
                 <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                    <div 
+                    <div
                         className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
                         onClick={() => setIsExtraServicesExpanded(!isExtraServicesExpanded)}
                     >
@@ -8663,43 +9663,43 @@ const HotelRegistrationForm: React.FC<{
                             <span className="text-sm text-gray-600">
                                 {isExtraServicesExpanded ? 'Ocultar' : 'Mostrar'} opções
                             </span>
-                            <svg 
+                            <svg
                                 className={`w-5 h-5 text-gray-600 transition-transform duration-200 ${isExtraServicesExpanded ? 'rotate-180' : ''}`}
-                                fill="none" 
-                                stroke="currentColor" 
+                                fill="none"
+                                stroke="currentColor"
                                 viewBox="0 0 24 24"
                             >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
                     </div>
-                    
+
                     {isExtraServicesExpanded && (
                         <div className="mt-4 pt-4 border-t border-gray-200">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div className="flex items-center space-x-3">
-                                    <input type="checkbox" name="bath" checked={formData.extra_services?.bath || false} onChange={(e) => setFormData(prev => ({...prev, extra_services: {...prev.extra_services, bath: e.target.checked}}))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                                    <input type="checkbox" name="bath" checked={formData.extra_services?.bath || false} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, bath: e.target.checked } }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                                     <label className="text-sm font-medium text-gray-700">Banho</label>
                                 </div>
                                 <div className="flex items-center space-x-3">
-                                    <input type="checkbox" name="transport" checked={formData.extra_services?.transport || false} onChange={(e) => setFormData(prev => ({...prev, extra_services: {...prev.extra_services, transport: e.target.checked}}))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                                    <input type="checkbox" name="transport" checked={formData.extra_services?.transport || false} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, transport: e.target.checked } }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                                     <label className="text-sm font-medium text-gray-700">Transporte</label>
                                 </div>
                                 <div className="flex items-center space-x-3">
-                                    <input type="checkbox" name="vet" checked={formData.extra_services?.vet || false} onChange={(e) => setFormData(prev => ({...prev, extra_services: {...prev.extra_services, vet: e.target.checked}}))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                                    <input type="checkbox" name="vet" checked={formData.extra_services?.vet || false} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, vet: e.target.checked } }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                                     <label className="text-sm font-medium text-gray-700">Veterinário</label>
                                 </div>
                                 <div className="flex items-center space-x-3">
-                                    <input type="checkbox" name="training" checked={formData.extra_services?.training || false} onChange={(e) => setFormData(prev => ({...prev, extra_services: {...prev.extra_services, training: e.target.checked}}))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                                    <input type="checkbox" name="training" checked={formData.extra_services?.training || false} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, training: e.target.checked } }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                                     <label className="text-sm font-medium text-gray-700">Adestramento</label>
                                 </div>
                                 <div className="md:col-span-2 lg:col-span-1">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Diária (quantidade de dias)</label>
-                                    <input type="number" name="daily_rate" value={formData.extra_services.daily_rate} onChange={(e) => setFormData(prev => ({...prev, extra_services: {...prev.extra_services, daily_rate: e.target.value === '' ? 0 : parseInt(e.target.value)}}))} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0" />
+                                    <input type="number" name="daily_rate" value={formData.extra_services.daily_rate} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, daily_rate: e.target.value === '' ? 0 : parseInt(e.target.value) } }))} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0" />
                                 </div>
                                 <div className="md:col-span-2 lg:col-span-1">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Hora Extra (quantidade de horas)</label>
-                                    <input type="number" name="extra_hour" value={formData.extra_services.extra_hour} onChange={(e) => setFormData(prev => ({...prev, extra_services: {...prev.extra_services, extra_hour: e.target.value === '' ? 0 : parseInt(e.target.value)}}))} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0" />
+                                    <input type="number" name="extra_hour" value={formData.extra_services.extra_hour} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, extra_hour: e.target.value === '' ? 0 : parseInt(e.target.value) } }))} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0" />
                                 </div>
                                 {/* Campo "Total dos Serviços" removido conforme solicitado */}
                             </div>
@@ -8715,7 +9715,7 @@ const HotelRegistrationForm: React.FC<{
                             <label className="block text-sm font-medium text-gray-700 mb-2">Informações Adicionais</label>
                             <textarea name="additional_info" value={formData.additional_info} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={4} placeholder="Observações gerais, comportamento do pet, preferências, etc." />
                         </div>
-                        
+
                         <div className="bg-white p-5 rounded-xl border border-pink-100">
                             <h4 className="text-lg font-bold text-pink-700 mb-3 text-center">Resumo do Check-in</h4>
                             {(() => {
@@ -8725,7 +9725,7 @@ const HotelRegistrationForm: React.FC<{
                                 const coTime = formData.check_out_time || '';
                                 const { total, nDiarias, holidayDates } = calculateTotal(ciDate, coDate, formData.pet_weight);
                                 const pesoLabel = formData.pet_weight ? PET_WEIGHT_OPTIONS[formData.pet_weight as any] : '—';
-                                const feriados = holidayDates.map(d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`).join(', ');
+                                const feriados = holidayDates.map(d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`).join(', ');
                                 const extras: string[] = [];
                                 if (formData.extra_services?.bath) extras.push('Banho');
                                 if (formData.extra_services?.transport) extras.push('Transporte');
@@ -8763,19 +9763,19 @@ const HotelRegistrationForm: React.FC<{
 
                         <div className="space-y-3">
                             <div className="flex items-start space-x-3">
-                                <input type="checkbox" name="declaration_accepted" checked={formData.declaration_accepted || false} onChange={(e) => setFormData(prev => ({...prev, declaration_accepted: e.target.checked}))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" required />
+                                <input type="checkbox" name="declaration_accepted" checked={formData.declaration_accepted || false} onChange={(e) => setFormData(prev => ({ ...prev, declaration_accepted: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" required />
                                 <label className="text-sm text-gray-700">
                                     Declaro que todas as informações fornecidas são verdadeiras e autorizo o hotel pet a cuidar do meu animal de acordo com as instruções fornecidas. *
                                 </label>
                             </div>
                             <div className="flex items-start space-x-3">
-                                <input type="checkbox" name="photo_authorization" checked={formData.photo_authorization || false} onChange={(e) => setFormData(prev => ({...prev, photo_authorization: e.target.checked}))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                                <input type="checkbox" name="photo_authorization" checked={formData.photo_authorization || false} onChange={(e) => setFormData(prev => ({ ...prev, photo_authorization: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                                 <label className="text-sm text-gray-700">
                                     Autorizo o uso de fotos do meu pet para divulgação nas redes sociais do estabelecimento.
                                 </label>
                             </div>
                             <div className="flex items-start space-x-3">
-                                <input type="checkbox" name="contract_accepted" checked={formData.contract_accepted || false} onChange={(e) => setFormData(prev => ({...prev, contract_accepted: e.target.checked}))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                                <input type="checkbox" name="contract_accepted" checked={formData.contract_accepted || false} onChange={(e) => setFormData(prev => ({ ...prev, contract_accepted: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                                 <label className="text-sm text-gray-700">
                                     Concordo e estou de acordo com as cláusulas do <button type="button" onClick={() => setShowContractModal(true)} className="underline text-pink-700 hover:text-pink-800">Contrato de hospedagem da Sandy Pet Hotel</button>.
                                 </label>
@@ -8797,15 +9797,15 @@ const HotelRegistrationForm: React.FC<{
                 <div className="mt-8 flex justify_between items-center">
                     <button type="button" onClick={onBack} className="bg-gray-200 text-gray-800 font-bold py-3.5 px-5 rounded-lg hover:bg_gray-300 transition-colors">Voltar</button>
                     <div className="flex-grow"></div>
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         disabled={
-                            isSubmitting || 
-                            !formData.declaration_accepted || 
-                            !formData.contract_accepted || 
+                            isSubmitting ||
+                            !formData.declaration_accepted ||
+                            !formData.contract_accepted ||
                             !formData.tutor_signature ||
                             !(formData.pet_name && formData.tutor_rg && formData.tutor_name && formData.tutor_phone && formData.tutor_address && formData.check_in_date && formData.check_out_date)
-                        } 
+                        }
                         onClick={() => setShowCheckinWarning(true)}
                         className="w-full md:w-auto bg-green-500 text-white font-bold py-3.5 px-5 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-300"
                     >
@@ -8829,15 +9829,15 @@ const HotelRegistrationForm: React.FC<{
                         </ul>
                         <div className="mt-6 flex gap-3 justify-end">
                             <button type="button" onClick={() => setShowCheckinWarning(false)} className="bg-gray-200 text-gray-800 font-bold py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors">Voltar</button>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 disabled={
-                                    isSubmitting || 
-                                    !formData.declaration_accepted || 
-                                    !formData.contract_accepted || 
+                                    isSubmitting ||
+                                    !formData.declaration_accepted ||
+                                    !formData.contract_accepted ||
                                     !formData.tutor_signature ||
                                     !(formData.pet_name && formData.tutor_rg && formData.tutor_name && formData.tutor_phone && formData.tutor_address && formData.check_in_date && formData.check_out_date)
-                                } 
+                                }
                                 onClick={() => formRef.current?.requestSubmit()}
                                 className="w-full md:w-auto bg-green-500 text-white font-bold py-3.5 px-5 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-300"
                             >
@@ -8922,6 +9922,74 @@ const DaycareRegistrationForm: React.FC<{
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
+    const [isFetchingClient, setIsFetchingClient] = useState(false);
+    const [clientFound, setClientFound] = useState(false);
+
+    // Auto-fill daycare enrollment data based on contact_phone
+    useEffect(() => {
+        const fetchDaycareClientData = async () => {
+            const cleanPhone = formData.contact_phone.replace(/\D/g, '');
+            if (cleanPhone.length < 10) return;
+
+            setIsFetchingClient(true);
+            setClientFound(false);
+
+            try {
+                // Try to find in daycare_enrollments first (most recent)
+                const { data: enrollmentData, error } = await supabase
+                    .from('daycare_enrollments')
+                    .select('*')
+                    .eq('contact_phone', formData.contact_phone)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (enrollmentData) {
+                    setFormData(prev => ({
+                        ...prev,
+                        pet_name: enrollmentData.pet_name || prev.pet_name,
+                        pet_breed: enrollmentData.pet_breed || prev.pet_breed,
+                        is_neutered: enrollmentData.is_neutered ?? prev.is_neutered,
+                        pet_sex: enrollmentData.pet_sex || prev.pet_sex,
+                        pet_age: enrollmentData.pet_age || prev.pet_age,
+                        has_sibling_discount: enrollmentData.has_sibling_discount ?? prev.has_sibling_discount,
+                        tutor_name: enrollmentData.tutor_name || prev.tutor_name,
+                        tutor_rg: enrollmentData.tutor_rg || prev.tutor_rg,
+                        address: enrollmentData.address || prev.address,
+                        emergency_contact_name: enrollmentData.emergency_contact_name || prev.emergency_contact_name,
+                        vet_phone: enrollmentData.vet_phone || prev.vet_phone,
+                        gets_along_with_others: enrollmentData.gets_along_with_others ?? prev.gets_along_with_others,
+                        has_allergies: enrollmentData.has_allergies ?? prev.has_allergies,
+                        allergies_description: enrollmentData.allergies_description || prev.allergies_description,
+                        needs_special_care: enrollmentData.needs_special_care ?? prev.needs_special_care,
+                        special_care_description: enrollmentData.special_care_description || prev.special_care_description,
+                        pet_photo_url: enrollmentData.pet_photo_url || prev.pet_photo_url,
+                        // Novos campos mapeados
+                        contracted_plan: enrollmentData.contracted_plan || prev.contracted_plan,
+                        last_vaccine: enrollmentData.last_vaccine || prev.last_vaccine,
+                        last_deworming: enrollmentData.last_deworming || prev.last_deworming,
+                        last_flea_remedy: enrollmentData.last_flea_remedy || prev.last_flea_remedy,
+                        attendance_days: enrollmentData.attendance_days || prev.attendance_days,
+                        delivered_items: enrollmentData.delivered_items || prev.delivered_items,
+                        extra_services: enrollmentData.extra_services || prev.extra_services
+                    }));
+                    setClientFound(true);
+                }
+            } catch (error) {
+                console.error('Error fetching daycare client data:', error);
+            } finally {
+                setIsFetchingClient(false);
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            if (formData.contact_phone.length > 13) {
+                fetchDaycareClientData();
+            }
+        }, 800);
+
+        return () => clearTimeout(timeoutId);
+    }, [formData.contact_phone]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -8953,10 +10021,10 @@ const DaycareRegistrationForm: React.FC<{
             return { ...prev, attendance_days: next };
         });
     };
-    
+
     const handleOtherBelongingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { value } = e.target;
-        setFormData(prev => ({ ...prev, delivered_items: { ...prev.delivered_items, other: value }}));
+        setFormData(prev => ({ ...prev, delivered_items: { ...prev.delivered_items, other: value } }));
     }
 
     useEffect(() => {
@@ -8979,11 +10047,11 @@ const DaycareRegistrationForm: React.FC<{
                 payment_date: formData.payment_date || null,
                 enrollment_date: formData.enrollment_date || new Date().toISOString().split('T')[0],
             };
-            
-            
+
+
             const { data, error } = await supabase.from('daycare_enrollments').insert(payload).select().single();
             if (error) throw error;
-            
+
             if (isAdmin && onSuccess) {
                 onSuccess(data as DaycareRegistration);
             } else {
@@ -8995,18 +10063,18 @@ const DaycareRegistrationForm: React.FC<{
             setIsSubmitting(false);
         }
     };
-    
+
     if (isSuccess) {
-      return (
-        <div className="fixed inset-0 bg-pink-600 bg-opacity-90 flex items-center justify-center z-50 animate-fadeIn p-4">
-            <div className="text-center bg-white p-8 rounded-2xl shadow-2xl max-w-full sm:max-w-sm mx-auto">
-                <SuccessIcon />
-                <h2 className="text-3xl font-bold text-gray-800 mt-2">Solicitação Enviada!</h2>
-                <p className="text-gray-600 mt-2">Recebemos seu pedido. Entraremos em contato em breve para os próximos passos.</p>
-                <button onClick={() => setView && setView('scheduler')} className="mt-6 bg-pink-600 text-white font-bold py-3.5 px-8 rounded-lg hover:bg-pink-700 transition-colors">OK</button>
+        return (
+            <div className="fixed inset-0 bg-pink-600 bg-opacity-90 flex items-center justify-center z-50 animate-fadeIn p-4">
+                <div className="text-center bg-white p-8 rounded-2xl shadow-2xl max-w-full sm:max-w-sm mx-auto">
+                    <SuccessIcon />
+                    <h2 className="text-3xl font-bold text-gray-800 mt-2">Solicitação Enviada!</h2>
+                    <p className="text-gray-600 mt-2">Recebemos seu pedido. Entraremos em contato em breve para os próximos passos.</p>
+                    <button onClick={() => setView && setView('scheduler')} className="mt-6 bg-pink-600 text-white font-bold py-3.5 px-8 rounded-lg hover:bg-pink-700 transition-colors">OK</button>
+                </div>
             </div>
-        </div>
-      );
+        );
     }
 
     const renderRadioGroup = (label: string, name: keyof DaycareRegistration, options: { label: string, value: any }[], opts?: { heading?: boolean; labelClassName?: string }) => (
@@ -9019,7 +10087,7 @@ const DaycareRegistrationForm: React.FC<{
             <div className="flex flex-wrap gap-2">
                 {options.map(opt => (
                     <button type="button" key={opt.label} onClick={() => handleRadioChange(name, opt.value)}
-                    className={`px-4 py-3.5 rounded-lg border text-sm font-semibold transition-colors ${formData[name as keyof typeof formData] === opt.value ? 'bg-pink-300 text-black border-pink-600' : 'bg-white text-gray-700 hover:bg-pink-50'}`}>
+                        className={`px-4 py-3.5 rounded-lg border text-sm font-semibold transition-colors ${formData[name as keyof typeof formData] === opt.value ? 'bg-pink-300 text-black border-pink-600' : 'bg-white text-gray-700 hover:bg-pink-50'}`}>
                         {opt.label}
                     </button>
                 ))}
@@ -9032,73 +10100,102 @@ const DaycareRegistrationForm: React.FC<{
             <div className="p-6 border-b border-gray-200">
                 <h2 className="text-3xl font-bold text-gray-800">Formulário de Matrícula</h2>
             </div>
-            <div className="p-6 space-y-8 overflow-y-auto" style={{maxHeight: isAdmin ? '75vh' : '70vh' }}>
+            <div className="p-6 space-y-8 overflow-y-auto" style={{ maxHeight: isAdmin ? '75vh' : '70vh' }}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <Collapsible title="Dados do Pet" className="md:col-span-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                            <div><label className="block text-base font-semibold text-gray-700">Nome do pet</label><input type="text" name="pet_name" value={formData.pet_name} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
-                            <div><label className="block text-base font-semibold text-gray-700">Raça</label><input type="text" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
-                            <div><label className="block text-base font-semibold text-gray-700">Idade</label><input type="text" name="pet_age" value={formData.pet_age} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
-                            {renderRadioGroup('Sexo', 'pet_sex', [{label: 'M', value: 'M'}, {label: 'F', value: 'F'}])}
-                            {renderRadioGroup('Castrado (a)', 'is_neutered', [{label: 'Sim', value: true}, {label: 'Não', value: false}])}
+                            <div><label className="block text-base font-semibold text-gray-700">Nome do pet</label><input type="text" name="pet_name" value={formData.pet_name} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
+                            <div><label className="block text-base font-semibold text-gray-700">Raça</label><input type="text" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
+                            <div><label className="block text-base font-semibold text-gray-700">Idade</label><input type="text" name="pet_age" value={formData.pet_age} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
+                            {renderRadioGroup('Sexo', 'pet_sex', [{ label: 'M', value: 'M' }, { label: 'F', value: 'F' }])}
+                            {renderRadioGroup('Castrado (a)', 'is_neutered', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
                             {isAdmin && (
-                              <div>
-                                <label className="flex items-center gap-3 text-base font-semibold text-gray-700">
-                                  <input type="checkbox" name="has_sibling_discount" checked={formData.has_sibling_discount} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                  Desconto irmão (10%)
-                                </label>
-                              </div>
+                                <div>
+                                    <label className="flex items-center gap-3 text-base font-semibold text-gray-700">
+                                        <input type="checkbox" name="has_sibling_discount" checked={formData.has_sibling_discount} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                                        Desconto irmão (10%)
+                                    </label>
+                                </div>
                             )}
                         </div>
                     </Collapsible>
 
                     <Collapsible title="Dados do Tutor" className="md:col-span-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                            <div><label className="block text-base font-semibold text-gray-700">Tutor</label><input type="text" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
-                            <div><label className="block text-base font-semibold text-gray-700">RG</label><input type="text" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
-                            <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Endereço</label><input type="text" name="address" value={formData.address} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
-                            <div><label className="block text-base font-semibold text-gray-700">Telefone contato</label><input type="tel" name="contact_phone" value={formData.contact_phone} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
-                            <div><label className="block text-base font-semibold text-gray-700">Telefone e nome (emergencial)</label><input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
-                            <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Telefone do veterinário(a)</label><input type="text" name="vet_phone" value={formData.vet_phone} onChange={handleInputChange} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
+                            <div><label className="block text-base font-semibold text-gray-700">Tutor</label><input type="text" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
+                            <div><label className="block text-base font-semibold text-gray-700">RG</label><input type="text" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
+                            <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Endereço</label><input type="text" name="address" value={formData.address} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
+                            <div>
+                                <label className="block text-base font-semibold text-gray-700">Telefone contato</label>
+                                <div className="relative">
+                                    <input
+                                        type="tel"
+                                        name="contact_phone"
+                                        value={formData.contact_phone}
+                                        onChange={handleInputChange}
+                                        required
+                                        className={`mt-1 block w-full px-5 py-4 bg-gray-50 border rounded-md ${clientFound ? 'border-green-500 ring-1 ring-green-500' : 'border-gray-300'}`}
+                                    />
+                                    {isFetchingClient && (
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-600"></div>
+                                        </div>
+                                    )}
+                                    {clientFound && !isFetchingClient && (
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
+                                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+                                {clientFound && (
+                                    <p className="mt-1 text-xs text-green-600">
+                                        Dados preenchidos automaticamente.
+                                    </p>
+                                )}
+                            </div>
+                            <div><label className="block text-base font-semibold text-gray-700">Telefone e nome (emergencial)</label><input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
+                            <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Telefone do veterinário(a)</label><input type="text" name="vet_phone" value={formData.vet_phone} onChange={handleInputChange} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
                         </div>
                     </Collapsible>
                 </div>
                 <Collapsible title="Saúde e Comportamento" className="space-y-6">
-                    {renderRadioGroup('Se dá bem com outros animais', 'gets_along_with_others', [{label: 'Sim', value: true}, {label: 'Não', value: false}])}
+                    {renderRadioGroup('Se dá bem com outros animais', 'gets_along_with_others', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div><DatePicker value={formData.last_vaccine} onChange={(value) => setFormData(prev => ({ ...prev, last_vaccine: value }))} label="Última vacina" className="mt-1" /></div>
                         <div><DatePicker value={formData.last_deworming} onChange={(value) => setFormData(prev => ({ ...prev, last_deworming: value }))} label="Último vermífugo" className="mt-1" /></div>
                         <div><DatePicker value={formData.last_flea_remedy} onChange={(value) => setFormData(prev => ({ ...prev, last_flea_remedy: value }))} label="Último remédio de pulgas e carrapatos" className="mt-1" /></div>
                     </div>
-                    {renderRadioGroup('Alergia?', 'has_allergies', [{label: 'Sim', value: true}, {label: 'Não', value: false}])}
+                    {renderRadioGroup('Alergia?', 'has_allergies', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
                     {formData.has_allergies && (
-                        <div><label className="block text-base font-semibold text-gray-700">Descreva a alergia:</label><textarea name="allergies_description" value={formData.allergies_description} onChange={handleInputChange} rows={3} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
+                        <div><label className="block text-base font-semibold text-gray-700">Descreva a alergia:</label><textarea name="allergies_description" value={formData.allergies_description} onChange={handleInputChange} rows={3} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
                     )}
-                    {renderRadioGroup('Cuidados especiais', 'needs_special_care', [{label: 'Sim', value: true}, {label: 'Não', value: false}])}
+                    {renderRadioGroup('Cuidados especiais', 'needs_special_care', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
                     {formData.needs_special_care && (
-                        <div><label className="block text-base font-semibold text-gray-700">Descreva o cuidado especial:</label><textarea name="special_care_description" value={formData.special_care_description} onChange={handleInputChange} rows={3} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
+                        <div><label className="block text-base font-semibold text-gray-700">Descreva o cuidado especial:</label><textarea name="special_care_description" value={formData.special_care_description} onChange={handleInputChange} rows={3} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
                     )}
                 </Collapsible>
                 {/* Belongings */}
                 <Collapsible title="Objetos entregues sempre" className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-3">
                         {['Bolinha', 'Pelucia', 'Cama', 'Coleira', 'Comedouro'].map(item => (
-                           <label key={item} className="flex items-center gap-3 text-gray-700 font-semibold bg-white p-6 sm:p-5 rounded-lg border-2 border-gray-200">
-                               <input type="checkbox" value={item} onChange={handleBelongingsChange} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                               {item}
-                           </label>
+                            <label key={item} className="flex items-center gap-3 text-gray-700 font-semibold bg-white p-6 sm:p-5 rounded-lg border-2 border-gray-200">
+                                <input type="checkbox" value={item} onChange={handleBelongingsChange} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                                {item}
+                            </label>
                         ))}
                     </div>
-                    <div><label className="block text-base font-semibold text-gray-700">Outros:</label><input type="text" name="other_belongings" value={formData.delivered_items.other} onChange={handleOtherBelongingsChange} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md"/></div>
+                    <div><label className="block text-base font-semibold text-gray-700">Outros:</label><input type="text" name="other_belongings" value={formData.delivered_items.other} onChange={handleOtherBelongingsChange} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
                 </Collapsible>
                 {/* Plan */}
                 <Collapsible title="Plano contratado" className="space-y-6">
                     {renderRadioGroup('', 'contracted_plan', [
-                        {label: '4 X MÊS', value: '4x_month'}, 
-                        {label: '8 X MÊS', value: '8x_month'},
-                        {label: '12 X MÊS', value: '12x_month'},
-                        {label: '16 X MÊS', value: '16x_month'},
-                        {label: '20 X MÊS', value: '20x_month'},
+                        { label: '4 X MÊS', value: '4x_month' },
+                        { label: '8 X MÊS', value: '8x_month' },
+                        { label: '12 X MÊS', value: '12x_month' },
+                        { label: '16 X MÊS', value: '16x_month' },
+                        { label: '20 X MÊS', value: '20x_month' },
                     ], { heading: false, labelClassName: 'sr-only' })}
                 </Collapsible>
                 <Collapsible title="Horários e Dias" className="space-y-6 mt-4">
@@ -9112,7 +10209,7 @@ const DaycareRegistrationForm: React.FC<{
                                 {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
                                     const h = 7 + Math.floor(i / 2);
                                     const m = i % 2 ? '30' : '00';
-                                    const t = `${String(h).padStart(2,'0')}:${m}`;
+                                    const t = `${String(h).padStart(2, '0')}:${m}`;
                                     return (<option key={t} value={t}>{t}</option>);
                                 })}
                             </select>
@@ -9127,7 +10224,7 @@ const DaycareRegistrationForm: React.FC<{
                                 {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
                                     const h = 7 + Math.floor(i / 2);
                                     const m = i % 2 ? '30' : '00';
-                                    const t = `${String(h).padStart(2,'0')}:${m}`;
+                                    const t = `${String(h).padStart(2, '0')}:${m}`;
                                     return (<option key={t} value={t}>{t}</option>);
                                 })}
                             </select>
@@ -9137,7 +10234,7 @@ const DaycareRegistrationForm: React.FC<{
                     <div>
                         <label className="block text-base font-semibold text-gray-700 mb-2">Dias da Semana</label>
                         <div className="flex flex-wrap gap-2">
-                            {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((label, idx) => (
+                            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((label, idx) => (
                                 <label key={label} className="flex items-center gap-2 px-4 py-3.5 rounded-lg border text-sm font-semibold bg-white text-gray-700 hover:bg-pink-50">
                                     <input type="checkbox" checked={(formData.attendance_days || []).includes(idx)} onChange={() => toggleAttendanceDay(idx)} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
                                     {label}
@@ -9146,15 +10243,15 @@ const DaycareRegistrationForm: React.FC<{
                         </div>
                     </div>
                 </Collapsible>
-                
+
                 {/* Extra Services */}
                 <Collapsible title="Serviços Extras" className="space-y-6 pt-6 border-t border-gray-200 mt-6">
                     <div className="grid grid-cols-1 gap-4">
                         {/* Pernoite */}
                         <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
                             <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={formData.extra_services?.pernoite || false}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
@@ -9165,7 +10262,7 @@ const DaycareRegistrationForm: React.FC<{
                                             pernoite_price: e.target.checked ? (prev.extra_services?.pernoite_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
                                 Pernoite
                             </label>
@@ -9173,8 +10270,8 @@ const DaycareRegistrationForm: React.FC<{
                                 <div className="grid grid-cols-2 gap-3 ml-7">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade (dias)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="1"
                                             value={formData.extra_services?.pernoite_quantity || 1}
                                             onChange={(e) => setFormData(prev => ({
@@ -9189,8 +10286,8 @@ const DaycareRegistrationForm: React.FC<{
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="0"
                                             step="0.01"
                                             value={formData.extra_services?.pernoite_price || 0}
@@ -9211,8 +10308,8 @@ const DaycareRegistrationForm: React.FC<{
                         {/* Banho & Tosa */}
                         <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
                             <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={formData.extra_services?.banho_tosa || false}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
@@ -9223,7 +10320,7 @@ const DaycareRegistrationForm: React.FC<{
                                             banho_tosa_price: e.target.checked ? (prev.extra_services?.banho_tosa_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
                                 Banho & Tosa
                             </label>
@@ -9231,8 +10328,8 @@ const DaycareRegistrationForm: React.FC<{
                                 <div className="grid grid-cols-2 gap-3 ml-7">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="1"
                                             value={formData.extra_services?.banho_tosa_quantity || 1}
                                             onChange={(e) => setFormData(prev => ({
@@ -9247,8 +10344,8 @@ const DaycareRegistrationForm: React.FC<{
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="0"
                                             step="0.01"
                                             value={formData.extra_services?.banho_tosa_price || 0}
@@ -9269,8 +10366,8 @@ const DaycareRegistrationForm: React.FC<{
                         {/* Só banho */}
                         <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
                             <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={formData.extra_services?.so_banho || false}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
@@ -9281,7 +10378,7 @@ const DaycareRegistrationForm: React.FC<{
                                             so_banho_price: e.target.checked ? (prev.extra_services?.so_banho_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
                                 Só banho
                             </label>
@@ -9289,8 +10386,8 @@ const DaycareRegistrationForm: React.FC<{
                                 <div className="grid grid-cols-2 gap-3 ml-7">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="1"
                                             value={formData.extra_services?.so_banho_quantity || 1}
                                             onChange={(e) => setFormData(prev => ({
@@ -9305,8 +10402,8 @@ const DaycareRegistrationForm: React.FC<{
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="0"
                                             step="0.01"
                                             value={formData.extra_services?.so_banho_price || 0}
@@ -9327,8 +10424,8 @@ const DaycareRegistrationForm: React.FC<{
                         {/* Adestrador */}
                         <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
                             <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={formData.extra_services?.adestrador || false}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
@@ -9339,7 +10436,7 @@ const DaycareRegistrationForm: React.FC<{
                                             adestrador_price: e.target.checked ? (prev.extra_services?.adestrador_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
                                 Adestrador
                             </label>
@@ -9347,8 +10444,8 @@ const DaycareRegistrationForm: React.FC<{
                                 <div className="grid grid-cols-2 gap-3 ml-7">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade (sessões)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="1"
                                             value={formData.extra_services?.adestrador_quantity || 1}
                                             onChange={(e) => setFormData(prev => ({
@@ -9363,8 +10460,8 @@ const DaycareRegistrationForm: React.FC<{
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="0"
                                             step="0.01"
                                             value={formData.extra_services?.adestrador_price || 0}
@@ -9385,8 +10482,8 @@ const DaycareRegistrationForm: React.FC<{
                         {/* Despesa médica */}
                         <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
                             <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={formData.extra_services?.despesa_medica || false}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
@@ -9397,7 +10494,7 @@ const DaycareRegistrationForm: React.FC<{
                                             despesa_medica_price: e.target.checked ? (prev.extra_services?.despesa_medica_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
                                 Despesa médica
                             </label>
@@ -9405,8 +10502,8 @@ const DaycareRegistrationForm: React.FC<{
                                 <div className="grid grid-cols-2 gap-3 ml-7">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="1"
                                             value={formData.extra_services?.despesa_medica_quantity || 1}
                                             onChange={(e) => setFormData(prev => ({
@@ -9421,8 +10518,8 @@ const DaycareRegistrationForm: React.FC<{
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="0"
                                             step="0.01"
                                             value={formData.extra_services?.despesa_medica_price || 0}
@@ -9443,8 +10540,8 @@ const DaycareRegistrationForm: React.FC<{
                         {/* Dia extra */}
                         <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
                             <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={(formData.extra_services?.dia_extra || 0) > 0}
                                     onChange={(e) => setFormData(prev => ({
                                         ...prev,
@@ -9454,7 +10551,7 @@ const DaycareRegistrationForm: React.FC<{
                                             dia_extra_price: e.target.checked ? (prev.extra_services?.dia_extra_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" 
+                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
                                 Dia extra
                             </label>
@@ -9462,8 +10559,8 @@ const DaycareRegistrationForm: React.FC<{
                                 <div className="grid grid-cols-2 gap-3 ml-7">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade (dias)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="1"
                                             value={formData.extra_services?.dia_extra || 1}
                                             onChange={(e) => setFormData(prev => ({
@@ -9478,8 +10575,8 @@ const DaycareRegistrationForm: React.FC<{
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="0"
                                             step="0.01"
                                             value={formData.extra_services?.dia_extra_price || 0}
@@ -9498,7 +10595,7 @@ const DaycareRegistrationForm: React.FC<{
                         </div>
                     </div>
                 </Collapsible>
-                
+
                 {/* Data de Matrícula temporariamente removida até a coluna ser adicionada ao banco */}
                 {/* <div className="space-y-6 pt-6 border-t border-gray-200 mt-6">
                     <h3 className="text-lg font-semibold text-pink-700 border-b pb-2 mb-2">Data de Matrícula</h3>
@@ -9523,9 +10620,9 @@ const DaycareRegistrationForm: React.FC<{
                         {(() => {
                             const ciDate = formData.check_in_date || '';
                             const coDate = formData.check_out_date || '';
-                            const ciTime = String(formData.check_in_time || '').split(':').slice(0,2).join(':');
-                            const coTime = String(formData.check_out_time || '').split(':').slice(0,2).join(':');
-                            const diasSemana = (formData.attendance_days || []).map(idx => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][idx]).join(', ');
+                            const ciTime = String(formData.check_in_time || '').split(':').slice(0, 2).join(':');
+                            const coTime = String(formData.check_out_time || '').split(':').slice(0, 2).join(':');
+                            const diasSemana = (formData.attendance_days || []).map(idx => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][idx]).join(', ');
                             const extras: string[] = [];
                             if (formData.extra_services?.pernoite) extras.push('Pernoite');
                             if (formData.extra_services?.banho_tosa) extras.push('Banho & Tosa');
@@ -9607,7 +10704,7 @@ const DaycareRegistrationForm: React.FC<{
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
             <header className="text-center mb-6">
-                <img src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-20 w-20 mx-auto mb-2"/>
+                <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-20 w-20 mx-auto mb-2" loading="eager" />
                 <h1 className="font-brand text-5xl text-pink-800">Sandy's Pet Shop</h1>
                 <p className="text-gray-600 text-lg">Matrícula na Creche</p>
             </header>
@@ -9631,866 +10728,995 @@ const TimeSlotPicker: React.FC<{
     allowedDays?: number[];
     selectedCondo?: string | null;
     disablePastTimes?: boolean;
-  }> = ({ selectedDate, selectedService, appointments, onTimeSelect, selectedTime, workingHours, isPetMovel, allowedDays, selectedCondo, disablePastTimes }) => {
+    isAdmin?: boolean;
+}> = ({ selectedDate, selectedService, appointments, onTimeSelect, selectedTime, workingHours, isPetMovel, allowedDays, selectedCondo, disablePastTimes, isAdmin = false }) => {
     const [selectedVisualKey, setSelectedVisualKey] = useState<string | null>(null);
+
+    const capacity = isPetMovel ? 1 : MAX_CAPACITY_PER_SLOT;
+
     return (
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-        {workingHours.flatMap(hour => {
-          return Array.from({ length: MAX_CAPACITY_PER_SLOT }, (_, slotIndex) => {
-            const visualKey = `${hour}-${slotIndex}`;
-            return (
-              <button
-                key={visualKey}
-                type="button"
-                onClick={() => { setSelectedVisualKey(visualKey); onTimeSelect(hour); }}
-                className={`px-3 py-2 rounded-md text-center font-medium transition-colors border
-                    ${selectedVisualKey === visualKey ? 'bg-pink-600 text-white border-pink-600' : 'bg-white hover:bg-pink-50 border-gray-200'}
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            {workingHours.flatMap(hour => {
+                return Array.from({ length: capacity }, (_, slotIndex) => {
+                    const visualKey = `${hour}-${slotIndex}`;
+
+                    return (
+                        <button
+                            key={visualKey}
+                            type="button"
+                            title="Disponível"
+                            onClick={() => {
+                                setSelectedVisualKey(visualKey);
+                                onTimeSelect(hour);
+                            }}
+                            className={`px-3 py-2 rounded-md text-center font-medium transition-colors border flex items-center justify-center gap-1
+                    ${selectedVisualKey === visualKey
+                                    ? 'bg-pink-600 text-white border-pink-600'
+                                    : 'bg-white hover:bg-pink-50 border-gray-200'}
                     leading-tight text-sm
                   `}
-              >
-                {`${hour}:00`}
-              </button>
-            );
-          });
-        })}
-      </div>
+                        >
+                            {`${hour}:00`}
+                        </button>
+                    );
+                });
+            })}
+        </div>
     );
-  };
+};
 
 // --- MAIN APP COMPONENT ---
 const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegistration' | 'hotelRegistration') => void }> = ({ setView }) => {
-  const [step, setStep] = useState(1);
-  const [showWizard, setShowWizard] = useState(false);
-  
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
-  const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
-  const [serviceStepView, setServiceStepView] = useState<'main' | 'bath_groom' | 'pet_movel' | 'pet_movel_condo' | 'hotel_pet'>('main');
-  const [selectedCondo, setSelectedCondo] = useState<string | null>(null);
-  const [selectedWeight, setSelectedWeight] = useState<PetWeight | null>(null);
-  const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>({});
-  const [totalPrice, setTotalPrice] = useState(0);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState<number | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [allowedDays, setAllowedDays] = useState<number[] | undefined>(undefined);
-  const [disabledBathGroomDates, setDisabledBathGroomDates] = useState<string[]>([]);
-  const [disabledPetMovelDates, setDisabledPetMovelDates] = useState<string[]>([]);
-  
-  const isVisitService = useMemo(() => 
-    selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
-    [selectedService]
-  );
-  
-  const isPetMovel = useMemo(() => serviceStepView === 'pet_movel', [serviceStepView]);
-  const reloadAppointments = useCallback(async () => {
-    const { data: regularData, error: regularError } = await supabase
-      .from('appointments')
-      .select('*');
-    if (regularError) {
-      console.error('Error fetching appointments:', regularError);
-    }
+    const [step, setStep] = useState(1);
+    const [showWizard, setShowWizard] = useState(false);
 
-    const { data: petMovelData, error: petMovelError } = await supabase
-      .from('pet_movel_appointments')
-      .select('*');
-    if (petMovelError) {
-      console.error('Error fetching pet_movel_appointments:', petMovelError);
-    }
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
+    const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
+    const [serviceStepView, setServiceStepView] = useState<'main' | 'bath_groom' | 'pet_movel' | 'pet_movel_condo' | 'hotel_pet'>('main');
+    const [selectedCondo, setSelectedCondo] = useState<string | null>(null);
+    const [selectedWeight, setSelectedWeight] = useState<PetWeight | null>(null);
+    const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>({});
+    const [totalPrice, setTotalPrice] = useState(0);
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [selectedTime, setSelectedTime] = useState<number | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [allowedDays, setAllowedDays] = useState<number[] | undefined>(undefined);
+    const [disabledBathGroomDates, setDisabledBathGroomDates] = useState<string[]>([]);
+    const [disabledPetMovelDates, setDisabledPetMovelDates] = useState<string[]>([]);
+    const [isFetchingClient, setIsFetchingClient] = useState(false);
+    const [autoFilledFields, setAutoFilledFields] = useState<string[]>([]);
 
-    const regularAppointments: Appointment[] = (regularData || [])
-      .map((rec: any) => {
-        const serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === rec.service) as ServiceType | undefined;
-        if (!serviceKey) return null;
-        return {
-          id: rec.id,
-          petName: rec.pet_name,
-          ownerName: rec.owner_name,
-          whatsapp: rec.whatsapp,
-          service: serviceKey,
-          appointmentTime: new Date(rec.appointment_time),
-          monthly_client_id: rec.monthly_client_id || undefined,
-        };
-      })
-      .filter(Boolean) as Appointment[];
+    const isVisitService = useMemo(() =>
+        selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
+        [selectedService]
+    );
 
-    const mobileAppointments: Appointment[] = (petMovelData || [])
-      .map((rec: any) => {
-        const s = String(rec.service || '').toLowerCase();
-        const hasBanho = s.includes('banho');
-        const hasTosa = s.includes('tosa');
-        const isSoTosa = s.includes('só tosa') || s.includes('so tosa') || (hasTosa && !hasBanho);
-        let serviceKey: ServiceType;
-        if (hasBanho && hasTosa) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
-        else if (isSoTosa) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
-        else serviceKey = ServiceType.PET_MOBILE_BATH;
-        return {
-          id: rec.id,
-          petName: rec.pet_name,
-          ownerName: rec.owner_name,
-          whatsapp: rec.whatsapp,
-          service: serviceKey,
-          appointmentTime: new Date(rec.appointment_time),
-          monthly_client_id: rec.monthly_client_id || undefined,
-          condominium: rec.condominium || rec.condo || undefined,
-        };
-      })
-      .filter(Boolean) as Appointment[];
+    const isPetMovel = useMemo(() => serviceStepView === 'pet_movel', [serviceStepView]);
+    const reloadAppointments = useCallback(async () => {
+        const { data: regularData, error: regularError } = await supabase
+            .from('appointments')
+            .select('*');
+        if (regularError) {
+            console.error('Error fetching appointments:', regularError);
+        }
 
-    setAppointments([...regularAppointments, ...mobileAppointments]);
-  }, []);
+        const { data: petMovelData, error: petMovelError } = await supabase
+            .from('pet_movel_appointments')
+            .select('*');
+        if (petMovelError) {
+            console.error('Error fetching pet_movel_appointments:', petMovelError);
+        }
 
-  useEffect(() => { reloadAppointments(); }, [reloadAppointments]);
+        const regularAppointments: Appointment[] = (regularData || [])
+            .map((rec: any) => {
+                const serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === rec.service) as ServiceType | undefined;
+                if (!serviceKey) return null;
+                return {
+                    id: rec.id,
+                    petName: rec.pet_name,
+                    ownerName: rec.owner_name,
+                    whatsapp: rec.whatsapp,
+                    service: serviceKey,
+                    appointmentTime: new Date(rec.appointment_time),
+                    monthly_client_id: rec.monthly_client_id || undefined,
+                };
+            })
+            .filter(Boolean) as Appointment[];
 
-  const loadDisabledDates = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.from('disabled_dates').select('*');
-      if (error) {
-        return;
-      }
-      const bath = new Set<string>();
-      const pet = new Set<string>();
-      (data || []).forEach((rec: any) => {
-        const date = String(rec.date || rec.day || '').trim();
-        if (!date) return;
-        const svc = String(rec.service || rec.for_service || 'ALL').toUpperCase();
-        if (svc === 'ALL') { bath.add(date); pet.add(date); }
-        else if (svc.includes('BATH') || svc.includes('GROOM')) { bath.add(date); }
-        else if (svc.includes('PET') || svc.includes('MOVEL') || svc.includes('MÓVEL')) { pet.add(date); }
-      });
-      setDisabledBathGroomDates(Array.from(bath));
-      setDisabledPetMovelDates(Array.from(pet));
-    } catch {}
-  }, []);
+        const mobileAppointments: Appointment[] = (petMovelData || [])
+            .map((rec: any) => {
+                const s = String(rec.service || '').toLowerCase();
+                const hasBanho = s.includes('banho');
+                const hasTosa = s.includes('tosa');
+                const isSoTosa = s.includes('só tosa') || s.includes('so tosa') || (hasTosa && !hasBanho);
+                let serviceKey: ServiceType;
+                if (hasBanho && hasTosa) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
+                else if (isSoTosa) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
+                else serviceKey = ServiceType.PET_MOBILE_BATH;
 
-  useEffect(() => { loadDisabledDates(); }, [loadDisabledDates]);
-  useEffect(() => {
-    try {
-      const channel = supabase
-        .channel('disabled_dates_changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'disabled_dates' }, (_payload) => {
-          loadDisabledDates();
-        })
-        .subscribe();
-      return () => {
-        try { supabase.removeChannel(channel); } catch {}
-      };
-    } catch {}
-  }, [loadDisabledDates]);
+                // Parse date with explicit timezone handling to ensure we don't shift days
+                const dateStr = rec.appointment_time;
+                // If the string is ISO (e.g. 2026-01-27T09:00:00), new Date() parses it in local time or UTC depending on Z.
+                // Assuming DB stores ISO strings. 
+                const appointmentTime = new Date(dateStr);
 
-  useEffect(() => {
-    let authSub: any = null;
-    try {
-      if (supabase && supabase.auth && supabase.auth.onAuthStateChange) {
-        const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-          reloadAppointments();
-        });
-        authSub = data;
-      }
-    } catch (_e) {}
-    return () => {
-      try { authSub?.subscription?.unsubscribe?.(); } catch (_e) {}
-    };
-  }, [reloadAppointments]);
+                return {
+                    id: rec.id,
+                    petName: rec.pet_name,
+                    ownerName: rec.owner_name,
+                    whatsapp: rec.whatsapp,
+                    service: serviceKey,
+                    appointmentTime: appointmentTime,
+                    monthly_client_id: rec.monthly_client_id || undefined,
+                    condominium: rec.condominium || rec.condo || undefined,
+                };
+            })
+            .filter(Boolean) as Appointment[];
+
+        setAppointments([...regularAppointments, ...mobileAppointments]);
+    }, []);
+
+    useEffect(() => { reloadAppointments(); }, [reloadAppointments]);
 
     useEffect(() => {
-    // This effect handles the calendar day restrictions based on service type.
-    if (step === 3) {
-      if (serviceStepView === 'bath_groom') {
-        // Regular Bath & Grooming is only on Mondays and Tuesdays
-        setAllowedDays([1, 2]);
-      } else if (serviceStepView === 'pet_movel') {
-        // Pet Móvel is now available on all days - no restrictions
-        setAllowedDays(undefined);
-      } else {
-        // No specific restrictions for other services, default will apply (e.g., disable weekends)
-        setAllowedDays(undefined);
-      }
-    }
-  }, [step, serviceStepView, selectedCondo]);
+        const timer = setTimeout(async () => {
+            const cleanPhone = formData.whatsapp.replace(/\D/g, '');
+            if (cleanPhone.length < 10) return;
 
-  useEffect(() => {
-    if (step === 3 && serviceStepView === 'bath_groom' && allowedDays && allowedDays.length > 0) {
-      const now = new Date();
-      const next = new Date(now);
-      next.setDate(next.getDate() + 1);
-      for (let i = 0; i < 31; i++) {
-        const probe = new Date(next);
-        probe.setDate(next.getDate() + i);
-        const { day } = getSaoPauloTimeParts(probe);
-        if (allowedDays.includes(day)) {
-          setSelectedDate(probe);
-          break;
-        }
-      }
-    }
-    if (
-      step === 3 &&
-      (serviceStepView === 'pet_movel' || serviceStepView === 'pet_movel_condo') &&
-      selectedService &&
-      [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService) &&
-      selectedCondo
-    ) {
-      const condoDays = (() => {
-        switch (selectedCondo) {
-          case 'Vitta Parque': return [3];
-          case 'Max Haus': return [4];
-          case 'Paseo': return [5];
-          default: return [];
-        }
-      })();
-      if (condoDays.length > 0) {
-        const now = new Date();
-        const start = new Date(now);
-        start.setDate(start.getDate() + 1);
-        for (let i = 0; i < 60; i++) {
-          const probe = new Date(start);
-          probe.setDate(start.getDate() + i);
-          const { day } = getSaoPauloTimeParts(probe);
-          if (condoDays.includes(day)) {
-            setSelectedDate(probe);
-            break;
-          }
-        }
-      }
-    }
-  }, [step, serviceStepView, allowedDays, selectedService, selectedCondo]);
+            setIsFetchingClient(true);
+            try {
+                const { data, error } = await supabase
+                    .from('appointments')
+                    .select('pet_name, owner_name, pet_breed, owner_address, service, weight, addons')
+                    .eq('whatsapp', formData.whatsapp)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
 
-  
-  useEffect(() => { setSelectedTime(null); }, [selectedDate, selectedService]);
-  
-  useEffect(() => {
-    if (isVisitService) {
-        setTotalPrice(0);
-        return;
-    }
-    
-    if (!selectedService || !selectedWeight) {
-        setTotalPrice(0);
-        return;
-    }
+                if (data) {
+                    setFormData(prev => ({
+                        ...prev,
+                        petName: data.pet_name || prev.petName,
+                        ownerName: data.owner_name || prev.ownerName,
+                        petBreed: data.pet_breed || prev.petBreed,
+                        ownerAddress: data.owner_address || prev.ownerAddress
+                    }));
+                    setAutoFilledFields(['petName', 'ownerName', 'petBreed', 'ownerAddress', 'whatsapp']);
 
-    let basePrice = 0;
-    
-    const isRegularService = [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService);
-    const isMobileService = [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
+                    // Autofill Service, Weight, and Addons
+                    if (data.service) {
+                        const foundServiceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === data.service) as ServiceType | undefined;
+                        if (foundServiceKey) {
+                            setSelectedService(foundServiceKey);
 
-    if (isRegularService || isMobileService) {
-        const prices = SERVICE_PRICES[selectedWeight];
-        if (prices) {
-            if (selectedService === ServiceType.BATH || selectedService === ServiceType.PET_MOBILE_BATH) {
-                basePrice = prices[ServiceType.BATH] ?? 0;
-            } else if (selectedService === ServiceType.GROOMING_ONLY || selectedService === ServiceType.PET_MOBILE_GROOMING_ONLY) {
-                basePrice = prices[ServiceType.GROOMING_ONLY] ?? 0;
-            } else if (selectedService === ServiceType.BATH_AND_GROOMING || selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING) {
-                basePrice = (prices[ServiceType.BATH] ?? 0) + (prices[ServiceType.GROOMING_ONLY] ?? 0);
+                            // Determine serviceStepView based on found service
+                            if ([ServiceType.BATH, ServiceType.BATH_AND_GROOMING].includes(foundServiceKey)) {
+                                setServiceStepView('bath_groom');
+                            } else if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(foundServiceKey)) {
+                                // For mobile, we might need condo info if stored, but let's default to pet_movel for now or handle condo separately if available in data
+                                setServiceStepView('pet_movel');
+                            }
+                        }
+                    }
+
+                    if (data.weight && data.weight !== 'N/A') {
+                        const foundWeightKey = Object.keys(PET_WEIGHT_OPTIONS).find(key => PET_WEIGHT_OPTIONS[key as PetWeight] === data.weight) as PetWeight | undefined;
+                        if (foundWeightKey) {
+                            setSelectedWeight(foundWeightKey);
+                        }
+                    }
+
+                    if (data.addons && Array.isArray(data.addons)) {
+                        const newAddons: Record<string, boolean> = {};
+                        data.addons.forEach((addonLabel: string) => {
+                            const foundAddon = ADDON_SERVICES.find(a => a.label === addonLabel);
+                            if (foundAddon) {
+                                newAddons[foundAddon.id] = true;
+                            }
+                        });
+                        setSelectedAddons(newAddons);
+                    }
+
+                    // If critical info is filled, advance step (but only if valid)
+                    // We need a short delay or check to ensure state is updated before validating, 
+                    // but since state updates are async, we might just set step to 3 if we are confident.
+                    // However, we should be careful about 'pet_movel' which needs condo.
+                    // The user said "The only screen... is date selection".
+                    // So let's try to advance if we have service and weight (if needed).
+
+                    setTimeout(() => {
+                        // Simple check: if we have a service and (it's a visit OR we have weight), go to step 3
+                        // We can't easily check 'selectedService' state here immediately due to closure, 
+                        // but we know we just found data.
+
+                        // Re-derive local variables to check logic
+                        const sKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === data.service) as ServiceType | undefined;
+                        const wKey = data.weight !== 'N/A' ? Object.keys(PET_WEIGHT_OPTIONS).find(key => PET_WEIGHT_OPTIONS[key as PetWeight] === data.weight) as PetWeight | undefined : undefined;
+
+                        const isVisit = sKey && (sKey === ServiceType.VISIT_DAYCARE || sKey === ServiceType.VISIT_HOTEL);
+                        const hasWeight = !!wKey;
+
+                        if (sKey && (isVisit || hasWeight)) {
+                            setStep(3);
+                        }
+                    }, 100);
+                }
+            } catch (err) {
+                console.error("Error fetching client data:", err);
+            } finally {
+                setIsFetchingClient(false);
+            }
+        }, 800);
+
+        return () => clearTimeout(timer);
+    }, [formData.whatsapp]);
+
+    const loadDisabledDates = useCallback(async () => {
+        try {
+            const { data, error } = await supabase.from('disabled_dates').select('*');
+            if (error) {
+                return;
+            }
+            const bath = new Set<string>();
+            const pet = new Set<string>();
+            (data || []).forEach((rec: any) => {
+                const date = String(rec.date || rec.day || '').trim();
+                if (!date) return;
+                const svc = String(rec.service || rec.for_service || 'ALL').toUpperCase();
+                if (svc === 'ALL') { bath.add(date); pet.add(date); }
+                else if (svc.includes('BATH') || svc.includes('GROOM')) { bath.add(date); }
+                else if (svc.includes('PET') || svc.includes('MOVEL') || svc.includes('MÓVEL')) { pet.add(date); }
+            });
+            setDisabledBathGroomDates(Array.from(bath));
+            setDisabledPetMovelDates(Array.from(pet));
+        } catch { }
+    }, []);
+
+    useEffect(() => { loadDisabledDates(); }, [loadDisabledDates]);
+    useEffect(() => {
+        try {
+            const channel = supabase
+                .channel('disabled_dates_changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'disabled_dates' }, (_payload) => {
+                    loadDisabledDates();
+                })
+                .subscribe();
+            return () => {
+                try { supabase.removeChannel(channel); } catch { }
+            };
+        } catch { }
+    }, [loadDisabledDates]);
+
+    useEffect(() => {
+        let authSub: any = null;
+        try {
+            if (supabase && supabase.auth && supabase.auth.onAuthStateChange) {
+                const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+                    reloadAppointments();
+                });
+                authSub = data;
+            }
+        } catch (_e) { }
+        return () => {
+            try { authSub?.subscription?.unsubscribe?.(); } catch (_e) { }
+        };
+    }, [reloadAppointments]);
+
+    useEffect(() => {
+        // This effect handles the calendar day restrictions based on service type.
+        if (step === 3) {
+            if (serviceStepView === 'bath_groom') {
+                // Regular Bath & Grooming is only on Mondays and Tuesdays
+                setAllowedDays([1, 2]);
+            } else if (serviceStepView === 'pet_movel') {
+                // Pet Móvel is now available on all days - no restrictions
+                setAllowedDays(undefined);
+            } else {
+                // No specific restrictions for other services, default will apply (e.g., disable weekends)
+                setAllowedDays(undefined);
             }
         }
-    }
-    
-    let addonsPrice = 0;
-    Object.keys(selectedAddons).forEach(addonId => {
-        if (selectedAddons[addonId]) {
-            const addon = ADDON_SERVICES.find(a => a.id === addonId);
-            if (addon) addonsPrice += addon.price;
-        }
-    });
-    setTotalPrice(basePrice + addonsPrice);
-  }, [selectedService, selectedWeight, selectedAddons, isVisitService]);
+    }, [step, serviceStepView, selectedCondo]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: name === 'whatsapp' ? formatWhatsapp(value) : value }));
-  };
-
-  const handleWeightChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newWeight = e.target.value as PetWeight;
-      setSelectedWeight(newWeight);
-      const newAddons = {...selectedAddons};
-      ADDON_SERVICES.forEach(addon => {
-          if (selectedAddons[addon.id]) {
-            const isExcluded = addon.excludesWeight?.includes(newWeight);
-            const requiresNotMet = addon.requiresWeight && !addon.requiresWeight.includes(newWeight);
-            if(isExcluded || requiresNotMet) newAddons[addon.id] = false;
-          }
-      });
-      setSelectedAddons(newAddons);
-  }
-  
-  const handleAddonToggle = (addonId: string) => {
-    const newAddons = { ...selectedAddons };
-    newAddons[addonId] = !newAddons[addonId];
-    if (addonId === 'patacure1' && newAddons[addonId]) newAddons['patacure2'] = false;
-    else if (addonId === 'patacure2' && newAddons[addonId]) newAddons['patacure1'] = false;
-    setSelectedAddons(newAddons);
-  };
-
-  const changeStep = (nextStep: number) => {
-    setIsAnimating(true);
-    setTimeout(() => {
-      setStep(nextStep);
-      setIsAnimating(false);
-    }, 300); // Animation duration
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedService || !selectedTime) return;
-    setIsSubmitting(true);
-    
-    const sp = getSaoPauloTimeParts(selectedDate);
-    const ymd = `${String(sp.year)}-${String(sp.month + 1).padStart(2, '0')}-${String(sp.date).padStart(2, '0')}`;
-    const isBathGroomService = [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService);
-    const isPetMovelService = [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
-    if (isBathGroomService && disabledBathGroomDates.includes(ymd)) {
-      alert('A data selecionada está indisponível para Banho & Tosa.');
-      setIsSubmitting(false);
-      return;
-    }
-    if (isPetMovelService && disabledPetMovelDates.includes(ymd)) {
-      alert('A data selecionada está indisponível para Pet Móvel.');
-      setIsSubmitting(false);
-      return;
-    }
-    
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth();
-    const day = selectedDate.getDate();
-    const appointmentTime = toSaoPauloUTC(year, month, day, selectedTime);
-
-    const isPetMovelSubmit = !!selectedCondo;
-    const targetTable = isPetMovelSubmit ? 'pet_movel_appointments' : 'appointments';
-    
-    const basePayload = {
-      appointment_time: appointmentTime.toISOString(),
-      pet_name: formData.petName,
-      pet_breed: formData.petBreed,
-      owner_name: formData.ownerName,
-      whatsapp: formData.whatsapp,
-      service: SERVICES[selectedService].label,
-      weight: isVisitService ? 'N/A' : (selectedWeight ? PET_WEIGHT_OPTIONS[selectedWeight] : 'N/A'),
-      addons: isVisitService ? [] : ADDON_SERVICES.filter(addon => selectedAddons[addon.id]).map(addon => addon.label),
-      price: totalPrice,
-      status: 'AGENDADO',
-      extra_services: {
-        pernoite: { enabled: false, quantity: 0 },
-        banho_tosa: { enabled: false, value: 0 },
-        so_banho: { enabled: false, value: 0 },
-        adestrador: { enabled: false, value: 0 },
-        despesa_medica: { enabled: false, value: 0 },
-        dias_extras: { enabled: false, quantity: 0 }
-      }
-    };
-    
-    const supabasePayload = isPetMovelSubmit
-        ? { ...basePayload, owner_address: formData.ownerAddress, condominium: selectedCondo }
-        : { ...basePayload, owner_address: formData.ownerAddress };
-
-    try {
-        // No conflict checking - all appointments are allowed
-
-        const { data: newDbAppointment, error: supabaseError } = await supabase.from(targetTable).insert([supabasePayload]).select().single();
-        if (supabaseError) throw supabaseError;
-
-        try {
-            const { data: existingClient } = await supabase
-                .from('clients')
-                .select('id')
-                .eq('phone', supabasePayload.whatsapp)
-                .limit(1)
-                .single();
-
-            if (!existingClient) {
-                const { error: clientInsertError } = await supabase
-                    .from('clients')
-                    .insert({ 
-                        name: supabasePayload.owner_name, 
-                        phone: supabasePayload.whatsapp 
-                    });
-                if (clientInsertError) {
-                    console.error('Failed to auto-register client:', clientInsertError.message);
+    useEffect(() => {
+        if (step === 3 && serviceStepView === 'bath_groom' && allowedDays && allowedDays.length > 0) {
+            const now = new Date();
+            const next = new Date(now);
+            next.setDate(next.getDate() + 1);
+            for (let i = 0; i < 31; i++) {
+                const probe = new Date(next);
+                probe.setDate(next.getDate() + i);
+                const { day } = getSaoPauloTimeParts(probe);
+                if (allowedDays.includes(day)) {
+                    setSelectedDate(probe);
+                    break;
                 }
             }
-        } catch (error) {
-            console.error('An error occurred during client auto-registration:', error);
         }
-        
-        try {
-            const webhookUrl = isPetMovelSubmit
-                ? 'https://n8n.intelektus.tech/webhook/petMovelAgendado'
-                : 'https://n8n.intelektus.tech/webhook/servicoAgendado';
-            const response = await fetch(webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(supabasePayload),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Webhook (${webhookUrl.includes('petMovelAgendado') ? 'petMovelAgendado' : 'servicoAgendado'}) failed with status ${response.status}`);
+        if (
+            step === 3 &&
+            (serviceStepView === 'pet_movel' || serviceStepView === 'pet_movel_condo') &&
+            selectedService &&
+            [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService) &&
+            selectedCondo
+        ) {
+            const condoDays = (() => {
+                switch (selectedCondo) {
+                    case 'Vitta Parque': return [3];
+                    case 'Max Haus': return [4];
+                    case 'Paseo': return [5];
+                    default: return [];
+                }
+            })();
+            if (condoDays.length > 0) {
+                const now = new Date();
+                const start = new Date(now);
+                start.setDate(start.getDate() + 1);
+                for (let i = 0; i < 60; i++) {
+                    const probe = new Date(start);
+                    probe.setDate(start.getDate() + i);
+                    const { day } = getSaoPauloTimeParts(probe);
+                    if (condoDays.includes(day)) {
+                        setSelectedDate(probe);
+                        break;
+                    }
+                }
             }
-        } catch (webhookError) {
-            console.error('Error sending new appointment webhook:', webhookError);
+        }
+    }, [step, serviceStepView, allowedDays, selectedService, selectedCondo]);
+
+
+    useEffect(() => { setSelectedTime(null); }, [selectedDate, selectedService]);
+
+    useEffect(() => {
+        if (isVisitService) {
+            setTotalPrice(0);
+            return;
         }
 
-        const newAppointment: Appointment = {
-            id: newDbAppointment.id,
-            petName: newDbAppointment.pet_name,
-            ownerName: newDbAppointment.owner_name,
-            whatsapp: newDbAppointment.whatsapp,
-            service: selectedService,
-            appointmentTime: new Date(newDbAppointment.appointment_time),
-            condominium: selectedCondo || undefined,
+        if (!selectedService || !selectedWeight) {
+            setTotalPrice(0);
+            return;
+        }
+
+        let basePrice = 0;
+
+        const isRegularService = [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService);
+        const isMobileService = [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
+
+        if (isRegularService || isMobileService) {
+            const prices = SERVICE_PRICES[selectedWeight];
+            if (prices) {
+                if (selectedService === ServiceType.BATH || selectedService === ServiceType.PET_MOBILE_BATH) {
+                    basePrice = prices[ServiceType.BATH] ?? 0;
+                } else if (selectedService === ServiceType.GROOMING_ONLY || selectedService === ServiceType.PET_MOBILE_GROOMING_ONLY) {
+                    basePrice = prices[ServiceType.GROOMING_ONLY] ?? 0;
+                } else if (selectedService === ServiceType.BATH_AND_GROOMING || selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING) {
+                    basePrice = (prices[ServiceType.BATH] ?? 0) + (prices[ServiceType.GROOMING_ONLY] ?? 0);
+                }
+            }
+        }
+
+        let addonsPrice = 0;
+        Object.keys(selectedAddons).forEach(addonId => {
+            if (selectedAddons[addonId]) {
+                const addon = ADDON_SERVICES.find(a => a.id === addonId);
+                if (addon) addonsPrice += addon.price;
+            }
+        });
+        setTotalPrice(basePrice + addonsPrice);
+    }, [selectedService, selectedWeight, selectedAddons, isVisitService]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: name === 'whatsapp' ? formatWhatsapp(value) : value }));
+    };
+
+    const handleWeightChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newWeight = e.target.value as PetWeight;
+        setSelectedWeight(newWeight);
+        const newAddons = { ...selectedAddons };
+        ADDON_SERVICES.forEach(addon => {
+            if (selectedAddons[addon.id]) {
+                const isExcluded = addon.excludesWeight?.includes(newWeight);
+                const requiresNotMet = addon.requiresWeight && !addon.requiresWeight.includes(newWeight);
+                if (isExcluded || requiresNotMet) newAddons[addon.id] = false;
+            }
+        });
+        setSelectedAddons(newAddons);
+    }
+
+    const handleAddonToggle = (addonId: string) => {
+        const newAddons = { ...selectedAddons };
+        newAddons[addonId] = !newAddons[addonId];
+        if (addonId === 'patacure1' && newAddons[addonId]) newAddons['patacure2'] = false;
+        else if (addonId === 'patacure2' && newAddons[addonId]) newAddons['patacure1'] = false;
+        setSelectedAddons(newAddons);
+    };
+
+    const changeStep = (nextStep: number) => {
+        setIsAnimating(true);
+        setTimeout(() => {
+            setStep(nextStep);
+            setIsAnimating(false);
+        }, 300); // Animation duration
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedService || !selectedTime) return;
+        setIsSubmitting(true);
+
+        const sp = getSaoPauloTimeParts(selectedDate);
+        const ymd = `${String(sp.year)}-${String(sp.month + 1).padStart(2, '0')}-${String(sp.date).padStart(2, '0')}`;
+        const isBathGroomService = [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService);
+        const isPetMovelService = [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
+        if (isBathGroomService && disabledBathGroomDates.includes(ymd)) {
+            alert('A data selecionada está indisponível para Banho & Tosa.');
+            setIsSubmitting(false);
+            return;
+        }
+        if (isPetMovelService && disabledPetMovelDates.includes(ymd)) {
+            alert('A data selecionada está indisponível para Pet Móvel.');
+            setIsSubmitting(false);
+            return;
+        }
+
+        const year = selectedDate.getFullYear();
+        const month = selectedDate.getMonth();
+        const day = selectedDate.getDate();
+        const appointmentTime = toSaoPauloUTC(year, month, day, selectedTime);
+
+        const isPetMovelSubmit = !!selectedCondo;
+        const targetTable = isPetMovelSubmit ? 'pet_movel_appointments' : 'appointments';
+
+        const basePayload = {
+            appointment_time: appointmentTime.toISOString(),
+            pet_name: formData.petName,
+            pet_breed: formData.petBreed,
+            owner_name: formData.ownerName,
+            whatsapp: formData.whatsapp,
+            service: SERVICES[selectedService].label,
+            weight: isVisitService ? 'N/A' : (selectedWeight ? PET_WEIGHT_OPTIONS[selectedWeight] : 'N/A'),
+            addons: isVisitService ? [] : ADDON_SERVICES.filter(addon => selectedAddons[addon.id]).map(addon => addon.label),
+            price: totalPrice,
+            status: 'AGENDADO',
+            extra_services: {
+                pernoite: { enabled: false, quantity: 0 },
+                banho_tosa: { enabled: false, value: 0 },
+                so_banho: { enabled: false, value: 0 },
+                adestrador: { enabled: false, value: 0 },
+                despesa_medica: { enabled: false, value: 0 },
+                dias_extras: { enabled: false, quantity: 0 }
+            }
         };
 
-        setAppointments(prev => [...prev, newAppointment]);
-        setIsModalOpen(true);
-        setTimeout(() => {
-            setIsModalOpen(false);
-            setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
-            setSelectedService(null); setSelectedWeight(null); setSelectedAddons({}); setSelectedTime(null); setTotalPrice(0); setIsSubmitting(false);
-            setSelectedCondo(null);
-            setServiceStepView('main');
-            changeStep(1);
-        }, 3000);
-    } catch (error: any) {
-        console.error("Error submitting appointment:", error);
-        let userMessage = 'Não foi possível concluir o agendamento. Tente novamente.';
-        alert(userMessage);
-        setIsSubmitting(false);
-    }
-  };
+        const supabasePayload = isPetMovelSubmit
+            ? { ...basePayload, owner_address: formData.ownerAddress, condominium: selectedCondo }
+            : { ...basePayload, owner_address: formData.ownerAddress };
 
-  const isStep1Valid = formData.petName && formData.ownerName && formData.whatsapp.length > 13 && formData.petBreed && formData.ownerAddress;
-  const isStep2Valid = serviceStepView !== 'main' && selectedService && (isVisitService || selectedWeight);
-  const isStep3Valid = selectedTime !== null;
+        try {
+            // No conflict checking - all appointments are allowed
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100">
-      <header className="text-center mb-6 animate-fadeInUp">
-          <img src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-24 w-24 mx-auto mb-4 drop-shadow-lg"/>
-          <h1 className="font-brand text-6xl text-pink-800 mb-2">Sandy's Pet Shop</h1>
-          <p className="text-gray-600 text-xl font-medium">Agendamento Online</p>
-      </header>
+            const { data: newDbAppointment, error: supabaseError } = await supabase.from(targetTable).insert([supabasePayload]).select().single();
+            if (supabaseError) throw supabaseError;
 
-      {serviceStepView === 'main' && (
-        <section className="w-full max-w-4xl bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100 rounded-3xl shadow-xl border border-pink-200/60 mb-6 p-6 sm:p-8 animate-fadeIn">
-          <p className="text-lg sm:text-2xl md:text-3xl font-bold text-pink-700 mb-2 text-center whitespace-nowrap leading-none tracking-tight">🎉 Bem-vindo a Sandy Pet! 🐶💗</p>
-          <p className="text-gray-700 text-base sm:text-lg mb-3 text-center">Estamos muito felizes em receber você e seu pet por aqui!</p>
-          <p className="text-gray-700 text-base sm:text-lg text-center">Escolha abaixo o serviço ideal para o seu melhor amigo e faça seu agendamento de forma simples e rápida:</p>
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            
-            <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); changeStep(1); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
-              <img src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-12 h-12 rounded-full object-contain mb-2" />
-              <span className="text-lg">Banho & Tosa</span>
-              <span className="text-sm text-gray-600">Fixo</span>
-            </button>
-            
-            
-            <button type="button" onClick={() => { setServiceStepView('pet_movel_condo'); setSelectedService(null); changeStep(1); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
-              <img src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-12 h-12 rounded-full object-contain mb-2" />
-              <span className="text-lg">Pet Móvel</span>
-              <span className="text-sm text-gray-600">Condomínios</span>
-            </button>
-            
-            
-            <button type="button" onClick={() => { setSelectedService(null); setView('daycareRegistration'); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
-              <img src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-12 h-12 rounded-full object-contain mb-2" />
-              <span className="text-lg">Creche Pet</span>
-            </button>
-            
-            
-            <button type="button" onClick={() => { setSelectedService(null); setView('hotelRegistration'); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
-              <img src="https://cdn-icons-png.flaticon.com/512/1131/1131938.png" alt="Hotel Pet" className="w-12 h-12 rounded-full object-contain mb-2" />
-              <span className="text-lg">Hotel Pet</span>
-            </button>
-            
-            
-            <button type="button" onClick={() => { setView('visitSelector'); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
-              <img src="https://cdn-icons-png.flaticon.com/512/2196/2196747.png" alt="Visita" className="w-12 h-12 rounded-full object-contain mb-2" />
-              <span className="text-lg">Visita</span>
-            </button>
-            
-          </div>
-      </section>
-      )}
+            try {
+                const { data: existingClient } = await supabase
+                    .from('clients')
+                    .select('id')
+                    .eq('phone', supabasePayload.whatsapp)
+                    .limit(1)
+                    .single();
 
-      {serviceStepView !== 'main' && (
-      <main className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/40 backdrop-blur-sm">
-        <div className="px-8 py-6 bg-gradient-to-r from-pink-50 to-rose-50 border-b-2 border-pink-100">
-            <div className="flex justify-between items-center relative">
-                {/* Progress Line */}
-                <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -z-10">
-                    <div className={`h-full bg-pink-600 transition-all duration-500`} style={{ width: `${((step - 1) / 3) * 100}%` }}></div>
-                </div>
-                {['Dados', 'Serviços', 'Horário', 'Resumo'].map((name, index) => (
-                    <div key={name} className="flex flex-col items-center gap-2 z-10">
-                        <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${step >= index + 1 ? 'bg-gradient-to-br from-pink-500 to-pink-700 text-white scale-110' : 'bg-white text-gray-400 border-2 border-gray-300'}`}>
-                            {step > index + 1 ? '✓' : index + 1}
-                        </div>
-                        <span className={`hidden sm:block text-xs font-bold ${step === index + 1 ? 'text-pink-700' : step > index + 1 ? 'text-pink-600' : 'text-gray-400'}`}>{name}</span>
+                if (!existingClient) {
+                    const { error: clientInsertError } = await supabase
+                        .from('clients')
+                        .insert({
+                            name: supabasePayload.owner_name,
+                            phone: supabasePayload.whatsapp
+                        });
+                    if (clientInsertError) {
+                        console.error('Failed to auto-register client:', clientInsertError.message);
+                    }
+                }
+            } catch (error) {
+                console.error('An error occurred during client auto-registration:', error);
+            }
+
+            try {
+                const webhookUrl = isPetMovelSubmit
+                    ? 'https://n8n.intelektus.tech/webhook/petMovelAgendado'
+                    : 'https://n8n.intelektus.tech/webhook/servicoAgendado';
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(supabasePayload),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Webhook (${webhookUrl.includes('petMovelAgendado') ? 'petMovelAgendado' : 'servicoAgendado'}) failed with status ${response.status}`);
+                }
+            } catch (webhookError) {
+                console.error('Error sending new appointment webhook:', webhookError);
+            }
+
+            const newAppointment: Appointment = {
+                id: newDbAppointment.id,
+                petName: newDbAppointment.pet_name,
+                ownerName: newDbAppointment.owner_name,
+                whatsapp: newDbAppointment.whatsapp,
+                service: selectedService,
+                appointmentTime: new Date(newDbAppointment.appointment_time),
+                condominium: selectedCondo || undefined,
+            };
+
+            setAppointments(prev => [...prev, newAppointment]);
+            setIsModalOpen(true);
+            setTimeout(() => {
+                setIsModalOpen(false);
+                setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
+                setSelectedService(null); setSelectedWeight(null); setSelectedAddons({}); setSelectedTime(null); setTotalPrice(0); setIsSubmitting(false);
+                setSelectedCondo(null);
+                setServiceStepView('main');
+                changeStep(1);
+            }, 3000);
+        } catch (error: any) {
+            console.error("Error submitting appointment:", error);
+            let userMessage = 'Não foi possível concluir o agendamento. Tente novamente.';
+            alert(userMessage);
+            setIsSubmitting(false);
+        }
+    };
+
+    const isStep1Valid = formData.petName && formData.ownerName && formData.whatsapp.length > 13 && formData.petBreed && formData.ownerAddress;
+    const isStep2Valid = serviceStepView !== 'main' && selectedService && (isVisitService || selectedWeight);
+    const isStep3Valid = selectedTime !== null;
+
+    return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100">
+            <header className="text-center mb-6 animate-fadeInUp">
+                <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-24 w-24 mx-auto mb-4 drop-shadow-lg" loading="eager" />
+                <h1 className="font-brand text-6xl text-pink-800 mb-2">Sandy's Pet Shop</h1>
+                <p className="text-gray-600 text-xl font-medium">Agendamento Online</p>
+            </header>
+
+            {serviceStepView === 'main' && (
+                <section className="w-full max-w-4xl bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100 rounded-3xl shadow-xl border border-pink-200/60 mb-6 p-6 sm:p-8 animate-fadeIn">
+                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-pink-700 mb-2 text-center whitespace-nowrap leading-none tracking-tight">🎉 Bem-vindo a Sandy Pet! 🐶💗</p>
+                    <p className="text-gray-700 text-base sm:text-lg mb-3 text-center">Estamos muito felizes em receber você e seu pet por aqui!</p>
+                    <p className="text-gray-700 text-base sm:text-lg text-center">Escolha abaixo o serviço ideal para o seu melhor amigo e faça seu agendamento de forma simples e rápida:</p>
+                    <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+                        <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); changeStep(1); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
+                            <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-12 h-12 rounded-full object-contain mb-2" loading="eager" />
+                            <span className="text-lg">Banho & Tosa</span>
+                            <span className="text-sm text-gray-600">Fixo</span>
+                        </button>
+
+
+                        <button type="button" onClick={() => { setServiceStepView('pet_movel_condo'); setSelectedService(null); changeStep(1); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
+                            <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-12 h-12 rounded-full object-contain mb-2" loading="lazy" />
+                            <span className="text-lg">Pet Móvel</span>
+                            <span className="text-sm text-gray-600">Condomínios</span>
+                        </button>
+
+
+                        <button type="button" onClick={() => { setSelectedService(null); setView('daycareRegistration'); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
+                            <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-12 h-12 rounded-full object-contain mb-2" loading="lazy" />
+                            <span className="text-lg">Creche Pet</span>
+                        </button>
+
+
+                        <button type="button" onClick={() => { setView('visitSelector'); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
+                            <SafeImage src="https://cdn-icons-png.flaticon.com/512/2196/2196747.png" alt="Visita" className="w-12 h-12 rounded-full object-contain mb-2" loading="lazy" />
+                            <span className="text-lg">Visita</span>
+                        </button>
+
                     </div>
-                ))}
-            </div>
-        </div>
+                </section>
+            )}
 
-        <form onSubmit={handleSubmit} className={`relative p-6 sm:p-8 transition-all duration-300 ${isAnimating ? 'animate-slideOutToLeft' : 'animate-slideInFromRight'}`}>
-          {step === 1 && (
-            <div className="space-y-7">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Informações do Pet e Dono</h2>
-              <div>
-                  <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
-                  <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon/></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900"/></div>
-              </div>
-              <div>
-                  <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
-                  <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon/></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900"/></div>
-              </div>
-              <div>
-                  <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
-                  <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon/></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900"/></div>
-              </div>
-              <div>
-                  <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Seu Endereço</label>
-                  <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon/></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900"/></div>
-              </div>
-              <div>
-                  <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label>
-                  <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><WhatsAppIcon/></span><input type="tel" name="whatsapp" id="whatsapp" value={formData.whatsapp} onChange={handleInputChange} required placeholder="(XX) XXXXX-XXXX" maxLength={15} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900"/></div>
-              </div>
-            </div>
-          )}
-          
-          {step === 2 && (
-            <div className="space-y-6">
-                {serviceStepView === 'main' ? (
-                    <h2 className="text-3xl font-bold text-gray-800">Escolha os Serviços</h2>
-                ) : (
-                    <h2 className="text-3xl font-bold text-gray-800">Detalhes do Serviço</h2>
-                )}
-                
-                {serviceStepView === 'main' && (
-                    <div>
-                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Selecione a Categoria</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                             <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                <span className="text-lg">Banho & Tosa</span>
-                                <span className="text-xs text-gray-600 mt-1">Fixo</span>
-                            </button>
-                            <button type="button" onClick={() => { console.log('Clicou em Creche Pet'); setServiceStepView('daycare_options'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                <span className="text-lg">{SERVICES[ServiceType.VISIT_DAYCARE].label}</span>
-                            </button>
-                             <button type="button" onClick={() => { console.log('Clicou em Hotel Pet'); setServiceStepView('hotel_options'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                <span className="text-lg">{SERVICES[ServiceType.VISIT_HOTEL].label}</span>
-                            </button>
-                            <button type="button" onClick={() => { console.log('Clicou em Pet Móvel'); setServiceStepView('pet_movel_condo'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                <span className="text-lg">Pet Móvel</span>
-                                <span className="text-xs text-gray-600 mt-1">Condomínios</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {serviceStepView === 'pet_movel_condo' && (
-                    <div className="space-y-6">
-                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Selecione o Condomínio</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            {['Vitta Parque', 'Max Haus', 'Paseo'].map(condo => (
-                                <button
-                                    key={condo}
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedCondo(condo);
-                                        setServiceStepView('pet_movel');
-                                    }}
-                                    className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200`}
-                                >
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-lg">{condo}</span>
-                                        <span className="text-xs text-gray-600 mt-1">
-                                            {condo === 'Vitta Parque' ? 'Quartas-Feiras' : condo === 'Max Haus' ? 'Quintas-Feiras' : 'Sextas-Feiras'}
-                                        </span>
+            {serviceStepView !== 'main' && (
+                <main className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/40 backdrop-blur-sm">
+                    <div className="px-8 py-6 bg-gradient-to-r from-pink-50 to-rose-50 border-b-2 border-pink-100">
+                        <div className="flex justify-between items-center relative">
+                            {/* Progress Line */}
+                            <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -z-10">
+                                <div className={`h-full bg-pink-600 transition-all duration-500`} style={{ width: `${((step - 1) / 3) * 100}%` }}></div>
+                            </div>
+                            {['Dados', 'Serviços', 'Horário', 'Resumo'].map((name, index) => (
+                                <div key={name} className="flex flex-col items-center gap-2 z-10">
+                                    <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${step >= index + 1 ? 'bg-gradient-to-br from-pink-500 to-pink-700 text-white scale-110' : 'bg-white text-gray-400 border-2 border-gray-300'}`}>
+                                        {step > index + 1 ? '✓' : index + 1}
                                     </div>
-                                </button>
+                                    <span className={`hidden sm:block text-xs font-bold ${step === index + 1 ? 'text-pink-700' : step > index + 1 ? 'text-pink-600' : 'text-gray-400'}`}>{name}</span>
+                                </div>
                             ))}
                         </div>
-                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
                     </div>
-                )}
-                
-                {serviceStepView === 'bath_groom' && (
-                    <div className="space-y-6">
-                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço Principal</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<button type="button" onClick={() => setSelectedService(ServiceType.BATH)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.BATH ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                <span className="text-lg">{SERVICES[ServiceType.BATH].label}</span>
-                                <span className="text-xs text-gray-600 mt-1">Tosa Higiênica inclusa</span>
-                            </button>
-<button type="button" onClick={() => setSelectedService(ServiceType.BATH_AND_GROOMING)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                <span className="text-lg">{SERVICES[ServiceType.BATH_AND_GROOMING].label}</span>
-                            </button>
-                        </div>
-                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
-                    </div>
-                )}
-                
-                {serviceStepView === 'pet_movel' && (
-                    <div className="space-y-6">
-                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço Principal (Pet Móvel)</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                <span className="text-lg">Banho</span>
-                                <span className="text-xs text-gray-600 mt-1">Tosa Higiênica inclusa</span>
-                            </button>
-<button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH_AND_GROOMING)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                <span className="text-lg">Banho & Tosa</span>
-                            </button>
-                        </div>
-                        <button type="button" onClick={() => { setServiceStepView('pet_movel_condo'); setSelectedService(null); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
-                    </div>
-                )}
 
-                {serviceStepView === 'hotel_pet' && (
-                    <div className="space-y-6">
-                        <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
-                            <h3 className="text-lg font-semibold text-gray-800">Check-list de Hospedagem - Hotel Pet</h3>
-                            <p className="text-base text-gray-600 mt-1">Preencha todos os dados do pet e tutor para o check-in</p>
-                        </div>
-                        <button type="button" onClick={() => { console.log('Clicou em Preencher Formulário de Hotel Pet'); setView('hotelRegistration'); }} className="w-full bg-pink-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-pink-700 transition-colors">
-                            Preencher Formulário de Hotel Pet
-                        </button>
-                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
-                    </div>
-                )}
-
-                {serviceStepView === 'daycare_options' && (
-                    <div className="space-y-6">
-                        <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
-                            <h3 className="text-lg font-semibold text-gray-800">Creche Pet - Selecione uma opção</h3>
-                            <p className="text-base text-gray-600 mt-1">Escolha entre agendar uma visita ou fazer a matrícula</p>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button type="button" onClick={() => { console.log('Clicou em Visita - Creche Pet'); setSelectedService(ServiceType.VISIT_DAYCARE); setView('appointment'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[80px] bg-white hover:bg-pink-50 border-gray-200">
-                                <span className="text-lg">🏠 Visita</span>
-                                <span className="text-sm text-gray-600 mt-1">Agendar visita à creche</span>
-                            </button>
-                            <button type="button" onClick={() => { console.log('Clicou em Matrícula - Creche Pet'); setView('daycareRegistration'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[80px] bg-white hover:bg-pink-50 border-gray-200">
-                                <span className="text-lg">📝 Matrícula</span>
-                                <span className="text-sm text-gray-600 mt-1">Fazer matrícula na creche</span>
-                            </button>
-                        </div>
-                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
-                    </div>
-                )}
-
-                {serviceStepView === 'hotel_options' && (
-                    <div className="space-y-6">
-                        <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
-                            <h3 className="text-lg font-semibold text-gray-800">Hotel Pet - Selecione uma opção</h3>
-                            <p className="text-base text-gray-600 mt-1">Escolha entre agendar uma visita ou fazer a matrícula</p>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button type="button" onClick={() => { console.log('Clicou em Visita - Hotel Pet'); setSelectedService(ServiceType.VISIT_HOTEL); setView('appointment'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                <span className="text-lg">🏨 Visita</span>
-                            </button>
-                            <button type="button" onClick={() => { console.log('Clicou em Matrícula - Hotel Pet'); setView('hotelRegistration'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                <span className="text-lg">📝 Matrícula</span>
-                            </button>
-                        </div>
-                        <button type="button" onClick={() => setServiceStepView('main')} className="text-sm text-pink-600 hover:underline">← Voltar</button>
-                    </div>
-                )}
-
-                {selectedService && !isVisitService && (
-                    <>
-                        <div>
-                            <label htmlFor="petWeight" className="block text-md font-semibold text-gray-700 mb-2 mt-6">2. Peso do Pet</label>
-                            <select id="petWeight" value={selectedWeight || ''} onChange={handleWeightChange} required className="block w-full py-3 px-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900">
-                                <option value="" disabled>Selecione o peso</option>
-                                {(Object.keys(PET_WEIGHT_OPTIONS) as PetWeight[]).map(key => (<option key={key} value={key}>{PET_WEIGHT_OPTIONS[key]}</option>))}
-                            </select>
-                        </div>
-                        <div>
-                            <h3 className="text-md font-semibold text-gray-700 mb-2 mt-6">3. Serviços Adicionais (Opcional)</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                                {ADDON_SERVICES.filter(a => a.id !== 'tosa_higienica').map(addon => {
-                                    const isDisabled = !selectedWeight || !selectedService || addon.excludesWeight?.includes(selectedWeight!) || (addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight!)) || (addon.requiresService && addon.requiresService !== selectedService);
-                                    return (
-                                        <label key={addon.id} className={`flex items-center p-6 sm:p-5 rounded-lg border-2 transition-all ${isDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer hover:bg-pink-50'} ${selectedAddons[addon.id] ? 'border-pink-500 bg-pink-50' : 'border-gray-200'}`}>
-                                            <input type="checkbox" onChange={() => handleAddonToggle(addon.id)} checked={!!selectedAddons[addon.id]} disabled={isDisabled} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                            <span className="ml-2.5">{addon.label}</span>
-                                        </label>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </>
-                )}
-                
-                {selectedService && !isVisitService && selectedWeight && totalPrice > 0 && (
-                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex justify-between items-center">
-                            <span className="text-lg font-semibold text-gray-700">Preço Total:</span>
-                            <span className="text-2xl font-bold text-green-600">R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</span>
-                        </div>
-                        {Object.keys(selectedAddons).some(key => selectedAddons[key]) && (
-                            <div className="mt-2 text-sm text-gray-600">
-                                <div>Serviço base: R$ {(totalPrice - Object.keys(selectedAddons).reduce((sum, addonId) => {
-                                    if (selectedAddons[addonId]) {
-                                        const addon = ADDON_SERVICES.find(a => a.id === addonId);
-                                        return sum + (addon?.price || 0);
-                                    }
-                                    return sum;
-                                }, 0)).toFixed(2)}</div>
-                                <div>Adicionais: R$ {Object.keys(selectedAddons).reduce((sum, addonId) => {
-                                    if (selectedAddons[addonId]) {
-                                        const addon = ADDON_SERVICES.find(a => a.id === addonId);
-                                        return sum + (addon?.price || 0);
-                                    }
-                                    return sum;
-                                }, 0).toFixed(2)}</div>
+                    <form onSubmit={handleSubmit} className={`relative p-6 sm:p-8 transition-all duration-300 ${isAnimating ? 'animate-slideOutToLeft' : 'animate-slideInFromRight'}`}>
+                        {step === 1 && (
+                            <div className="space-y-7">
+                                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Informações do Pet e Dono</h2>
+                                <div>
+                                    <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
+                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                </div>
+                                <div>
+                                    <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
+                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petBreed') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                </div>
+                                <div>
+                                    <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
+                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                </div>
+                                <div>
+                                    <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Seu Endereço</label>
+                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerAddress') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                </div>
+                                <div>
+                                    <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><WhatsAppIcon /></span>
+                                        <input
+                                            type="tel"
+                                            name="whatsapp"
+                                            id="whatsapp"
+                                            value={formData.whatsapp}
+                                            onChange={handleInputChange}
+                                            required
+                                            placeholder="(XX) XXXXX-XXXX"
+                                            maxLength={15}
+                                            className={`block w-full pl-10 pr-10 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('whatsapp') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                                        />
+                                        {isFetchingClient && (
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                                <svg className="animate-spin h-5 w-5 text-pink-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
+
+                        {step === 2 && (
+                            <div className="space-y-6">
+                                {serviceStepView === 'main' ? (
+                                    <h2 className="text-3xl font-bold text-gray-800">Escolha os Serviços</h2>
+                                ) : (
+                                    <h2 className="text-3xl font-bold text-gray-800">Detalhes do Serviço</h2>
+                                )}
+
+                                {serviceStepView === 'main' && (
+                                    <div>
+                                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Selecione a Categoria</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                                <span className="text-lg">Banho & Tosa</span>
+                                                <span className="text-xs text-gray-600 mt-1">Fixo</span>
+                                            </button>
+                                            <button type="button" onClick={() => { console.log('Clicou em Creche Pet'); setServiceStepView('daycare_options'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                                <span className="text-lg">{SERVICES[ServiceType.VISIT_DAYCARE].label}</span>
+                                            </button>
+                                            <button type="button" onClick={() => { console.log('Clicou em Hotel Pet'); setServiceStepView('hotel_options'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                                <span className="text-lg">{SERVICES[ServiceType.VISIT_HOTEL].label}</span>
+                                            </button>
+                                            <button type="button" onClick={() => { console.log('Clicou em Pet Móvel'); setServiceStepView('pet_movel_condo'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                                <span className="text-lg">Pet Móvel</span>
+                                                <span className="text-xs text-gray-600 mt-1">Condomínios</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {serviceStepView === 'pet_movel_condo' && (
+                                    <div className="space-y-6">
+                                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Selecione o Condomínio</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            {['Vitta Parque', 'Max Haus', 'Paseo'].map(condo => (
+                                                <button
+                                                    key={condo}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedCondo(condo);
+                                                        setServiceStepView('pet_movel');
+                                                    }}
+                                                    className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200`}
+                                                >
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-lg">{condo}</span>
+                                                        <span className="text-xs text-gray-600 mt-1">
+                                                            {condo === 'Vitta Parque' ? 'Quartas-Feiras' : condo === 'Max Haus' ? 'Quintas-Feiras' : 'Sextas-Feiras'}
+                                                        </span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
+                                    </div>
+                                )}
+
+                                {serviceStepView === 'bath_groom' && (
+                                    <div className="space-y-6">
+                                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço Principal</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <button type="button" onClick={() => setSelectedService(ServiceType.BATH)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.BATH ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
+                                                <span className="text-lg">{SERVICES[ServiceType.BATH].label}</span>
+                                                <span className="text-xs text-gray-600 mt-1">Tosa Higiênica inclusa</span>
+                                            </button>
+                                            <button type="button" onClick={() => setSelectedService(ServiceType.BATH_AND_GROOMING)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
+                                                <span className="text-lg">{SERVICES[ServiceType.BATH_AND_GROOMING].label}</span>
+                                            </button>
+                                        </div>
+                                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
+                                    </div>
+                                )}
+
+                                {serviceStepView === 'pet_movel' && (
+                                    <div className="space-y-6">
+                                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço Principal (Pet Móvel)</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
+                                                <span className="text-lg">Banho</span>
+                                                <span className="text-xs text-gray-600 mt-1">Tosa Higiênica inclusa</span>
+                                            </button>
+                                            <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH_AND_GROOMING)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
+                                                <span className="text-lg">Banho & Tosa</span>
+                                            </button>
+                                        </div>
+                                        <button type="button" onClick={() => { setServiceStepView('pet_movel_condo'); setSelectedService(null); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
+                                    </div>
+                                )}
+
+                                {serviceStepView === 'hotel_pet' && (
+                                    <div className="space-y-6">
+                                        <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
+                                            <h3 className="text-lg font-semibold text-gray-800">Check-list de Hospedagem - Hotel Pet</h3>
+                                            <p className="text-base text-gray-600 mt-1">Preencha todos os dados do pet e tutor para o check-in</p>
+                                        </div>
+                                        <button type="button" onClick={() => { console.log('Clicou em Preencher Formulário de Hotel Pet'); setView('hotelRegistration'); }} className="w-full bg-pink-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-pink-700 transition-colors">
+                                            Preencher Formulário de Hotel Pet
+                                        </button>
+                                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
+                                    </div>
+                                )}
+
+                                {serviceStepView === 'daycare_options' && (
+                                    <div className="space-y-6">
+                                        <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
+                                            <h3 className="text-lg font-semibold text-gray-800">Creche Pet - Selecione uma opção</h3>
+                                            <p className="text-base text-gray-600 mt-1">Escolha entre agendar uma visita ou fazer a matrícula</p>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <button type="button" onClick={() => { console.log('Clicou em Visita - Creche Pet'); setSelectedService(ServiceType.VISIT_DAYCARE); setView('appointment'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[80px] bg-white hover:bg-pink-50 border-gray-200">
+                                                <span className="text-lg">🏠 Visita</span>
+                                                <span className="text-sm text-gray-600 mt-1">Agendar visita à creche</span>
+                                            </button>
+                                            <button type="button" onClick={() => { console.log('Clicou em Matrícula - Creche Pet'); setView('daycareRegistration'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[80px] bg-white hover:bg-pink-50 border-gray-200">
+                                                <span className="text-lg">📝 Matrícula</span>
+                                                <span className="text-sm text-gray-600 mt-1">Fazer matrícula na creche</span>
+                                            </button>
+                                        </div>
+                                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
+                                    </div>
+                                )}
+
+                                {serviceStepView === 'hotel_options' && (
+                                    <div className="space-y-6">
+                                        <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
+                                            <h3 className="text-lg font-semibold text-gray-800">Hotel Pet - Selecione uma opção</h3>
+                                            <p className="text-base text-gray-600 mt-1">Escolha entre agendar uma visita ou fazer a matrícula</p>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <button type="button" onClick={() => { console.log('Clicou em Visita - Hotel Pet'); setSelectedService(ServiceType.VISIT_HOTEL); setView('appointment'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                                <span className="text-lg">🏨 Visita</span>
+                                            </button>
+                                            <button type="button" onClick={() => { console.log('Clicou em Matrícula - Hotel Pet'); setView('hotelRegistration'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                                <span className="text-lg">📝 Matrícula</span>
+                                            </button>
+                                        </div>
+                                        <button type="button" onClick={() => setServiceStepView('main')} className="text-sm text-pink-600 hover:underline">← Voltar</button>
+                                    </div>
+                                )}
+
+                                {selectedService && !isVisitService && (
+                                    <>
+                                        <div>
+                                            <label htmlFor="petWeight" className="block text-md font-semibold text-gray-700 mb-2 mt-6">2. Peso do Pet</label>
+                                            <select id="petWeight" value={selectedWeight || ''} onChange={handleWeightChange} required className="block w-full py-3 px-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900">
+                                                <option value="" disabled>Selecione o peso</option>
+                                                {(Object.keys(PET_WEIGHT_OPTIONS) as PetWeight[]).map(key => (<option key={key} value={key}>{PET_WEIGHT_OPTIONS[key]}</option>))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-md font-semibold text-gray-700 mb-2 mt-6">3. Serviços Adicionais (Opcional)</h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                                                {ADDON_SERVICES.filter(a => a.id !== 'tosa_higienica').map(addon => {
+                                                    const isDisabled = !selectedWeight || !selectedService || addon.excludesWeight?.includes(selectedWeight!) || (addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight!)) || (addon.requiresService && addon.requiresService !== selectedService);
+                                                    return (
+                                                        <label key={addon.id} className={`flex items-center p-6 sm:p-5 rounded-lg border-2 transition-all ${isDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer hover:bg-pink-50'} ${selectedAddons[addon.id] ? 'border-pink-500 bg-pink-50' : 'border-gray-200'}`}>
+                                                            <input type="checkbox" onChange={() => handleAddonToggle(addon.id)} checked={!!selectedAddons[addon.id]} disabled={isDisabled} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                                                            <span className="ml-2.5">{addon.label}</span>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {selectedService && !isVisitService && selectedWeight && totalPrice > 0 && (
+                                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-lg font-semibold text-gray-700">Preço Total:</span>
+                                            <span className="text-2xl font-bold text-green-600">R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</span>
+                                        </div>
+                                        {Object.keys(selectedAddons).some(key => selectedAddons[key]) && (
+                                            <div className="mt-2 text-sm text-gray-600">
+                                                <div>Serviço base: R$ {(totalPrice - Object.keys(selectedAddons).reduce((sum, addonId) => {
+                                                    if (selectedAddons[addonId]) {
+                                                        const addon = ADDON_SERVICES.find(a => a.id === addonId);
+                                                        return sum + (addon?.price || 0);
+                                                    }
+                                                    return sum;
+                                                }, 0)).toFixed(2)}</div>
+                                                <div>Adicionais: R$ {Object.keys(selectedAddons).reduce((sum, addonId) => {
+                                                    if (selectedAddons[addonId]) {
+                                                        const addon = ADDON_SERVICES.find(a => a.id === addonId);
+                                                        return sum + (addon?.price || 0);
+                                                    }
+                                                    return sum;
+                                                }, 0).toFixed(2)}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {step === 3 && (
+                            <div className="space-y-6">
+                                <h2 className="text-3xl font-bold text-gray-800">Selecione Data e Hora</h2>
+                                <div>
+                                    <Calendar
+                                        selectedDate={selectedDate}
+                                        onDateChange={setSelectedDate}
+                                        disablePast
+                                        disableWeekends={true}
+                                        allowedDays={(() => {
+                                            // Para serviços Pet Móvel, definir dias permitidos baseado no condomínio
+                                            if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService)) {
+                                                switch (selectedCondo) {
+                                                    case 'Vitta Parque':
+                                                        return [3]; // Quarta-feira (0=domingo, 1=segunda, 2=terça, 3=quarta, 4=quinta, 5=sexta, 6=sábado)
+                                                    case 'Max Haus':
+                                                        return [4]; // Quinta-feira
+                                                    case 'Paseo':
+                                                        return [5]; // Sexta-feira
+                                                    default:
+                                                        return []; // Nenhum dia permitido se condomínio não selecionado
+                                                }
+                                            }
+                                            // Para outros serviços, usar allowedDays normal
+                                            return allowedDays;
+                                        })()}
+                                        disabledDates={(() => {
+                                            if (!selectedService) return [];
+                                            if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService)) return disabledPetMovelDates;
+                                            if ([ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService)) return disabledBathGroomDates;
+                                            return [];
+                                        })()}
+                                    />
+                                </div>
+                                <div>
+                                    <h3 className="text-md font-semibold text-gray-700 mb-4 text-center">Horários Disponíveis</h3>
+                                    <TimeSlotPicker
+                                        key={selectedDate.toISOString()}
+                                        selectedDate={selectedDate}
+                                        selectedService={selectedService}
+                                        appointments={appointments}
+                                        onTimeSelect={setSelectedTime}
+                                        selectedTime={selectedTime}
+                                        workingHours={isVisitService ? VISIT_WORKING_HOURS : WORKING_HOURS}
+                                        isPetMovel={!!selectedCondo}
+                                        allowedDays={(() => {
+                                            if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService)) {
+                                                switch (selectedCondo) {
+                                                    case 'Vitta Parque': return [3];
+                                                    case 'Max Haus': return [4];
+                                                    case 'Paseo': return [5];
+                                                    default: return [];
+                                                }
+                                            }
+                                            return allowedDays;
+                                        })()}
+                                        selectedCondo={selectedCondo}
+                                        disablePastTimes={true}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 4 && (
+                            <div className="space-y-6">
+                                <h2 className="text-3xl font-bold text-gray-800 mb-4">Resumo do Agendamento</h2>
+                                <div className="p-6 bg-white rounded-lg space-y-2 text-gray-700 border border-gray-200">
+                                    <p><strong>Pet:</strong> {formData.petName} ({formData.petBreed})</p>
+                                    <p><strong>Responsável:</strong> {formData.ownerName}</p>
+                                    <p><strong>WhatsApp:</strong> {formData.whatsapp}</p>
+                                    <p><strong>Serviço:</strong> {selectedService ? SERVICES[selectedService].label : 'Nenhum'}</p>
+                                    {!isVisitService && <p><strong>Peso:</strong> {selectedWeight ? PET_WEIGHT_OPTIONS[selectedWeight] : 'Nenhum'}</p>}
+                                    {!isVisitService && selectedAddons && Object.keys(selectedAddons).some(k => selectedAddons[k]) && (
+                                        <p><strong>Adicionais:</strong> {ADDON_SERVICES.filter(a => selectedAddons[a.id]).map(a => a.label).join(', ')}</p>
+                                    )}
+                                    <p><strong>Data:</strong> {selectedDate.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })} às {selectedTime}:00</p>
+                                    <div className="mt-4 pt-4 border-t border-gray-200">
+                                        <p className="text-2xl font-bold text-gray-900 text-right">Total: R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-10 flex justify-between items-center gap-4">
+                            <button type="button" onClick={() => {
+                                if (step === 1) {
+                                    setServiceStepView('main');
+                                    setSelectedService(null);
+                                } else if (step === 2 && serviceStepView !== 'main') {
+                                    if (serviceStepView === 'pet_movel') {
+                                        setServiceStepView('pet_movel_condo');
+                                    } else {
+                                        setServiceStepView('main');
+                                    }
+                                    setSelectedService(null);
+                                } else {
+                                    changeStep(step - 1);
+                                }
+                            }} className="w-full md:w-[220px] bg-white border-2 border-gray-300 text-gray-700 font-bold py-4 px-8 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow">
+                                ← Voltar
+                            </button>
+
+                            {step < 4 && <button type="button" onClick={() => changeStep(step + 1)} disabled={(step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid) || (step === 3 && !isStep3Valid)} className="w-full md:w-[220px] bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold py-4 px-8 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed">
+                                Próximo →
+                            </button>}
+                            {step === 4 && <button type="submit" disabled={isSubmitting} className="w-full md:w-[220px] bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-4 px-8 rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed">
+                                {isSubmitting ? 'Agendando...' : '✓ Confirmar Agendamento'}
+                            </button>}
+                        </div>
+                    </form>
+                </main>
+            )}
+
+            <footer className="text-center mt-8 text-base">
+                <button onClick={() => setView('login')} className="text-gray-500 hover:text-pink-600 font-medium transition-colors underline-offset-4 hover:underline">Acesso Administrativo</button>
+            </footer>
+
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
+                    <div className="text-center bg-white p-10 rounded-3xl shadow-2xl max-w-full sm:max-w-md mx-auto border-4 border-pink-200 animate-scaleIn">
+                        <SuccessIcon />
+                        <h2 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-pink-800 bg-clip-text text-transparent mt-4">Agendamento Confirmado!</h2>
+                        <p className="text-gray-600 mt-4 text-lg">Seu horário foi reservado com sucesso. Obrigado!</p>
+                        <div className="mt-6 p-4 bg-pink-50 rounded-xl">
+                            <p className="text-sm text-pink-800 font-medium">Você receberá uma confirmação via WhatsApp em breve</p>
+                        </div>
                     </div>
-                )}
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-gray-800">Selecione Data e Hora</h2>
-              <div>
-                <Calendar 
-                  selectedDate={selectedDate} 
-                  onDateChange={setSelectedDate} 
-                  disablePast 
-                  disableWeekends={true}
-                  allowedDays={(() => {
-                    // Para serviços Pet Móvel, definir dias permitidos baseado no condomínio
-                    if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService)) {
-                      switch (selectedCondo) {
-                        case 'Vitta Parque':
-                          return [3]; // Quarta-feira (0=domingo, 1=segunda, 2=terça, 3=quarta, 4=quinta, 5=sexta, 6=sábado)
-                        case 'Max Haus':
-                          return [4]; // Quinta-feira
-                        case 'Paseo':
-                          return [5]; // Sexta-feira
-                        default:
-                          return []; // Nenhum dia permitido se condomínio não selecionado
-                      }
-                    }
-                    // Para outros serviços, usar allowedDays normal
-                    return allowedDays;
-                  })()}
-                  disabledDates={(() => {
-                    if (!selectedService) return [];
-                    if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService)) return disabledPetMovelDates;
-                    if ([ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService)) return disabledBathGroomDates;
-                    return [];
-                  })()}
-                />
-              </div>
-              <div>
-                <h3 className="text-md font-semibold text-gray-700 mb-4 text-center">Horários Disponíveis</h3>
-                <TimeSlotPicker
-                  selectedDate={selectedDate}
-                  selectedService={selectedService}
-                  appointments={appointments}
-                  onTimeSelect={setSelectedTime}
-                  selectedTime={selectedTime}
-                  workingHours={isVisitService ? VISIT_WORKING_HOURS : WORKING_HOURS}
-                  isPetMovel={!!selectedCondo}
-                  allowedDays={(() => {
-                    if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService)) {
-                      switch (selectedCondo) {
-                        case 'Vitta Parque': return [3];
-                        case 'Max Haus': return [4];
-                        case 'Paseo': return [5];
-                        default: return [];
-                      }
-                    }
-                    return allowedDays;
-                  })()}
-                  selectedCondo={selectedCondo}
-                  disablePastTimes={true}
-                />
-              </div>
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">Resumo do Agendamento</h2>
-              <div className="p-6 bg-white rounded-lg space-y-2 text-gray-700 border border-gray-200">
-                <p><strong>Pet:</strong> {formData.petName} ({formData.petBreed})</p>
-                <p><strong>Responsável:</strong> {formData.ownerName}</p>
-                <p><strong>WhatsApp:</strong> {formData.whatsapp}</p>
-                <p><strong>Serviço:</strong> {selectedService ? SERVICES[selectedService].label : 'Nenhum'}</p>
-                {!isVisitService && <p><strong>Peso:</strong> {selectedWeight ? PET_WEIGHT_OPTIONS[selectedWeight] : 'Nenhum'}</p>}
-                {!isVisitService && selectedAddons && Object.keys(selectedAddons).some(k => selectedAddons[k]) && (
-                    <p><strong>Adicionais:</strong> {ADDON_SERVICES.filter(a => selectedAddons[a.id]).map(a => a.label).join(', ')}</p>
-                )}
-                <p><strong>Data:</strong> {selectedDate.toLocaleDateString('pt-BR', {timeZone: 'America/Sao_Paulo'})} às {selectedTime}:00</p>
-                 <div className="mt-4 pt-4 border-t border-gray-200">
-                     <p className="text-2xl font-bold text-gray-900 text-right">Total: R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</p>
-                 </div>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-10 flex justify-between items-center gap-4">
-            <button type="button" onClick={() => {
-                if (step === 1) {
-                    setServiceStepView('main');
-                    setSelectedService(null);
-                } else if (step === 2 && serviceStepView !== 'main') {
-                    if (serviceStepView === 'pet_movel') {
-                        setServiceStepView('pet_movel_condo');
-                    } else {
-                        setServiceStepView('main');
-                    }
-                    setSelectedService(null);
-                } else {
-                    changeStep(step - 1);
-                }
-            }} className="w-full md:w-[220px] bg-white border-2 border-gray-300 text-gray-700 font-bold py-4 px-8 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow">
-              ← Voltar
-            </button>
-
-            {step < 4 && <button type="button" onClick={() => changeStep(step + 1)} disabled={(step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid) || (step === 3 && !isStep3Valid)} className="w-full md:w-[220px] bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold py-4 px-8 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed">
-              Próximo →
-            </button>}
-            {step === 4 && <button type="submit" disabled={isSubmitting} className="w-full md:w-[220px] bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-4 px-8 rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed">
-              {isSubmitting ? 'Agendando...' : '✓ Confirmar Agendamento'}
-            </button>}
-          </div>
-        </form>
-      </main>
-      )}
-
-      <footer className="text-center mt-8 text-base">
-        <button onClick={() => setView('login')} className="text-gray-500 hover:text-pink-600 font-medium transition-colors underline-offset-4 hover:underline">Acesso Administrativo</button>
-      </footer>
-      
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
-          <div className="text-center bg-white p-10 rounded-3xl shadow-2xl max-w-full sm:max-w-md mx-auto border-4 border-pink-200 animate-scaleIn">
-            <SuccessIcon />
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-pink-800 bg-clip-text text-transparent mt-4">Agendamento Confirmado!</h2>
-            <p className="text-gray-600 mt-4 text-lg">Seu horário foi reservado com sucesso. Obrigado!</p>
-            <div className="mt-6 p-4 bg-pink-50 rounded-xl">
-              <p className="text-sm text-pink-800 font-medium">Você receberá uma confirmação via WhatsApp em breve</p>
-            </div>
-          </div>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
 // Hotel View Component for managing hotel registrations
-    const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show: boolean) => void }> = ({ refreshKey, setShowHotelStatistics }) => {
+const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show: boolean) => void }> = ({ refreshKey, setShowHotelStatistics }) => {
     const [registrations, setRegistrations] = useState<HotelRegistration[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedRegistration, setSelectedRegistration] = useState<HotelRegistration | null>(null);
@@ -10508,7 +11734,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const [rejectReason, setRejectReason] = useState<string>('');
     const [hotelFilter, setHotelFilter] = useState<'all' | 'in_hotel' | 'approved' | 'analysis' | 'archived'>('all');
     const [showHotelFilterPanel, setShowHotelFilterPanel] = useState(false);
-    const [expandedHotelSections, setExpandedHotelSections] = useState<string[]>(['in_hotel','approved','analysis','archived']);
+    const [expandedHotelSections, setExpandedHotelSections] = useState<string[]>(['in_hotel', 'approved', 'analysis', 'archived']);
     const [draggingOverHotel, setDraggingOverHotel] = useState<'in_hotel' | 'approved' | 'analysis' | 'archived' | null>(null);
     const [isUploadPhotoModalOpen, setIsUploadPhotoModalOpen] = useState(false);
     const [uploadTargetRegistration, setUploadTargetRegistration] = useState<HotelRegistration | null>(null);
@@ -10526,7 +11752,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         try {
             const reg = uploadTargetRegistration as HotelRegistration;
             const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-            const base = (reg.id || reg.pet_name.replace(/\s+/g,'_'));
+            const base = (reg.id || reg.pet_name.replace(/\s+/g, '_'));
             const path = `${base}_${Date.now()}.${ext}`;
             const oldUrl = (reg as any).pet_photo_url as string | undefined;
             if (oldUrl) {
@@ -10538,7 +11764,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                         const oldPath = u.pathname.substring(idx + prefix.length);
                         await supabase.storage.from('pet_photos').remove([oldPath]);
                     }
-                } catch {}
+                } catch { }
             }
             const { error: upErr } = await supabase.storage.from('pet_photos').upload(path, file, { upsert: true, contentType: file.type });
             if (upErr) throw upErr;
@@ -10572,7 +11798,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             } else {
                 const normalized = (data as HotelRegistration[]).map(r => ({ ...r, id: r.id !== undefined && r.id !== null ? String(r.id) : r.id }));
                 setRegistrations(normalized);
-                try { localStorage.setItem('cached_hotel_registrations', JSON.stringify(normalized || [])); } catch {}
+                try { localStorage.setItem('cached_hotel_registrations', JSON.stringify(normalized || [])); } catch { }
             }
         } catch (_) {
             const cached = localStorage.getItem('cached_hotel_registrations');
@@ -10586,7 +11812,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         fetchRegistrations();
     }, [fetchRegistrations, refreshKey]);
 
-    
+
 
     const handleToggleCheckIn = async (registration: HotelRegistration) => {
         if ((registration.approval_status || '').toLowerCase() === 'rejeitado') {
@@ -10594,11 +11820,11 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         }
         if (!registration.id) return;
         setUpdatingId(registration.id);
-        
+
         const currentStatus = registration.check_in_status || 'pending';
         let newStatus: 'pending' | 'checked_in' | 'checked_out';
         let updateData: any = {};
-        
+
         if (currentStatus === 'pending') {
             newStatus = 'checked_in';
             updateData = {
@@ -10621,19 +11847,19 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 status: 'Concluído'
             };
         }
-        
+
         const { data, error } = await supabase
             .from('hotel_registrations')
             .update(updateData)
             .eq('id', getDbId(registration.id))
             .select()
             .single();
-            
+
         if (error) {
             console.error('Error updating check-in status:', error);
             alert('Erro ao atualizar status de check-in/check-out');
         } else {
-            setRegistrations(prev => prev.map(r => 
+            setRegistrations(prev => prev.map(r =>
                 r.id === registration.id ? { ...r, ...updateData } : r
             ));
             if (newStatus === 'checked_in') {
@@ -10694,7 +11920,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
                 });
-            } catch (_) {}
+            } catch (_) { }
         }
         setRegistrationToReject(null);
         setRejectReason('');
@@ -10724,7 +11950,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             }
             fetchRegistrations();
             setExpandedHotelSections(prev => prev.includes('approved') ? prev : [...prev, 'approved']);
-            try { await sendHotelApprovalWebhook({ ...(registration as any), ...payload } as HotelRegistration); } catch {}
+            try { await sendHotelApprovalWebhook({ ...(registration as any), ...payload } as HotelRegistration); } catch { }
         }
         else {
             alert(`Falha ao aprovar hospedagem: ${error.message || 'Erro desconhecido'}`);
@@ -10753,7 +11979,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     };
 
     const handleHotelExtraServicesUpdated = (updatedRegistration: HotelRegistration) => {
-        setRegistrations(prev => prev.map(r => 
+        setRegistrations(prev => prev.map(r =>
             r.id === updatedRegistration.id ? updatedRegistration : r
         ));
         setIsHotelExtraServicesModalOpen(false);
@@ -10962,26 +12188,26 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         }
     };
 
-        const handleRemoveExtraChip = async (registration: HotelRegistration, key: 'pernoite' | 'banho_tosa' | 'so_banho' | 'adestrador' | 'despesa_medica' | 'dias_extras') => {
-            if (!registration.extra_services) return;
-            const updatedExtras = { ...registration.extra_services } as any;
-            if (key === 'dias_extras') {
-                const current = updatedExtras.dias_extras || { quantity: 0, value: 0 };
-                updatedExtras.dias_extras = { ...current, quantity: 0 };
-            } else {
-                const current = updatedExtras[key] || { enabled: false, value: 0 };
-                updatedExtras[key] = { ...current, enabled: false };
-            }
-            const { data, error } = await supabase
-                .from('hotel_registrations')
-                .update({ extra_services: updatedExtras })
-                .eq('id', getDbId(registration.id))
-                .select()
-                .single();
-            if (!error) {
-                setRegistrations(prev => prev.map(r => r.id === registration.id ? { ...r, extra_services: updatedExtras } : r));
-            }
-        };
+    const handleRemoveExtraChip = async (registration: HotelRegistration, key: 'pernoite' | 'banho_tosa' | 'so_banho' | 'adestrador' | 'despesa_medica' | 'dias_extras') => {
+        if (!registration.extra_services) return;
+        const updatedExtras = { ...registration.extra_services } as any;
+        if (key === 'dias_extras') {
+            const current = updatedExtras.dias_extras || { quantity: 0, value: 0 };
+            updatedExtras.dias_extras = { ...current, quantity: 0 };
+        } else {
+            const current = updatedExtras[key] || { enabled: false, value: 0 };
+            updatedExtras[key] = { ...current, enabled: false };
+        }
+        const { data, error } = await supabase
+            .from('hotel_registrations')
+            .update({ extra_services: updatedExtras })
+            .eq('id', getDbId(registration.id))
+            .select()
+            .single();
+        if (!error) {
+            setRegistrations(prev => prev.map(r => r.id === registration.id ? { ...r, extra_services: updatedExtras } : r));
+        }
+    };
 
     const filteredRegistrations = registrations.filter(reg => {
         const pet = (reg.pet_name || '').toLowerCase();
@@ -10992,7 +12218,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
     const currentInHotel = filteredRegistrations.filter(reg => reg.check_in_status === 'checked_in');
     const archived: HotelRegistration[] = filteredRegistrations.filter(reg => (reg.check_in_status === 'checked_out') || (reg.status === 'Concluído'));
-    
+
     const normalizeApproval = (s: any): 'approved' | 'pending' | 'rejected' => {
         const v = String(s ?? '').trim().toLowerCase();
         if (v === 'approved' || v === 'aprovado') return 'approved';
@@ -11003,7 +12229,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const approved = filteredRegistrations
         .filter(reg => normalizeApproval(reg.approval_status) === 'approved')
         .filter(reg => reg.check_in_status !== 'checked_in' && reg.check_in_status !== 'checked_out' && reg.status !== 'Concluído');
-    
+
     const analysis = filteredRegistrations
         .filter(reg => reg.check_in_status !== 'checked_in' && reg.check_in_status !== 'checked_out' && reg.status !== 'Concluído')
         .filter(reg => normalizeApproval(reg.approval_status) !== 'approved');
@@ -11056,7 +12282,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 fetchRegistrations();
             }, 100);
             setExpandedHotelSections(prev => prev.includes(target) ? prev : [...prev, target]);
-            if (target === 'approved') { try { await sendHotelApprovalWebhook({ ...(registration as any), ...payload } as HotelRegistration); } catch {} }
+            if (target === 'approved') { try { await sendHotelApprovalWebhook({ ...(registration as any), ...payload } as HotelRegistration); } catch { } }
         } else {
             alert(`Falha ao mover hospedagem: ${error.message || 'Erro desconhecido'}`);
             console.error('Erro ao mover hospedagem:', error);
@@ -11069,37 +12295,37 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
     const HotelAccordionSection: React.FC<{ title: string; items: HotelRegistration[]; sectionId: 'in_hotel' | 'approved' | 'analysis' | 'archived'; }>
         = ({ title, items, sectionId }) => {
-        const isExpanded = expandedHotelSections.includes(sectionId);
-        return (
-            <div className={`relative z-0 bg-white rounded-2xl shadow-sm ${draggingOverHotel === sectionId ? 'ring-2 ring-pink-400 ring-offset-2' : ''}`} onDragOver={(e) => handleHotelDragOver(e, sectionId)} onDrop={(e) => handleHotelDrop(e, sectionId)} onDragLeave={handleHotelDragLeave}>
-                <div className="flex justify-between items-center p-4 cursor-pointer" onClick={() => toggleHotelSection(sectionId)}>
-                    <div className="flex items-center gap-3">
-                        <ChevronRightIcon className={`h-8 w-8 text-gray-500 transform transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">{items.length}</span>
+            const isExpanded = expandedHotelSections.includes(sectionId);
+            return (
+                <div className={`relative z-0 bg-white rounded-2xl shadow-sm ${draggingOverHotel === sectionId ? 'ring-2 ring-pink-400 ring-offset-2' : ''}`} onDragOver={(e) => handleHotelDragOver(e, sectionId)} onDrop={(e) => handleHotelDrop(e, sectionId)} onDragLeave={handleHotelDragLeave}>
+                    <div className="flex justify-between items-center p-4 cursor-pointer" onClick={() => toggleHotelSection(sectionId)}>
+                        <div className="flex items-center gap-3">
+                            <ChevronRightIcon className={`h-8 w-8 text-gray-500 transform transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                            <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">{items.length}</span>
+                        </div>
+                        <button className="text-xs text-pink-600 hover:underline" onClick={(e) => { e.stopPropagation(); toggleHotelSection(sectionId); }}>{isExpanded ? 'Recolher' : 'Expandir'}</button>
                     </div>
-                    <button className="text-xs text-pink-600 hover:underline" onClick={(e) => { e.stopPropagation(); toggleHotelSection(sectionId); }}>{isExpanded ? 'Recolher' : 'Expandir'}</button>
-                </div>
-                {isExpanded && (
-                    <div className="p-4 pt-0">
-                        {items.length > 0 ? (
-                            <div className="overflow-x-auto -mx-4">
-                                <div className="flex gap-4 pb-2 snap-x snap-mandatory">
-                                    {items.map(reg => (
-                                        <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, sectionId)} className="shrink-0 w-screen sm:w-[420px] lg:w-[460px] snap-center">
-                                            <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={sectionId==='approved'} inHotel={sectionId==='in_hotel'} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
-                                        </div>
-                                    ))}
+                    {isExpanded && (
+                        <div className="p-4 pt-0">
+                            {items.length > 0 ? (
+                                <div className="overflow-x-auto -mx-4">
+                                    <div className="flex gap-4 pb-2 snap-x snap-mandatory">
+                                        {items.map(reg => (
+                                            <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, sectionId)} className="shrink-0 w-screen sm:w-[420px] lg:w-[460px] snap-center">
+                                                <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={sectionId === 'approved'} inHotel={sectionId === 'in_hotel'} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 text-gray-500">Sem itens nesta sessão</div>
-                        )}
-                    </div>
-                )}
-            </div>
-        );
-    };
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">Sem itens nesta sessão</div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
 
     if (loading) {
         return <div className="flex items-center justify-center min-h-[400px]"><LoadingSpinner /></div>;
@@ -11109,7 +12335,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         return <HotelRegistrationForm setView={() => setIsAddFormOpen(false)} onSuccess={() => { fetchRegistrations(); setIsAddFormOpen(false); }} />;
     }
 
-    const HotelRegistrationCard: React.FC<{ 
+    const HotelRegistrationCard: React.FC<{
         registration: HotelRegistration;
         onAddExtraServices: (registration: HotelRegistration) => void;
         showCheckActions?: boolean;
@@ -11124,7 +12350,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         const apRawHeader = (registration.approval_status ?? 'pending');
         const apNormHeader = (typeof apRawHeader === 'string' ? apRawHeader.trim() : 'pending').toLowerCase();
         const isAnalysisHeader = (registration.check_in_status !== 'checked_in' && registration.check_in_status !== 'checked_out' && registration.status !== 'Concluído' && apNormHeader !== 'approved');
-        
+
         const getCheckInButtonStyle = () => {
             if (currentCheckInStatus === 'pending') {
                 return 'bg-green-500 hover:bg-green-600 text-white';
@@ -11134,14 +12360,14 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 return 'bg-gray-500 hover:bg-gray-600 text-white';
             }
         };
-        
+
         const getCheckInButtonText = () => {
             if (isUpdating) return 'Atualizando...';
             if (currentCheckInStatus === 'pending') return 'Check-in';
             if (currentCheckInStatus === 'checked_in') return 'Check-out';
             return 'Arquivar';
         };
-        
+
         const getStatusBadge = () => {
             if (currentCheckInStatus === 'checked_in') {
                 return { bg: 'bg-green-100', text: 'text-green-800', label: 'Check-in Ativo' };
@@ -11151,19 +12377,19 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 return { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Aguardando Check-in' };
             }
         };
-        
+
         const statusBadge = getStatusBadge();
         const buildWhatsAppLink = (phone: string) => {
             const digits = String(phone || '').replace(/\D/g, '');
             const withCountry = digits ? (digits.startsWith('55') ? digits : `55${digits}`) : '';
             return withCountry ? `https://wa.me/${withCountry}` : '#';
         };
-        
+
         return (
             <div className="bg-white rounded-2xl shadow-sm p-5 min-h-[360px] hover:shadow-md transition-shadow border border-gray-200">
                 <div className="rounded-xl mb-3 p-5 bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src={registration.pet_photo_url || "https://cdn-icons-png.flaticon.com/512/3009/3009489.png"} alt="Pet" className="w-12 h-12 rounded-full object-cover cursor-pointer" onClick={() => onChangePhoto && onChangePhoto(registration)} />
+                        <SafeImage src={registration.pet_photo_url || "https://cdn-icons-png.flaticon.com/512/3009/3009489.png"} alt="Pet" className="w-12 h-12 rounded-full object-cover cursor-pointer" loading="eager" onClick={() => onChangePhoto && onChangePhoto(registration)} />
                         <div>
                             <h3 className="text-lg font-bold leading-none">{registration.pet_name}</h3>
                         </div>
@@ -11232,7 +12458,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                         <div className="flex items-center gap-3 text-gray-600">
                             <img src="https://cdn-icons-png.flaticon.com/512/9576/9576046.png" alt="Check-in Icon" className="h-7 w-7" />
                             <span>
-                                Check-in: {formatDateToBR(registration.check_in_date)} {String(registration.check_in_time ?? '').split(':').slice(0,2).join(':')}
+                                Check-in: {formatDateToBR(registration.check_in_date)} {String(registration.check_in_time ?? '').split(':').slice(0, 2).join(':')}
                             </span>
                         </div>
                     )}
@@ -11240,47 +12466,47 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                         <div className="flex items-center gap-3 text-gray-600">
                             <img src="https://cdn-icons-png.flaticon.com/512/9576/9576053.png" alt="Check-out Icon" className="h-7 w-7" />
                             <span>
-                                Check-out: {formatDateToBR(registration.check_out_date)} {String(registration.check_out_time ?? '').split(':').slice(0,2).join(':')}
+                                Check-out: {formatDateToBR(registration.check_out_date)} {String(registration.check_out_time ?? '').split(':').slice(0, 2).join(':')}
                             </span>
                         </div>
                     )}
-                    
-                {registration.extra_services && (
-                    <div className="pt-2">
-                        <div className="flex flex-wrap gap-2">
-                            {registration.extra_services.pernoite?.enabled && (
-                                <button onClick={() => pendingChip==='pernoite' ? handleRemoveExtraChip(registration, 'pernoite') : setPendingChip('pernoite')} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                    <span>Pernoite</span>{pendingChip==='pernoite' && <CloseIcon className="w-3 h-3" />}
-                                </button>
-                            )}
-                            {registration.extra_services.banho_tosa?.enabled && (
-                                <button onClick={() => pendingChip==='banho_tosa' ? handleRemoveExtraChip(registration, 'banho_tosa') : setPendingChip('banho_tosa')} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                    <span>Banho & Tosa</span>{pendingChip==='banho_tosa' && <CloseIcon className="w-3 h-3" />}
-                                </button>
-                            )}
-                            {registration.extra_services.so_banho?.enabled && (
-                                <button onClick={() => pendingChip==='so_banho' ? handleRemoveExtraChip(registration, 'so_banho') : setPendingChip('so_banho')} className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                    <span>Só banho</span>{pendingChip==='so_banho' && <CloseIcon className="w-3 h-3" />}
-                                </button>
-                            )}
-                            {registration.extra_services.adestrador?.enabled && (
-                                <button onClick={() => pendingChip==='adestrador' ? handleRemoveExtraChip(registration, 'adestrador') : setPendingChip('adestrador')} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                    <span>Adestrador</span>{pendingChip==='adestrador' && <CloseIcon className="w-3 h-3" />}
-                                </button>
-                            )}
-                            {registration.extra_services.despesa_medica?.enabled && (
-                                <button onClick={() => pendingChip==='despesa_medica' ? handleRemoveExtraChip(registration, 'despesa_medica') : setPendingChip('despesa_medica')} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                    <span>Despesa médica</span>{pendingChip==='despesa_medica' && <CloseIcon className="w-3 h-3" />}
-                                </button>
-                            )}
-                            {registration.extra_services.dias_extras?.quantity > 0 && (
-                                <button onClick={() => pendingChip==='dias_extras' ? handleRemoveExtraChip(registration, 'dias_extras') : setPendingChip('dias_extras')} className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                    <span>{registration.extra_services.dias_extras.quantity} dia{registration.extra_services.dias_extras.quantity > 1 ? 's' : ''} extra{registration.extra_services.dias_extras.quantity > 1 ? 's' : ''}</span>{pendingChip==='dias_extras' && <CloseIcon className="w-3 h-3" />}
-                                </button>
-                            )}
+
+                    {registration.extra_services && (
+                        <div className="pt-2">
+                            <div className="flex flex-wrap gap-2">
+                                {registration.extra_services.pernoite?.enabled && (
+                                    <button onClick={() => pendingChip === 'pernoite' ? handleRemoveExtraChip(registration, 'pernoite') : setPendingChip('pernoite')} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
+                                        <span>Pernoite</span>{pendingChip === 'pernoite' && <CloseIcon className="w-3 h-3" />}
+                                    </button>
+                                )}
+                                {registration.extra_services.banho_tosa?.enabled && (
+                                    <button onClick={() => pendingChip === 'banho_tosa' ? handleRemoveExtraChip(registration, 'banho_tosa') : setPendingChip('banho_tosa')} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
+                                        <span>Banho & Tosa</span>{pendingChip === 'banho_tosa' && <CloseIcon className="w-3 h-3" />}
+                                    </button>
+                                )}
+                                {registration.extra_services.so_banho?.enabled && (
+                                    <button onClick={() => pendingChip === 'so_banho' ? handleRemoveExtraChip(registration, 'so_banho') : setPendingChip('so_banho')} className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
+                                        <span>Só banho</span>{pendingChip === 'so_banho' && <CloseIcon className="w-3 h-3" />}
+                                    </button>
+                                )}
+                                {registration.extra_services.adestrador?.enabled && (
+                                    <button onClick={() => pendingChip === 'adestrador' ? handleRemoveExtraChip(registration, 'adestrador') : setPendingChip('adestrador')} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
+                                        <span>Adestrador</span>{pendingChip === 'adestrador' && <CloseIcon className="w-3 h-3" />}
+                                    </button>
+                                )}
+                                {registration.extra_services.despesa_medica?.enabled && (
+                                    <button onClick={() => pendingChip === 'despesa_medica' ? handleRemoveExtraChip(registration, 'despesa_medica') : setPendingChip('despesa_medica')} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
+                                        <span>Despesa médica</span>{pendingChip === 'despesa_medica' && <CloseIcon className="w-3 h-3" />}
+                                    </button>
+                                )}
+                                {registration.extra_services.dias_extras?.quantity > 0 && (
+                                    <button onClick={() => pendingChip === 'dias_extras' ? handleRemoveExtraChip(registration, 'dias_extras') : setPendingChip('dias_extras')} className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
+                                        <span>{registration.extra_services.dias_extras.quantity} dia{registration.extra_services.dias_extras.quantity > 1 ? 's' : ''} extra{registration.extra_services.dias_extras.quantity > 1 ? 's' : ''}</span>{pendingChip === 'dias_extras' && <CloseIcon className="w-3 h-3" />}
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mt-4">
                     {(() => {
@@ -11303,7 +12529,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                     >
                                         <XCircleOutlineIcon className="w-4 h-4" /><span>Rejeitar</span>
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setSelectedRegistration(registration)}
                                         className="w-full bg-gray-100 text-gray-700 py-1.5 px-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium"
                                     >
@@ -11321,14 +12547,14 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                         if (inHotel) {
                             return (
                                 <>
-                                    <button 
+                                    <button
                                         onClick={async () => { await handleToggleCheckIn(registration); await sendHotelCheckoutWebhook(registration); }}
                                         disabled={isUpdating}
                                         className={`w-full py-1.5 px-2 rounded-md transition-colors ${getCheckInButtonStyle()} disabled:opacity-50 flex items-center justify-center gap-1.5 text-center whitespace-nowrap leading-none text-[11px] font-medium`}
                                     >
                                         {isUpdating ? (<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>) : (<><CheckCircleOutlineIcon className="w-4 h-4" /><span>Check-out</span></>)}
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setSelectedRegistration(registration)}
                                         className="w-full bg-gray-100 text-gray-700 py-1.5 px-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
                                     >
@@ -11359,7 +12585,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                         return (
                             <>
                                 {showCheckActions && (
-                                    <button 
+                                    <button
                                         onClick={() => handleToggleCheckIn(registration)}
                                         disabled={isUpdating}
                                         className={`w-full py-1.5 px-2 rounded-md transition-colors ${getCheckInButtonStyle()} disabled:opacity-50 flex items-center justify-center gap-1.5 text-center whitespace-nowrap leading-none text-[11px] font-medium`}
@@ -11376,7 +12602,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         {isApproving ? (<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-700"></div>) : (<><CheckCircleOutlineIcon className="w-4 h-4" /><span>Aprovar</span></>)}
                                     </button>
                                 )}
-                                <button 
+                                <button
                                     onClick={() => setSelectedRegistration(registration)}
                                     className="w-full bg-gray-100 text-gray-700 py-1.5 px-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
                                 >
@@ -11414,7 +12640,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             <div className="bg-white rounded-2xl shadow-md p-6">
                 <div className="space-y-3">
                     <div className="space-y-1">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{fontFamily: 'Lobster Two, cursive'}}>Hotel Pet</h2>
+                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Hotel Pet</h2>
                         <p className="text-sm text-gray-600 text-center">Clientes Hotel Pet</p>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-center">
@@ -11423,14 +12649,14 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             title="Novo Check-in"
                             className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold py-3 sm:py-2.5 px-4 rounded-lg hover:bg-pink-700 transition-colors"
                         >
-                            <img alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" />
+                            <SafeImage alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" loading="eager" />
                         </button>
                         <button
                             onClick={() => setShowHotelFilterPanel(prev => !prev)}
                             title="Filtros"
                             className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-gray-100 text-gray-700 font-semibold h-11 px-5 text-base rounded-lg hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
                         >
-                            <img alt="Filtros" className="h-6 w-6" src="https://cdn-icons-png.flaticon.com/512/9702/9702724.png" />
+                            <SafeImage alt="Filtros" className="h-6 w-6" src="https://cdn-icons-png.flaticon.com/512/9702/9702724.png" loading="eager" />
                         </button>
                         <button
                             onClick={() => setShowHotelStatistics?.(true)}
@@ -11455,11 +12681,11 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 {showHotelFilterPanel && (
                     <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
                         <div className="flex flex-wrap gap-1.5">
-                            <button onClick={() => setHotelFilter('all')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter==='all' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Todos</button>
-                            <button onClick={() => setHotelFilter('in_hotel')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter==='in_hotel' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Pets no Hotel agora</button>
-                            <button onClick={() => setHotelFilter('approved')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter==='approved' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Hospedagens Aprovadas</button>
-                            <button onClick={() => setHotelFilter('analysis')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter==='analysis' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Hospedagens em Análise</button>
-                            <button onClick={() => setHotelFilter('archived')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter==='archived' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Arquivados</button>
+                            <button onClick={() => setHotelFilter('all')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter === 'all' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Todos</button>
+                            <button onClick={() => setHotelFilter('in_hotel')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter === 'in_hotel' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Pets no Hotel agora</button>
+                            <button onClick={() => setHotelFilter('approved')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter === 'approved' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Hospedagens Aprovadas</button>
+                            <button onClick={() => setHotelFilter('analysis')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter === 'analysis' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Hospedagens em Análise</button>
+                            <button onClick={() => setHotelFilter('archived')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter === 'archived' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Arquivados</button>
                         </div>
                     </div>
                 )}
@@ -11597,7 +12823,7 @@ const EditHotelRegistrationModal: React.FC<{
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
-        
+
         if (type === 'checkbox') {
             const checkbox = e.target as HTMLInputElement;
             setFormData(prev => ({ ...prev, [name]: checkbox.checked }));
@@ -11610,7 +12836,7 @@ const EditHotelRegistrationModal: React.FC<{
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        
+
         const updatePayload = { ...formData };
         delete updatePayload.id;
         delete updatePayload.created_at;
@@ -11638,7 +12864,7 @@ const EditHotelRegistrationModal: React.FC<{
                 <div className="bg-gradient-to-r from-pink-500 to-pink-600 p-6">
                     <div className="flex justify-between items-center">
                         <h2 className="text-3xl font-bold text-white">Editar Registro - {formData.pet_name}</h2>
-                        <button 
+                        <button
                             onClick={onClose}
                             className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
                         >
@@ -11899,7 +13125,7 @@ const EditHotelRegistrationModal: React.FC<{
                                         {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
                                             const h = 7 + Math.floor(i / 2);
                                             const m = i % 2 ? '30' : '00';
-                                            const t = `${String(h).padStart(2,'0')}:${m}`;
+                                            const t = `${String(h).padStart(2, '0')}:${m}`;
                                             return (<option key={t} value={t}>{t}</option>);
                                         })}
                                     </select>
@@ -11911,7 +13137,7 @@ const EditHotelRegistrationModal: React.FC<{
                                         {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
                                             const h = 7 + Math.floor(i / 2);
                                             const m = i % 2 ? '30' : '00';
-                                            const t = `${String(h).padStart(2,'0')}:${m}`;
+                                            const t = `${String(h).padStart(2, '0')}:${m}`;
                                             return (<option key={t} value={t}>{t}</option>);
                                         })}
                                     </select>
@@ -12109,7 +13335,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
     const [daycareUploadError, setDaycareUploadError] = useState<string | null>(null);
     const [selectedDaycarePhotoName, setSelectedDaycarePhotoName] = useState<string>('');
     const [diaryFor, setDiaryFor] = useState<DaycareRegistration | null>(null);
-    const [diaryDate, setDiaryDate] = useState<string>(() => new Date().toISOString().slice(0,10));
+    const [diaryDate, setDiaryDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
     const [daycarePaymentUpdatingId, setDaycarePaymentUpdatingId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -12131,7 +13357,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
                 if (cached) setEnrollments(JSON.parse(cached));
             } else {
                 setEnrollments(data as DaycareRegistration[]);
-                try { localStorage.setItem('cached_daycare_enrollments_all', JSON.stringify(data || [])); } catch {}
+                try { localStorage.setItem('cached_daycare_enrollments_all', JSON.stringify(data || [])); } catch { }
             }
         } catch (_) {
             const cached = localStorage.getItem('cached_daycare_enrollments_all');
@@ -12144,7 +13370,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
     useEffect(() => {
         fetchEnrollments();
     }, [fetchEnrollments, refreshKey]);
-    
+
     const handleUpdateStatus = async (id: string, status: 'Pendente' | 'Aprovado' | 'Rejeitado') => {
         setIsUpdatingStatus(true);
         const { data, error } = await supabase.from('daycare_enrollments').update({ status }).eq('id', id).select().single();
@@ -12156,7 +13382,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
             if (status === 'Aprovado') {
                 try {
                     await sendDaycareApprovalWebhook(data as DaycareRegistration);
-                } catch {}
+                } catch { }
             }
         }
         setIsUpdatingStatus(false);
@@ -12194,7 +13420,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
         setIsDeleting(false);
         setEnrollmentToDelete(null);
     };
-    
+
     const handleEnrollmentUpdated = (updated: DaycareRegistration) => {
         setEnrollments(prev => prev.map(e => e.id === updated.id ? updated : e));
         setIsEditModalOpen(false);
@@ -12219,7 +13445,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
     };
 
     const sendDaycareApprovalWebhook = async (enrollment: DaycareRegistration) => {
-        const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+        const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         const planLabels: Record<string, string> = {
             '4x_month': '4x no Mês', '8x_month': '8x no Mês', '12x_month': '12x no Mês', '16x_month': '16x no Mês', '20x_month': '20x no Mês',
             '2x_week': '2x por Semana', '3x_week': '3x por Semana', '4x_week': '4x por Semana', '5x_week': '5x por Semana',
@@ -12241,7 +13467,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
                 name: (enrollment as any).tutor_name ?? null,
                 phone: (enrollment as any).contact_phone ?? null,
                 address: (enrollment as any).address ?? null,
-                whatsapp_link: (function(phone: string | undefined){
+                whatsapp_link: (function (phone: string | undefined) {
                     const digits = String(phone || '').replace(/\D/g, '');
                     const withCountry = digits ? (digits.startsWith('55') ? digits : `55${digits}`) : '';
                     return withCountry ? `https://wa.me/${withCountry}` : null;
@@ -12251,8 +13477,8 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
                 created_at: (enrollment as any).created_at ?? null,
                 contracted_plan_code: (enrollment as any).contracted_plan ?? null,
                 contracted_plan_label: (enrollment as any).contracted_plan ? planLabels[(enrollment as any).contracted_plan] : null,
-                attendance_days: Array.isArray((enrollment as any).attendance_days) 
-                    ? ((enrollment as any).attendance_days as any[]).map((idx: number) => dayNames[idx]) 
+                attendance_days: Array.isArray((enrollment as any).attendance_days)
+                    ? ((enrollment as any).attendance_days as any[]).map((idx: number) => dayNames[idx])
                     : null
             },
             schedule: {
@@ -12288,7 +13514,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
         try {
             const enr = uploadTargetDaycareEnrollment as DaycareRegistration;
             const ext = (file.name.split('.')?.pop() || 'jpg').toLowerCase();
-            const base = (enr.id || enr.pet_name.replace(/\s+/g,'_'));
+            const base = (enr.id || enr.pet_name.replace(/\s+/g, '_'));
             const path = `${base}_${Date.now()}.${ext}`;
             const oldUrl = (enr as any).pet_photo_url as string | undefined;
             if (oldUrl) {
@@ -12300,7 +13526,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
                         const oldPath = u.pathname.substring(idx + prefix.length);
                         await supabase.storage.from('daycare_pet_photos').remove([oldPath]);
                     }
-                } catch {}
+                } catch { }
             }
             const { error: upErr } = await supabase.storage.from('daycare_pet_photos').upload(path, file, { upsert: true, contentType: file.type });
             if (upErr) throw upErr;
@@ -12318,7 +13544,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
             setSelectedDaycarePhotoName('');
         }
     };
-    
+
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, enrollment: DaycareRegistration, source: 'pending' | 'approved' | 'inDaycare') => {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('application/json', JSON.stringify({ id: enrollment.id, source }));
@@ -12328,7 +13554,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
         e.preventDefault();
         setDraggingOver(target);
     };
-    
+
     const handleDragLeave = () => setDraggingOver(null);
 
     const handleDrop = async (e: React.DragEvent<HTMLDivElement>, target: 'pending' | 'approved' | 'inDaycare') => {
@@ -12350,7 +13576,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
                 alert('Falha ao aprovar matrícula.');
             } else {
                 setEnrollments(prev => prev.map(en => en.id === id ? data as DaycareRegistration : en));
-                try { await sendDaycareApprovalWebhook(data as DaycareRegistration); } catch {}
+                try { await sendDaycareApprovalWebhook(data as DaycareRegistration); } catch { }
             }
         } else if (source === 'approved' && target === 'inDaycare') {
             setPetsInDaycareNow(prev => [...prev, enrollmentToMove]);
@@ -12358,11 +13584,11 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
             setPetsInDaycareNow(prev => prev.filter(en => en.id !== id));
         }
     };
-    
+
     const toggleSection = (sectionId: string) => {
-        setExpandedSections(prev => 
-            prev.includes(sectionId) 
-                ? prev.filter(id => id !== sectionId) 
+        setExpandedSections(prev =>
+            prev.includes(sectionId)
+                ? prev.filter(id => id !== sectionId)
                 : [...prev, sectionId]
         );
     };
@@ -12376,11 +13602,11 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
 
     const openDiary = (enrollment: DaycareRegistration) => {
         setDiaryFor(enrollment);
-        try { window.history.pushState({ v: 'daycareDiary', id: enrollment.id }, '', `/admin/daycare/diario/${enrollment.id}`); } catch {}
+        try { window.history.pushState({ v: 'daycareDiary', id: enrollment.id }, '', `/admin/daycare/diario/${enrollment.id}`); } catch { }
     };
     const closeDiary = () => {
         setDiaryFor(null);
-        try { window.history.pushState({ v: 'daycare' }, '', `/admin/daycare`); } catch {}
+        try { window.history.pushState({ v: 'daycare' }, '', `/admin/daycare`); } catch { }
     };
     useEffect(() => {
         const handlePop = () => {
@@ -12398,7 +13624,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
         window.addEventListener('popstate', handlePop);
         return () => window.removeEventListener('popstate', handlePop);
     }, [enrollments, petsInDaycareNow]);
-    
+
     const AccordionSection: React.FC<{
         title: string;
         enrollments: DaycareRegistration[];
@@ -12407,27 +13633,27 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
     }> = ({ title, enrollments, sectionId, variant = 'default' }) => {
         const isExpanded = expandedSections.includes(sectionId);
         const count = enrollments.length;
-        
+
         const headerClasses = variant === 'online'
             ? 'bg-green-50 hover:bg-green-100'
             : 'bg-gray-50 hover:bg-gray-100';
-            
+
         const titleClasses = variant === 'online'
             ? 'text-green-800'
             : 'text-pink-700';
 
         return (
             <div className={`bg-white rounded-2xl shadow-md overflow-hidden transition-all duration-300 ${draggingOver === sectionId ? 'ring-2 ring-pink-400 ring-offset-2' : ''}`}>
-                <button 
-                    onClick={() => toggleSection(sectionId)} 
+                <button
+                    onClick={() => toggleSection(sectionId)}
                     className={`w-full text-left p-4 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-pink-300 transition-colors ${headerClasses}`}
                 >
                     <h3 className={`text-lg font-bold flex items-center gap-4 ${titleClasses}`}>
                         {variant === 'online' && (
-                           <span className="relative flex h-3 w-3">
-                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                               <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                           </span>
+                            <span className="relative flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                            </span>
                         )}
                         {`${title} (${count})`}
                     </h3>
@@ -12472,14 +13698,14 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
             </div>
         );
     };
-    
+
     if (diaryFor) {
         return <DaycareDiaryPage enrollment={diaryFor} date={diaryDate} onDateChange={setDiaryDate} onBack={closeDiary} />
     }
     if (isAddFormOpen) {
         return <DaycareRegistrationForm isAdmin onBack={() => setIsAddFormOpen(false)} onSuccess={handleEnrollmentAdded} />
     }
-    
+
     return (
         <div className="animate-fadeIn">
             {isUploadDaycarePhotoModalOpen && uploadTargetDaycareEnrollment && (
@@ -12531,7 +13757,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
                     title="Serviços Extras - Creche"
                 />
             )}
-             {enrollmentToDelete && (
+            {enrollmentToDelete && (
                 <ConfirmationModal
                     isOpen={!!enrollmentToDelete}
                     onClose={() => setEnrollmentToDelete(null)}
@@ -12543,11 +13769,11 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
                     isLoading={isDeleting}
                 />
             )}
-            
+
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
                 <div className="space-y-3">
                     <div className="space-y-1">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{fontFamily: 'Lobster Two, cursive'}}>Creche Pet</h2>
+                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Creche Pet</h2>
                         <p className="text-sm text-gray-600 text-center">Clientes Creche Pet</p>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-center">
@@ -12576,7 +13802,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
 };
 
 // FIX: Destructure the 'onLogout' prop to make it available within the component. This resolves 'Cannot find name' errors.
-const AdminDashboard: React.FC<{ 
+const AdminDashboard: React.FC<{
     onLogout: () => void;
     isScheduleOpen: boolean;
     setIsScheduleOpen: (open: boolean) => void;
@@ -12650,7 +13876,7 @@ const AdminDashboard: React.FC<{
                     for (const r of all) {
                         if (!r.monthly_client_id) continue;
                         const t = new Date(r.appointment_time);
-                        const key = `${r.monthly_client_id}|${t.getUTCFullYear()}-${String(t.getUTCMonth()+1).padStart(2,'0')}-${String(t.getUTCDate()).padStart(2,'0')} ${String(t.getUTCHours()).padStart(2,'0')}:${String(t.getUTCMinutes()).padStart(2,'0')}`;
+                        const key = `${r.monthly_client_id}|${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')} ${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')}`;
                         const g = groups.get(key) || [] as any[];
                         g.push(r);
                         groups.set(key, g);
@@ -12715,32 +13941,32 @@ const AdminDashboard: React.FC<{
                 setAppointments(combined);
             } catch (err) {
                 console.warn('Falha ao recarregar agendamentos após alteração de dados:', err);
-}
+            }
         };
 
         loadAllAdminAppointments();
     }, [dataKey]);
-    
+
     const menuItems = [
-        { id: 'appointments', label: 'Banho & Tosa', icon: <BathTosaIcon/> },
-        { id: 'petMovel', label: 'Pet Móvel', icon: <PetMovelIcon/> },
-        { id: 'daycare', label: 'Creche', icon: <DaycareIcon/> },
-        { id: 'hotel', label: 'Hotel Pet', icon: <HotelIcon/> },
-        { id: 'clients', label: 'Clientes', icon: <ClientsMenuIcon/> },
-        { id: 'monthlyClients', label: 'Mensalistas', icon: <MonthlyIcon/> },
+        { id: 'appointments', label: 'Banho & Tosa', icon: <BathTosaIcon /> },
+        { id: 'petMovel', label: 'Pet Móvel', icon: <PetMovelIcon /> },
+        { id: 'daycare', label: 'Creche', icon: <DaycareIcon /> },
+        { id: 'hotel', label: 'Hotel Pet', icon: <HotelIcon /> },
+        { id: 'clients', label: 'Clientes', icon: <ClientsMenuIcon /> },
+        { id: 'monthlyClients', label: 'Mensalistas', icon: <MonthlyIcon /> },
     ];
-    
+
     // Renderiza a view ativa baseada no estado activeView
     const renderActiveView = () => {
         switch (activeView) {
-                case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} />;
+            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} />;
             case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} setShowDaycareStatistics={setShowDaycareStatistics} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} />;
-            case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }}/>;
-                default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} />;
+            case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
+            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} />;
         }
     };
 
@@ -12764,7 +13990,7 @@ const AdminDashboard: React.FC<{
                 <div className="w-full px-2">
                     <div className="flex justify-between items-center h-20">
                         <div className="flex items-center gap-4">
-                             <img src="https://i.imgur.com/M3Gt3OA.png" alt="Logo" className="h-12 w-12 drop-shadow-md"/>
+                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Logo" className="h-12 w-12 drop-shadow-md" loading="eager" />
                             <div>
                                 <div className="font-brand text-pink-800 leading-none whitespace-nowrap text-[clamp(1.25rem,7vw,2.25rem)] hidden md:block">{adminTitle}</div>
                             </div>
@@ -12773,20 +13999,19 @@ const AdminDashboard: React.FC<{
                             </div>
                         </div>
                         <div className="hidden md:flex items-center gap-3">
-                            <button 
+                            <button
                                 onClick={() => setIsScheduleOpen(!isScheduleOpen)}
-                                className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all shadow-sm hover:shadow ${
-                                    isScheduleOpen 
-                                        ? 'text-green-700 bg-green-50 hover:bg-green-100' 
-                                        : 'text-red-700 bg-red-50 hover:bg-red-100'
-                                }`}
+                                className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all shadow-sm hover:shadow ${isScheduleOpen
+                                    ? 'text-green-700 bg-green-50 hover:bg-green-100'
+                                    : 'text-red-700 bg-red-50 hover:bg-red-100'
+                                    }`}
                             >
                                 {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
                                 {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                             </button>
                             <NotificationBell />
                             <button onClick={onLogout} className="flex items-center gap-3 text-base font-semibold text-gray-600 hover:text-pink-600 bg-gray-50 hover:bg-pink-50 px-5 py-3 rounded-xl transition-all shadow-sm hover:shadow">
-                                <LogoutIcon/> Sair
+                                <LogoutIcon /> Sair
                             </button>
                         </div>
                         <div className="md:hidden flex items-center gap-2">
@@ -12802,7 +14027,7 @@ const AdminDashboard: React.FC<{
             </header>
 
             {isDrawerVisible && (
-                <div 
+                <div
                     className={`fixed inset-0 z-[9998] md:hidden bg-gray-800/50 transition-opacity duration-300 ${isDrawerOpen ? 'opacity-100' : 'opacity-0'}`}
                     onClick={closeMobileMenu}
                 ></div>
@@ -12811,7 +14036,7 @@ const AdminDashboard: React.FC<{
             {isDrawerVisible && (
                 <div className={`fixed left-0 top-0 h-full w-[72vw] max-w-[18rem] sm:max-w-[20rem] bg-white shadow-2xl z-[9999] md:hidden p-4 rounded-r-2xl transform transition-transform duration-300 ease-out ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col overflow-y-hidden`}>
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-2xl font-bold text-pink-600" style={{fontFamily: 'Lobster Two, cursive'}}>Menu</h3>
+                        <h3 className="text-2xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Menu</h3>
                         <button onClick={closeMobileMenu} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Fechar menu">
                             <CloseIcon className="w-5 h-5 text-gray-600" />
                         </button>
@@ -12820,19 +14045,18 @@ const AdminDashboard: React.FC<{
                         <NavMenu />
                     </div>
                     <div className="mt-3 space-y-3 pt-3 border-t border-gray-100 shrink-0">
-                        <button 
+                        <button
                             onClick={() => { setIsScheduleOpen(!isScheduleOpen); closeMobileMenu(); }}
-                            className={`w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all ${
-                                isScheduleOpen 
-                                    ? 'text-green-700 bg-green-50 hover:bg-green-100' 
-                                    : 'text-red-700 bg-red-50 hover:bg-red-100'
-                            }`}
+                            className={`w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all ${isScheduleOpen
+                                ? 'text-green-700 bg-green-50 hover:bg-green-100'
+                                : 'text-red-700 bg-red-50 hover:bg-red-100'
+                                }`}
                         >
                             {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
                             {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                         </button>
                         <button onClick={() => { onLogout(); closeMobileMenu(); }} className="w-full flex items-center gap-4 text-base font-semibold text-gray-600 hover:text-pink-600 transition-colors p-2 rounded-lg hover:bg-gray-100">
-                            <LogoutIcon/> Sair
+                            <LogoutIcon /> Sair
                         </button>
                     </div>
                 </div>
@@ -12847,19 +14071,18 @@ const AdminDashboard: React.FC<{
                     `}>
                         <NavMenu />
                         <div className="mt-6 md:hidden space-y-3">
-                            <button 
+                            <button
                                 onClick={() => setIsScheduleOpen(!isScheduleOpen)}
-                                className={`w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all ${
-                                    isScheduleOpen 
-                                        ? 'text-green-700 bg-green-50 hover:bg-green-100' 
-                                        : 'text-red-700 bg-red-50 hover:bg-red-100'
-                                }`}
+                                className={`w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all ${isScheduleOpen
+                                    ? 'text-green-700 bg-green-50 hover:bg-green-100'
+                                    : 'text-red-700 bg-red-50 hover:bg-red-100'
+                                    }`}
                             >
                                 {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
                                 {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                             </button>
                             <button onClick={onLogout} className="w-full flex items-center gap-4 text-base font-semibold text-gray-600 hover:text-pink-600 transition-colors p-2 rounded-lg hover:bg-gray-100">
-                                <LogoutIcon/> Sair
+                                <LogoutIcon /> Sair
                             </button>
                         </div>
                     </aside>
@@ -12869,15 +14092,15 @@ const AdminDashboard: React.FC<{
                 </div>
             </div>
             {showDaycareStatistics && (
-                <DaycareStatisticsModal 
-                    isOpen={showDaycareStatistics} 
-                    onClose={() => setShowDaycareStatistics(false)} 
+                <DaycareStatisticsModal
+                    isOpen={showDaycareStatistics}
+                    onClose={() => setShowDaycareStatistics(false)}
                 />
             )}
             {showHotelStatistics && (
-                <HotelStatisticsModal 
-                    isOpen={showHotelStatistics} 
-                    onClose={() => setShowHotelStatistics(false)} 
+                <HotelStatisticsModal
+                    isOpen={showHotelStatistics}
+                    onClose={() => setShowHotelStatistics(false)}
                 />
             )}
         </div>
@@ -12903,41 +14126,42 @@ const ScheduleClosedPage: React.FC<{ setView: (view: string) => void }> = ({ set
                 <div className="bg-white rounded-2xl shadow-xl p-8 border border-pink-100">
                     {/* Logo */}
                     <div className="mb-6">
-                        <img 
-                            src="https://i.imgur.com/M3Gt3OA.png" 
-                            alt="Sandy's Pet Shop" 
+                        <SafeImage
+                            src="https://i.imgur.com/M3Gt3OA.png"
+                            alt="Sandy's Pet Shop"
                             className="h-20 w-20 mx-auto drop-shadow-lg"
+                            loading="eager"
                         />
                     </div>
-                    
+
                     {/* Título */}
                     <h1 className="font-brand text-3xl text-pink-800 mb-2">
                         Sandy's Pet Shop
                     </h1>
-                    
+
                     {/* Ícone de agenda fechada */}
                     <div className="mb-6">
                         <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
                             <LockClosedIcon />
                         </div>
                     </div>
-                    
+
                     {/* Mensagem principal */}
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">
                         Agenda Temporariamente Fechada
                     </h2>
-                    
+
                     {/* Mensagem educada */}
                     <p className="text-gray-600 leading-relaxed mb-6">
-                        Olá! Nossa agenda está temporariamente fechada para novos agendamentos. 
+                        Olá! Nossa agenda está temporariamente fechada para novos agendamentos.
                         Estamos organizando nossos serviços para melhor atendê-los.
                     </p>
-                    
+
                     <p className="text-gray-600 leading-relaxed mb-8">
-                        Por favor, tente novamente em alguns instantes ou entre em contato 
+                        Por favor, tente novamente em alguns instantes ou entre em contato
                         conosco através dos nossos canais de atendimento.
                     </p>
-                    
+
                     {/* Informações de contato */}
                     <div className="bg-pink-50 rounded-lg p-4 border border-pink-200">
                         <p className="text-sm text-pink-800 font-medium mb-2">
@@ -12953,14 +14177,17 @@ const ScheduleClosedPage: React.FC<{ setView: (view: string) => void }> = ({ set
     );
 };
 
+import MonthlyResetManager from './src/components/MonthlyResetManager';
+
 const App: React.FC = () => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     const publicDiaryMatch = path.match(/^\/diario\/([^/]+)$/);
     const [publicDiaryEnrollment, setPublicDiaryEnrollment] = useState<DaycareRegistration | null>(null);
     const [publicDiaryLoading, setPublicDiaryLoading] = useState(false);
     const [publicDiaryDate, setPublicDiaryDate] = useState<string>(() => {
-        try { const p = new URLSearchParams(window.location.search); return p.get('date') || new Date().toISOString().slice(0,10); } catch { return new Date().toISOString().slice(0,10); }
+        try { const p = new URLSearchParams(window.location.search); return p.get('date') || new Date().toISOString().slice(0, 10); } catch { return new Date().toISOString().slice(0, 10); }
     });
+
     useEffect(() => {
         if (publicDiaryMatch) {
             const id = publicDiaryMatch[1];
@@ -12970,7 +14197,7 @@ const App: React.FC = () => {
                 try {
                     const { data, error } = await supabase.from('daycare_enrollments').select('*').eq('id', id).single();
                     if (!cancelled && data) setPublicDiaryEnrollment(data as DaycareRegistration);
-                } catch {}
+                } catch { }
                 setPublicDiaryLoading(false);
             };
             load();
@@ -12983,6 +14210,14 @@ const App: React.FC = () => {
     const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
 
     // Hooks de carregamento serão posicionados após a autenticação
+
+    // Auto-run monthly reset manager
+    // This is placed here to ensure it runs whenever the app initializes
+    // Since it's a headless component with useEffect, simply invoking it works if it was a hook,
+    // but as a component we need to render it. 
+    // Since App returns complex conditional UI, we should add it to the top level return or 
+    // just call the logic as a hook. 
+    // For now, let's just insert the component in the return block.
 
     const [actionMenu, setActionMenu] = useState<{
         isOpen: boolean;
@@ -13013,7 +14248,7 @@ const App: React.FC = () => {
     const handleOpenExtraServicesModal = (appointment: AdminAppointment) => {
         setAppointmentForExtraServices(appointment);
         setIsAppointmentExtraServicesModalOpen(true);
-        
+
     };
 
     const handleCloseExtraServicesModal = () => {
@@ -13031,10 +14266,10 @@ const App: React.FC = () => {
         setSelectedAppointmentForObservation(appointment);
         setObservationText(appointment.observation || '');
         setObservationModalOpen(true);
-        handleCloseActionMenu(); 
+        handleCloseActionMenu();
     };
 
-    
+
 
     const handleCloseObservationModal = () => {
         setObservationModalOpen(false);
@@ -13065,16 +14300,16 @@ const App: React.FC = () => {
     };
     const [view, setView] = useState<'scheduler' | 'login' | 'admin' | 'daycareRegistration' | 'hotelRegistration' | 'visitSelector' | 'visitAppointment'>('scheduler');
     const [visitServiceType, setVisitServiceType] = useState<'Creche Pet' | 'Hotel Pet' | null>(null);
-    
+
     // Debug: Log mudanças de view
     const setViewWithLog = (newView: 'scheduler' | 'login' | 'admin' | 'daycareRegistration' | 'hotelRegistration' | 'visitSelector' | 'visitAppointment') => {
         console.log('Mudando view de', view, 'para', newView);
         setView(newView);
     };
-    
+
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loadingAuth, setLoadingAuth] = useState(false);
-    
+
     // Estado para controlar se a agenda está aberta - com persistência no localStorage
     const [isScheduleOpen, setIsScheduleOpen] = useState(() => {
         try {
@@ -13143,7 +14378,7 @@ const App: React.FC = () => {
 
     useEffect(() => {
         let isMounted = true;
-        
+
         const checkAuth = async () => {
             try {
                 // Verificar se o supabase está disponível
@@ -13155,7 +14390,7 @@ const App: React.FC = () => {
                     }
                     return;
                 }
-                
+
                 const { data: { session } } = await supabase.auth.getSession();
                 if (isMounted) {
                     setIsAuthenticated(!!session);
@@ -13174,9 +14409,9 @@ const App: React.FC = () => {
                 }
             }
         };
-        
+
         checkAuth();
-        
+
         // Setup auth listener com proteção adicional
         let authListener: any = null;
         try {
@@ -13184,9 +14419,9 @@ const App: React.FC = () => {
                 const { data } = supabase.auth.onAuthStateChange((_event, session) => {
                     if (isMounted) {
                         setIsAuthenticated(!!session);
-                    if (!session) {
-                        setViewWithLog('scheduler');
-                    }
+                        if (!session) {
+                            setViewWithLog('scheduler');
+                        }
                     }
                 });
                 authListener = data;
@@ -13282,7 +14517,7 @@ const App: React.FC = () => {
     if (loadingAuth) {
         return <div className="min-h-screen flex items-center justify-center bg-gray-100"><LoadingSpinner /></div>;
     }
-    
+
     const handleLogout = async () => {
         try {
             await supabase.auth.signOut();
@@ -13292,12 +14527,12 @@ const App: React.FC = () => {
         setIsAuthenticated(false);
         setViewWithLog('scheduler');
     };
-    
+
     if (isAuthenticated) {
         return (
             <>
-                <AdminDashboard 
-                    onLogout={handleLogout} 
+                <AdminDashboard
+                    onLogout={handleLogout}
                     isScheduleOpen={isScheduleOpen}
                     setIsScheduleOpen={setIsScheduleOpen}
                     onAddObservation={handleOpenObservationModal}
@@ -13334,7 +14569,7 @@ const App: React.FC = () => {
                         initialObservation={selectedAppointmentForObservation.observation || ''}
                     />
                 )}
-                <ActionChooserModal 
+                <ActionChooserModal
                     isOpen={actionMenu.isOpen}
                     onClose={handleCloseActionMenu}
                     onAddObservation={() => {
@@ -13363,7 +14598,7 @@ const App: React.FC = () => {
     if (view === 'login') {
         return <AdminLogin onLoginSuccess={() => { setIsAuthenticated(true); setViewWithLog('admin'); }} />;
     }
-    
+
     if (view === 'daycareRegistration') {
         return <DaycareRegistrationForm setView={setViewWithLog} />;
     }
@@ -13376,7 +14611,7 @@ const App: React.FC = () => {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-pink-50 via-white to-rose-50">
                 <div className="text-center mb-8">
-                    <img src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop" className="h-20 w-20 mx-auto mb-2"/>
+                    <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop" className="h-20 w-20 mx-auto mb-2" loading="eager" />
                     <h1 className="font-brand text-4xl text-pink-800">Sandy's Pet Shop</h1>
                     <p className="text-gray-600 text-lg">Agendamento de Visita</p>
                 </div>
@@ -13392,7 +14627,7 @@ const App: React.FC = () => {
                             <span className="text-lg">Hotel Pet</span>
                         </button>
                     </div>
-                    
+
                     <div className="mt-6 text-center">
                         <button type="button" onClick={() => setViewWithLog('scheduler')} className="text-sm text-pink-600 hover:underline">← Voltar</button>
                     </div>
@@ -13514,13 +14749,13 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
                     <h2 className="text-2xl font-bold text-gray-800 text-center">Agendar Visita — {serviceLabel}</h2>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2"><label className="block text-sm font-semibold text-gray-700">Nome do Pet</label><input value={petName} onChange={e => setPetName(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required/></div>
-                    <div><label className="block text-sm font-semibold text-gray-700">Raça</label><input value={petBreed} onChange={e => setPetBreed(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md"/></div>
-                    <div><label className="block text-sm font-semibold text-gray-700">Nome do Tutor</label><input value={ownerName} onChange={e => setOwnerName(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required/></div>
-                    <div><label className="block text-sm font-semibold text-gray-700">WhatsApp</label><input value={whatsapp} onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" placeholder="(XX) XXXXX-XXXX" maxLength={15} required/></div>
-                    <div className="sm:col-span-2"><label className="block text-sm font-semibold text-gray-700">Endereço</label><input value={ownerAddress} onChange={e => setOwnerAddress(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md"/></div>
-                    <div><label className="block text_sm font-semibold text-gray-700">Data</label><input type="date" value={date} onChange={e => setDate(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required/></div>
-                    <div><label className="block text-sm font-semibold text-gray-700">Horário</label><select value={time} onChange={e => setTime(Number(e.target.value))} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required><option value="" disabled>Selecione</option>{VISIT_WORKING_HOURS.map(h => (<option key={h} value={h}>{String(h).padStart(2,'0')}:00</option>))}</select></div>
+                    <div className="sm:col-span-2"><label className="block text-sm font-semibold text-gray-700">Nome do Pet</label><input value={petName} onChange={e => setPetName(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required /></div>
+                    <div><label className="block text-sm font-semibold text-gray-700">Raça</label><input value={petBreed} onChange={e => setPetBreed(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" /></div>
+                    <div><label className="block text-sm font-semibold text-gray-700">Nome do Tutor</label><input value={ownerName} onChange={e => setOwnerName(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required /></div>
+                    <div><label className="block text-sm font-semibold text-gray-700">WhatsApp</label><input value={whatsapp} onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" placeholder="(XX) XXXXX-XXXX" maxLength={15} required /></div>
+                    <div className="sm:col-span-2"><label className="block text-sm font-semibold text-gray-700">Endereço</label><input value={ownerAddress} onChange={e => setOwnerAddress(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" /></div>
+                    <div><label className="block text_sm font-semibold text-gray-700">Data</label><input type="date" value={date} onChange={e => setDate(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required /></div>
+                    <div><label className="block text-sm font-semibold text-gray-700">Horário</label><select value={time} onChange={e => setTime(Number(e.target.value))} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required><option value="" disabled>Selecione</option>{VISIT_WORKING_HOURS.map(h => (<option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>))}</select></div>
                     <div className="sm:col-span-2 flex justify-between items-center pt-2">
                         <button type="button" onClick={onBack} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">← Voltar</button>
                         <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:bg-gray-400">Agendar</button>
@@ -13531,11 +14766,11 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
     );
 };
 const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string; onDateChange: (d: string) => void; onBack: () => void }> = ({ enrollment, date, onDateChange, onBack }) => {
-    const [mood, setMood] = useState<'Animado'|'Normal'|'Sonolento'|'Agitado'|null>(null);
+    const [mood, setMood] = useState<'Animado' | 'Normal' | 'Sonolento' | 'Agitado' | null>(null);
     const [behavior, setBehavior] = useState<number>(3);
-    const [social, setSocial] = useState<{ outros:boolean; descanso:boolean; quieto:boolean}>({outros:false,descanso:false,quieto:false});
-    const [feeding, setFeeding] = useState<'Comeu tudo'|'Comeu pouco'|'Não comeu'|null>(null);
-    const [logs, setLogs] = useState<{ time:string; type:'Xixi'|'Cocô'}[]>([]);
+    const [social, setSocial] = useState<{ outros: boolean; descanso: boolean; quieto: boolean }>({ outros: false, descanso: false, quieto: false });
+    const [feeding, setFeeding] = useState<'Comeu tudo' | 'Comeu pouco' | 'Não comeu' | null>(null);
+    const [logs, setLogs] = useState<{ time: string; type: 'Xixi' | 'Cocô' }[]>([]);
     const [obs, setObs] = useState<string>('');
     const [media, setMedia] = useState<File[]>([]);
     const [existingMediaUrls, setExistingMediaUrls] = useState<string[]>([]);
@@ -13576,10 +14811,10 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
     const [hasEntry, setHasEntry] = useState(false);
     const [saving, setSaving] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
-    const addLog = (type:'Xixi'|'Cocô') => {
+    const addLog = (type: 'Xixi' | 'Cocô') => {
         const now = new Date();
-        const hh = String(now.getHours()).padStart(2,'0');
-        const mm = String(now.getMinutes()).padStart(2,'0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
         setLogs(prev => [...prev, { time: `${hh}:${mm}`, type }]);
     };
     const removeLog = (index: number) => {
@@ -13599,18 +14834,18 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
     }, [media]);
     useEffect(() => {
         const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         if (!date) onDateChange(todayStr);
     }, []);
-    const moods: {label:'Animado'|'Normal'|'Sonolento'|'Agitado'; color:string; icon:string}[] = [
-        {label:'Animado', color:'bg-green-100', icon:'https://cdn-icons-png.flaticon.com/512/2172/2172006.png'},
-        {label:'Normal', color:'bg-yellow-100', icon:'https://cdn-icons-png.flaticon.com/512/2172/2172069.png'},
-        {label:'Sonolento', color:'bg-blue-100', icon:'https://cdn-icons-png.flaticon.com/512/13761/13761607.png'},
-        {label:'Agitado', color:'bg-red-100', icon:'https://cdn-icons-png.flaticon.com/512/2171/2171936.png'},
+    const moods: { label: 'Animado' | 'Normal' | 'Sonolento' | 'Agitado'; color: string; icon: string }[] = [
+        { label: 'Animado', color: 'bg-green-100', icon: 'https://cdn-icons-png.flaticon.com/512/2172/2172006.png' },
+        { label: 'Normal', color: 'bg-yellow-100', icon: 'https://cdn-icons-png.flaticon.com/512/2172/2172069.png' },
+        { label: 'Sonolento', color: 'bg-blue-100', icon: 'https://cdn-icons-png.flaticon.com/512/13761/13761607.png' },
+        { label: 'Agitado', color: 'bg-red-100', icon: 'https://cdn-icons-png.flaticon.com/512/2171/2171936.png' },
     ];
     const copyShareLink = async () => {
         const url = `${window.location.origin}/diario/${enrollment.id}?date=${date}`;
-        try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(()=>setCopied(false), 1500); } catch {}
+        try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { }
     };
     const sendDiaryWebhook = async () => {
         if (!hasEntry) return;
@@ -13619,7 +14854,7 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
         try {
             const webhookUrl = 'https://n8n.intelektus.tech/webhook/diarioCrechePet';
             const diaryLink = `${window.location.origin}/diario/${enrollment.id}?date=${date}`;
-            try { await navigator.clipboard.writeText(diaryLink); setCopied(true); setTimeout(()=>setCopied(false), 1500); } catch {}
+            try { await navigator.clipboard.writeText(diaryLink); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { }
             const payload = {
                 type: 'daycare_diary_shared',
                 diary_link: diaryLink,
@@ -13692,7 +14927,7 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
             const period = m[2] === 'week' ? 'semana' : 'mês';
             return `${n}x por ${period}`;
         }
-        return s.replace('_',' ');
+        return s.replace('_', ' ');
     };
     const behaviorLabel = (n: number) => {
         switch (n) {
@@ -13704,16 +14939,16 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
             default: return '';
         }
     };
-    const moodOptions: {label:'Animado'|'Normal'|'Sonolento'|'Agitado'; color:string; icon:string}[] = [
-        {label:'Animado', color:'bg-green-100', icon:'https://cdn-icons-png.flaticon.com/512/2172/2172006.png'},
-        {label:'Normal', color:'bg-yellow-100', icon:'https://cdn-icons-png.flaticon.com/512/2172/2172069.png'},
-        {label:'Sonolento', color:'bg-blue-100', icon:'https://cdn-icons-png.flaticon.com/512/13761/13761607.png'},
-        {label:'Agitado', color:'bg-red-100', icon:'https://cdn-icons-png.flaticon.com/512/2171/2171936.png'},
+    const moodOptions: { label: 'Animado' | 'Normal' | 'Sonolento' | 'Agitado'; color: string; icon: string }[] = [
+        { label: 'Animado', color: 'bg-green-100', icon: 'https://cdn-icons-png.flaticon.com/512/2172/2172006.png' },
+        { label: 'Normal', color: 'bg-yellow-100', icon: 'https://cdn-icons-png.flaticon.com/512/2172/2172069.png' },
+        { label: 'Sonolento', color: 'bg-blue-100', icon: 'https://cdn-icons-png.flaticon.com/512/13761/13761607.png' },
+        { label: 'Agitado', color: 'bg-red-100', icon: 'https://cdn-icons-png.flaticon.com/512/2171/2171936.png' },
     ];
-    const feedingOptionCards: {label:'Comeu tudo'|'Comeu pouco'|'Não comeu'; bg:string; ring:string; emoji:string}[] = [
-        {label:'Comeu tudo', bg:'bg-green-50', ring:'ring-green-400', emoji:'🍲'},
-        {label:'Comeu pouco', bg:'bg-yellow-50', ring:'ring-yellow-400', emoji:'🥣'},
-        {label:'Não comeu', bg:'bg-red-50', ring:'ring-red-400', emoji:'🚫'},
+    const feedingOptionCards: { label: 'Comeu tudo' | 'Comeu pouco' | 'Não comeu'; bg: string; ring: string; emoji: string }[] = [
+        { label: 'Comeu tudo', bg: 'bg-green-50', ring: 'ring-green-400', emoji: '🍲' },
+        { label: 'Comeu pouco', bg: 'bg-yellow-50', ring: 'ring-yellow-400', emoji: '🥣' },
+        { label: 'Não comeu', bg: 'bg-red-50', ring: 'ring-red-400', emoji: '🚫' },
     ];
     useEffect(() => {
         (async () => {
@@ -13739,12 +14974,12 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                     setEmotionalNotes(Array.isArray((data as any).emotional_notes) ? (data as any).emotional_notes : []);
                 } else {
                     setHasEntry(false);
-                    setMood(null); setBehavior(3); setSocial({outros:false,descanso:false,quieto:false}); setFeeding(null); setLogs([]); setObs('');
+                    setMood(null); setBehavior(3); setSocial({ outros: false, descanso: false, quieto: false }); setFeeding(null); setLogs([]); setObs('');
                     setExistingMediaUrls([]);
                     setSocialNotes([]);
                     setEmotionalNotes([]);
                 }
-            } catch {}
+            } catch { }
         })();
     }, [enrollment.id, date]);
     const uploadMedia = async (): Promise<string[]> => {
@@ -13815,18 +15050,18 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                         <p className="text-xs text-gray-500">Plano: {formatPlanBR(enrollment.contracted_plan)}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button type="button" onClick={()=>{ const di = document.getElementById('diary_date_input') as any; try { di?.showPicker ? di.showPicker() : di?.focus(); } catch {} }} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm flex items-center gap-2">
+                        <button type="button" onClick={() => { const di = document.getElementById('diary_date_input') as any; try { di?.showPicker ? di.showPicker() : di?.focus(); } catch { } }} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm flex items-center gap-2">
                             {formatDateBR(date)}
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
                         </button>
-                        <input id="diary_date_input" type="date" value={date} onChange={(e)=>onDateChange(e.target.value)} className="sr-only" />
+                        <input id="diary_date_input" type="date" value={date} onChange={(e) => onDateChange(e.target.value)} className="sr-only" />
                     </div>
                 </div>
                 <section className="bg-white rounded-2xl shadow p-4">
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Humor do Pet</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {moods.map(m => (
-                            <button key={m.label} onClick={()=>setMood(m.label)} className={`flex flex-col items-center gap-2 p-3 rounded-xl ${m.color} ${mood===m.label?'ring-2 ring-purple-500':''}`}>
+                            <button key={m.label} onClick={() => setMood(m.label)} className={`flex flex-col items-center gap-2 p-3 rounded-xl ${m.color} ${mood === m.label ? 'ring-2 ring-purple-500' : ''}`}>
                                 <img src={m.icon} alt={m.label} className="w-8 h-8" />
                                 <span className="text-sm font-medium text-gray-800">{m.label}</span>
                             </button>
@@ -13837,13 +15072,13 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Comportamento</h3>
                     <div className="px-2">
                         <div className="flex justify-between mb-2 px-1">
-                            {[1,2,3,4,5].map(n => (
-                                <button key={n} type="button" onClick={()=>setBehavior(n)} className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${behavior===n?'bg-purple-600 text-white':'bg-gray-200 text-gray-700'} transition-colors`}>
+                            {[1, 2, 3, 4, 5].map(n => (
+                                <button key={n} type="button" onClick={() => setBehavior(n)} className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${behavior === n ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'} transition-colors`}>
                                     {n}
                                 </button>
                             ))}
                         </div>
-                        <input type="range" min={1} max={5} list="behaviorTicks" value={behavior} onChange={(e)=>setBehavior(Number(e.target.value))} className="w-full" />
+                        <input type="range" min={1} max={5} list="behaviorTicks" value={behavior} onChange={(e) => setBehavior(Number(e.target.value))} className="w-full" />
                         <div className="text-sm text-purple-700 font-medium text-center mt-1">{behaviorLabel(behavior)}</div>
                         <datalist id="behaviorTicks">
                             <option value="1" />
@@ -13858,12 +15093,12 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Socialização</h3>
                     <div className="overflow-x-auto">
                         <div className="flex gap-3 min-w-max px-1">
-                            <label className="flex items-center gap-2 shrink-0"><input type="checkbox" checked={social.outros} onChange={(e)=>setSocial(s=>({...s,outros:e.target.checked}))} /><span>Brincou com outros pets</span></label>
-                            <label className="flex items-center gap-2 shrink-0"><input type="checkbox" checked={social.descanso} onChange={(e)=>setSocial(s=>({...s,descanso:e.target.checked}))} /><span>Precisou de descanso</span></label>
-                            <label className="flex items-center gap-2 shrink-0"><input type="checkbox" checked={social.quieto} onChange={(e)=>setSocial(s=>({...s,quieto:e.target.checked}))} /><span>Ficou mais quieto</span></label>
+                            <label className="flex items-center gap-2 shrink-0"><input type="checkbox" checked={social.outros} onChange={(e) => setSocial(s => ({ ...s, outros: e.target.checked }))} /><span>Brincou com outros pets</span></label>
+                            <label className="flex items-center gap-2 shrink-0"><input type="checkbox" checked={social.descanso} onChange={(e) => setSocial(s => ({ ...s, descanso: e.target.checked }))} /><span>Precisou de descanso</span></label>
+                            <label className="flex items-center gap-2 shrink-0"><input type="checkbox" checked={social.quieto} onChange={(e) => setSocial(s => ({ ...s, quieto: e.target.checked }))} /><span>Ficou mais quieto</span></label>
                             {socialOptions.map(opt => (
                                 <label key={opt} className="flex items-center gap-2 shrink-0">
-                                    <input type="checkbox" checked={socialNotes.includes(opt)} onChange={(e)=> setSocialNotes(prev=> e.target.checked ? [...prev, opt] : prev.filter(x=>x!==opt))} />
+                                    <input type="checkbox" checked={socialNotes.includes(opt)} onChange={(e) => setSocialNotes(prev => e.target.checked ? [...prev, opt] : prev.filter(x => x !== opt))} />
                                     <span>{opt}</span>
                                 </label>
                             ))}
@@ -13876,7 +15111,7 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                         <div className="flex gap-3 min-w-max px-1">
                             {emotionalOptions.map(opt => (
                                 <label key={opt} className="flex items-center gap-2 shrink-0">
-                                    <input type="checkbox" checked={emotionalNotes.includes(opt)} onChange={(e)=> setEmotionalNotes(prev=> e.target.checked ? [...prev, opt] : prev.filter(x=>x!==opt))} />
+                                    <input type="checkbox" checked={emotionalNotes.includes(opt)} onChange={(e) => setEmotionalNotes(prev => e.target.checked ? [...prev, opt] : prev.filter(x => x !== opt))} />
                                     <span>{opt}</span>
                                 </label>
                             ))}
@@ -13890,9 +15125,9 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                             {feedingOptionCards.map(opt => (
                                 <button
                                     key={opt.label}
-                                    onClick={()=>setFeeding(opt.label)}
-                                    className={`w-11/12 mx-auto min-w-0 p-1 rounded-xl border border-gray-200 ${opt.bg} ${feeding===opt.label?`ring-2 ${opt.ring} shadow-md`:'hover:shadow'} transition`}
-                                    aria-pressed={feeding===opt.label}
+                                    onClick={() => setFeeding(opt.label)}
+                                    className={`w-11/12 mx-auto min-w-0 p-1 rounded-xl border border-gray-200 ${opt.bg} ${feeding === opt.label ? `ring-2 ${opt.ring} shadow-md` : 'hover:shadow'} transition`}
+                                    aria-pressed={feeding === opt.label}
                                 >
                                     <div className="flex flex-col items-center gap-1">
                                         <div className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center text-xl">
@@ -13907,11 +15142,11 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                     <section className="bg-white rounded-2xl shadow p-4">
                         <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Necessidades</h3>
                         <div className="flex gap-2 mb-3">
-                            <button onClick={()=>addLog('Xixi')} className="px-3 py-2 bg-green-600 text-white rounded-lg">Registrar xixi</button>
-                            <button onClick={()=>addLog('Cocô')} className="px-3 py-2 bg-green-600 text-white rounded-lg">Registrar cocô</button>
+                            <button onClick={() => addLog('Xixi')} className="px-3 py-2 bg-green-600 text-white rounded-lg">Registrar xixi</button>
+                            <button onClick={() => addLog('Cocô')} className="px-3 py-2 bg-green-600 text-white rounded-lg">Registrar cocô</button>
                         </div>
                         <div className="space-y-1 text-sm text-gray-700">
-                            {logs.map((l,i)=>(
+                            {logs.map((l, i) => (
                                 <div key={i} className="flex justify-between items-center bg-gray-50 p-2 rounded">
                                     <span>{l.time} - {l.type}</span>
                                     <button type="button" onClick={() => removeLog(i)} className="text-red-500 hover:text-red-700">
@@ -13921,20 +15156,20 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                                     </button>
                                 </div>
                             ))}
-                            {logs.length===0 && <div className="text-gray-500">Sem registros</div>}
+                            {logs.length === 0 && <div className="text-gray-500">Sem registros</div>}
                         </div>
                     </section>
                 </div>
                 <section className="bg-white rounded-2xl shadow p-4">
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Observações gerais</h3>
-                    <textarea value={obs} onChange={(e)=>setObs(e.target.value)} placeholder="Digite observações gerais aqui..." className="w-full p-3 rounded-xl border border-gray-300" rows={3} />
+                    <textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Digite observações gerais aqui..." className="w-full p-3 rounded-xl border border-gray-300" rows={3} />
                 </section>
                 <section className="bg-white rounded-2xl shadow p-4">
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Mídias do dia</h3>
                     <div className="rounded-2xl bg-gray-100 p-3">
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                             {(() => {
-                                const items: {src?: string; type: 'image'|'video'}[] = [];
+                                const items: { src?: string; type: 'image' | 'video' }[] = [];
                                 existingMediaUrls.forEach(u => {
                                     const isImg = /\.(png|jpg|jpeg|gif|webp)$/i.test(u);
                                     const isVid = /\.(mp4|webm|ogg)$/i.test(u);
@@ -13963,13 +15198,13 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                                                     )
                                                 ) : (
                                                     <div className="text-gray-500 flex items-center justify-center w-full h-full">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><path d="M2 6a2 2 0 012-2h16a2 2 0 012 2v11a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm3 1a1 1 0 00-1 1v9h16V8a1 1 0 00-1-1H5zm7 2a3 3 0 110 6 3 3 0 010-6z"/></svg>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><path d="M2 6a2 2 0 012-2h16a2 2 0 012 2v11a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm3 1a1 1 0 00-1 1v9h16V8a1 1 0 00-1-1H5zm7 2a3 3 0 110 6 3 3 0 010-6z" /></svg>
                                                     </div>
                                                 )}
-                                                <button type="button" onClick={()=>document.getElementById('diary_media_input')?.click()} className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-green-500 text-white text-base flex items-center justify-center">+</button>
+                                                <button type="button" onClick={() => document.getElementById('diary_media_input')?.click()} className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-green-500 text-white text-base flex items-center justify-center">+</button>
                                             </div>
                                         ))}
-                                        <button type="button" onClick={()=>document.getElementById('diary_media_input')?.click()} className="h-20 rounded-xl border-2 border-green-500 bg-white flex items-center justify-center">
+                                        <button type="button" onClick={() => document.getElementById('diary_media_input')?.click()} className="h-20 rounded-xl border-2 border-green-500 bg-white flex items-center justify-center">
                                             <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-green-700 font-semibold">
                                                 <CameraAddIcon className="w-6 h-6 text-green-600" />
                                                 <span className="text-center">Adicionar Mídia</span>
@@ -13989,31 +15224,31 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                         </button>
                     </div>
                 )}
-            {confirmOpen && (
-            <div className="fixed inset-0 z-50">
-                <div className="absolute inset-0 bg-black/30" />
-                <div className="relative min-h-screen">
-                    <div className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <button onClick={()=>setConfirmOpen(false)} className="p-1 rounded hover:bg-white/10" aria-label="Voltar">
-                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 19l-7-7 7-7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            </button>
-                            <span className="font-semibold">Confirmação de Registro</span>
-                        </div>
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9" strokeWidth="2"/></svg>
-                    </div>
-                    <div className="max-w-md mx-auto mt-10 px-4">
-                        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500 flex items-center justify-center">
-                                <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {confirmOpen && (
+                    <div className="fixed inset-0 z-50">
+                        <div className="absolute inset-0 bg-black/30" />
+                        <div className="relative min-h-screen">
+                            <div className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => setConfirmOpen(false)} className="p-1 rounded hover:bg-white/10" aria-label="Voltar">
+                                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 19l-7-7 7-7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                    </button>
+                                    <span className="font-semibold">Confirmação de Registro</span>
+                                </div>
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9" strokeWidth="2" /></svg>
                             </div>
-                            <p className="text-lg font-semibold text-gray-800 mb-6">Registro Salvo com Sucesso!</p>
-                            <button onClick={()=>setConfirmOpen(false)} className="px-6 py-2.5 bg-green-600 text-white rounded-full font-medium hover:bg-green-700">Voltar ao Diário</button>
+                            <div className="max-w-md mx-auto mt-10 px-4">
+                                <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+                                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500 flex items-center justify-center">
+                                        <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                    </div>
+                                    <p className="text-lg font-semibold text-gray-800 mb-6">Registro Salvo com Sucesso!</p>
+                                    <button onClick={() => setConfirmOpen(false)} className="px-6 py-2.5 bg-green-600 text-white rounded-full font-medium hover:bg-green-700">Voltar ao Diário</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        )}
+                )}
             </div>
         </div>
     );
@@ -14034,7 +15269,7 @@ const PublicDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string;
             const period = m[2] === 'week' ? 'semana' : 'mês';
             return `${n}x por ${period}`;
         }
-        return s.replace('_',' ');
+        return s.replace('_', ' ');
     };
     const behaviorLabel = (n: number) => {
         switch (n) {
@@ -14046,11 +15281,11 @@ const PublicDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string;
             default: return '';
         }
     };
-    const moodOptions: {label:'Animado'|'Normal'|'Sonolento'|'Agitado'; color:string; icon:string}[] = [
-        {label:'Animado', color:'bg-green-100', icon:'https://cdn-icons-png.flaticon.com/512/2172/2172006.png'},
-        {label:'Normal', color:'bg-yellow-100', icon:'https://cdn-icons-png.flaticon.com/512/2172/2172069.png'},
-        {label:'Sonolento', color:'bg-blue-100', icon:'https://cdn-icons-png.flaticon.com/512/13761/13761607.png'},
-        {label:'Agitado', color:'bg-red-100', icon:'https://cdn-icons-png.flaticon.com/512/2171/2171936.png'},
+    const moodOptions: { label: 'Animado' | 'Normal' | 'Sonolento' | 'Agitado'; color: string; icon: string }[] = [
+        { label: 'Animado', color: 'bg-green-100', icon: 'https://cdn-icons-png.flaticon.com/512/2172/2172006.png' },
+        { label: 'Normal', color: 'bg-yellow-100', icon: 'https://cdn-icons-png.flaticon.com/512/2172/2172069.png' },
+        { label: 'Sonolento', color: 'bg-blue-100', icon: 'https://cdn-icons-png.flaticon.com/512/13761/13761607.png' },
+        { label: 'Agitado', color: 'bg-red-100', icon: 'https://cdn-icons-png.flaticon.com/512/2171/2171936.png' },
     ];
     useEffect(() => {
         (async () => {
@@ -14113,8 +15348,8 @@ const PublicDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string;
                             {entry.social_outros && <li>Brincou com outros pets</li>}
                             {entry.social_descanso && <li>Precisou de descanso</li>}
                             {entry.social_quieto && <li>Ficou mais quieto</li>}
-                            {(entry.social_notes || []).map((t:string, i:number)=>(<li key={i}>{t}</li>))}
-                            {!entry.social_outros && !entry.social_descanso && !entry.social_quieto && !((entry.social_notes||[]).length) && <li>Sem registros</li>}
+                            {(entry.social_notes || []).map((t: string, i: number) => (<li key={i}>{t}</li>))}
+                            {!entry.social_outros && !entry.social_descanso && !entry.social_quieto && !((entry.social_notes || []).length) && <li>Sem registros</li>}
                         </ul>
                     )}
                 </section>
@@ -14122,7 +15357,7 @@ const PublicDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string;
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Bem-estar emocional</h3>
                     {entry?.emotional_notes?.length ? (
                         <ul className="text-gray-700 text-sm space-y-1">
-                            {entry.emotional_notes.map((t:string,i:number)=>(<li key={i}>{t}</li>))}
+                            {entry.emotional_notes.map((t: string, i: number) => (<li key={i}>{t}</li>))}
                         </ul>
                     ) : (<p className="text-gray-600">Sem registros</p>)}
                 </section>
@@ -14135,7 +15370,7 @@ const PublicDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string;
                         <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Necessidades</h3>
                         {entry?.needs_logs?.length ? (
                             <div className="space-y-1 text-sm text-gray-700">
-                                {entry.needs_logs.map((l:any,i:number)=>(<div key={i} className="flex justify-between bg-gray-50 p-2 rounded"><span>{l.time} - {l.type}</span></div>))}
+                                {entry.needs_logs.map((l: any, i: number) => (<div key={i} className="flex justify-between bg-gray-50 p-2 rounded"><span>{l.time} - {l.type}</span></div>))}
                             </div>
                         ) : (<p className="text-gray-600">Sem registros</p>)}
                     </section>
@@ -14148,12 +15383,12 @@ const PublicDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string;
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Mídias do dia</h3>
                     {entry?.media_urls?.length ? (
                         <div className="flex flex-wrap gap-3 justify-center">
-                            {entry.media_urls.map((u:string,i:number)=>{
+                            {entry.media_urls.map((u: string, i: number) => {
                                 const isImg = /\.(png|jpg|jpeg|gif|webp)$/i.test(u);
                                 const isVid = /\.(mp4|webm|ogg)$/i.test(u);
                                 return (
                                     <a key={i} href={u} target="_blank" className="w-28 h-28 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
-                                        {isImg ? (<img src={u} alt={`Midia ${i+1}`} className="w-full h-full object-cover" />) : isVid ? (<video src={u} className="w-full h-full object-cover" />) : (<span className="text-xs text-gray-600">Midia {i+1}</span>)}
+                                        {isImg ? (<img src={u} alt={`Midia ${i + 1}`} className="w-full h-full object-cover" />) : isVid ? (<video src={u} className="w-full h-full object-cover" />) : (<span className="text-xs text-gray-600">Midia {i + 1}</span>)}
                                     </a>
                                 );
                             })}

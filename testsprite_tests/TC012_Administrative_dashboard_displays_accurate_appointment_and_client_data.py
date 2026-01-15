@@ -137,6 +137,8 @@ async def run_test():
 
         # --> Assertions to verify final state
         frame = context.pages[-1]
+        # Ensure main brand logo is visible
+        await expect(frame.locator('img[alt="Sandy\\'s Pet Shop"]').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Sandy\'s Pet Shop').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Painel Administrativo').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Banho & Tosa').first).to_be_visible(timeout=30000)
