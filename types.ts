@@ -57,6 +57,7 @@ export interface AdminAppointment {
   owner_address?: string;
   pet_breed?: string;
   condominium?: string;
+  responsible?: string;
   extra_services?: {
     pernoite: { enabled: boolean; value: number };
     banho_tosa: { enabled: boolean; value: number };
@@ -65,6 +66,10 @@ export interface AdminAppointment {
     hidratacao: { enabled: boolean; value: number };
     despesa_medica: { enabled: boolean; value: number };
     dias_extras: { quantity: number; value: number };
+    botinha?: { enabled: boolean; value: number };
+    contorno?: { enabled: boolean; value: number };
+    pintura?: { enabled: boolean; value: number };
+    patacure?: { enabled: boolean; value: number };
   };
 }
 

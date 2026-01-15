@@ -7631,27 +7631,27 @@ const MonthlyClientCard: React.FC<{
         let total = Number(client.price || 0);
 
         if (client.extra_services) {
-            // Usar os valores dinâmicos dos serviços extras
-            if (client.extra_services.pernoite?.enabled) {
-                total += Number(client.extra_services.pernoite.value || 0);
-            }
-            if (client.extra_services.banho_tosa?.enabled) {
-                total += Number(client.extra_services.banho_tosa.value || 0);
-            }
+            // Somente serviços extras permitidos
             if (client.extra_services.so_banho?.enabled) {
                 total += Number(client.extra_services.so_banho.value || 0);
-            }
-            if (client.extra_services.adestrador?.enabled) {
-                total += Number(client.extra_services.adestrador.value || 0);
             }
             if ((client.extra_services as any).hidratacao?.enabled) {
                 total += Number((client.extra_services as any).hidratacao?.value || 0);
             }
-            if (client.extra_services.despesa_medica?.enabled) {
-                total += Number(client.extra_services.despesa_medica.value || 0);
+            if ((client.extra_services as any).so_tosa?.enabled) {
+                total += Number((client.extra_services as any).so_tosa?.value || 0);
             }
-            if (client.extra_services.dias_extras?.quantity > 0) {
-                total += (client.extra_services.dias_extras.quantity * Number(client.extra_services.dias_extras.value || 0));
+            if ((client.extra_services as any).botinha?.enabled) {
+                total += Number((client.extra_services as any).botinha?.value || 0);
+            }
+            if ((client.extra_services as any).contorno?.enabled) {
+                total += Number((client.extra_services as any).contorno?.value || 0);
+            }
+            if ((client.extra_services as any).pintura?.enabled) {
+                total += Number((client.extra_services as any).pintura?.value || 0);
+            }
+            if ((client.extra_services as any).patacure?.enabled) {
+                total += Number((client.extra_services as any).patacure?.value || 0);
             }
         }
 
@@ -7661,12 +7661,13 @@ const MonthlyClientCard: React.FC<{
     const totalInvoiceValue = calculateTotalInvoiceValue(client);
     const hasMonthlyExtras: boolean = Boolean(
         client.extra_services && (
-            client.extra_services.pernoite?.enabled ||
-            client.extra_services.banho_tosa?.enabled ||
             client.extra_services.so_banho?.enabled ||
-            client.extra_services.adestrador?.enabled ||
-            client.extra_services.despesa_medica?.enabled ||
-            (client.extra_services.dias_extras?.quantity > 0)
+            (client.extra_services as any).so_tosa?.enabled ||
+            (client.extra_services as any).hidratacao?.enabled ||
+            (client.extra_services as any).botinha?.enabled ||
+            (client.extra_services as any).contorno?.enabled ||
+            (client.extra_services as any).pintura?.enabled ||
+            (client.extra_services as any).patacure?.enabled
         )
     );
 
@@ -7802,39 +7803,39 @@ const MonthlyClientCard: React.FC<{
                     (() => {
                         const ex = client.extra_services as any;
                         const hasExtras = Boolean(
-                            (ex?.pernoite?.enabled || ex?.pernoite === true) ||
-                            (ex?.banho_tosa?.enabled || ex?.banho_tosa === true) ||
-                            (ex?.so_banho?.enabled || ex?.so_banho === true) ||
-                            (ex?.adestrador?.enabled || ex?.adestrador === true) ||
-                            (ex?.despesa_medica?.enabled || ex?.despesa_medica === true) ||
-                            (ex?.hidratacao?.enabled || ex?.hidratacao === true) ||
-                            (((ex?.dias_extras?.quantity ?? 0) > 0))
+                            (ex?.so_tosa?.enabled) ||
+                            (ex?.so_banho?.enabled) ||
+                            (ex?.hidratacao?.enabled) ||
+                            (ex?.botinha?.enabled) ||
+                            (ex?.contorno?.enabled) ||
+                            (ex?.pintura?.enabled) ||
+                            (ex?.patacure?.enabled)
                         );
                         if (!hasExtras) return null;
                         return (
                             <div className="mt-3 pt-3 border-t border-gray-100">
                                 <div className="text-sm text-gray-600 font-semibold mb-2">Serviços Extras:</div>
                                 <div className="flex flex-wrap gap-1">
-                                    {(ex?.pernoite?.enabled || ex?.pernoite === true) && (
-                                        <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Pernoite</span>
+                                    {(ex?.so_tosa?.enabled) && (
+                                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Tosa</span>
                                     )}
-                                    {(ex?.banho_tosa?.enabled || ex?.banho_tosa === true) && (
-                                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Banho & Tosa</span>
+                                    {(ex?.so_banho?.enabled) && (
+                                        <span className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded-full">Banho</span>
                                     )}
-                                    {(ex?.so_banho?.enabled || ex?.so_banho === true) && (
-                                        <span className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded-full">Só banho</span>
+                                    {(ex?.botinha?.enabled) && (
+                                        <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">Botinha</span>
                                     )}
-                                    {(ex?.adestrador?.enabled || ex?.adestrador === true) && (
-                                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Adestrador</span>
-                                    )}
-                                    {(ex?.despesa_medica?.enabled || ex?.despesa_medica === true) && (
-                                        <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Despesa médica</span>
-                                    )}
-                                    {(ex?.hidratacao?.enabled || ex?.hidratacao === true) && (
+                                    {(ex?.hidratacao?.enabled) && (
                                         <span className="px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full">Hidratação</span>
                                     )}
-                                    {((ex?.dias_extras?.quantity ?? 0) > 0) && (
-                                        <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">{ex?.dias_extras?.quantity} dia{ex?.dias_extras?.quantity > 1 ? 's' : ''} extra{ex?.dias_extras?.quantity > 1 ? 's' : ''}</span>
+                                    {(ex?.contorno?.enabled) && (
+                                        <span className="px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full">Contorno</span>
+                                    )}
+                                    {(ex?.pintura?.enabled) && (
+                                        <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Pintura</span>
+                                    )}
+                                    {(ex?.patacure?.enabled) && (
+                                        <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">Patacure</span>
                                     )}
                                 </div>
                             </div>

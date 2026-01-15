@@ -4,13 +4,13 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { supabase } from './supabaseClient';
 
 interface ExtraServicesData {
-  pernoite: { enabled: boolean; value: string | number };
-  banho_tosa: { enabled: boolean; value: string | number };
+  so_tosa: { enabled: boolean; value: string | number };
   so_banho: { enabled: boolean; value: string | number };
-  adestrador: { enabled: boolean; value: string | number };
   hidratacao: { enabled: boolean; value: string | number };
-  despesa_medica: { enabled: boolean; value: string | number };
-  dias_extras: { enabled: boolean; quantity: string | number; value: string | number };
+  botinha: { enabled: boolean; value: string | number };
+  contorno: { enabled: boolean; value: string | number };
+  pintura: { enabled: boolean; value: string | number };
+  patacure: { enabled: boolean; value: string | number };
 }
 
 interface ExtraServicesModalProps {
@@ -31,59 +31,46 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
   title = 'Serviços Extras'
 }) => {
   const [extraServices, setExtraServices] = useState<ExtraServicesData>({
-    pernoite: { 
-      enabled: data.extra_services?.pernoite?.enabled || false, 
-      value: data.extra_services?.pernoite?.value || '' 
-    },
-    banho_tosa: { 
-      enabled: data.extra_services?.banho_tosa?.enabled || false, 
-      value: data.extra_services?.banho_tosa?.value || '' 
+    so_tosa: { 
+      enabled: data.extra_services?.so_tosa?.enabled || false, 
+      value: data.extra_services?.so_tosa?.value || '' 
     },
     so_banho: { 
       enabled: data.extra_services?.so_banho?.enabled || false, 
       value: data.extra_services?.so_banho?.value || '' 
     },
-    adestrador: { 
-      enabled: data.extra_services?.adestrador?.enabled || false, 
-      value: data.extra_services?.adestrador?.value || '' 
-    },
     hidratacao: {
       enabled: data.extra_services?.hidratacao?.enabled || false,
       value: data.extra_services?.hidratacao?.value || ''
     },
-    despesa_medica: { 
-      enabled: data.extra_services?.despesa_medica?.enabled || false, 
-      value: data.extra_services?.despesa_medica?.value || '' 
+    botinha: { 
+      enabled: data.extra_services?.botinha?.enabled || false, 
+      value: data.extra_services?.botinha?.value || '' 
     },
-    dias_extras: { 
-      enabled: data.extra_services?.dias_extras?.enabled || false,
-      quantity: data.extra_services?.dias_extras?.quantity || '', 
-      value: data.extra_services?.dias_extras?.value || '' 
+    contorno: { 
+      enabled: data.extra_services?.contorno?.enabled || false, 
+      value: data.extra_services?.contorno?.value || '' 
+    },
+    pintura: { 
+      enabled: data.extra_services?.pintura?.enabled || false, 
+      value: data.extra_services?.pintura?.value || '' 
+    },
+    patacure: { 
+      enabled: data.extra_services?.patacure?.enabled || false, 
+      value: data.extra_services?.patacure?.value || '' 
     }
   });
 
   const [isLoading, setIsLoading] = useState(false);
 
   const handleServiceToggle = (service: keyof ExtraServicesData) => {
-    if (service === 'dias_extras') {
-      setExtraServices(prev => ({
-        ...prev,
-        dias_extras: {
-          ...prev.dias_extras,
-          enabled: !prev.dias_extras.enabled,
-          quantity: !prev.dias_extras.enabled ? '' : '',
-          value: !prev.dias_extras.enabled ? '' : prev.dias_extras.value
-        }
-      }));
-    } else {
-      setExtraServices(prev => ({
-        ...prev,
-        [service]: {
-          ...prev[service],
-          enabled: !prev[service].enabled
-        }
-      }));
-    }
+    setExtraServices(prev => ({
+      ...prev,
+      [service]: {
+        ...prev[service],
+        enabled: !prev[service].enabled
+      }
+    }));
   };
 
   const handleValueChange = (service: keyof ExtraServicesData, value: string) => {
@@ -96,27 +83,15 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
     }));
   };
 
-  const handleQuantityChange = (value: string) => {
-    setExtraServices(prev => ({
-      ...prev,
-      dias_extras: {
-        ...prev.dias_extras,
-        quantity: value
-      }
-    }));
-  };
-
   const calculateTotal = () => {
     let total = 0;
-    if (extraServices.pernoite.enabled) total += Number(extraServices.pernoite.value) || 0;
-    if (extraServices.banho_tosa.enabled) total += Number(extraServices.banho_tosa.value) || 0;
     if (extraServices.so_banho.enabled) total += Number(extraServices.so_banho.value) || 0;
-    if (extraServices.adestrador.enabled) total += Number(extraServices.adestrador.value) || 0;
+    if (extraServices.so_tosa.enabled) total += Number(extraServices.so_tosa.value) || 0;
     if (extraServices.hidratacao.enabled) total += Number(extraServices.hidratacao.value) || 0;
-    if (extraServices.despesa_medica.enabled) total += Number(extraServices.despesa_medica.value) || 0;
-    if (extraServices.dias_extras.enabled && Number(extraServices.dias_extras.quantity) > 0) {
-      total += Number(extraServices.dias_extras.quantity) * (Number(extraServices.dias_extras.value) || 0);
-    }
+    if (extraServices.botinha.enabled) total += Number(extraServices.botinha.value) || 0;
+    if (extraServices.contorno.enabled) total += Number(extraServices.contorno.value) || 0;
+    if (extraServices.pintura.enabled) total += Number(extraServices.pintura.value) || 0;
+    if (extraServices.patacure.enabled) total += Number(extraServices.patacure.value) || 0;
     return total;
   };
 
@@ -137,48 +112,49 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
       
       // Converter strings para números antes de salvar
       const extraServicesForSave = {
-        pernoite: { 
-          enabled: extraServices.pernoite.enabled, 
-          value: extraServices.pernoite.value === '' ? undefined : Number(extraServices.pernoite.value)
-        },
-        banho_tosa: { 
-          enabled: extraServices.banho_tosa.enabled, 
-          value: extraServices.banho_tosa.value === '' ? undefined : Number(extraServices.banho_tosa.value)
+        so_tosa: { 
+          enabled: extraServices.so_tosa.enabled, 
+          value: extraServices.so_tosa.value === '' ? undefined : Number(extraServices.so_tosa.value)
         },
         so_banho: { 
           enabled: extraServices.so_banho.enabled, 
           value: extraServices.so_banho.value === '' ? undefined : Number(extraServices.so_banho.value)
         },
-        adestrador: { 
-          enabled: extraServices.adestrador.enabled, 
-          value: extraServices.adestrador.value === '' ? undefined : Number(extraServices.adestrador.value)
-        },
         hidratacao: {
           enabled: extraServices.hidratacao.enabled,
           value: extraServices.hidratacao.value === '' ? undefined : Number(extraServices.hidratacao.value)
         },
-        despesa_medica: { 
-          enabled: extraServices.despesa_medica.enabled, 
-          value: extraServices.despesa_medica.value === '' ? undefined : Number(extraServices.despesa_medica.value)
+        botinha: { 
+          enabled: extraServices.botinha.enabled, 
+          value: extraServices.botinha.value === '' ? undefined : Number(extraServices.botinha.value)
         },
-        dias_extras: { 
-          enabled: extraServices.dias_extras.enabled,
-          quantity: extraServices.dias_extras.quantity === '' ? 0 : Number(extraServices.dias_extras.quantity), 
-          value: extraServices.dias_extras.value === '' ? undefined : Number(extraServices.dias_extras.value)
-        }
+        contorno: { 
+          enabled: extraServices.contorno.enabled, 
+          value: extraServices.contorno.value === '' ? undefined : Number(extraServices.contorno.value)
+        },
+        pintura: { 
+          enabled: extraServices.pintura.enabled, 
+          value: extraServices.pintura.value === '' ? undefined : Number(extraServices.pintura.value)
+        },
+        patacure: { 
+          enabled: extraServices.patacure.enabled, 
+          value: extraServices.patacure.value === '' ? undefined : Number(extraServices.patacure.value)
+        },
       };
+      
+      const mergedExtras = { ...(data?.extra_services || {}), ...extraServicesForSave };
       
       // Log para debug
       console.log('Salvando serviços extras:', {
         tableName,
         dataId: data.id,
-        extraServices: extraServicesForSave,
+        extraServices: mergedExtras,
         type
       });
 
       const { data: updatedData, error } = await supabase
         .from(tableName)
-        .update({ extra_services: extraServicesForSave })
+        .update({ extra_services: mergedExtras })
         .eq('id', data.id)
         .select()
         .single();
@@ -229,26 +205,26 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Pernoite */}
+          {/* Tosa */}
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
-                checked={extraServices.pernoite.enabled}
-                onChange={() => handleServiceToggle('pernoite')}
+                checked={extraServices.so_tosa.enabled}
+                onChange={() => handleServiceToggle('so_tosa')}
                 className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
               />
-              <label className="text-sm font-medium text-gray-700">Pernoite</label>
+              <label className="text-sm font-medium text-gray-700">Tosa</label>
             </div>
-            {extraServices.pernoite.enabled && (
+            {extraServices.so_tosa.enabled && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">R$</span>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={extraServices.pernoite.value}
-                  onChange={(e) => handleValueChange('pernoite', e.target.value)}
+                  value={extraServices.so_tosa.value}
+                  onChange={(e) => handleValueChange('so_tosa', e.target.value)}
                   className="w-24 px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-pink-500 focus:border-pink-500"
                   placeholder="0,00"
                 />
@@ -256,34 +232,7 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
             )}
           </div>
 
-          {/* Banho & Tosa */}
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                checked={extraServices.banho_tosa.enabled}
-                onChange={() => handleServiceToggle('banho_tosa')}
-                className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
-              />
-              <label className="text-sm font-medium text-gray-700">Banho & Tosa</label>
-            </div>
-            {extraServices.banho_tosa.enabled && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">R$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={extraServices.banho_tosa.value}
-                  onChange={(e) => handleValueChange('banho_tosa', e.target.value)}
-                  className="w-24 px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-pink-500 focus:border-pink-500"
-                  placeholder="0,00"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Só Banho */}
+          {/* Banho */}
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="flex items-center space-x-3">
               <input
@@ -292,7 +241,7 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
                 onChange={() => handleServiceToggle('so_banho')}
                 className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
               />
-              <label className="text-sm font-medium text-gray-700">Só Banho</label>
+              <label className="text-sm font-medium text-gray-700">Banho</label>
             </div>
             {extraServices.so_banho.enabled && (
               <div className="flex items-center space-x-2">
@@ -310,26 +259,26 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
             )}
           </div>
 
-          {/* Adestrador */}
+          {/* Botinha */}
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
-                checked={extraServices.adestrador.enabled}
-                onChange={() => handleServiceToggle('adestrador')}
+                checked={extraServices.botinha.enabled}
+                onChange={() => handleServiceToggle('botinha')}
                 className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
               />
-              <label className="text-sm font-medium text-gray-700">Adestrador</label>
+              <label className="text-sm font-medium text-gray-700">Botinha</label>
             </div>
-            {extraServices.adestrador.enabled && (
+            {extraServices.botinha.enabled && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">R$</span>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={extraServices.adestrador.value}
-                  onChange={(e) => handleValueChange('adestrador', e.target.value)}
+                  value={extraServices.botinha.value}
+                  onChange={(e) => handleValueChange('botinha', e.target.value)}
                   className="w-24 px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-pink-500 focus:border-pink-500"
                   placeholder="0,00"
                 />
@@ -364,26 +313,26 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
             )}
           </div>
 
-          {/* Despesa Médica */}
+          {/* Contorno */}
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
-                checked={extraServices.despesa_medica.enabled}
-                onChange={() => handleServiceToggle('despesa_medica')}
+                checked={extraServices.contorno.enabled}
+                onChange={() => handleServiceToggle('contorno')}
                 className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
               />
-              <label className="text-sm font-medium text-gray-700">Despesa Médica</label>
+              <label className="text-sm font-medium text-gray-700">Contorno</label>
             </div>
-            {extraServices.despesa_medica.enabled && (
+            {extraServices.contorno.enabled && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">R$</span>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={extraServices.despesa_medica.value}
-                  onChange={(e) => handleValueChange('despesa_medica', e.target.value)}
+                  value={extraServices.contorno.value}
+                  onChange={(e) => handleValueChange('contorno', e.target.value)}
                   className="w-24 px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-pink-500 focus:border-pink-500"
                   placeholder="0,00"
                 />
@@ -391,52 +340,65 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
             )}
           </div>
 
-          {/* Dias Extras */}
-          <div className="p-4 border rounded-lg">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  checked={extraServices.dias_extras.enabled}
-                  onChange={() => handleServiceToggle('dias_extras')}
-                  className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
-                />
-                <label className="text-sm font-medium text-gray-700">Dias Extras</label>
-              </div>
+          {/* Pintura */}
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={extraServices.pintura.enabled}
+                onChange={() => handleServiceToggle('pintura')}
+                className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+              />
+              <label className="text-sm font-medium text-gray-700">Pintura</label>
             </div>
-            {extraServices.dias_extras.enabled && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Quantidade de dias</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={extraServices.dias_extras.quantity}
-                    onChange={(e) => handleQuantityChange(e.target.value)}
-                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-pink-500 focus:border-pink-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Valor por dia (R$)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={extraServices.dias_extras.value}
-                    onChange={(e) => handleValueChange('dias_extras', e.target.value)}
-                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-pink-500 focus:border-pink-500"
-                    placeholder="0,00"
-                  />
-                </div>
+            {extraServices.pintura.enabled && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">R$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={extraServices.pintura.value}
+                  onChange={(e) => handleValueChange('pintura', e.target.value)}
+                  className="w-24 px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-pink-500 focus:border-pink-500"
+                  placeholder="0,00"
+                />
               </div>
             )}
           </div>
 
-          {/* Total */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-semibold text-gray-700">Total dos Serviços Extras:</span>
-              <span className="text-xl font-bold text-pink-600">
+          {/* Patacure */}
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={extraServices.patacure.enabled}
+                onChange={() => handleServiceToggle('patacure')}
+                className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+              />
+              <label className="text-sm font-medium text-gray-700">Patacure</label>
+            </div>
+            {extraServices.patacure.enabled && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">R$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={extraServices.patacure.value}
+                  onChange={(e) => handleValueChange('patacure', e.target.value)}
+                  className="w-24 px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-pink-500 focus:border-pink-500"
+                  placeholder="0,00"
+                />
+          </div>
+        )}
+      </div>
+
+      {/* Total */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="flex justify-between items-center">
+          <span className="text-lg font-semibold text-gray-700">Total dos Serviços Extras:</span>
+          <span className="text-xl font-bold text-pink-600">
                 R$ {calculateTotal().toFixed(2).replace('.', ',')}
               </span>
             </div>
