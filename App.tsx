@@ -4201,9 +4201,9 @@ const Calendar: React.FC<{
                         }
                         onDateChange(date);
                     }}
-                    className={`p-2 w-10 h-10 rounded-full text-center transition-colors flex items-center justify-center
-              ${isSelected ? 'bg-pink-300 text-black font-bold border border-pink-600' : 'hover:bg-pink-100'}
-              ${isDisabled ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'}
+                    className={`p-2 w-10 h-10 rounded-full text-center transition-colors flex items-center justify-center font-medium
+              ${isSelected ? 'bg-pink-600 text-white font-bold border border-pink-700 shadow-md' : 'hover:bg-pink-100'}
+              ${isDisabled ? 'text-gray-400 cursor-not-allowed' : isSelected ? '' : 'text-gray-900'}
             `}
                 >
                     {day}
@@ -4214,15 +4214,15 @@ const Calendar: React.FC<{
     };
 
     return (
-        <div className="w-full max-w-full sm:max-w-sm mx-auto">
-            <div className="flex justify-between items-center mb-4 px-2">
-                <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-gray-100"><ChevronLeftIcon /></button>
-                <h3 className="font-semibold text-lg capitalize">
+        <div className="w-full max-w-full sm:max-w-sm mx-auto bg-white rounded-xl border border-gray-100 p-2 shadow-sm">
+            <div className="flex justify-between items-center mb-4 px-2 pt-2">
+                <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-gray-100 text-gray-700"><ChevronLeftIcon /></button>
+                <h3 className="font-bold text-lg capitalize text-gray-900">
                     {currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                 </h3>
-                <button type="button" onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-gray-100"><ChevronRightIcon /></button>
+                <button type="button" onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-gray-100 text-gray-700"><ChevronRightIcon /></button>
             </div>
-            <div className="grid grid-cols-7 gap-3 text-center text-base text-gray-500 mb-2 font-semibold">
+            <div className="grid grid-cols-7 gap-3 text-center text-sm text-gray-600 mb-2 font-bold uppercase tracking-wide">
                 {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => <div key={i}>{d}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-3 place-items-center">
@@ -14084,8 +14084,8 @@ const AdminDashboard: React.FC<{
                 <div className="flex flex-col md:flex-row gap-8">
                     <aside className={`
                         md:w-64 flex-shrink-0
-                        md:sticky md:top-20 md:h-[calc(100vh-5rem)] md:bg-transparent md:p-0 md:z-10
-                        hidden md:block
+                        md:sticky md:top-20 md:h-[calc(100vh-5rem)] md:bg-white md:p-0 md:z-10
+                        hidden md:block shadow-sm rounded-xl
                     `}>
                         <NavMenu />
                         <div className="mt-6 md:hidden space-y-3">

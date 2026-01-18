@@ -12,10 +12,14 @@ interface ExtraServicesData {
   contorno: { enabled: boolean; value: string | number };
   pintura: { enabled: boolean; value: string | number };
   patacure: { enabled: boolean; value: string | number };
+  tintura: { enabled: boolean; value: string | number };
+  penteado: { enabled: boolean; value: string | number };
+  desembolo: { enabled: boolean; value: string | number };
   
   // Serviços Daycare
   adestrador: { enabled: boolean; value: string | number };
   dias_extras: { enabled: boolean; value: string | number; quantity?: number };
+  hora_extra: { enabled: boolean; value: string | number };
   medicamento: { enabled: boolean; value: string | number };
   pernoite: { enabled: boolean; value: string | number };
   racao: { enabled: boolean; value: string | number };
@@ -69,6 +73,18 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
       enabled: data.extra_services?.patacure?.enabled || false, 
       value: data.extra_services?.patacure?.value || '' 
     },
+    tintura: { 
+      enabled: data.extra_services?.tintura?.enabled || false, 
+      value: data.extra_services?.tintura?.value || '' 
+    },
+    penteado: { 
+      enabled: data.extra_services?.penteado?.enabled || false, 
+      value: data.extra_services?.penteado?.value || '' 
+    },
+    desembolo: { 
+      enabled: data.extra_services?.desembolo?.enabled || false, 
+      value: data.extra_services?.desembolo?.value || '' 
+    },
 
     // Serviços Daycare
     adestrador: { 
@@ -79,6 +95,10 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
       enabled: data.extra_services?.dias_extras?.enabled || false, 
       value: data.extra_services?.dias_extras?.value || '',
       quantity: data.extra_services?.dias_extras?.quantity || 1
+    },
+    hora_extra: { 
+      enabled: data.extra_services?.hora_extra?.enabled || false, 
+      value: data.extra_services?.hora_extra?.value || '' 
     },
     medicamento: { 
       enabled: data.extra_services?.medicamento?.enabled || false, 
@@ -254,32 +274,22 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
         <div className="p-6 space-y-6">
           {type === 'daycare' ? (
             <>
-              {renderServiceItem('adestrador', 'Adestrador')}
-              {renderServiceItem('so_banho', 'Banho')}
-              {renderServiceItem('botinha', 'Botinha')}
-              {renderServiceItem('contorno', 'Contorno')}
-              {renderServiceItem('dias_extras', 'Dias Extras')}
-              {renderServiceItem('hidratacao', 'Hidratação')}
-              {renderServiceItem('medicamento', 'Medicamento')}
-              {renderServiceItem('patacure', 'Patacure')}
               {renderServiceItem('pernoite', 'Pernoite')}
-              {renderServiceItem('pintura', 'Pintura')}
-              {renderServiceItem('racao', 'Ração')}
-              {renderServiceItem('so_tosa', 'Tosa')}
+              {renderServiceItem('hora_extra', 'Hora Extra')}
+              {renderServiceItem('dias_extras', 'Dia Extra')}
+              {renderServiceItem('so_banho', 'Banho')}
               {renderServiceItem('veterinario', 'Veterinário')}
+              {renderServiceItem('adestrador', 'Adestrador')}
             </>
           ) : type === 'monthly' ? (
             <>
-              {renderServiceItem('adestrador', 'Adestrador')}
-              {renderServiceItem('so_banho', 'Banho')}
-              {renderServiceItem('botinha', 'Botinha')}
-              {renderServiceItem('contorno', 'Contorno')}
               {renderServiceItem('hidratacao', 'Hidratação')}
-              {renderServiceItem('medicamento', 'Medicamento')}
               {renderServiceItem('patacure', 'Patacure')}
-              {renderServiceItem('pintura', 'Pintura')}
-              {renderServiceItem('racao', 'Ração')}
-              {renderServiceItem('so_tosa', 'Tosa')}
+              {renderServiceItem('tintura', 'Tintura')}
+              {renderServiceItem('contorno', 'Contorno')}
+              {renderServiceItem('penteado', 'Penteado')}
+              {renderServiceItem('hora_extra', 'Hora Extra')}
+              {renderServiceItem('desembolo', 'Desembolo')}
               {renderServiceItem('veterinario', 'Veterinário')}
             </>
           ) : (
