@@ -12,6 +12,14 @@ import PriceTableModal from './PriceTableModal';
 import ActionChooserModal from './src/ActionChooserModal';
 import { Menu, MenuItem } from './src/components/ui/menu';
 import { Button } from './src/components/ui/button';
+import { Input } from './src/components/ui/input';
+import { Card, CardHeader, CardTitle, CardContent } from './src/components/ui/card';
+import { RadioGroup, RadioGroupItem } from './src/components/ui/radio-group';
+import { Checkbox } from './src/components/ui/checkbox';
+import { Textarea } from './src/components/ui/textarea';
+import { Label } from './src/components/ui/label';
+import { Badge } from './src/components/ui/badge';
+import { Select } from './src/components/ui/select';
 
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" fill=\"%23f3f4f6\"/><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-size=\"28\">🐾</text></svg>';
 
@@ -4306,7 +4314,7 @@ const DatePicker: React.FC<{
         return (
             <div className="relative">
                 {label && (
-                    <label className="block text-base font-semibold text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                         {label}
                         {required && <span className="text-red-500 ml-1">*</span>}
                     </label>
@@ -4319,7 +4327,7 @@ const DatePicker: React.FC<{
                         readOnly
                         required={required}
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`w-full px-5 py-4 border border-gray-300 rounded-lg bg-gray-50 cursor-pointer focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${className}`}
+                        className={`flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-pink-600 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer transition-colors ${className}`}
                     />
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                         <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -10090,530 +10098,588 @@ const DaycareRegistrationForm: React.FC<{
                     <SuccessIcon />
                     <h2 className="text-3xl font-bold text-gray-800 mt-2">Solicitação Enviada!</h2>
                     <p className="text-gray-600 mt-2">Recebemos seu pedido. Entraremos em contato em breve para os próximos passos.</p>
-                    <button onClick={() => setView && setView('scheduler')} className="mt-6 bg-pink-600 text-white font-bold py-3.5 px-8 rounded-lg hover:bg-pink-700 transition-colors">OK</button>
+                    <Button onClick={() => setView && setView('scheduler')} className="mt-6 w-full py-6 text-lg">OK</Button>
                 </div>
             </div>
         );
     }
 
-    const renderRadioGroup = (label: string, name: keyof DaycareRegistration, options: { label: string, value: any }[], opts?: { heading?: boolean; labelClassName?: string }) => (
-        <div>
-            {opts?.heading ? (
-                <h3 className={opts.labelClassName || 'text-lg font-semibold text-pink-700 border-b pb-2 mb-2'}>{label}</h3>
-            ) : (
-                <label className={opts?.labelClassName || 'block text-base font-semibold text-gray-700 mb-1'}>{label}</label>
-            )}
-            <div className="flex flex-wrap gap-2">
-                {options.map(opt => (
-                    <button type="button" key={opt.label} onClick={() => handleRadioChange(name, opt.value)}
-                        className={`px-4 py-3.5 rounded-lg border text-sm font-semibold transition-colors ${formData[name as keyof typeof formData] === opt.value ? 'bg-pink-300 text-black border-pink-600' : 'bg-white text-gray-700 hover:bg-pink-50'}`}>
-                        {opt.label}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-
     const formContent = (
-        <form onSubmit={handleSubmit} className="bg-rose-50 rounded-2xl shadow-xl w-full flex flex-col">
-            <div className="p-6 border-b border-gray-200">
-                <h2 className="text-3xl font-bold text-gray-800">Formulário de Matrícula</h2>
-            </div>
-            <div className="p-6 space-y-8 overflow-y-auto" style={{ maxHeight: isAdmin ? '75vh' : '70vh' }}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <Collapsible title="Dados do Pet" className="md:col-span-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                            <div><label className="block text-base font-semibold text-gray-700">Nome do pet</label><input type="text" name="pet_name" value={formData.pet_name} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
-                            <div><label className="block text-base font-semibold text-gray-700">Raça</label><input type="text" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
-                            <div><label className="block text-base font-semibold text-gray-700">Idade</label><input type="text" name="pet_age" value={formData.pet_age} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
-                            {renderRadioGroup('Sexo', 'pet_sex', [{ label: 'M', value: 'M' }, { label: 'F', value: 'F' }])}
-                            {renderRadioGroup('Castrado (a)', 'is_neutered', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
-                            {isAdmin && (
-                                <div>
-                                    <label className="flex items-center gap-3 text-base font-semibold text-gray-700">
-                                        <input type="checkbox" name="has_sibling_discount" checked={formData.has_sibling_discount} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                        Desconto irmão (10%)
-                                    </label>
+        <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto space-y-6 pb-20">
+            {isAdmin && <div className="flex justify-end mb-4"><Badge variant="secondary">Admin Mode</Badge></div>}
+
+            <div className="space-y-6">
+                {/* Dados do Tutor */}
+                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                    <CardHeader>
+                        <CardTitle>Dados do Tutor</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="relative md:col-span-2">
+                            <Input
+                                label="Telefone contato"
+                                type="tel"
+                                name="contact_phone"
+                                value={formData.contact_phone}
+                                onChange={handleInputChange}
+                                required
+                                className={clientFound ? 'border-green-500 ring-1 ring-green-500' : ''}
+                            />
+                            {isFetchingClient && (
+                                <div className="absolute right-3 top-9">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-600"></div>
                                 </div>
                             )}
-                        </div>
-                    </Collapsible>
-
-                    <Collapsible title="Dados do Tutor" className="md:col-span-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                            <div><label className="block text-base font-semibold text-gray-700">Tutor</label><input type="text" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
-                            <div><label className="block text-base font-semibold text-gray-700">RG</label><input type="text" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
-                            <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Endereço</label><input type="text" name="address" value={formData.address} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
-                            <div>
-                                <label className="block text-base font-semibold text-gray-700">Telefone contato</label>
-                                <div className="relative">
-                                    <input
-                                        type="tel"
-                                        name="contact_phone"
-                                        value={formData.contact_phone}
-                                        onChange={handleInputChange}
-                                        required
-                                        className={`mt-1 block w-full px-5 py-4 bg-gray-50 border rounded-md ${clientFound ? 'border-green-500 ring-1 ring-green-500' : 'border-gray-300'}`}
-                                    />
-                                    {isFetchingClient && (
-                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-600"></div>
-                                        </div>
-                                    )}
-                                    {clientFound && !isFetchingClient && (
-                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
-                                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </div>
-                                    )}
+                            {clientFound && !isFetchingClient && (
+                                <div className="absolute right-3 top-9 text-green-500">
+                                    <CheckCircleOutlineIcon className="h-5 w-5" />
                                 </div>
-                                {clientFound && (
-                                    <p className="mt-1 text-xs text-green-600">
-                                        Dados preenchidos automaticamente.
-                                    </p>
-                                )}
+                            )}
+                            {clientFound && <p className="mt-1 text-xs text-green-600">Dados preenchidos automaticamente.</p>}
+                        </div>
+
+                        <Input label="Tutor" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} required />
+                        <Input label="RG" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} required />
+                        <div className="md:col-span-2">
+                            <Input label="Endereço" name="address" value={formData.address} onChange={handleInputChange} required />
+                        </div>
+
+                        <Input label="Telefone e nome (emergencial)" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} required />
+                        <div className="md:col-span-2">
+                            <Input label="Telefone do veterinário(a)" name="vet_phone" value={formData.vet_phone} onChange={handleInputChange} />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Dados do Pet */}
+                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                    <CardHeader>
+                        <CardTitle>Dados do Pet</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Input label="Nome do pet" name="pet_name" value={formData.pet_name} onChange={handleInputChange} required />
+                        <Input label="Raça" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} required />
+                        <Input label="Idade" name="pet_age" value={formData.pet_age} onChange={handleInputChange} required />
+
+                        <div className="space-y-3">
+                            <Label>Sexo</Label>
+                            <RadioGroup value={formData.pet_sex} onValueChange={(v) => handleRadioChange('pet_sex', v)}>
+                                <RadioGroupItem value="M">Macho</RadioGroupItem>
+                                <RadioGroupItem value="F">Fêmea</RadioGroupItem>
+                            </RadioGroup>
+                        </div>
+
+                        <div className="space-y-3">
+                            <Label>Castrado(a)</Label>
+                            <RadioGroup value={formData.is_neutered === null ? '' : String(formData.is_neutered)} onValueChange={(v) => handleRadioChange('is_neutered', v === 'true')}>
+                                <RadioGroupItem value="true">Sim</RadioGroupItem>
+                                <RadioGroupItem value="false">Não</RadioGroupItem>
+                            </RadioGroup>
+                        </div>
+
+                        {isAdmin && (
+                            <div className="flex items-center space-x-2 md:col-span-2 mt-2">
+                                <Checkbox
+                                    id="sibling_discount"
+                                    name="has_sibling_discount"
+                                    checked={formData.has_sibling_discount}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, has_sibling_discount: e.target.checked }))}
+                                />
+                                <Label htmlFor="sibling_discount">Desconto irmão (10%)</Label>
                             </div>
-                            <div><label className="block text-base font-semibold text-gray-700">Telefone e nome (emergencial)</label><input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
-                            <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Telefone do veterinário(a)</label><input type="text" name="vet_phone" value={formData.vet_phone} onChange={handleInputChange} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Saúde e Comportamento */}
+                <Card className="rounded-3xl shadow-lg border-pink-100">
+                    <CardHeader>
+                        <CardTitle>Saúde e Comportamento</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-3">
+                            <Label>Se dá bem com outros animais?</Label>
+                            <RadioGroup value={formData.gets_along_with_others === null ? '' : String(formData.gets_along_with_others)} onValueChange={(v) => handleRadioChange('gets_along_with_others', v === 'true')}>
+                                <RadioGroupItem value="true">Sim</RadioGroupItem>
+                                <RadioGroupItem value="false">Não</RadioGroupItem>
+                            </RadioGroup>
                         </div>
-                    </Collapsible>
-                </div>
-                <Collapsible title="Saúde e Comportamento" className="space-y-6">
-                    {renderRadioGroup('Se dá bem com outros animais', 'gets_along_with_others', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div><DatePicker value={formData.last_vaccine} onChange={(value) => setFormData(prev => ({ ...prev, last_vaccine: value }))} label="Última vacina" className="mt-1" /></div>
-                        <div><DatePicker value={formData.last_deworming} onChange={(value) => setFormData(prev => ({ ...prev, last_deworming: value }))} label="Último vermífugo" className="mt-1" /></div>
-                        <div><DatePicker value={formData.last_flea_remedy} onChange={(value) => setFormData(prev => ({ ...prev, last_flea_remedy: value }))} label="Último remédio de pulgas e carrapatos" className="mt-1" /></div>
-                    </div>
-                    {renderRadioGroup('Alergia?', 'has_allergies', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
-                    {formData.has_allergies && (
-                        <div><label className="block text-base font-semibold text-gray-700">Descreva a alergia:</label><textarea name="allergies_description" value={formData.allergies_description} onChange={handleInputChange} rows={3} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
-                    )}
-                    {renderRadioGroup('Cuidados especiais', 'needs_special_care', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
-                    {formData.needs_special_care && (
-                        <div><label className="block text-base font-semibold text-gray-700">Descreva o cuidado especial:</label><textarea name="special_care_description" value={formData.special_care_description} onChange={handleInputChange} rows={3} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
-                    )}
-                </Collapsible>
-                {/* Belongings */}
-                <Collapsible title="Objetos entregues sempre" className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-3">
-                        {['Bolinha', 'Pelucia', 'Cama', 'Coleira', 'Comedouro'].map(item => (
-                            <label key={item} className="flex items-center gap-3 text-gray-700 font-semibold bg-white p-6 sm:p-5 rounded-lg border-2 border-gray-200">
-                                <input type="checkbox" value={item} onChange={handleBelongingsChange} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                {item}
-                            </label>
-                        ))}
-                    </div>
-                    <div><label className="block text-base font-semibold text-gray-700">Outros:</label><input type="text" name="other_belongings" value={formData.delivered_items.other} onChange={handleOtherBelongingsChange} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md" /></div>
-                </Collapsible>
-                {/* Plan */}
-                <Collapsible title="Plano contratado" className="space-y-6">
-                    {renderRadioGroup('', 'contracted_plan', [
-                        { label: '4 X MÊS', value: '4x_month' },
-                        { label: '8 X MÊS', value: '8x_month' },
-                        { label: '12 X MÊS', value: '12x_month' },
-                        { label: '16 X MÊS', value: '16x_month' },
-                        { label: '20 X MÊS', value: '20x_month' },
-                    ], { heading: false, labelClassName: 'sr-only' })}
-                </Collapsible>
-                <Collapsible title="Horários e Dias" className="space-y-6 mt-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <DatePicker value={formData.check_in_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_in_date: value }))} label="Data de Entrada" className="mt-1" />
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <DatePicker value={formData.last_vaccine} onChange={(value) => setFormData(prev => ({ ...prev, last_vaccine: value }))} label="Última vacina" />
+                            <DatePicker value={formData.last_deworming} onChange={(value) => setFormData(prev => ({ ...prev, last_deworming: value }))} label="Último vermífugo" />
+                            <DatePicker value={formData.last_flea_remedy} onChange={(value) => setFormData(prev => ({ ...prev, last_flea_remedy: value }))} label="Último remédio de pulgas" />
                         </div>
-                        <div>
-                            <select name="check_in_time" value={formData.check_in_time || ''} onChange={handleInputChange} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md">
-                                <option value="">Selecione...</option>
-                                {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
-                                    const h = 7 + Math.floor(i / 2);
-                                    const m = i % 2 ? '30' : '00';
-                                    const t = `${String(h).padStart(2, '0')}:${m}`;
-                                    return (<option key={t} value={t}>{t}</option>);
-                                })}
-                            </select>
-                            <p className="text-sm text-gray-500 mt-1">Horário de entrada (mínimo 07:00)</p>
+
+                        <div className="space-y-3">
+                            <Label>Alergia?</Label>
+                            <RadioGroup value={formData.has_allergies === null ? '' : String(formData.has_allergies)} onValueChange={(v) => handleRadioChange('has_allergies', v === 'true')}>
+                                <RadioGroupItem value="true">Sim</RadioGroupItem>
+                                <RadioGroupItem value="false">Não</RadioGroupItem>
+                            </RadioGroup>
                         </div>
-                        <div>
-                            <DatePicker value={formData.check_out_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_out_date: value }))} label="Data de Saída" className="mt-1" />
+                        {formData.has_allergies && (
+                            <div className="space-y-2">
+                                <Label htmlFor="allergies_description">Descreva a alergia</Label>
+                                <Textarea
+                                    id="allergies_description"
+                                    name="allergies_description"
+                                    value={formData.allergies_description}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                />
+                            </div>
+                        )}
+
+                        <div className="space-y-3">
+                            <Label>Cuidados especiais?</Label>
+                            <RadioGroup value={formData.needs_special_care === null ? '' : String(formData.needs_special_care)} onValueChange={(v) => handleRadioChange('needs_special_care', v === 'true')}>
+                                <RadioGroupItem value="true">Sim</RadioGroupItem>
+                                <RadioGroupItem value="false">Não</RadioGroupItem>
+                            </RadioGroup>
                         </div>
-                        <div>
-                            <select name="check_out_time" value={formData.check_out_time || ''} onChange={handleInputChange} className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md">
-                                <option value="">Selecione...</option>
-                                {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
-                                    const h = 7 + Math.floor(i / 2);
-                                    const m = i % 2 ? '30' : '00';
-                                    const t = `${String(h).padStart(2, '0')}:${m}`;
-                                    return (<option key={t} value={t}>{t}</option>);
-                                })}
-                            </select>
-                            <p className="text-sm text-gray-500 mt-1">Horário de saída (máximo 19:00)</p>
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-base font-semibold text-gray-700 mb-2">Dias da Semana</label>
-                        <div className="flex flex-wrap gap-2">
-                            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((label, idx) => (
-                                <label key={label} className="flex items-center gap-2 px-4 py-3.5 rounded-lg border text-sm font-semibold bg-white text-gray-700 hover:bg-pink-50">
-                                    <input type="checkbox" checked={(formData.attendance_days || []).includes(idx)} onChange={() => toggleAttendanceDay(idx)} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                    {label}
-                                </label>
+                        {formData.needs_special_care && (
+                            <div className="space-y-2">
+                                <Label htmlFor="special_care_description">Descreva o cuidado especial</Label>
+                                <Textarea
+                                    id="special_care_description"
+                                    name="special_care_description"
+                                    value={formData.special_care_description}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                />
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Objetos entregues */}
+                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                    <CardHeader>
+                        <CardTitle>Objetos entregues sempre</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            {['Bolinha', 'Pelucia', 'Cama', 'Coleira', 'Comedouro'].map(item => (
+                                <div key={item} className="flex items-center space-x-2 p-3 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                                    <Checkbox
+                                        id={`item-${item}`}
+                                        value={item}
+                                        checked={formData.delivered_items.items.includes(item)}
+                                        onChange={handleBelongingsChange}
+                                    />
+                                    <Label htmlFor={`item-${item}`} className="cursor-pointer flex-1">{item}</Label>
+                                </div>
                             ))}
                         </div>
-                    </div>
-                </Collapsible>
+                        <Input label="Outros" name="other_belongings" value={formData.delivered_items.other} onChange={handleOtherBelongingsChange} />
+                    </CardContent>
+                </Card>
+
+                {/* Plano */}
+                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                    <CardHeader>
+                        <CardTitle>Plano contratado</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <RadioGroup value={formData.contracted_plan || ''} onValueChange={(v) => handleRadioChange('contracted_plan', v)} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {[
+                                { label: '4 X MÊS', value: '4x_month' },
+                                { label: '8 X MÊS', value: '8x_month' },
+                                { label: '12 X MÊS', value: '12x_month' },
+                                { label: '16 X MÊS', value: '16x_month' },
+                                { label: '20 X MÊS', value: '20x_month' },
+                                { label: '2 X SEMANA', value: '2x_week' },
+                                { label: '3 X SEMANA', value: '3x_week' },
+                                { label: '4 X SEMANA', value: '4x_week' },
+                                { label: '5 X SEMANA', value: '5x_week' },
+                            ].map(opt => (
+                                <RadioGroupItem key={opt.value} value={opt.value} className="justify-center">
+                                    {opt.label}
+                                </RadioGroupItem>
+                            ))}
+                        </RadioGroup>
+                    </CardContent>
+                </Card>
+                {/* Horários e Dias */}
+                <Card className="rounded-3xl shadow-lg border-pink-100">
+                    <CardHeader>
+                        <CardTitle>Horários e Dias</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                                <DatePicker value={formData.check_in_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_in_date: value }))} label="Data de Entrada" />
+                            </div>
+                            <Select
+                                label="Horário de entrada (mínimo 07:00)"
+                                name="check_in_time"
+                                value={formData.check_in_time || ''}
+                                onChange={handleInputChange}
+                            >
+                                <option value="">Selecione...</option>
+                                {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
+                                    const h = 7 + Math.floor(i / 2);
+                                    const m = i % 2 ? '30' : '00';
+                                    const t = `${String(h).padStart(2, '0')}:${m}`;
+                                    return (<option key={t} value={t}>{t}</option>);
+                                })}
+                            </Select>
+                            <div className="space-y-3">
+                                <DatePicker value={formData.check_out_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_out_date: value }))} label="Data de Saída" />
+                            </div>
+                            <Select
+                                label="Horário de saída (máximo 19:00)"
+                                name="check_out_time"
+                                value={formData.check_out_time || ''}
+                                onChange={handleInputChange}
+                            >
+                                <option value="">Selecione...</option>
+                                {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
+                                    const h = 7 + Math.floor(i / 2);
+                                    const m = i % 2 ? '30' : '00';
+                                    const t = `${String(h).padStart(2, '0')}:${m}`;
+                                    return (<option key={t} value={t}>{t}</option>);
+                                })}
+                            </Select>
+                        </div>
+
+                        <div className="space-y-3">
+                            <Label className="text-base font-semibold">Dias da Semana</Label>
+                            <div className="flex flex-wrap gap-3">
+                                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((label, idx) => (
+                                    <div key={label} className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${(formData.attendance_days || []).includes(idx)
+                                        ? 'bg-pink-50 border-pink-200'
+                                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                                        }`}>
+                                        <Checkbox
+                                            id={`day-${idx}`}
+                                            checked={(formData.attendance_days || []).includes(idx)}
+                                            onCheckedChange={() => toggleAttendanceDay(idx)}
+                                        />
+                                        <Label htmlFor={`day-${idx}`} className="cursor-pointer font-medium text-gray-700">
+                                            {label}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* Extra Services */}
-                <Collapsible title="Serviços Extras" className="space-y-6 pt-6 border-t border-gray-200 mt-6">
-                    <div className="grid grid-cols-1 gap-4">
+                {/* Extra Services */}
+                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                    <CardHeader>
+                        <CardTitle>Serviços Extras</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                         {/* Pernoite */}
-                        <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-                            <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input
-                                    type="checkbox"
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-3 mb-3">
+                                <Checkbox
+                                    id="extra_pernoite"
                                     checked={formData.extra_services?.pernoite || false}
-                                    onChange={(e) => setFormData(prev => ({
+                                    onCheckedChange={(checked) => setFormData(prev => ({
                                         ...prev,
                                         extra_services: {
                                             ...prev.extra_services,
-                                            pernoite: e.target.checked,
-                                            pernoite_quantity: e.target.checked ? (prev.extra_services?.pernoite_quantity || 1) : undefined,
-                                            pernoite_price: e.target.checked ? (prev.extra_services?.pernoite_price || 0) : undefined
+                                            pernoite: checked === true,
+                                            pernoite_quantity: checked === true ? (prev.extra_services?.pernoite_quantity || 1) : undefined,
+                                            pernoite_price: checked === true ? (prev.extra_services?.pernoite_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
-                                Pernoite
-                            </label>
+                                <Label htmlFor="extra_pernoite" className="text-base font-semibold text-gray-700 cursor-pointer">Pernoite</Label>
+                            </div>
                             {formData.extra_services?.pernoite && (
                                 <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade (dias)</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={formData.extra_services?.pernoite_quantity || 1}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    pernoite_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={formData.extra_services?.pernoite_price || 0}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    pernoite_price: e.target.value
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
+                                    <Input
+                                        label="Quantidade (dias)"
+                                        type="number"
+                                        min="1"
+                                        value={formData.extra_services?.pernoite_quantity || 1}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                pernoite_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
+                                            }
+                                        }))}
+                                    />
+                                    <Input
+                                        label="Valor (R$)"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.extra_services?.pernoite_price || 0}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                pernoite_price: e.target.value
+                                            }
+                                        }))}
+                                    />
                                 </div>
                             )}
                         </div>
 
                         {/* Banho & Tosa */}
-                        <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-                            <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input
-                                    type="checkbox"
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-3 mb-3">
+                                <Checkbox
+                                    id="extra_banho_tosa"
                                     checked={formData.extra_services?.banho_tosa || false}
-                                    onChange={(e) => setFormData(prev => ({
+                                    onCheckedChange={(checked) => setFormData(prev => ({
                                         ...prev,
                                         extra_services: {
                                             ...prev.extra_services,
-                                            banho_tosa: e.target.checked,
-                                            banho_tosa_quantity: e.target.checked ? (prev.extra_services?.banho_tosa_quantity || 1) : undefined,
-                                            banho_tosa_price: e.target.checked ? (prev.extra_services?.banho_tosa_price || 0) : undefined
+                                            banho_tosa: checked === true,
+                                            banho_tosa_quantity: checked === true ? (prev.extra_services?.banho_tosa_quantity || 1) : undefined,
+                                            banho_tosa_price: checked === true ? (prev.extra_services?.banho_tosa_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
-                                Banho & Tosa
-                            </label>
+                                <Label htmlFor="extra_banho_tosa" className="text-base font-semibold text-gray-700 cursor-pointer">Banho & Tosa</Label>
+                            </div>
                             {formData.extra_services?.banho_tosa && (
                                 <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={formData.extra_services?.banho_tosa_quantity || 1}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    banho_tosa_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={formData.extra_services?.banho_tosa_price || 0}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    banho_tosa_price: e.target.value
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
+                                    <Input
+                                        label="Quantidade"
+                                        type="number"
+                                        min="1"
+                                        value={formData.extra_services?.banho_tosa_quantity || 1}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                banho_tosa_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
+                                            }
+                                        }))}
+                                    />
+                                    <Input
+                                        label="Valor (R$)"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.extra_services?.banho_tosa_price || 0}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                banho_tosa_price: e.target.value
+                                            }
+                                        }))}
+                                    />
                                 </div>
                             )}
                         </div>
 
                         {/* Só banho */}
-                        <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-                            <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input
-                                    type="checkbox"
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-3 mb-3">
+                                <Checkbox
+                                    id="extra_so_banho"
                                     checked={formData.extra_services?.so_banho || false}
-                                    onChange={(e) => setFormData(prev => ({
+                                    onCheckedChange={(checked) => setFormData(prev => ({
                                         ...prev,
                                         extra_services: {
                                             ...prev.extra_services,
-                                            so_banho: e.target.checked,
-                                            so_banho_quantity: e.target.checked ? (prev.extra_services?.so_banho_quantity || 1) : undefined,
-                                            so_banho_price: e.target.checked ? (prev.extra_services?.so_banho_price || 0) : undefined
+                                            so_banho: checked === true,
+                                            so_banho_quantity: checked === true ? (prev.extra_services?.so_banho_quantity || 1) : undefined,
+                                            so_banho_price: checked === true ? (prev.extra_services?.so_banho_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
-                                Só banho
-                            </label>
+                                <Label htmlFor="extra_so_banho" className="text-base font-semibold text-gray-700 cursor-pointer">Só banho</Label>
+                            </div>
                             {formData.extra_services?.so_banho && (
                                 <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={formData.extra_services?.so_banho_quantity || 1}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    so_banho_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={formData.extra_services?.so_banho_price || 0}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    so_banho_price: e.target.value
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
+                                    <Input
+                                        label="Quantidade"
+                                        type="number"
+                                        min="1"
+                                        value={formData.extra_services?.so_banho_quantity || 1}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                so_banho_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
+                                            }
+                                        }))}
+                                    />
+                                    <Input
+                                        label="Valor (R$)"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.extra_services?.so_banho_price || 0}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                so_banho_price: e.target.value
+                                            }
+                                        }))}
+                                    />
                                 </div>
                             )}
                         </div>
 
                         {/* Adestrador */}
-                        <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-                            <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input
-                                    type="checkbox"
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-3 mb-3">
+                                <Checkbox
+                                    id="extra_adestrador"
                                     checked={formData.extra_services?.adestrador || false}
-                                    onChange={(e) => setFormData(prev => ({
+                                    onCheckedChange={(checked) => setFormData(prev => ({
                                         ...prev,
                                         extra_services: {
                                             ...prev.extra_services,
-                                            adestrador: e.target.checked,
-                                            adestrador_quantity: e.target.checked ? (prev.extra_services?.adestrador_quantity || 1) : undefined,
-                                            adestrador_price: e.target.checked ? (prev.extra_services?.adestrador_price || 0) : undefined
+                                            adestrador: checked === true,
+                                            adestrador_quantity: checked === true ? (prev.extra_services?.adestrador_quantity || 1) : undefined,
+                                            adestrador_price: checked === true ? (prev.extra_services?.adestrador_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
-                                Adestrador
-                            </label>
+                                <Label htmlFor="extra_adestrador" className="text-base font-semibold text-gray-700 cursor-pointer">Adestrador</Label>
+                            </div>
                             {formData.extra_services?.adestrador && (
                                 <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade (sessões)</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={formData.extra_services?.adestrador_quantity || 1}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    adestrador_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={formData.extra_services?.adestrador_price || 0}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    adestrador_price: e.target.value
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
+                                    <Input
+                                        label="Quantidade (sessões)"
+                                        type="number"
+                                        min="1"
+                                        value={formData.extra_services?.adestrador_quantity || 1}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                adestrador_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
+                                            }
+                                        }))}
+                                    />
+                                    <Input
+                                        label="Valor (R$)"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.extra_services?.adestrador_price || 0}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                adestrador_price: e.target.value
+                                            }
+                                        }))}
+                                    />
                                 </div>
                             )}
                         </div>
 
                         {/* Despesa médica */}
-                        <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-                            <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input
-                                    type="checkbox"
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-3 mb-3">
+                                <Checkbox
+                                    id="extra_despesa_medica"
                                     checked={formData.extra_services?.despesa_medica || false}
-                                    onChange={(e) => setFormData(prev => ({
+                                    onCheckedChange={(checked) => setFormData(prev => ({
                                         ...prev,
                                         extra_services: {
                                             ...prev.extra_services,
-                                            despesa_medica: e.target.checked,
-                                            despesa_medica_quantity: e.target.checked ? (prev.extra_services?.despesa_medica_quantity || 1) : undefined,
-                                            despesa_medica_price: e.target.checked ? (prev.extra_services?.despesa_medica_price || 0) : undefined
+                                            despesa_medica: checked === true,
+                                            despesa_medica_quantity: checked === true ? (prev.extra_services?.despesa_medica_quantity || 1) : undefined,
+                                            despesa_medica_price: checked === true ? (prev.extra_services?.despesa_medica_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
-                                Despesa médica
-                            </label>
+                                <Label htmlFor="extra_despesa_medica" className="text-base font-semibold text-gray-700 cursor-pointer">Despesa médica</Label>
+                            </div>
                             {formData.extra_services?.despesa_medica && (
                                 <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={formData.extra_services?.despesa_medica_quantity || 1}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    despesa_medica_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={formData.extra_services?.despesa_medica_price || 0}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    despesa_medica_price: e.target.value
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
+                                    <Input
+                                        label="Quantidade"
+                                        type="number"
+                                        min="1"
+                                        value={formData.extra_services?.despesa_medica_quantity || 1}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                despesa_medica_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
+                                            }
+                                        }))}
+                                    />
+                                    <Input
+                                        label="Valor (R$)"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.extra_services?.despesa_medica_price || 0}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                despesa_medica_price: e.target.value
+                                            }
+                                        }))}
+                                    />
                                 </div>
                             )}
                         </div>
 
                         {/* Dia extra */}
-                        <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-                            <label className="flex items-center gap-3 text-gray-700 font-semibold mb-3">
-                                <input
-                                    type="checkbox"
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-3 mb-3">
+                                <Checkbox
+                                    id="extra_dia_extra"
                                     checked={(formData.extra_services?.dia_extra || 0) > 0}
-                                    onChange={(e) => setFormData(prev => ({
+                                    onCheckedChange={(checked) => setFormData(prev => ({
                                         ...prev,
                                         extra_services: {
                                             ...prev.extra_services,
-                                            dia_extra: e.target.checked ? 1 : 0,
-                                            dia_extra_price: e.target.checked ? (prev.extra_services?.dia_extra_price || 0) : undefined
+                                            dia_extra: checked === true ? 1 : 0,
+                                            dia_extra_price: checked === true ? (prev.extra_services?.dia_extra_price || 0) : undefined
                                         }
                                     }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                 />
-                                Dia extra
-                            </label>
+                                <Label htmlFor="extra_dia_extra" className="text-base font-semibold text-gray-700 cursor-pointer">Dia extra</Label>
+                            </div>
                             {(formData.extra_services?.dia_extra || 0) > 0 && (
                                 <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade (dias)</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={formData.extra_services?.dia_extra || 1}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    dia_extra: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={formData.extra_services?.dia_extra_price || 0}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                extra_services: {
-                                                    ...prev.extra_services,
-                                                    dia_extra_price: e.target.value
-                                                }
-                                            }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                        />
-                                    </div>
+                                    <Input
+                                        label="Quantidade (dias)"
+                                        type="number"
+                                        min="1"
+                                        value={formData.extra_services?.dia_extra || 1}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                dia_extra: e.target.value === '' ? 0 : parseInt(e.target.value)
+                                            }
+                                        }))}
+                                    />
+                                    <Input
+                                        label="Valor (R$)"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.extra_services?.dia_extra_price || 0}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            extra_services: {
+                                                ...prev.extra_services,
+                                                dia_extra_price: e.target.value
+                                            }
+                                        }))}
+                                    />
                                 </div>
                             )}
                         </div>
-                    </div>
-                </Collapsible>
+                    </CardContent>
+                </Card>
 
                 {/* Data de Matrícula temporariamente removida até a coluna ser adicionada ao banco */}
                 {/* <div className="space-y-6 pt-6 border-t border-gray-200 mt-6">
@@ -10633,82 +10699,112 @@ const DaycareRegistrationForm: React.FC<{
                 </div> */}
 
                 {/* Resumo & Detalhes Financeiros */}
-                <Collapsible title="Resumo & Detalhes Financeiros" className="space-y-6 pt-6 border-t border-gray-200 mt-6">
-                    <div className="bg-white p-5 rounded-xl border border-pink-100">
-                        <h4 className="text-lg font-bold text-pink-700 mb-3 text-center">Resumo da Matrícula</h4>
-                        {(() => {
-                            const ciDate = formData.check_in_date || '';
-                            const coDate = formData.check_out_date || '';
-                            const ciTime = String(formData.check_in_time || '').split(':').slice(0, 2).join(':');
-                            const coTime = String(formData.check_out_time || '').split(':').slice(0, 2).join(':');
-                            const diasSemana = (formData.attendance_days || []).map(idx => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][idx]).join(', ');
-                            const extras: string[] = [];
-                            if (formData.extra_services?.pernoite) extras.push('Pernoite');
-                            if (formData.extra_services?.banho_tosa) extras.push('Banho & Tosa');
-                            if (formData.extra_services?.so_banho) extras.push('Só Banho');
-                            if (formData.extra_services?.adestrador) extras.push('Adestrador');
-                            if (formData.extra_services?.despesa_medica) extras.push('Despesa Médica');
-                            const diaExtraQty = formData.extra_services?.dia_extra || 0;
-                            if (diaExtraQty > 0) extras.push(`${diaExtraQty} dia${diaExtraQty > 1 ? 's' : ''} extra${diaExtraQty > 1 ? 's' : ''}`);
-                            return (
-                                <div className="space-y-2">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                                        <div><span className="font-semibold">Pet:</span> {formData.pet_name || '—'}</div>
-                                        <div><span className="font-semibold">Tutor:</span> {formData.tutor_name || '—'}</div>
-                                        <div><span className="font-semibold">Telefone:</span> {formData.contact_phone || '—'}</div>
-                                        <div><span className="font-semibold">Plano:</span> {formData.contracted_plan ? planLabels[formData.contracted_plan] : '—'}</div>
-                                        <div><span className="font-semibold">Entrada:</span> {ciDate ? formatDateToBR(ciDate) : '—'} {ciTime ? `às ${ciTime}` : ''}</div>
-                                        <div><span className="font-semibold">Saída:</span> {coDate ? formatDateToBR(coDate) : '—'} {coTime ? `às ${coTime}` : ''}</div>
-                                        <div className="sm:col-span-2"><span className="font-semibold">Dias da Semana:</span> {diasSemana || '—'}</div>
-                                    </div>
-                                    {extras.length > 0 && (
-                                        <div>
-                                            <h5 className="text-sm font-semibold text-gray-800 mb-1">Serviços Adicionais</h5>
-                                            <div className="flex flex-wrap gap-1">
-                                                {extras.map(e => (
-                                                    <span key={e} className="px-2 py-1 text-xs rounded-full bg-pink-100 text-pink-700">{e}</span>
-                                                ))}
-                                            </div>
+                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                    <CardHeader>
+                        <CardTitle>Resumo & Detalhes Financeiros</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="bg-pink-50/50 p-6 rounded-xl border border-pink-100">
+                            <h4 className="text-lg font-bold text-pink-700 mb-4 text-center">Resumo da Matrícula</h4>
+                            {(() => {
+                                const ciDate = formData.check_in_date || '';
+                                const coDate = formData.check_out_date || '';
+                                const ciTime = String(formData.check_in_time || '').split(':').slice(0, 2).join(':');
+                                const coTime = String(formData.check_out_time || '').split(':').slice(0, 2).join(':');
+                                const diasSemana = (formData.attendance_days || []).map(idx => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][idx]).join(', ');
+                                const extras: string[] = [];
+                                if (formData.extra_services?.pernoite) extras.push('Pernoite');
+                                if (formData.extra_services?.banho_tosa) extras.push('Banho & Tosa');
+                                if (formData.extra_services?.so_banho) extras.push('Só Banho');
+                                if (formData.extra_services?.adestrador) extras.push('Adestrador');
+                                if (formData.extra_services?.despesa_medica) extras.push('Despesa Médica');
+                                const diaExtraQty = formData.extra_services?.dia_extra || 0;
+                                if (diaExtraQty > 0) extras.push(`${diaExtraQty} dia${diaExtraQty > 1 ? 's' : ''} extra${diaExtraQty > 1 ? 's' : ''}`);
+                                return (
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Pet:</span> <span className="text-gray-900">{formData.pet_name || '—'}</span></div>
+                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Tutor:</span> <span className="text-gray-900">{formData.tutor_name || '—'}</span></div>
+                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Telefone:</span> <span className="text-gray-900">{formData.contact_phone || '—'}</span></div>
+                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Plano:</span> <span className="text-gray-900">{formData.contracted_plan ? planLabels[formData.contracted_plan] : '—'}</span></div>
+                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Entrada:</span> <span className="text-gray-900">{ciDate ? formatDateToBR(ciDate) : '—'} {ciTime ? `às ${ciTime}` : ''}</span></div>
+                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Saída:</span> <span className="text-gray-900">{coDate ? formatDateToBR(coDate) : '—'} {coTime ? `às ${coTime}` : ''}</span></div>
+                                            <div className="sm:col-span-2 flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Dias da Semana:</span> <span className="text-gray-900">{diasSemana || '—'}</span></div>
                                         </div>
-                                    )}
-                                    <div className="mt-2 p-3 rounded-lg bg-pink-50 border border-pink-100 text-center">
-                                        <p className="text-base font-bold text-pink-700">Valor Total: {(formData.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                        {extras.length > 0 && (
+                                            <div className="pt-2">
+                                                <h5 className="text-sm font-semibold text-gray-800 mb-2">Serviços Adicionais</h5>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {extras.map(e => (
+                                                        <Badge key={e} variant="secondary" className="bg-pink-100 text-pink-700 hover:bg-pink-200">
+                                                            {e}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="mt-4 p-4 rounded-lg bg-white border border-pink-200 shadow-sm text-center">
+                                            <p className="text-sm text-gray-500 mb-1">Valor Total Estimado</p>
+                                            <p className="text-2xl font-bold text-pink-700">{(formData.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                        </div>
+                                        <div className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
+                                            <span className="inline-block w-2 h-2 rounded-full bg-pink-400"></span>
+                                            Data de Pagamento: Dia 30 de cada mês
+                                        </div>
                                     </div>
-                                    <div className="text-sm text-gray-700 text-center">Data de Pagamento: Dia 30 de cada mês</div>
-                                </div>
-                            );
-                        })()}
-                    </div>
-                </Collapsible>
+                                );
+                            })()}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
-            <div className="p-6 bg-white flex justify-between items-center mt-auto rounded-b-2xl">
-                <button type="button" onClick={onBack || (() => setView && setView('scheduler'))} className="w-auto bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors">
+            <div className="p-6 bg-white flex justify-between items-center mt-auto rounded-b-2xl border-t border-gray-100">
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="lg"
+                    onClick={onBack || (() => setView && setView('scheduler'))}
+                >
                     {isAdmin ? 'Cancelar' : 'Voltar'}
-                </button>
-                <button type="button" disabled={isSubmitting} onClick={(e) => {
-                    if (isAdmin) {
-                        (e.currentTarget.closest('form') as HTMLFormElement | null)?.requestSubmit();
-                    } else {
-                        setShowSubmissionWarning(true);
-                    }
-                }} className="w-auto bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-400">
+                </Button>
+                <Button
+                    type="button"
+                    size="lg"
+                    disabled={isSubmitting}
+                    onClick={(e) => {
+                        if (isAdmin) {
+                            (e.currentTarget.closest('form') as HTMLFormElement | null)?.requestSubmit();
+                        } else {
+                            setShowSubmissionWarning(true);
+                        }
+                    }}
+                    className={isAdmin ? "" : "bg-pink-600 hover:bg-pink-700 text-white rounded-2xl text-lg px-8 shadow-lg hover:shadow-xl transition-all"}
+                >
                     {isSubmitting ? 'Enviando...' : (isAdmin ? 'Adicionar Matrícula' : 'Solicitar Matrícula')}
-                </button>
+                </Button>
             </div>
             {showSubmissionWarning && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
                         <h3 className="text-xl font-bold text-gray-800">Antes de solicitar a matrícula</h3>
                         <p className="text-gray-700 mt-2">No dia do check-in, o tutor deve levar:</p>
-                        <ul className="mt-3 list-disc list-inside text-gray-700 space-y-1">
+                        <ul className="mt-3 list-disc list-inside text-gray-700 space-y-1 bg-gray-50 p-4 rounded-lg border border-gray-100">
                             <li>RG do tutor</li>
                             <li>Comprovante de residência</li>
                             <li>Carteira de vacinação</li>
                             <li>Atestado de saúde do veterinário responsável</li>
                         </ul>
                         <div className="mt-6 flex gap-3 justify-end">
-                            <button type="button" onClick={() => setShowSubmissionWarning(false)} className="bg-gray-200 text-gray-800 font-bold py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors">Voltar</button>
-                            <button type="submit" disabled={isSubmitting} className="bg-pink-600 text-white font-bold py-2.5 px-5 rounded-lg hover:bg-pink-700 transition-colors disabled:bg-gray-400">Solicitar Matrícula</button>
+                            <Button variant="secondary" onClick={() => setShowSubmissionWarning(false)}>
+                                Voltar
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="bg-pink-600 hover:bg-pink-700 text-white"
+                            >
+                                Solicitar Matrícula
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -10721,13 +10817,21 @@ const DaycareRegistrationForm: React.FC<{
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-            <header className="text-center mb-6">
-                <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-20 w-20 mx-auto mb-2" loading="eager" />
-                <h1 className="font-brand text-5xl text-pink-800">Sandy's Pet Shop</h1>
-                <p className="text-gray-600 text-lg">Matrícula na Creche</p>
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100">
+            <header className="text-center mb-6 animate-fadeInUp">
+                <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-24 w-24 mx-auto mb-4 drop-shadow-lg" loading="eager" />
+                <h1 className="font-brand text-6xl text-pink-800 mb-2">Sandy's Pet Shop</h1>
+                <p className="text-gray-600 text-xl font-medium">Matrícula na Creche</p>
+                <button
+                    type="button"
+                    onClick={onBack || (() => setView && setView('scheduler'))}
+                    className="mt-4 px-6 py-2 bg-white/80 hover:bg-white text-pink-700 font-semibold rounded-full shadow-sm hover:shadow-md transition-all border border-pink-200 flex items-center gap-2 mx-auto"
+                >
+                    <span className="text-xl">⬅️</span> {isAdmin ? 'Sair' : 'Voltar'}
+                </button>
             </header>
-            <main className="w-full max-w-3xl">
+
+            <main className="w-full max-w-4xl animate-fadeIn">
                 {formContent}
             </main>
         </div>
@@ -10758,19 +10862,19 @@ const TimeSlotPicker: React.FC<{
             // If service type is available in appt.service (enum), use that.
             // But appt.service might be string from DB.
             // Let's rely on the fact that Pet Mobile services usually contain "Pet Móvel" or "Pet Mobile" in label or type.
-            
+
             // However, we can also check against the SERVICES constant keys if we map them correctly.
             // In App.tsx, reloadAppointments maps them to ServiceType enum.
-            
+
             // ROBUST CHECK: Check enum values OR string content
-            const isMobile = 
-                appt.service === ServiceType.PET_MOBILE_BATH || 
-                appt.service === ServiceType.PET_MOBILE_BATH_AND_GROOMING || 
+            const isMobile =
+                appt.service === ServiceType.PET_MOBILE_BATH ||
+                appt.service === ServiceType.PET_MOBILE_BATH_AND_GROOMING ||
                 appt.service === ServiceType.PET_MOBILE_GROOMING_ONLY ||
-                s.includes('movel') || 
+                s.includes('movel') ||
                 s.includes('móvel') ||
                 s.includes('mobile');
-            
+
             return isPetMovel ? isMobile : !isMobile;
         });
     }, [allAppointments, isPetMovel]);
@@ -10944,8 +11048,6 @@ const TimeSlotPicker: React.FC<{
 
 // --- MAIN APP COMPONENT ---
 const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegistration' | 'hotelRegistration') => void }> = ({ setView }) => {
-    const [step, setStep] = useState(1);
-    const [showWizard, setShowWizard] = useState(false);
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
@@ -10995,9 +11097,9 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     const s = String(rec.service).toLowerCase();
                     // PRIORITIZE MOBILE DETECTION: Check for 'movel' or 'mobile' first
                     if (s.includes('movel') || s.includes('móvel') || s.includes('mobile')) {
-                         if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
-                         else if (s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
-                         else serviceKey = ServiceType.PET_MOBILE_BATH;
+                        if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
+                        else if (s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
+                        else serviceKey = ServiceType.PET_MOBILE_BATH;
                     }
                     else if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
                     else if (s.includes('banho')) serviceKey = ServiceType.BATH;
@@ -11062,7 +11164,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         const timer = setTimeout(async () => {
             // Clean input: remove non-digits to check length
             const cleanPhone = formData.whatsapp.replace(/\D/g, '');
-            
+
             // Only search if we have a valid-ish length (e.g. at least 10 digits)
             if (cleanPhone.length >= 10) {
                 setIsFetchingClient(true);
@@ -11073,19 +11175,19 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     const { data, error } = await supabase
                         .from('appointments')
                         .select('*')
-                        .eq('whatsapp', formData.whatsapp) 
+                        .eq('whatsapp', formData.whatsapp)
                         .order('created_at', { ascending: false })
                         .limit(1)
                         .single();
 
                     if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
-                         console.error('Autofill error:', error);
+                        console.error('Autofill error:', error);
                     }
 
                     if (data) {
                         // Found a match! Autofill the fields.
                         console.log('Autofill found client:', data);
-                        
+
                         // Update form data
                         setFormData(prev => ({
                             ...prev,
@@ -11097,17 +11199,17 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
                         // Update weight if available and valid
                         if (data.weight) {
-                             // Reverse lookup for weight key based on value if needed, or check if it matches enum
-                             // The DB stores the Label (e.g. "Até 5kg") or the Key?
-                             // handleSubmit says: weight: ... PET_WEIGHT_OPTIONS[selectedWeight]
-                             // So DB stores "Até 5kg".
-                             // We need to find the Key (UP_TO_5) from the Value ("Até 5kg").
-                             const weightEntry = Object.entries(PET_WEIGHT_OPTIONS).find(([key, val]) => val === data.weight);
-                             if (weightEntry) {
-                                 setSelectedWeight(weightEntry[0] as PetWeight);
-                             }
+                            // Reverse lookup for weight key based on value if needed, or check if it matches enum
+                            // The DB stores the Label (e.g. "Até 5kg") or the Key?
+                            // handleSubmit says: weight: ... PET_WEIGHT_OPTIONS[selectedWeight]
+                            // So DB stores "Até 5kg".
+                            // We need to find the Key (UP_TO_5) from the Value ("Até 5kg").
+                            const weightEntry = Object.entries(PET_WEIGHT_OPTIONS).find(([key, val]) => val === data.weight);
+                            if (weightEntry) {
+                                setSelectedWeight(weightEntry[0] as PetWeight);
+                            }
                         }
-                        
+
                         // Optional: Show visual feedback or toast
                         // alert('Dados do cliente encontrados e preenchidos!');
                     } else {
@@ -11176,8 +11278,8 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
     useEffect(() => {
         // This effect handles the calendar day restrictions based on service type.
-        if (step === 3) {
-            console.log('[AllowedDays Effect] Step 3 active. Checking restrictions...');
+        if (serviceStepView !== 'main') {
+            console.log('[AllowedDays Effect] Checking restrictions...');
             console.log('[AllowedDays Effect] DEBUG VERSION 2');
             console.log('[AllowedDays Effect] serviceStepView:', serviceStepView);
             console.log('[AllowedDays Effect] selectedService:', selectedService);
@@ -11202,10 +11304,10 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 setAllowedDays(undefined);
             }
         }
-    }, [step, serviceStepView, selectedService, selectedCondo]);
+    }, [serviceStepView, selectedService, selectedCondo]);
 
     useEffect(() => {
-        if (step === 3 && serviceStepView === 'bath_groom' && allowedDays && allowedDays.length > 0) {
+        if (serviceStepView === 'bath_groom' && allowedDays && allowedDays.length > 0) {
             const now = new Date();
             const next = new Date(now);
             next.setDate(next.getDate() + 1);
@@ -11220,7 +11322,6 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             }
         }
         if (
-            step === 3 &&
             (serviceStepView === 'pet_movel' || serviceStepView === 'pet_movel_condo') &&
             selectedService &&
             [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService) &&
@@ -11249,7 +11350,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 }
             }
         }
-    }, [step, serviceStepView, allowedDays, selectedService, selectedCondo]);
+    }, [serviceStepView, allowedDays, selectedService, selectedCondo]);
 
 
     useEffect(() => { setSelectedTime(null); }, [selectedDate, selectedService]);
@@ -11318,14 +11419,6 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         if (addonId === 'patacure1' && newAddons[addonId]) newAddons['patacure2'] = false;
         else if (addonId === 'patacure2' && newAddons[addonId]) newAddons['patacure1'] = false;
         setSelectedAddons(newAddons);
-    };
-
-    const changeStep = (nextStep: number) => {
-        setIsAnimating(true);
-        setTimeout(() => {
-            setStep(nextStep);
-            setIsAnimating(false);
-        }, 300); // Animation duration
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -11445,7 +11538,6 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 setSelectedService(null); setSelectedWeight(null); setSelectedAddons({}); setSelectedTime(null); setTotalPrice(0); setIsSubmitting(false);
                 setSelectedCondo(null);
                 setServiceStepView('main');
-                changeStep(1);
             }, 3000);
         } catch (error: any) {
             console.error("Error submitting appointment:", error);
@@ -11484,14 +11576,14 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     <p className="text-gray-700 text-base sm:text-lg text-center">Escolha abaixo o serviço ideal para o seu melhor amigo e faça seu agendamento de forma simples e rápida:</p>
                     <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 
-                        <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); changeStep(1); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
+                        <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
                             <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-12 h-12 rounded-full object-contain mb-2" loading="eager" />
                             <span className="text-lg">Banho & Tosa</span>
                             <span className="text-sm text-gray-600">Fixo</span>
                         </button>
 
 
-                        <button type="button" onClick={() => { setServiceStepView('pet_movel_condo'); setSelectedService(null); changeStep(1); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
+                        <button type="button" onClick={() => { setServiceStepView('pet_movel_condo'); setSelectedService(null); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
                             <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-12 h-12 rounded-full object-contain mb-2" loading="lazy" />
                             <span className="text-lg">Pet Móvel</span>
                             <span className="text-sm text-gray-600">Condomínios</span>
@@ -11515,274 +11607,257 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
             {serviceStepView !== 'main' && (
                 <main className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/40 backdrop-blur-sm">
-                    <div className="px-8 py-6 bg-gradient-to-r from-pink-50 to-rose-50 border-b-2 border-pink-100">
-                        <div className="flex justify-between items-center relative">
-                            {/* Progress Line */}
-                            <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -z-10">
-                                <div className={`h-full bg-pink-600 transition-all duration-500`} style={{ width: `${((step - 1) / 3) * 100}%` }}></div>
-                            </div>
-                            {['Dados', 'Serviços', 'Horário', 'Resumo'].map((name, index) => (
-                                <div key={name} className="flex flex-col items-center gap-2 z-10">
-                                    <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${step >= index + 1 ? 'bg-gradient-to-br from-pink-500 to-pink-700 text-white scale-110' : 'bg-white text-gray-400 border-2 border-gray-300'}`}>
-                                        {step > index + 1 ? '✓' : index + 1}
-                                    </div>
-                                    <span className={`hidden sm:block text-xs font-bold ${step === index + 1 ? 'text-pink-700' : step > index + 1 ? 'text-pink-600' : 'text-gray-400'}`}>{name}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Progress Bar Removed as Requested */}
 
                     <form onSubmit={handleSubmit} className={`relative p-6 sm:p-8 transition-all duration-300 ${isAnimating ? 'animate-slideOutToLeft' : 'animate-slideInFromRight'}`}>
-                        {step === 1 && (
-                            <div className="space-y-7">
-                                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Informações do Pet e Dono</h2>
-                                <div>
-                                    <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label>
-                                    <div className="relative mt-1">
-                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><WhatsAppIcon /></span>
-                                        <input
-                                            type="tel"
-                                            name="whatsapp"
-                                            id="whatsapp"
-                                            value={formData.whatsapp}
-                                            onChange={handleInputChange}
-                                            required
-                                            placeholder="(XX) XXXXX-XXXX"
-                                            maxLength={15}
-                                            className={`block w-full pl-10 pr-10 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('whatsapp') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
-                                        />
-                                        {isFetchingClient && (
-                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                                                <svg className="animate-spin h-5 w-5 text-pink-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            </div>
-                                        )}
-                                    </div>
+                        <div className="mb-4 relative flex items-center justify-center min-h-[48px]">
+                            <button
+                                type="button"
+                                onClick={() => setServiceStepView('main')}
+                                className="absolute left-0 p-2 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-sm border border-pink-100 transition-all z-10"
+                                title="Voltar"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                </svg>
+                            </button>
+
+                            {serviceStepView === 'bath_groom' && (
+                                <div className="flex items-center gap-3 animate-fadeIn">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-10 h-10 rounded-full object-contain" />
+                                    <span className="text-xl font-bold text-gray-800">Banho & Tosa</span>
                                 </div>
-                                <div>
-                                    <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
-                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                            )}
+
+                            {(serviceStepView === 'pet_movel_condo' || serviceStepView === 'pet_movel') && (
+                                <div className="flex items-center gap-3 animate-fadeIn">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-10 h-10 rounded-full object-contain" />
+                                    <span className="text-xl font-bold text-gray-800">Pet Móvel</span>
                                 </div>
-                                <div>
-                                    <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
-                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
-                                </div>
-                                <div>
-                                    <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
-                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petBreed') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
-                                </div>
-                                <div>
-                                    <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Seu Endereço</label>
-                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerAddress') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                            )}
+                        </div>
+                        {/* SECTION 1: DADOS */}
+                        <div className="space-y-7 border-b border-gray-100 pb-8">
+                            <h2 className="text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Informações do Pet e Dono</h2>
+                            <div>
+                                <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label>
+                                <div className="relative mt-1">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3"><WhatsAppIcon /></span>
+                                    <input
+                                        type="tel"
+                                        name="whatsapp"
+                                        id="whatsapp"
+                                        value={formData.whatsapp}
+                                        onChange={handleInputChange}
+                                        required
+                                        placeholder="(XX) XXXXX-XXXX"
+                                        maxLength={15}
+                                        className={`block w-full pl-10 pr-10 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('whatsapp') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                                    />
+                                    {isFetchingClient && (
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                            <svg className="animate-spin h-5 w-5 text-pink-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        )}
+                            <div>
+                                <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                            </div>
+                            <div>
+                                <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                            </div>
+                            <div>
+                                <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petBreed') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                            </div>
+                            <div>
+                                <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Seu Endereço</label>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerAddress') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                            </div>
+                        </div>
 
-                        {step === 2 && (
-                            <div className="space-y-6">
-                                {serviceStepView === 'main' ? (
-                                    <h2 className="text-3xl font-bold text-gray-800">Escolha os Serviços</h2>
-                                ) : (
-                                    <h2 className="text-3xl font-bold text-gray-800">Detalhes do Serviço</h2>
-                                )}
+                        {/* SECTION 2: SERVIÇOS */}
+                        <div className="space-y-6 pt-6 border-b border-gray-100 pb-8">
+                            {serviceStepView === 'main' ? (
+                                <h2 className="text-3xl font-bold text-gray-800">Escolha os Serviços</h2>
+                            ) : (
+                                <h2 className="text-3xl font-bold text-gray-800">Detalhes do Serviço</h2>
+                            )}
 
-                                {serviceStepView === 'main' && (
-                                    <div>
-                                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Selecione a Categoria</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                                <span className="text-lg">Banho & Tosa</span>
-                                                <span className="text-xs text-gray-600 mt-1">Fixo</span>
-                                            </button>
-                                            <button type="button" onClick={() => { console.log('Clicou em Creche Pet'); setServiceStepView('daycare_options'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                                <span className="text-lg">{SERVICES[ServiceType.VISIT_DAYCARE].label}</span>
-                                            </button>
-                                            <button type="button" onClick={() => { console.log('Clicou em Hotel Pet'); setServiceStepView('hotel_options'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                                <span className="text-lg">{SERVICES[ServiceType.VISIT_HOTEL].label}</span>
-                                            </button>
-                                            <button type="button" onClick={() => { console.log('Clicou em Pet Móvel'); setServiceStepView('pet_movel_condo'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                                <span className="text-lg">Pet Móvel</span>
-                                                <span className="text-xs text-gray-600 mt-1">Condomínios</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {serviceStepView === 'pet_movel_condo' && (
-                                    <div className="space-y-6">
-                                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Selecione o Condomínio</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                            {['Vitta Parque', 'Max Haus', 'Paseo'].map(condo => (
-                                                <button
-                                                    key={condo}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSelectedCondo(condo);
-                                                        setServiceStepView('pet_movel');
-                                                    }}
-                                                    className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200`}
-                                                >
-                                                    <div className="flex flex-col items-center">
-                                                        <span className="text-lg">{condo}</span>
-                                                        <span className="text-xs text-gray-600 mt-1">
-                                                            {condo === 'Vitta Parque' ? 'Quartas-Feiras' : condo === 'Max Haus' ? 'Quintas-Feiras' : 'Sextas-Feiras'}
-                                                        </span>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
-                                    </div>
-                                )}
-
-                                {serviceStepView === 'bath_groom' && (
-                                    <div className="space-y-6">
-                                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço Principal</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <button type="button" onClick={() => setSelectedService(ServiceType.BATH)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.BATH ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                                <span className="text-lg">{SERVICES[ServiceType.BATH].label}</span>
-                                                <span className="text-xs text-gray-600 mt-1">Tosa Higiênica inclusa</span>
-                                            </button>
-                                            <button type="button" onClick={() => setSelectedService(ServiceType.BATH_AND_GROOMING)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                                <span className="text-lg">{SERVICES[ServiceType.BATH_AND_GROOMING].label}</span>
-                                            </button>
-                                        </div>
-                                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
-                                    </div>
-                                )}
-
-                                {serviceStepView === 'pet_movel' && (
-                                    <div className="space-y-6">
-                                        <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço Principal (Pet Móvel)</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                                <span className="text-lg">Banho</span>
-                                                <span className="text-xs text-gray-600 mt-1">Tosa Higiênica inclusa</span>
-                                            </button>
-                                            <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH_AND_GROOMING)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                                <span className="text-lg">Banho & Tosa</span>
-                                            </button>
-                                        </div>
-                                        <button type="button" onClick={() => { setServiceStepView('pet_movel_condo'); setSelectedService(null); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
-                                    </div>
-                                )}
-
-                                {serviceStepView === 'hotel_pet' && (
-                                    <div className="space-y-6">
-                                        <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
-                                            <h3 className="text-lg font-semibold text-gray-800">Check-list de Hospedagem - Hotel Pet</h3>
-                                            <p className="text-base text-gray-600 mt-1">Preencha todos os dados do pet e tutor para o check-in</p>
-                                        </div>
-                                        <button type="button" onClick={() => { console.log('Clicou em Preencher Formulário de Hotel Pet'); setView('hotelRegistration'); }} className="w-full bg-pink-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-pink-700 transition-colors">
-                                            Preencher Formulário de Hotel Pet
+                            {serviceStepView === 'main' && (
+                                <div>
+                                    <h3 className="text-md font-semibold text-gray-700 mb-2">1. Selecione a Categoria</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                            <span className="text-lg">Banho & Tosa</span>
+                                            <span className="text-xs text-gray-600 mt-1">Fixo</span>
                                         </button>
-                                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
-                                    </div>
-                                )}
+                                        <button type="button" onClick={() => { console.log('Clicou em Creche Pet'); setServiceStepView('daycare_options'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                            <span className="text-lg">{SERVICES[ServiceType.VISIT_DAYCARE].label}</span>
+                                        </button>
 
-                                {serviceStepView === 'daycare_options' && (
-                                    <div className="space-y-6">
-                                        <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
-                                            <h3 className="text-lg font-semibold text-gray-800">Creche Pet - Selecione uma opção</h3>
-                                            <p className="text-base text-gray-600 mt-1">Escolha entre agendar uma visita ou fazer a matrícula</p>
+                                        <button type="button" onClick={() => { console.log('Clicou em Pet Móvel'); setServiceStepView('pet_movel_condo'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                            <span className="text-lg">Pet Móvel</span>
+                                            <span className="text-xs text-gray-600 mt-1">Condomínios</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {serviceStepView === 'pet_movel_condo' && (
+                                <div className="space-y-6">
+                                    <h3 className="text-md font-semibold text-gray-700 mb-2">1. Selecione o Condomínio</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        {['Vitta Parque', 'Max Haus', 'Paseo'].map(condo => (
                                             <button
-                                                onClick={() => setIsPriceModalOpen(true)}
-                                                className="mt-4 px-6 py-2 bg-white/80 hover:bg-white text-pink-700 font-semibold rounded-full shadow-sm hover:shadow-md transition-all border border-pink-200 flex items-center gap-2"
+                                                key={condo}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedCondo(condo);
+                                                    setServiceStepView('pet_movel');
+                                                }}
+                                                className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200`}
                                             >
-                                                <span className="text-xl">📋</span> Tabela de Preços
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-lg">{condo}</span>
+                                                    <span className="text-xs text-gray-600 mt-1">
+                                                        {condo === 'Vitta Parque' ? 'Quartas-Feiras' : condo === 'Max Haus' ? 'Quintas-Feiras' : 'Sextas-Feiras'}
+                                                    </span>
+                                                </div>
                                             </button>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <button type="button" onClick={() => { console.log('Clicou em Visita - Creche Pet'); setSelectedService(ServiceType.VISIT_DAYCARE); setView('appointment'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[80px] bg-white hover:bg-pink-50 border-gray-200">
-                                                <span className="text-lg">🏠 Visita</span>
-                                                <span className="text-sm text-gray-600 mt-1">Agendar visita à creche</span>
-                                            </button>
-                                            <button type="button" onClick={() => { console.log('Clicou em Matrícula - Creche Pet'); setView('daycareRegistration'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[80px] bg-white hover:bg-pink-50 border-gray-200">
-                                                <span className="text-lg">📝 Matrícula</span>
-                                                <span className="text-sm text-gray-600 mt-1">Fazer matrícula na creche</span>
-                                            </button>
-                                        </div>
-                                        <button type="button" onClick={() => { setServiceStepView('main'); setSelectedCondo(null); setSelectedService(null); changeStep(1); }} className="text-sm text-pink-600 hover:underline">← Voltar</button>
+                                        ))}
                                     </div>
-                                )}
 
-                                {serviceStepView === 'hotel_options' && (
-                                    <div className="space-y-6">
-                                        <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
-                                            <h3 className="text-lg font-semibold text-gray-800">Hotel Pet - Selecione uma opção</h3>
-                                            <p className="text-base text-gray-600 mt-1">Escolha entre agendar uma visita ou fazer a matrícula</p>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <button type="button" onClick={() => { console.log('Clicou em Visita - Hotel Pet'); setSelectedService(ServiceType.VISIT_HOTEL); setView('appointment'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                                <span className="text-lg">🏨 Visita</span>
-                                            </button>
-                                            <button type="button" onClick={() => { console.log('Clicou em Matrícula - Hotel Pet'); setView('hotelRegistration'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
-                                                <span className="text-lg">📝 Matrícula</span>
-                                            </button>
-                                        </div>
-                                        <button type="button" onClick={() => setServiceStepView('main')} className="text-sm text-pink-600 hover:underline">← Voltar</button>
+                                </div>
+                            )}
+
+                            {serviceStepView === 'bath_groom' && (
+                                <div className="space-y-6">
+                                    <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço Principal</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.BATH)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.BATH ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
+                                            <span className="text-lg">{SERVICES[ServiceType.BATH].label}</span>
+                                            <span className="text-xs text-gray-600 mt-1">Tosa Higiênica inclusa</span>
+                                        </button>
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.BATH_AND_GROOMING)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
+                                            <span className="text-lg">{SERVICES[ServiceType.BATH_AND_GROOMING].label}</span>
+                                        </button>
                                     </div>
-                                )}
 
-                                {selectedService && !isVisitService && (
-                                    <>
-                                        <div>
-                                            <label htmlFor="petWeight" className="block text-md font-semibold text-gray-700 mb-2 mt-6">2. Peso do Pet</label>
-                                            <select id="petWeight" value={selectedWeight || ''} onChange={handleWeightChange} required className="block w-full py-3 px-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900">
-                                                <option value="" disabled>Selecione o peso</option>
-                                                {(Object.keys(PET_WEIGHT_OPTIONS) as PetWeight[]).map(key => (<option key={key} value={key}>{PET_WEIGHT_OPTIONS[key]}</option>))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <h3 className="text-md font-semibold text-gray-700 mb-2 mt-6">3. Serviços Adicionais (Opcional)</h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                                                {ADDON_SERVICES.filter(a => a.id !== 'tosa_higienica').map(addon => {
-                                                    const isDisabled = !selectedWeight || !selectedService || addon.excludesWeight?.includes(selectedWeight!) || (addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight!)) || (addon.requiresService && addon.requiresService !== selectedService);
-                                                    return (
-                                                        <label key={addon.id} className={`flex items-center p-6 sm:p-5 rounded-lg border-2 transition-all ${isDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer hover:bg-pink-50'} ${selectedAddons[addon.id] ? 'border-pink-500 bg-pink-50' : 'border-gray-200'}`}>
-                                                            <input type="checkbox" onChange={() => handleAddonToggle(addon.id)} checked={!!selectedAddons[addon.id]} disabled={isDisabled} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                                            <span className="ml-2.5">{addon.label}</span>
-                                                        </label>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
+                                </div>
+                            )}
 
-                                {selectedService && !isVisitService && selectedWeight && totalPrice > 0 && (
-                                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-lg font-semibold text-gray-700">Preço Total:</span>
-                                            <span className="text-2xl font-bold text-green-600">R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</span>
-                                        </div>
-                                        {Object.keys(selectedAddons).some(key => selectedAddons[key]) && (
-                                            <div className="mt-2 text-sm text-gray-600">
-                                                <div>Serviço base: R$ {(totalPrice - Object.keys(selectedAddons).reduce((sum, addonId) => {
-                                                    if (selectedAddons[addonId]) {
-                                                        const addon = ADDON_SERVICES.find(a => a.id === addonId);
-                                                        return sum + (addon?.price || 0);
-                                                    }
-                                                    return sum;
-                                                }, 0)).toFixed(2)}</div>
-                                                <div>Adicionais: R$ {Object.keys(selectedAddons).reduce((sum, addonId) => {
-                                                    if (selectedAddons[addonId]) {
-                                                        const addon = ADDON_SERVICES.find(a => a.id === addonId);
-                                                        return sum + (addon?.price || 0);
-                                                    }
-                                                    return sum;
-                                                }, 0).toFixed(2)}</div>
-                                            </div>
-                                        )}
+                            {serviceStepView === 'pet_movel' && (
+                                <div className="space-y-6">
+                                    <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço Principal (Pet Móvel)</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
+                                            <span className="text-lg">Banho</span>
+                                            <span className="text-xs text-gray-600 mt-1">Tosa Higiênica inclusa</span>
+                                        </button>
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH_AND_GROOMING)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
+                                            <span className="text-lg">Banho & Tosa</span>
+                                        </button>
                                     </div>
-                                )}
-                            </div>
-                        )}
 
-                        {step === 3 && (
-                            <div className="space-y-6">
+                                </div>
+                            )}
+
+                            {serviceStepView === 'hotel_pet' && (
+                                <div className="space-y-6">
+                                    <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-800">Check-list de Hospedagem - Hotel Pet</h3>
+                                        <p className="text-base text-gray-600 mt-1">Preencha todos os dados do pet e tutor para o check-in</p>
+                                    </div>
+                                    <button type="button" onClick={() => { console.log('Clicou em Preencher Formulário de Hotel Pet'); setView('hotelRegistration'); }} className="w-full bg-pink-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-pink-700 transition-colors">
+                                        Preencher Formulário de Hotel Pet
+                                    </button>
+
+                                </div>
+                            )}
+
+                            {serviceStepView === 'daycare_options' && (
+                                <div className="space-y-6">
+                                    <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-800">Creche Pet - Selecione uma opção</h3>
+                                        <p className="text-base text-gray-600 mt-1">Escolha entre agendar uma visita ou fazer a matrícula</p>
+                                        <button
+                                            onClick={() => setIsPriceModalOpen(true)}
+                                            className="mt-4 px-6 py-2 bg-white/80 hover:bg-white text-pink-700 font-semibold rounded-full shadow-sm hover:shadow-md transition-all border border-pink-200 flex items-center gap-2"
+                                        >
+                                            <span className="text-xl">📋</span> Tabela de Preços
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <button type="button" onClick={() => { console.log('Clicou em Visita - Creche Pet'); setSelectedService(ServiceType.VISIT_DAYCARE); setView('appointment'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[80px] bg-white hover:bg-pink-50 border-gray-200">
+                                            <span className="text-lg">🏠 Visita</span>
+                                            <span className="text-sm text-gray-600 mt-1">Agendar visita à creche</span>
+                                        </button>
+                                        <button type="button" onClick={() => { console.log('Clicou em Matrícula - Creche Pet'); setView('daycareRegistration'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[80px] bg-white hover:bg-pink-50 border-gray-200">
+                                            <span className="text-lg">📝 Matrícula</span>
+                                            <span className="text-sm text-gray-600 mt-1">Fazer matrícula na creche</span>
+                                        </button>
+                                    </div>
+
+                                </div>
+                            )}
+
+                            {serviceStepView === 'hotel_options' && (
+                                <div className="space-y-6">
+                                    <div className="bg-pink-50 p-6 sm:p-5 rounded-lg mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-800">Hotel Pet - Selecione uma opção</h3>
+                                        <p className="text-base text-gray-600 mt-1">Escolha entre agendar uma visita ou fazer a matrícula</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <button type="button" onClick={() => { console.log('Clicou em Visita - Hotel Pet'); setSelectedService(ServiceType.VISIT_HOTEL); setView('appointment'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                            <span className="text-lg">🏨 Visita</span>
+                                        </button>
+                                        <button type="button" onClick={() => { console.log('Clicou em Matrícula - Hotel Pet'); setView('hotelRegistration'); }} className="p-6 rounded-xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                            <span className="text-lg">📝 Matrícula</span>
+                                        </button>
+                                    </div>
+
+                                </div>
+                            )}
+
+                            {selectedService && !isVisitService && (
+                                <>
+                                    <div>
+                                        <label htmlFor="petWeight" className="block text-md font-semibold text-gray-700 mb-2 mt-6">2. Peso do Pet</label>
+                                        <select id="petWeight" value={selectedWeight || ''} onChange={handleWeightChange} required className="block w-full py-3 px-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900">
+                                            <option value="" disabled>Selecione o peso</option>
+                                            {(Object.keys(PET_WEIGHT_OPTIONS) as PetWeight[]).map(key => (<option key={key} value={key}>{PET_WEIGHT_OPTIONS[key]}</option>))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-md font-semibold text-gray-700 mb-2 mt-6">3. Serviços Adicionais (Opcional)</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                                            {ADDON_SERVICES.filter(a => a.id !== 'tosa_higienica').map(addon => {
+                                                const isDisabled = !selectedWeight || !selectedService || addon.excludesWeight?.includes(selectedWeight!) || (addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight!)) || (addon.requiresService && addon.requiresService !== selectedService);
+                                                return (
+                                                    <label key={addon.id} className={`flex items-center p-6 sm:p-5 rounded-lg border-2 transition-all ${isDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer hover:bg-pink-50'} ${selectedAddons[addon.id] ? 'border-pink-500 bg-pink-50' : 'border-gray-200'}`}>
+                                                        <input type="checkbox" onChange={() => handleAddonToggle(addon.id)} checked={!!selectedAddons[addon.id]} disabled={isDisabled} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                                                        <span className="ml-2.5">{addon.label}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+
+                        </div>
+
+                        {/* SECTION 3: CALENDÁRIO */}
+                        {selectedService && (
+                            <div className="space-y-6 pt-6 border-b border-gray-100 pb-8 animate-fadeIn">
                                 <h2 className="text-3xl font-bold text-gray-800">Selecione Data e Hora</h2>
                                 <div>
                                     <Calendar
@@ -11841,11 +11916,38 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         disablePastTimes={true}
                                     />
                                 </div>
+                                {selectedService && !isVisitService && selectedWeight && totalPrice > 0 && (
+                                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg animate-fadeIn">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-lg font-semibold text-gray-700">Preço Total:</span>
+                                            <span className="text-2xl font-bold text-green-600">R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</span>
+                                        </div>
+                                        {Object.keys(selectedAddons).some(key => selectedAddons[key]) && (
+                                            <div className="mt-2 text-sm text-gray-600">
+                                                <div>Serviço base: R$ {(totalPrice - Object.keys(selectedAddons).reduce((sum, addonId) => {
+                                                    if (selectedAddons[addonId]) {
+                                                        const addon = ADDON_SERVICES.find(a => a.id === addonId);
+                                                        return sum + (addon?.price || 0);
+                                                    }
+                                                    return sum;
+                                                }, 0)).toFixed(2)}</div>
+                                                <div>Adicionais: R$ {Object.keys(selectedAddons).reduce((sum, addonId) => {
+                                                    if (selectedAddons[addonId]) {
+                                                        const addon = ADDON_SERVICES.find(a => a.id === addonId);
+                                                        return sum + (addon?.price || 0);
+                                                    }
+                                                    return sum;
+                                                }, 0).toFixed(2)}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        {step === 4 && (
-                            <div className="space-y-6">
+                        {/* SECTION 4: RESUMO E CONFIRMAÇÃO */}
+                        {selectedTime && (
+                            <div className="space-y-6 pt-6 animate-fadeIn">
                                 <h2 className="text-3xl font-bold text-gray-800 mb-4">Resumo do Agendamento</h2>
                                 <div className="p-6 bg-white rounded-lg space-y-2 text-gray-700 border border-gray-200">
                                     <p><strong>Pet:</strong> {formData.petName} ({formData.petBreed})</p>
@@ -11861,35 +11963,13 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         <p className="text-2xl font-bold text-gray-900 text-right">Total: R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</p>
                                     </div>
                                 </div>
+                                <div className="mt-6">
+                                    <button type="submit" disabled={isSubmitting || !isStep1Valid || !isStep2Valid || !isStep3Valid} className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-4 px-8 rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed">
+                                        {isSubmitting ? 'Agendando...' : '✓ Confirmar Agendamento'}
+                                    </button>
+                                </div>
                             </div>
                         )}
-
-                        <div className="mt-10 flex justify-between items-center gap-4">
-                            <button type="button" onClick={() => {
-                                if (step === 1) {
-                                    setServiceStepView('main');
-                                    setSelectedService(null);
-                                } else if (step === 2 && serviceStepView !== 'main') {
-                                    if (serviceStepView === 'pet_movel') {
-                                        setServiceStepView('pet_movel_condo');
-                                    } else {
-                                        setServiceStepView('main');
-                                    }
-                                    setSelectedService(null);
-                                } else {
-                                    changeStep(step - 1);
-                                }
-                            }} className="w-full md:w-[220px] bg-white border-2 border-gray-300 text-gray-700 font-bold py-4 px-8 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow">
-                                ← Voltar
-                            </button>
-
-                            {step < 4 && <button type="button" onClick={() => changeStep(step + 1)} disabled={(step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid) || (step === 3 && !isStep3Valid)} className="w-full md:w-[220px] bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold py-4 px-8 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed">
-                                Próximo →
-                            </button>}
-                            {step === 4 && <button type="submit" disabled={isSubmitting} className="w-full md:w-[220px] bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-4 px-8 rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed">
-                                {isSubmitting ? 'Agendando...' : '✓ Confirmar Agendamento'}
-                            </button>}
-                        </div>
                     </form>
                 </main>
             )}
@@ -14816,14 +14896,10 @@ const App: React.FC = () => {
                 </div>
                 <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-pink-100">
                     <h2 className="text-2xl font-bold text-gray-800 text-center mb-4">Escolha o local da visita</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                         <button type="button" onClick={() => { setVisitServiceType('Creche Pet'); setViewWithLog('visitAppointment'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center bg-white hover:bg-pink-50 border-gray-200">
                             <img src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-12 h-12 rounded-full object-contain mb-2" />
                             <span className="text-lg">Creche Pet</span>
-                        </button>
-                        <button type="button" onClick={() => { setVisitServiceType('Hotel Pet'); setViewWithLog('visitAppointment'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center bg-white hover:bg-pink-50 border-gray-200">
-                            <img src="https://cdn-icons-png.flaticon.com/512/1131/1131938.png" alt="Hotel Pet" className="w-12 h-12 rounded-full object-contain mb-2" />
-                            <span className="text-lg">Hotel Pet</span>
                         </button>
                     </div>
 
@@ -14930,7 +15006,7 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
 
     if (isSuccess) {
         return (
-            <div className="fixed inset-0 bg-pink-600 bg-opacity-90 flex items-center justify_center z-50 animate-fadeIn p-4">
+            <div className="fixed inset-0 bg-pink-600 bg-opacity-90 flex items-center justify-center z-50 animate-fadeIn p-4">
                 <div className="text-center bg-white p-8 rounded-2xl shadow-2xl max-w-full sm:max-w-sm mx-auto">
                     <SuccessIcon />
                     <h2 className="text-3xl font-bold text-gray-800 mt-2">Visita Agendada!</h2>
@@ -14942,25 +15018,104 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
     }
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-pink-50 via-white to-rose-50">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden border border-pink-100">
-                <div className="p-6 border-b">
-                    <h2 className="text-2xl font-bold text-gray-800 text-center">Agendar Visita — {serviceLabel}</h2>
-                </div>
-                <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2"><label className="block text-sm font-semibold text-gray-700">Nome do Pet</label><input value={petName} onChange={e => setPetName(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required /></div>
-                    <div><label className="block text-sm font-semibold text-gray-700">Raça</label><input value={petBreed} onChange={e => setPetBreed(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" /></div>
-                    <div><label className="block text-sm font-semibold text-gray-700">Nome do Tutor</label><input value={ownerName} onChange={e => setOwnerName(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required /></div>
-                    <div><label className="block text-sm font-semibold text-gray-700">WhatsApp</label><input value={whatsapp} onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" placeholder="(XX) XXXXX-XXXX" maxLength={15} required /></div>
-                    <div className="sm:col-span-2"><label className="block text-sm font-semibold text-gray-700">Endereço</label><input value={ownerAddress} onChange={e => setOwnerAddress(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" /></div>
-                    <div><label className="block text_sm font-semibold text-gray-700">Data</label><input type="date" value={date} onChange={e => setDate(e.target.value)} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required /></div>
-                    <div><label className="block text-sm font-semibold text-gray-700">Horário</label><select value={time} onChange={e => setTime(Number(e.target.value))} className="mt-1 block w-full p-3 bg-gray-50 border rounded-md" required><option value="" disabled>Selecione</option>{VISIT_WORKING_HOURS.map(h => (<option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>))}</select></div>
-                    <div className="sm:col-span-2 flex justify-between items-center pt-2">
-                        <button type="button" onClick={onBack} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">← Voltar</button>
-                        <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:bg-gray-400">Agendar</button>
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100">
+            <header className="text-center mb-6 animate-fadeInUp">
+                <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-24 w-24 mx-auto mb-4 drop-shadow-lg" loading="eager" />
+                <h1 className="font-brand text-6xl text-pink-800 mb-2">Sandy's Pet Shop</h1>
+                <p className="text-gray-600 text-xl font-medium">Agendamento de Visita — {serviceLabel}</p>
+            </header>
+            <main className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/40 backdrop-blur-sm">
+                <form onSubmit={handleSubmit} className="relative p-6 sm:p-8 transition-all duration-300 animate-slideInFromRight">
+                    <div className="mb-4">
+                        <button type="button" onClick={onBack} className="p-2 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-sm border border-pink-100 transition-all" title="Voltar">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-6 h-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div className="space-y-7 border-b border-gray-100 pb-8">
+                        <h2 className="text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Informações do Pet e Dono</h2>
+
+                        <div>
+                            <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
+                            <div className="relative mt-1">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <SafeImage alt="User Icon" className="h-7 w-7 opacity-60" src="https://cdn-icons-png.flaticon.com/512/10754/10754012.png" />
+                                </span>
+                                <input id="ownerName" required value={ownerName} onChange={e => setOwnerName(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Nome completo" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label>
+                            <div className="relative mt-1">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <SafeImage alt="WhatsApp Icon" className="h-5 w-5 opacity-60" src="https://cdn-icons-png.flaticon.com/512/15713/15713434.png" />
+                                </span>
+                                <input id="whatsapp" required value={whatsapp} onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} placeholder="(XX) XXXXX-XXXX" maxLength={15} className="block w-full pl-10 pr-10 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="tel" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
+                            <div className="relative mt-1">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <SafeImage alt="Pet Icon" className="h-7 w-7 opacity-60" src="https://static.thenounproject.com/png/pet-icon-6939415-512.png" />
+                                </span>
+                                <input id="petName" required value={petName} onChange={e => setPetName(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Nome do seu pet" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
+                            <div className="relative mt-1">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <SafeImage alt="Breed Icon" className="h-7 w-7 opacity-60" src="https://static.thenounproject.com/png/pet-icon-7326432-512.png" />
+                                </span>
+                                <input id="petBreed" value={petBreed} onChange={e => setPetBreed(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Raça (opcional)" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Seu Endereço</label>
+                            <div className="relative mt-1">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <SafeImage alt="Address Icon" className="h-7 w-7 opacity-60" src="https://static.thenounproject.com/png/location-icon-7979305-512.png" />
+                                </span>
+                                <input id="ownerAddress" value={ownerAddress} onChange={e => setOwnerAddress(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Endereço completo (opcional)" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6 pt-6 pb-8">
+                        <h2 className="text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Agendamento</h2>
+
+                        <div>
+                            <label htmlFor="date" className="block text-base font-semibold text-gray-700">Data</label>
+                            <div className="relative mt-1">
+                                <input id="date" type="date" required value={date} onChange={e => setDate(e.target.value)} className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="time" className="block text-base font-semibold text-gray-700">Horário</label>
+                            <div className="relative mt-1">
+                                <select id="time" required value={time} onChange={e => setTime(Number(e.target.value))} className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 appearance-none">
+                                    <option value="" disabled>Selecione um horário</option>
+                                    {VISIT_WORKING_HOURS.map(h => (<option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-4">
+                        <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-pink-600 text-white font-bold rounded-xl hover:bg-pink-700 shadow-lg hover:shadow-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed transform hover:-translate-y-1">
+                            {isSubmitting ? 'Agendando...' : 'Confirmar Agendamento'}
+                        </button>
                     </div>
                 </form>
-            </div>
+            </main>
         </div>
     );
 };
