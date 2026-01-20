@@ -9,6 +9,7 @@ export enum ServiceType {
   PET_MOBILE_BATH = 'PET_MOBILE_BATH',
   PET_MOBILE_BATH_AND_GROOMING = 'PET_MOBILE_BATH_AND_GROOMING',
   PET_MOBILE_GROOMING_ONLY = 'PET_MOBILE_GROOMING_ONLY',
+  UNKNOWN = 'UNKNOWN',
 }
 
 export enum PetWeight {
@@ -39,6 +40,7 @@ export interface Appointment {
   appointmentTime: Date;
   monthly_client_id?: string;
   condominium?: string;
+  status?: string;
 }
 
 export interface AdminAppointment {

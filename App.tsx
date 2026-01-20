@@ -16,31 +16,31 @@ import { Button } from './src/components/ui/button';
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" fill=\"%23f3f4f6\"/><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-size=\"28\">🐾</text></svg>';
 
 const SafeImage: React.FC<{
-  src: string;
-  alt: string;
-  className?: string;
-  loading?: 'eager' | 'lazy';
-  onClick?: (e: React.MouseEvent) => void;
+    src: string;
+    alt: string;
+    className?: string;
+    loading?: 'eager' | 'lazy';
+    onClick?: (e: React.MouseEvent) => void;
 }> = ({ src, alt, className, loading = 'lazy', onClick }) => {
-  const [currentSrc, setCurrentSrc] = useState<string>(src);
-  const [errored, setErrored] = useState<boolean>(false);
-  return (
-    <img
-      src={currentSrc}
-      alt={alt}
-      className={className}
-      loading={loading}
-      decoding="async"
-      referrerPolicy="no-referrer"
-      onClick={onClick}
-      onError={() => {
-        if (!errored) {
-          setErrored(true);
-          setCurrentSrc(FALLBACK_IMG);
-        }
-      }}
-    />
-  );
+    const [currentSrc, setCurrentSrc] = useState<string>(src);
+    const [errored, setErrored] = useState<boolean>(false);
+    return (
+        <img
+            src={currentSrc}
+            alt={alt}
+            className={className}
+            loading={loading}
+            decoding="async"
+            referrerPolicy="no-referrer"
+            onClick={onClick}
+            onError={() => {
+                if (!errored) {
+                    setErrored(true);
+                    setCurrentSrc(FALLBACK_IMG);
+                }
+            }}
+        />
+    );
 };
 
 
@@ -3183,10 +3183,26 @@ const AdminAddAppointmentModal: React.FC<{
             if (combinedData.length > 0) {
                 const allAppointments: Appointment[] = combinedData
                     .map((dbRecord: any) => {
-                        const serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === dbRecord.service) as ServiceType | undefined;
+                        let serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === dbRecord.service) as ServiceType | undefined;
+
+                        if (!serviceKey && dbRecord.service) {
+                            const s = String(dbRecord.service).toLowerCase();
+                            // Try to map variations
+                            if (s.includes('movel') || s.includes('móvel')) {
+                                if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
+                                else if (s.includes('banho')) serviceKey = ServiceType.PET_MOBILE_BATH;
+                                else if (s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
+                            } else {
+                                if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
+                                else if (s.includes('banho')) serviceKey = ServiceType.BATH;
+                                else if (s.includes('tosa')) serviceKey = ServiceType.GROOMING_ONLY;
+                                else if (s.includes('creche')) serviceKey = ServiceType.VISIT_DAYCARE;
+                                else if (s.includes('hotel')) serviceKey = ServiceType.VISIT_HOTEL;
+                            }
+                        }
 
                         if (!serviceKey) {
-                            return null;
+                            serviceKey = ServiceType.UNKNOWN;
                         }
 
                         return {
@@ -4172,7 +4188,8 @@ const Calendar: React.FC<{
         }
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
-            const { day: dayOfWeek } = getSaoPauloTimeParts(date);
+            // FIX: Use local .getDay() directly to ensure consistency with the rendered grid
+            const dayOfWeek = date.getDay();
             const isSelected = isSameSaoPauloDay(date, selectedDate);
             const todayLocal = new Date();
             todayLocal.setHours(0, 0, 0, 0);
@@ -4184,7 +4201,7 @@ const Calendar: React.FC<{
             const d = String(sp.date).padStart(2, '0');
             const ymd = `${y}-${m}-${d}`;
             const isDisabled = (disablePast && (isPastSaoPauloDate(date) || isPastLocal)) ||
-                (disableWeekends && isSaoPauloWeekend(date)) ||
+                (disableWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) ||
                 (allowedDays && !allowedDays.includes(dayOfWeek)) ||
                 (!!disabledDates && disabledDates.includes(ymd));
 
@@ -10731,37 +10748,195 @@ const TimeSlotPicker: React.FC<{
     selectedCondo?: string | null;
     disablePastTimes?: boolean;
     isAdmin?: boolean;
-}> = ({ selectedDate, selectedService, appointments, onTimeSelect, selectedTime, workingHours, isPetMovel, allowedDays, selectedCondo, disablePastTimes, isAdmin = false }) => {
-    const [selectedVisualKey, setSelectedVisualKey] = useState<string | null>(null);
+}> = ({ selectedDate, selectedService, appointments: allAppointments, onTimeSelect, selectedTime, workingHours, isPetMovel, allowedDays, selectedCondo, disablePastTimes, isAdmin = false }) => {
+
+    // FILTER APPOINTMENTS: Separate Store vs Pet Mobile to prevent cross-blocking
+    const appointments = useMemo(() => {
+        return allAppointments.filter(appt => {
+            const s = String(appt.service || '').toLowerCase();
+            // Basic check based on service name or type if available
+            // If service type is available in appt.service (enum), use that.
+            // But appt.service might be string from DB.
+            // Let's rely on the fact that Pet Mobile services usually contain "Pet Móvel" or "Pet Mobile" in label or type.
+            
+            // However, we can also check against the SERVICES constant keys if we map them correctly.
+            // In App.tsx, reloadAppointments maps them to ServiceType enum.
+            
+            // ROBUST CHECK: Check enum values OR string content
+            const isMobile = 
+                appt.service === ServiceType.PET_MOBILE_BATH || 
+                appt.service === ServiceType.PET_MOBILE_BATH_AND_GROOMING || 
+                appt.service === ServiceType.PET_MOBILE_GROOMING_ONLY ||
+                s.includes('movel') || 
+                s.includes('móvel') ||
+                s.includes('mobile');
+            
+            return isPetMovel ? isMobile : !isMobile;
+        });
+    }, [allAppointments, isPetMovel]);
 
     const capacity = isPetMovel ? 1 : MAX_CAPACITY_PER_SLOT;
 
+    const isSameDay = (d1: Date, d2: Date) =>
+        d1.getDate() === d2.getDate() &&
+        d1.getMonth() === d2.getMonth() &&
+        d1.getFullYear() === d2.getFullYear();
+
+    const getAppointmentsAtHour = (hour: number) => {
+        return appointments.filter(appt => {
+            // Normalização de data para garantir comparação correta independente do fuso horário
+            const apptTime = new Date(appt.appointmentTime);
+
+            // Extrair componentes da data do agendamento
+            const apptYear = apptTime.getFullYear();
+            const apptMonth = apptTime.getMonth();
+            const apptDate = apptTime.getDate();
+            const apptHour = apptTime.getHours();
+
+            // Extrair componentes da data selecionada
+            const selectedYear = selectedDate.getFullYear();
+            const selectedMonth = selectedDate.getMonth();
+            const selectedDay = selectedDate.getDate();
+
+            // Comparação estrita de Ano, Mês, Dia e Hora
+            const isSameDate = apptYear === selectedYear && apptMonth === selectedMonth && apptDate === selectedDay;
+            const isSameHour = apptHour === hour;
+
+            // Check for status if available (prevent blocking if cancelled)
+            if (appt.status && (appt.status === 'Cancelado' || appt.status === 'CANCELADO')) {
+                return false;
+            }
+
+            return isSameDate && isSameHour;
+        }).length;
+    };
+
+    const isHourAvailable = (hour: number) => {
+        // 1. Past Time Check
+        if (disablePastTimes && !isAdmin) {
+            const now = new Date();
+            if (isSameDay(selectedDate, now) && hour <= now.getHours()) {
+                return false;
+            }
+        }
+
+        // 2. Capacity Check (Effective Load)
+        // If it's Pet Movel, capacity is 1. If there's ANY appointment, it's blocked.
+        // If it's Store, capacity is MAX_CAPACITY_PER_SLOT.
+        let load = getAppointmentsAtHour(hour);
+
+        // Check previous hour (hour - 1) for overlapping services (> 1h)
+        const prev1Appts = appointments.filter(a => {
+            const t = new Date(a.appointmentTime);
+            // @ts-ignore
+            const isCancelled = a.status && (a.status === 'Cancelado' || a.status === 'CANCELADO');
+            return !isCancelled && t.getHours() === hour - 1 && isSameDay(t, selectedDate);
+        });
+        /* 
+        // DISABLED AS REQUESTED: Do not block current slot based on previous appointment duration
+        prev1Appts.forEach(a => {
+            const s = SERVICES[a.service];
+            if (s && s.duration > 1) load++;
+        });
+        */
+
+        // Check hour - 2 for overlapping services (> 2h)
+        const prev2Appts = appointments.filter(a => {
+            const t = new Date(a.appointmentTime);
+            // @ts-ignore
+            const isCancelled = a.status && (a.status === 'Cancelado' || a.status === 'CANCELADO');
+            return !isCancelled && t.getHours() === hour - 2 && isSameDay(t, selectedDate);
+        });
+        /*
+        // DISABLED AS REQUESTED: Do not block current slot based on previous appointment duration
+        prev2Appts.forEach(a => {
+            const s = SERVICES[a.service];
+            if (s && s.duration > 2) load++;
+        });
+        */
+
+        // CRITICAL FIX: For Pet Movel AND Store Services, if there is ANY load (even 1), it must be blocked.
+        // The user explicitly requested that ANY existing appointment should block the slot.
+        // "Para Banho & Tosa e Pet Móvel deve ter a mesma indisponibilidade de slots... Há slots que estão agendandos, mas você mostra como disponível."
+        if (load >= 1) return false;
+
+        if (load >= capacity) return false;
+
+        /*
+        // DISABLED AS REQUESTED: Do not block current slot based on future duration/capacity
+        // 3. Forward Check for Current Selection (Duration)
+        if (selectedService && SERVICES[selectedService]) {
+            const duration = SERVICES[selectedService].duration;
+            if (duration > 1) {
+                const nextHour = hour + 1;
+                if (workingHours.includes(nextHour)) {
+                    // Calculate load for nextHour
+                    let nextLoad = getAppointmentsAtHour(nextHour);
+
+                    // Check hour (current-1 relative to next) overlap
+                    // This includes appointments starting at 'hour' (which we are hypothetically adding, but checking existing ones)
+                    const currentStarts = appointments.filter(a => {
+                        const t = new Date(a.appointmentTime);
+                        const isCancelled = a.status && (a.status === 'Cancelado' || a.status === 'CANCELADO');
+                        return !isCancelled && t.getHours() === hour && isSameDay(t, selectedDate);
+                    });
+                    currentStarts.forEach(a => {
+                        const s = SERVICES[a.service];
+                        if (s && s.duration > 1) nextLoad++;
+                    });
+
+                    // Check hour-1 (current-2 relative to next) overlap
+                    prev1Appts.forEach(a => { // These are at hour-1
+                        const s = SERVICES[a.service];
+                        if (s && s.duration > 2) nextLoad++;
+                    });
+
+                    // CRITICAL FIX: For Pet Movel duration check
+                    if (isPetMovel && nextLoad >= 1) return false;
+
+                    if (nextLoad >= capacity) return false;
+
+                } else {
+                    // Next hour is not working hour. Cannot extend.
+                    return false;
+                }
+            }
+        }
+        */
+
+        return true;
+    };
+
     return (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-            {workingHours.flatMap(hour => {
-                return Array.from({ length: capacity }, (_, slotIndex) => {
-                    const visualKey = `${hour}-${slotIndex}`;
+            {workingHours.map(hour => {
+                const available = isHourAvailable(hour);
+                const isSelected = selectedTime === hour;
 
-                    return (
-                        <button
-                            key={visualKey}
-                            type="button"
-                            title="Disponível"
-                            onClick={() => {
-                                setSelectedVisualKey(visualKey);
+                return (
+                    <button
+                        key={hour}
+                        type="button"
+                        title={available ? "Disponível" : "Indisponível"}
+                        disabled={!available}
+                        onClick={() => {
+                            if (available) {
                                 onTimeSelect(hour);
-                            }}
-                            className={`px-3 py-2 rounded-md text-center font-medium transition-colors border flex items-center justify-center gap-1
-                    ${selectedVisualKey === visualKey
-                                    ? 'bg-pink-600 text-white border-pink-600'
-                                    : 'bg-white hover:bg-pink-50 border-gray-200'}
-                    leading-tight text-sm
-                  `}
-                        >
-                            {`${hour}:00`}
-                        </button>
-                    );
-                });
+                            }
+                        }}
+                        className={`px-3 py-2 rounded-md text-center font-medium transition-colors border flex items-center justify-center gap-1
+                            ${isSelected
+                                ? 'bg-pink-600 text-white border-pink-600 shadow-md'
+                                : available
+                                    ? 'bg-white hover:bg-pink-50 border-gray-200 text-gray-900'
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-100 opacity-60'
+                            }
+                            leading-tight text-sm
+                        `}
+                    >
+                        {`${hour}:00`}
+                    </button>
+                );
             })}
         </div>
     );
@@ -10814,8 +10989,25 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
         const regularAppointments: Appointment[] = (regularData || [])
             .map((rec: any) => {
-                const serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === rec.service) as ServiceType | undefined;
-                if (!serviceKey) return null;
+                let serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === rec.service) as ServiceType | undefined;
+
+                if (!serviceKey && rec.service) {
+                    const s = String(rec.service).toLowerCase();
+                    // PRIORITIZE MOBILE DETECTION: Check for 'movel' or 'mobile' first
+                    if (s.includes('movel') || s.includes('móvel') || s.includes('mobile')) {
+                         if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
+                         else if (s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
+                         else serviceKey = ServiceType.PET_MOBILE_BATH;
+                    }
+                    else if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
+                    else if (s.includes('banho')) serviceKey = ServiceType.BATH;
+                    else if (s.includes('tosa')) serviceKey = ServiceType.GROOMING_ONLY;
+                    else if (s.includes('creche')) serviceKey = ServiceType.VISIT_DAYCARE;
+                    else if (s.includes('hotel')) serviceKey = ServiceType.VISIT_HOTEL;
+                }
+
+                if (!serviceKey) serviceKey = ServiceType.UNKNOWN;
+
                 return {
                     id: rec.id,
                     petName: rec.pet_name,
@@ -10824,6 +11016,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     service: serviceKey,
                     appointmentTime: new Date(rec.appointment_time),
                     monthly_client_id: rec.monthly_client_id || undefined,
+                    status: rec.status,
                 };
             })
             .filter(Boolean) as Appointment[];
@@ -10854,6 +11047,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     appointmentTime: appointmentTime,
                     monthly_client_id: rec.monthly_client_id || undefined,
                     condominium: rec.condominium || rec.condo || undefined,
+                    status: rec.status,
                 };
             })
             .filter(Boolean) as Appointment[];
@@ -10863,96 +11057,69 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
     useEffect(() => { reloadAppointments(); }, [reloadAppointments]);
 
+    // RESTORED AUTOFILL FUNCTIONALITY
     useEffect(() => {
         const timer = setTimeout(async () => {
+            // Clean input: remove non-digits to check length
             const cleanPhone = formData.whatsapp.replace(/\D/g, '');
-            if (cleanPhone.length < 10) return;
+            
+            // Only search if we have a valid-ish length (e.g. at least 10 digits)
+            if (cleanPhone.length >= 10) {
+                setIsFetchingClient(true);
+                try {
+                    console.log('Autofill searching for:', formData.whatsapp);
+                    // Try to find the most recent appointment for this phone number
+                    // Use the exact formatted string since the app enforces formatting
+                    const { data, error } = await supabase
+                        .from('appointments')
+                        .select('*')
+                        .eq('whatsapp', formData.whatsapp) 
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
 
-            setIsFetchingClient(true);
-            try {
-                const { data, error } = await supabase
-                    .from('appointments')
-                    .select('pet_name, owner_name, pet_breed, owner_address, service, weight, addons')
-                    .eq('whatsapp', formData.whatsapp)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .single();
-
-                if (data) {
-                    setFormData(prev => ({
-                        ...prev,
-                        petName: data.pet_name || prev.petName,
-                        ownerName: data.owner_name || prev.ownerName,
-                        petBreed: data.pet_breed || prev.petBreed,
-                        ownerAddress: data.owner_address || prev.ownerAddress
-                    }));
-                    setAutoFilledFields(['petName', 'ownerName', 'petBreed', 'ownerAddress', 'whatsapp']);
-
-                    // Autofill Service, Weight, and Addons
-                    if (data.service) {
-                        const foundServiceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === data.service) as ServiceType | undefined;
-                        if (foundServiceKey) {
-                            setSelectedService(foundServiceKey);
-
-                            // Determine serviceStepView based on found service
-                            if ([ServiceType.BATH, ServiceType.BATH_AND_GROOMING].includes(foundServiceKey)) {
-                                setServiceStepView('bath_groom');
-                            } else if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(foundServiceKey)) {
-                                // For mobile, we might need condo info if stored, but let's default to pet_movel for now or handle condo separately if available in data
-                                setServiceStepView('pet_movel');
-                            }
-                        }
+                    if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
+                         console.error('Autofill error:', error);
                     }
 
-                    if (data.weight && data.weight !== 'N/A') {
-                        const foundWeightKey = Object.keys(PET_WEIGHT_OPTIONS).find(key => PET_WEIGHT_OPTIONS[key as PetWeight] === data.weight) as PetWeight | undefined;
-                        if (foundWeightKey) {
-                            setSelectedWeight(foundWeightKey);
+                    if (data) {
+                        // Found a match! Autofill the fields.
+                        console.log('Autofill found client:', data);
+                        
+                        // Update form data
+                        setFormData(prev => ({
+                            ...prev,
+                            petName: data.pet_name || prev.petName,
+                            ownerName: data.owner_name || prev.ownerName,
+                            petBreed: data.pet_breed || prev.petBreed,
+                            ownerAddress: data.owner_address || prev.ownerAddress,
+                        }));
+
+                        // Update weight if available and valid
+                        if (data.weight) {
+                             // Reverse lookup for weight key based on value if needed, or check if it matches enum
+                             // The DB stores the Label (e.g. "Até 5kg") or the Key?
+                             // handleSubmit says: weight: ... PET_WEIGHT_OPTIONS[selectedWeight]
+                             // So DB stores "Até 5kg".
+                             // We need to find the Key (UP_TO_5) from the Value ("Até 5kg").
+                             const weightEntry = Object.entries(PET_WEIGHT_OPTIONS).find(([key, val]) => val === data.weight);
+                             if (weightEntry) {
+                                 setSelectedWeight(weightEntry[0] as PetWeight);
+                             }
                         }
+                        
+                        // Optional: Show visual feedback or toast
+                        // alert('Dados do cliente encontrados e preenchidos!');
+                    } else {
+                        console.log('Autofill: No previous records found.');
                     }
-
-                    if (data.addons && Array.isArray(data.addons)) {
-                        const newAddons: Record<string, boolean> = {};
-                        data.addons.forEach((addonLabel: string) => {
-                            const foundAddon = ADDON_SERVICES.find(a => a.label === addonLabel);
-                            if (foundAddon) {
-                                newAddons[foundAddon.id] = true;
-                            }
-                        });
-                        setSelectedAddons(newAddons);
-                    }
-
-                    // If critical info is filled, advance step (but only if valid)
-                    // We need a short delay or check to ensure state is updated before validating, 
-                    // but since state updates are async, we might just set step to 3 if we are confident.
-                    // However, we should be careful about 'pet_movel' which needs condo.
-                    // The user said "The only screen... is date selection".
-                    // So let's try to advance if we have service and weight (if needed).
-
-                    setTimeout(() => {
-                        // Simple check: if we have a service and (it's a visit OR we have weight), go to step 3
-                        // We can't easily check 'selectedService' state here immediately due to closure, 
-                        // but we know we just found data.
-
-                        // Re-derive local variables to check logic
-                        const sKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === data.service) as ServiceType | undefined;
-                        const wKey = data.weight !== 'N/A' ? Object.keys(PET_WEIGHT_OPTIONS).find(key => PET_WEIGHT_OPTIONS[key as PetWeight] === data.weight) as PetWeight | undefined : undefined;
-
-                        const isVisit = sKey && (sKey === ServiceType.VISIT_DAYCARE || sKey === ServiceType.VISIT_HOTEL);
-                        const hasWeight = !!wKey;
-
-                        if (sKey && (isVisit || hasWeight)) {
-                            setStep(3);
-                        }
-                    }, 100);
+                } catch (err) {
+                    console.error('Error fetching client data for autofill:', err);
+                } finally {
+                    setIsFetchingClient(false);
                 }
-            } catch (err) {
-                console.error("Error fetching client data:", err);
-            } finally {
-                setIsFetchingClient(false);
             }
-        }, 800);
-
+        }, 800); // 800ms debounce
         return () => clearTimeout(timer);
     }, [formData.whatsapp]);
 
@@ -11010,18 +11177,32 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     useEffect(() => {
         // This effect handles the calendar day restrictions based on service type.
         if (step === 3) {
-            if (serviceStepView === 'bath_groom') {
-                // Regular Bath & Grooming is only on Mondays and Tuesdays
+            console.log('[AllowedDays Effect] Step 3 active. Checking restrictions...');
+            console.log('[AllowedDays Effect] DEBUG VERSION 2');
+            console.log('[AllowedDays Effect] serviceStepView:', serviceStepView);
+            console.log('[AllowedDays Effect] selectedService:', selectedService);
+
+            // Check specifically for Bath OR Grooming services in the store logic
+            const isStoreBathGroom = serviceStepView === 'bath_groom' ||
+                (selectedService && [ServiceType.BATH, ServiceType.BATH_AND_GROOMING, ServiceType.GROOMING_ONLY].includes(selectedService));
+
+            console.log('[AllowedDays Effect] isStoreBathGroom:', isStoreBathGroom);
+
+            if (isStoreBathGroom) {
+                // Regular Bath & Grooming is only on Mondays (1) and Tuesdays (2)
+                console.log('[AllowedDays Effect] Setting allowedDays to [1, 2]');
                 setAllowedDays([1, 2]);
             } else if (serviceStepView === 'pet_movel') {
                 // Pet Móvel is now available on all days - no restrictions
+                console.log('[AllowedDays Effect] Pet Movel detected. Setting allowedDays to undefined (all days)');
                 setAllowedDays(undefined);
             } else {
                 // No specific restrictions for other services, default will apply (e.g., disable weekends)
+                console.log('[AllowedDays Effect] Default case. Setting allowedDays to undefined');
                 setAllowedDays(undefined);
             }
         }
-    }, [step, serviceStepView, selectedCondo]);
+    }, [step, serviceStepView, selectedService, selectedCondo]);
 
     useEffect(() => {
         if (step === 3 && serviceStepView === 'bath_groom' && allowedDays && allowedDays.length > 0) {
@@ -11356,22 +11537,6 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             <div className="space-y-7">
                                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Informações do Pet e Dono</h2>
                                 <div>
-                                    <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
-                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
-                                </div>
-                                <div>
-                                    <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
-                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petBreed') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
-                                </div>
-                                <div>
-                                    <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
-                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
-                                </div>
-                                <div>
-                                    <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Seu Endereço</label>
-                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerAddress') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
-                                </div>
-                                <div>
                                     <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label>
                                     <div className="relative mt-1">
                                         <span className="absolute inset-y-0 left-0 flex items-center pl-3"><WhatsAppIcon /></span>
@@ -11395,6 +11560,22 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                             </div>
                                         )}
                                     </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
+                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                </div>
+                                <div>
+                                    <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
+                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                </div>
+                                <div>
+                                    <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
+                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petBreed') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                </div>
+                                <div>
+                                    <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Seu Endereço</label>
+                                    <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerAddress') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
                                 </div>
                             </div>
                         )}
