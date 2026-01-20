@@ -1580,7 +1580,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                 <form onSubmit={handleSubmit} className={`relative p-6 sm:p-8 transition-all duration-300 ${isAnimating ? 'animate-slideOutToLeft' : 'animate-slideInFromRight'}`}>
                     {step === 1 && (
                         <div className="space-y-7">
-                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 truncate">Informações do Pet e Dono</h2>
+                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 truncate">Informações</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
@@ -9931,6 +9931,7 @@ const HotelRegistrationForm: React.FC<{
 };
 
 // FIX: Renamed AddDaycareEnrollmentModal to DaycareRegistrationForm and converted it from a modal to a full-page component.
+// Daycare Registration Form Component
 const DaycareRegistrationForm: React.FC<{
     setView?: (view: 'scheduler' | 'login' | 'daycareRegistration') => void;
     onBack?: () => void;
@@ -11638,7 +11639,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                         </div>
                         {/* SECTION 1: DADOS */}
                         <div className="space-y-7 border-b border-gray-100 pb-8">
-                            <h2 className="text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Informações do Pet e Dono</h2>
+                            <h2 className="text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Informações</h2>
                             <div>
                                 <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label>
                                 <div className="relative mt-1">
