@@ -15,7 +15,7 @@ interface ExtraServicesData {
   tintura: { enabled: boolean; value: string | number };
   penteado: { enabled: boolean; value: string | number };
   desembolo: { enabled: boolean; value: string | number };
-  
+
   // Serviços Daycare
   adestrador: { enabled: boolean; value: string | number };
   dias_extras: { enabled: boolean; value: string | number; quantity?: number };
@@ -24,6 +24,7 @@ interface ExtraServicesData {
   pernoite: { enabled: boolean; value: string | number };
   racao: { enabled: boolean; value: string | number };
   veterinario: { enabled: boolean; value: string | number };
+  transporte: { enabled: boolean; value: string | number };
 }
 
 interface ExtraServicesModalProps {
@@ -45,76 +46,80 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
 }) => {
   const [extraServices, setExtraServices] = useState<ExtraServicesData>({
     // Serviços Gerais
-    so_tosa: { 
-      enabled: data.extra_services?.so_tosa?.enabled || false, 
-      value: data.extra_services?.so_tosa?.value || '' 
+    so_tosa: {
+      enabled: data.extra_services?.so_tosa?.enabled || false,
+      value: data.extra_services?.so_tosa?.value || ''
     },
-    so_banho: { 
-      enabled: data.extra_services?.so_banho?.enabled || false, 
-      value: data.extra_services?.so_banho?.value || '' 
+    so_banho: {
+      enabled: data.extra_services?.so_banho?.enabled || false,
+      value: data.extra_services?.so_banho?.value || ''
     },
     hidratacao: {
       enabled: data.extra_services?.hidratacao?.enabled || false,
       value: data.extra_services?.hidratacao?.value || ''
     },
-    botinha: { 
-      enabled: data.extra_services?.botinha?.enabled || false, 
-      value: data.extra_services?.botinha?.value || '' 
+    botinha: {
+      enabled: data.extra_services?.botinha?.enabled || false,
+      value: data.extra_services?.botinha?.value || ''
     },
-    contorno: { 
-      enabled: data.extra_services?.contorno?.enabled || false, 
-      value: data.extra_services?.contorno?.value || '' 
+    contorno: {
+      enabled: data.extra_services?.contorno?.enabled || false,
+      value: data.extra_services?.contorno?.value || ''
     },
-    pintura: { 
-      enabled: data.extra_services?.pintura?.enabled || false, 
-      value: data.extra_services?.pintura?.value || '' 
+    pintura: {
+      enabled: data.extra_services?.pintura?.enabled || false,
+      value: data.extra_services?.pintura?.value || ''
     },
-    patacure: { 
-      enabled: data.extra_services?.patacure?.enabled || false, 
-      value: data.extra_services?.patacure?.value || '' 
+    patacure: {
+      enabled: data.extra_services?.patacure?.enabled || false,
+      value: data.extra_services?.patacure?.value || ''
     },
-    tintura: { 
-      enabled: data.extra_services?.tintura?.enabled || false, 
-      value: data.extra_services?.tintura?.value || '' 
+    tintura: {
+      enabled: data.extra_services?.tintura?.enabled || false,
+      value: data.extra_services?.tintura?.value || ''
     },
-    penteado: { 
-      enabled: data.extra_services?.penteado?.enabled || false, 
-      value: data.extra_services?.penteado?.value || '' 
+    penteado: {
+      enabled: data.extra_services?.penteado?.enabled || false,
+      value: data.extra_services?.penteado?.value || ''
     },
-    desembolo: { 
-      enabled: data.extra_services?.desembolo?.enabled || false, 
-      value: data.extra_services?.desembolo?.value || '' 
+    desembolo: {
+      enabled: data.extra_services?.desembolo?.enabled || false,
+      value: data.extra_services?.desembolo?.value || ''
     },
 
     // Serviços Daycare
-    adestrador: { 
-      enabled: data.extra_services?.adestrador?.enabled || false, 
-      value: data.extra_services?.adestrador?.value || '' 
+    adestrador: {
+      enabled: data.extra_services?.adestrador?.enabled || false,
+      value: data.extra_services?.adestrador?.value || ''
     },
-    dias_extras: { 
-      enabled: data.extra_services?.dias_extras?.enabled || false, 
+    dias_extras: {
+      enabled: data.extra_services?.dias_extras?.enabled || false,
       value: data.extra_services?.dias_extras?.value || '',
       quantity: data.extra_services?.dias_extras?.quantity || 1
     },
-    hora_extra: { 
-      enabled: data.extra_services?.hora_extra?.enabled || false, 
-      value: data.extra_services?.hora_extra?.value || '' 
+    hora_extra: {
+      enabled: data.extra_services?.hora_extra?.enabled || false,
+      value: data.extra_services?.hora_extra?.value || ''
     },
-    medicamento: { 
-      enabled: data.extra_services?.medicamento?.enabled || false, 
-      value: data.extra_services?.medicamento?.value || '' 
+    medicamento: {
+      enabled: data.extra_services?.medicamento?.enabled || false,
+      value: data.extra_services?.medicamento?.value || ''
     },
-    pernoite: { 
-      enabled: data.extra_services?.pernoite?.enabled || false, 
-      value: data.extra_services?.pernoite?.value || '' 
+    pernoite: {
+      enabled: data.extra_services?.pernoite?.enabled || false,
+      value: data.extra_services?.pernoite?.value || ''
     },
-    racao: { 
-      enabled: data.extra_services?.racao?.enabled || false, 
-      value: data.extra_services?.racao?.value || '' 
+    racao: {
+      enabled: data.extra_services?.racao?.enabled || false,
+      value: data.extra_services?.racao?.value || ''
     },
-    veterinario: { 
-      enabled: data.extra_services?.veterinario?.enabled || false, 
-      value: data.extra_services?.veterinario?.value || '' 
+    veterinario: {
+      enabled: data.extra_services?.veterinario?.enabled || false,
+      value: data.extra_services?.veterinario?.value || ''
+    },
+    transporte: {
+      enabled: data.extra_services?.transporte?.enabled || false,
+      value: data.extra_services?.transporte?.value || ''
     }
   });
 
@@ -180,9 +185,9 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
     setIsLoading(true);
     try {
       const tableName = getTableName();
-      
+
       const extraServicesForSave: any = {};
-      
+
       // Itera sobre todas as chaves para preparar o salvamento
       (Object.keys(extraServices) as Array<keyof ExtraServicesData>).forEach(key => {
         const service = extraServices[key];
@@ -191,15 +196,15 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
             enabled: service.enabled,
             value: service.value === '' ? undefined : Number(service.value)
           };
-          
+
           if (key === 'dias_extras' && 'quantity' in service) {
             extraServicesForSave[key].quantity = service.quantity;
           }
         }
       });
-      
+
       const mergedExtras = { ...(data?.extra_services || {}), ...extraServicesForSave };
-      
+
       const { data: updatedData, error } = await supabase
         .from(tableName)
         .update({ extra_services: mergedExtras })
@@ -283,6 +288,7 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
             </>
           ) : type === 'monthly' ? (
             <>
+              {renderServiceItem('so_tosa', 'Tosa')}
               {renderServiceItem('hidratacao', 'Hidratação')}
               {renderServiceItem('patacure', 'Patacure')}
               {renderServiceItem('tintura', 'Tintura')}
@@ -291,6 +297,7 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
               {renderServiceItem('hora_extra', 'Hora Extra')}
               {renderServiceItem('desembolo', 'Desembolo')}
               {renderServiceItem('veterinario', 'Veterinário')}
+              {renderServiceItem('transporte', 'Transporte')}
             </>
           ) : (
             <>
