@@ -133,7 +133,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     const monthlyDiscount = monthly_client_id ? 10 : 0;
     const displayPrice: number = Math.max(0, Number(price || 0) - monthlyDiscount) + extrasTotal;
 
-    const whatsappHref = `https://api.whatsapp.com/send?phone=55${whatsapp}`;
+    const whatsappHref = `https://wa.me/55${whatsapp.replace(/\D/g, '')}`;
 
     const statusStyles: Record<string, string> = {
         'AGENDADO': 'bg-blue-100 text-blue-800',
