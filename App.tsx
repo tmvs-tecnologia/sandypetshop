@@ -2766,13 +2766,13 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
 
             const { data: regularData } = await supabase
                 .from('appointments')
-                .select('appointment_time, service, status')
+                .select('appointment_time, service')
                 .gte('appointment_time', `${yStr}-${mStr}-${dStr}T00:00:00`)
                 .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`); // Simple range check
 
             const { data: petMovelData } = await supabase
                 .from('pet_movel_appointments')
-                .select('appointment_time, service, status')
+                .select('appointment_time, service')
                 .gte('appointment_time', `${yStr}-${mStr}-${dStr}T00:00:00`)
                 .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`);
 
@@ -2785,10 +2785,6 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
                 const targetTime = toSaoPauloUTC(year, month, day, h).toISOString();
 
                 let count = allApps.filter((app: any) => {
-                    // Only count appointments that are strictly 'AGENDADO'
-                    if (app.status && app.status !== 'AGENDADO') {
-                        return false;
-                    }
                     // Don't count the appointment currently being edited!
                     // Note: We don't have ID in the fetch result above to exclude easily unless we select ID.
                     // But we can just count. If count >= MAX and one of them is THIS appointment, we are fine (we are just moving to same slot or keeping it).
@@ -3224,7 +3220,6 @@ const AdminAddAppointmentModal: React.FC<{
                             whatsapp: dbRecord.whatsapp,
                             service: serviceKey,
                             appointmentTime: new Date(dbRecord.appointment_time),
-                            status: dbRecord.status,
                         };
                     })
                     .filter(Boolean) as Appointment[];
@@ -10890,9 +10885,8 @@ const TimeSlotPicker: React.FC<{
             const isSameDate = apptYear === selectedYear && apptMonth === selectedMonth && apptDate === selectedDay;
             const isSameHour = apptHour === hour;
 
-            // Filter by status: Only 'AGENDADO' blocks the slot.
-            // Blocks if status is 'AGENDADO'. If 'CONCLUÍDO', 'Cancelado', etc., it does not block.
-            if (appt.status && appt.status !== 'AGENDADO') {
+            // Check for status if available (prevent blocking if cancelled)
+            if (appt.status && (appt.status === 'Cancelado' || appt.status === 'CANCELADO')) {
                 return false;
             }
 
@@ -10918,8 +10912,8 @@ const TimeSlotPicker: React.FC<{
         const prev1Appts = appointments.filter(a => {
             const t = new Date(a.appointmentTime);
             // @ts-ignore
-            const isActive = a.status === 'AGENDADO';
-            return isActive && t.getHours() === hour - 1 && isSameDay(t, selectedDate);
+            const isCancelled = a.status && (a.status === 'Cancelado' || a.status === 'CANCELADO');
+            return !isCancelled && t.getHours() === hour - 1 && isSameDay(t, selectedDate);
         });
         /* 
         // DISABLED AS REQUESTED: Do not block current slot based on previous appointment duration
@@ -10933,8 +10927,8 @@ const TimeSlotPicker: React.FC<{
         const prev2Appts = appointments.filter(a => {
             const t = new Date(a.appointmentTime);
             // @ts-ignore
-            const isActive = a.status === 'AGENDADO';
-            return isActive && t.getHours() === hour - 2 && isSameDay(t, selectedDate);
+            const isCancelled = a.status && (a.status === 'Cancelado' || a.status === 'CANCELADO');
+            return !isCancelled && t.getHours() === hour - 2 && isSameDay(t, selectedDate);
         });
         /*
         // DISABLED AS REQUESTED: Do not block current slot based on previous appointment duration
