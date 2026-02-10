@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="https://i.imgur.com/M3Gt3OA.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#DB2777" />
     <link rel="apple-touch-icon" href="https://i.imgur.com/M3Gt3OA.png" />
@@ -18,6 +18,7 @@
         -moz-osx-font-smoothing: grayscale;
         font-family: 'Poppins', sans-serif;
         background-color: #FFF5F7; /* Baby Pink Background */
+        touch-action: pan-x pan-y; /* Disable double-tap zoom but allow scrolling */
       }
 
       .font-brand {

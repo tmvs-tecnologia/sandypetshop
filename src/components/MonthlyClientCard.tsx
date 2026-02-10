@@ -219,12 +219,12 @@ const MonthlyClientCard: React.FC<{
                     </div>
                     
                     {/* Price Tag */}
-                    <div className="text-right">
-                        <div className="font-outfit font-bold text-lg text-gray-900">
+                    <div className="text-right flex flex-col items-end min-w-[80px]">
+                        <div className="font-outfit font-bold text-lg text-gray-900 whitespace-nowrap">
                             R$ {totalInvoiceValue.toFixed(2).replace('.', ',')}
                         </div>
                         {hasMonthlyExtras && (
-                            <div className="text-[10px] font-medium text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md inline-block mt-0.5">
+                            <div className="text-[10px] font-medium text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md inline-block mt-0.5 whitespace-nowrap">
                                 + Extras
                             </div>
                         )}
