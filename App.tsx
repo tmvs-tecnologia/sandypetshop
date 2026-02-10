@@ -3320,6 +3320,24 @@ const AdminAddAppointmentModal: React.FC<{
         setTotalPrice(basePrice + addonsPrice);
     }, [selectedService, selectedWeight, selectedAddons, isVisitService]);
 
+    const handleSelectPet = (pet: any) => {
+        setFormData(prev => ({
+            ...prev,
+            petName: pet.pet_name || prev.petName,
+            ownerName: pet.owner_name || prev.ownerName,
+            petBreed: pet.pet_breed || prev.petBreed,
+            ownerAddress: pet.owner_address || prev.ownerAddress,
+        }));
+
+        if (pet.weight) {
+            const weightEntry = Object.entries(PET_WEIGHT_OPTIONS).find(([key, val]) => val === pet.weight);
+            if (weightEntry) {
+                setSelectedWeight(weightEntry[0] as PetWeight);
+            }
+        }
+        setFoundPets([]); // Close selection
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: name === 'whatsapp' ? formatWhatsapp(value) : value }));
@@ -8313,6 +8331,32 @@ const EditDaycareEnrollmentModal: React.FC<{
                                         </div>
                                     )}
                                 </div>
+                                {foundPets.length > 0 && (
+                                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fadeIn">
+                                        <div className="col-span-1 sm:col-span-2 text-sm text-gray-500 text-center mb-1">
+                                            Encontramos pets associados a este número. Selecione para preencher:
+                                        </div>
+                                        {foundPets.map((pet, idx) => (
+                                            <div
+                                                key={idx}
+                                                onClick={() => handleSelectPet(pet)}
+                                                className="cursor-pointer border border-pink-200 bg-pink-50/50 rounded-xl p-3 flex items-center gap-3 hover:bg-pink-100 transition-all shadow-sm"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden border border-pink-100 shrink-0">
+                                                    {pet.pet_photo_url ? (
+                                                        <SafeImage src={pet.pet_photo_url} alt={pet.pet_name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-xl">🐶</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col overflow-hidden">
+                                                    <span className="font-bold text-gray-800 truncate text-sm">{pet.pet_name}</span>
+                                                    <span className="text-xs text-gray-500 truncate">{pet.pet_breed || 'Raça não informada'}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -10438,6 +10482,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const [disabledPetMovelDates, setDisabledPetMovelDates] = useState<string[]>([]);
     const [isFetchingClient, setIsFetchingClient] = useState(false);
     const [autoFilledFields, setAutoFilledFields] = useState<string[]>([]);
+    const [foundPets, setFoundPets] = useState<any[]>([]); // Stores multiple pets found for the same phone number
 
     const isVisitService = useMemo(() =>
         selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
@@ -10547,50 +10592,96 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                         .from('appointments')
                         .select('*')
                         .eq('whatsapp', formData.whatsapp)
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .single();
+                        .order('created_at', { ascending: false });
 
-                    if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
+                    if (error) {
                         console.error('Autofill error:', error);
                     }
 
-                    if (data) {
-                        // Found a match! Autofill the fields.
-                        console.log('Autofill found client:', data);
+                    // Parallel fetch for photos from other tables
+                    const [monthlyRes, daycareRes, hotelRes] = await Promise.all([
+                        supabase.from('monthly_clients').select('pet_name, pet_photo_url').eq('whatsapp', formData.whatsapp),
+                        supabase.from('daycare_enrollments').select('pet_name, pet_photo_url').eq('contact_phone', formData.whatsapp),
+                        supabase.from('hotel_registrations').select('pet_name, pet_photo_url').eq('tutor_phone', formData.whatsapp)
+                    ]);
 
-                        // Update form data
-                        setFormData(prev => ({
-                            ...prev,
-                            petName: data.pet_name || prev.petName,
-                            ownerName: data.owner_name || prev.ownerName,
-                            petBreed: data.pet_breed || prev.petBreed,
-                            ownerAddress: data.owner_address || prev.ownerAddress,
-                        }));
-
-                        // Update weight if available and valid
-                        if (data.weight) {
-                            // Reverse lookup for weight key based on value if needed, or check if it matches enum
-                            // The DB stores the Label (e.g. "Até 5kg") or the Key?
-                            // handleSubmit says: weight: ... PET_WEIGHT_OPTIONS[selectedWeight]
-                            // So DB stores "Até 5kg".
-                            // We need to find the Key (UP_TO_5) from the Value ("Até 5kg").
-                            const weightEntry = Object.entries(PET_WEIGHT_OPTIONS).find(([key, val]) => val === data.weight);
-                            if (weightEntry) {
-                                setSelectedWeight(weightEntry[0] as PetWeight);
+                    const photoMap = new Map<string, string>();
+                    
+                    const addToMap = (list: any[] | null) => {
+                        list?.forEach(item => {
+                            if (item.pet_name && item.pet_photo_url) {
+                                photoMap.set(item.pet_name.toLowerCase().trim(), item.pet_photo_url);
                             }
-                        }
+                        });
+                    };
 
-                        // Optional: Show visual feedback or toast
-                        // alert('Dados do cliente encontrados e preenchidos!');
+                    addToMap(monthlyRes.data);
+                    addToMap(daycareRes.data);
+                    addToMap(hotelRes.data);
+
+                    if (data && data.length > 0) {
+                         // Filter unique pets by name
+                        const uniquePetsMap = new Map();
+                        data.forEach((appt: any) => {
+                             const key = (appt.pet_name || '').toLowerCase().trim();
+                             if (key && !uniquePetsMap.has(key)) {
+                                 // Try to enrich with photo if missing
+                                 if (!appt.pet_photo_url && photoMap.has(key)) {
+                                     appt.pet_photo_url = photoMap.get(key);
+                                 }
+                                 uniquePetsMap.set(key, appt);
+                             }
+                        });
+                        const uniquePets = Array.from(uniquePetsMap.values());
+
+                        if (uniquePets.length === 1) {
+                             // Found a single match! Autofill the fields.
+                            const data = uniquePets[0];
+                            console.log('Autofill found client:', data);
+
+                            // Update form data
+                            setFormData(prev => ({
+                                ...prev,
+                                petName: data.pet_name || prev.petName,
+                                ownerName: data.owner_name || prev.ownerName,
+                                petBreed: data.pet_breed || prev.petBreed,
+                                ownerAddress: data.owner_address || prev.ownerAddress,
+                            }));
+
+                            // Update weight if available and valid
+                            if (data.weight) {
+                                // Reverse lookup for weight key based on value if needed, or check if it matches enum
+                                // The DB stores the Label (e.g. "Até 5kg") or the Key?
+                                // handleSubmit says: weight: ... PET_WEIGHT_OPTIONS[selectedWeight]
+                                // So DB stores "Até 5kg".
+                                // We need to find the Key (UP_TO_5) from the Value ("Até 5kg").
+                                const weightEntry = Object.entries(PET_WEIGHT_OPTIONS).find(([key, val]) => val === data.weight);
+                                if (weightEntry) {
+                                    setSelectedWeight(weightEntry[0] as PetWeight);
+                                }
+                            }
+                            setFoundPets([]);
+
+                            // Optional: Show visual feedback or toast
+                            // alert('Dados do cliente encontrados e preenchidos!');
+                        } else if (uniquePets.length > 1) {
+                            console.log('Autofill found multiple pets:', uniquePets);
+                            setFoundPets(uniquePets);
+                        } else {
+                            console.log('Autofill: No unique pets found.');
+                            setFoundPets([]);
+                        }
                     } else {
                         console.log('Autofill: No previous records found.');
+                        setFoundPets([]);
                     }
                 } catch (err) {
                     console.error('Error fetching client data for autofill:', err);
                 } finally {
                     setIsFetchingClient(false);
                 }
+            } else {
+                setFoundPets([]);
             }
         }, 800); // 800ms debounce
         return () => clearTimeout(timer);
@@ -10764,6 +10855,24 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         });
         setTotalPrice(basePrice + addonsPrice);
     }, [selectedService, selectedWeight, selectedAddons, isVisitService]);
+
+    const handleSelectPet = (pet: any) => {
+        setFormData(prev => ({
+            ...prev,
+            petName: pet.pet_name || prev.petName,
+            ownerName: pet.owner_name || prev.ownerName,
+            petBreed: pet.pet_breed || prev.petBreed,
+            ownerAddress: pet.owner_address || prev.ownerAddress,
+        }));
+
+        if (pet.weight) {
+            const weightEntry = Object.entries(PET_WEIGHT_OPTIONS).find(([key, val]) => val === pet.weight);
+            if (weightEntry) {
+                setSelectedWeight(weightEntry[0] as PetWeight);
+            }
+        }
+        setFoundPets([]); // Close selection
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -11034,6 +11143,32 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         </div>
                                     )}
                                 </div>
+                                {foundPets.length > 0 && (
+                                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fadeIn">
+                                        <div className="col-span-1 sm:col-span-2 text-sm text-gray-500 text-center mb-1">
+                                            Encontramos pets associados a este número. Selecione para preencher:
+                                        </div>
+                                        {foundPets.map((pet, idx) => (
+                                            <div
+                                                key={idx}
+                                                onClick={() => handleSelectPet(pet)}
+                                                className="cursor-pointer border border-pink-200 bg-pink-50/50 rounded-xl p-3 flex items-center gap-3 hover:bg-pink-100 transition-all shadow-sm"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden border border-pink-100 shrink-0">
+                                                    {pet.pet_photo_url ? (
+                                                        <SafeImage src={pet.pet_photo_url} alt={pet.pet_name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-xl">🐶</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col overflow-hidden">
+                                                    <span className="font-bold text-gray-800 truncate text-sm">{pet.pet_name}</span>
+                                                    <span className="text-xs text-gray-500 truncate">{pet.pet_breed || 'Raça não informada'}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
