@@ -189,7 +189,7 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
         <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gradient-to-r from-pink-50 to-white">
           <div>
             <h2 className="text-2xl font-bold font-outfit text-gray-800">{title}</h2>
-            <p className="text-sm text-gray-500 font-jakarta mt-1">Selecione os serviços adicionais para este cliente</p>
+            <p className="text-sm text-gray-500 font-jakarta mt-1">Selecione os serviços extras para este agendamento</p>
           </div>
           <button onClick={onClose} className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50 text-gray-400 hover:text-gray-600 transition-all">
             <XMarkIcon className="h-6 w-6" />
@@ -208,38 +208,38 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center p-6 border-t border-gray-100 bg-white">
-             <div className="flex flex-col">
+        <div className="flex flex-col sm:flex-row justify-between items-center p-4 sm:p-6 gap-4 border-t border-gray-100 bg-white">
+             <div className="flex flex-col items-center sm:items-start w-full sm:w-auto">
                 <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Total Final</span>
                 <div className="flex items-center gap-2">
                     <span className="text-2xl font-bold text-pink-600 font-outfit">
                         R$ {finalTotal.toFixed(2).replace('.', ',')}
                     </span>
                     {totalExtras > 0 && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium" title={`Base: R$ ${basePrice.toFixed(2)} + Extras: R$ ${totalExtras.toFixed(2)}`}>
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium" title={`Serviço: R$ ${basePrice.toFixed(2)} + Extras: R$ ${totalExtras.toFixed(2)}`}>
                             (+ Extras)
                         </span>
                     )}
                 </div>
-                <span className="text-xs text-gray-400 mt-0.5">
-                    Base: R$ {basePrice.toFixed(2).replace('.', ',')} + Extras: R$ {totalExtras.toFixed(2).replace('.', ',')}
+                <span className="text-xs text-gray-400 mt-0.5 whitespace-nowrap">
+                    Serviço: R$ {basePrice.toFixed(2).replace('.', ',')} + Extras: R$ {totalExtras.toFixed(2).replace('.', ',')}
                 </span>
              </div>
              
-             <div className="flex space-x-3">
+             <div className="flex space-x-3 w-full sm:w-auto">
                 <button
                     onClick={onClose}
-                    className="px-5 py-2.5 text-gray-600 font-medium border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all focus:ring-2 focus:ring-gray-200"
+                    className="flex-1 sm:flex-none px-4 py-2.5 text-gray-600 font-medium border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all focus:ring-2 focus:ring-gray-200 text-sm sm:text-base"
                 >
                     Cancelar
                 </button>
                 <button
                     onClick={handleSave}
                     disabled={isLoading}
-                    className="px-6 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base whitespace-nowrap"
                 >
                     {isLoading ? (
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center justify-center gap-2">
                             <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
