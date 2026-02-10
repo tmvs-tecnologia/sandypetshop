@@ -22,6 +22,7 @@ import { Badge } from './src/components/ui/badge';
 import { Select } from './src/components/ui/select';
 import MonthlyClientCard from './src/components/MonthlyClientCard';
 import AppointmentCard from './src/components/AppointmentCard';
+import StatisticsDashboardModal from './src/components/StatisticsDashboardModal';
 
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" fill=\"%23f3f4f6\"/><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-size=\"28\">🐾</text></svg>';
 
@@ -4632,7 +4633,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             {isEditModalOpen && editingAppointment && <EditAppointmentModal appointment={editingAppointment} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdated} />}
             {isAddModalOpen && <AdminAddAppointmentModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onAppointmentCreated={handleAppointmentCreated} />}
             {appointmentToDelete && <ConfirmationModal isOpen={!!appointmentToDelete} onClose={() => setAppointmentToDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o agendamento para ${appointmentToDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={deletingAppointmentId === appointmentToDelete.id} />}
-            <StatisticsModal isOpen={isStatisticsModalOpen} onClose={() => setIsStatisticsModalOpen(false)} />
+            <StatisticsDashboardModal isOpen={isStatisticsModalOpen} onClose={() => setIsStatisticsModalOpen(false)} />
             {isCloseDayModalOpen && (
                 <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 animate-fadeIn">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scaleIn">
@@ -7277,7 +7278,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
 
 
             {/* Modal de Estatísticas de Mensalistas */}
-            <MonthlyClientsStatisticsModal
+            <StatisticsDashboardModal
                 isOpen={showStatisticsModal}
                 onClose={() => setShowStatisticsModal(false)}
             />
