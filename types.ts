@@ -60,6 +60,8 @@ export interface AdminAppointment {
   pet_breed?: string;
   condominium?: string;
   responsible?: string;
+  pet_photo_url?: string | null;
+  recurrence_type?: 'weekly' | 'bi-weekly' | 'monthly';
   extra_services?: {
     pernoite: { enabled: boolean; value: number };
     banho_tosa: { enabled: boolean; value: number };

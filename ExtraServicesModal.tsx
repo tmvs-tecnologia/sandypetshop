@@ -117,6 +117,17 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
     return total;
   };
 
+  const getBasePrice = () => {
+    // Tenta obter o preço base de várias propriedades possíveis
+    // Prioriza 'price' (MonthlyClient, Appointment), depois 'total_services_price' (Hotel), etc.
+    const price = Number(data?.price || data?.total_services_price || data?.total_price || 0);
+    return isNaN(price) ? 0 : price;
+  };
+
+  const totalExtras = calculateTotal();
+  const basePrice = getBasePrice();
+  const finalTotal = basePrice + totalExtras;
+
   const getTableName = () => {
     switch (type) {
       case 'appointment': return 'appointments';
@@ -199,9 +210,19 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
         {/* Footer */}
         <div className="flex justify-between items-center p-6 border-t border-gray-100 bg-white">
              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Total Estimado</span>
-                <span className="text-2xl font-bold text-pink-600 font-outfit">
-                    R$ {calculateTotal().toFixed(2).replace('.', ',')}
+                <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Total Final</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-pink-600 font-outfit">
+                        R$ {finalTotal.toFixed(2).replace('.', ',')}
+                    </span>
+                    {totalExtras > 0 && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium" title={`Base: R$ ${basePrice.toFixed(2)} + Extras: R$ ${totalExtras.toFixed(2)}`}>
+                            (+ Extras)
+                        </span>
+                    )}
+                </div>
+                <span className="text-xs text-gray-400 mt-0.5">
+                    Base: R$ {basePrice.toFixed(2).replace('.', ',')} + Extras: R$ {totalExtras.toFixed(2).replace('.', ',')}
                 </span>
              </div>
              

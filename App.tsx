@@ -21,6 +21,7 @@ import { Label } from './src/components/ui/label';
 import { Badge } from './src/components/ui/badge';
 import { Select } from './src/components/ui/select';
 import MonthlyClientCard from './src/components/MonthlyClientCard';
+import AppointmentCard from './src/components/AppointmentCard';
 
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" fill=\"%23f3f4f6\"/><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-size=\"28\">🐾</text></svg>';
 
@@ -3975,184 +3976,7 @@ const AdminAddAppointmentModal: React.FC<{
 };
 
 
-{/* FIX: Changed the `status` prop type from `string` to the specific union type to match the `AdminAppointment` interface. */ }
-const AppointmentCard: React.FC<{
-    appointment: AdminAppointment;
-    onUpdateStatus: (id: string, status: 'AGENDADO' | 'CONCLUÍDO') => void;
-    isUpdating: boolean;
-    onEdit: (appointment: AdminAppointment) => void;
-    onDelete: (appointment: AdminAppointment) => void;
-    isDeleting: boolean;
-    onOpenActionMenu: (appointment: AdminAppointment, event: React.MouseEvent) => void;
-    onDeleteObservation: (appointment: AdminAppointment) => void;
-    onRequestCompletion: (id: string) => void;
-}> = ({ appointment, onUpdateStatus, isUpdating, onEdit, onDelete, isDeleting, onOpenActionMenu, onDeleteObservation, onRequestCompletion }) => {
-    const { id, appointment_time, pet_name, owner_name, service, status, price, addons, whatsapp, monthly_client_id, observation } = appointment;
-    const isCompleted = status === 'CONCLUÍDO';
-    const rawPhone = String(whatsapp || '');
-    const phoneDigits = rawPhone.replace(/\D/g, '');
-    const phoneWithCountry = phoneDigits ? (phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`) : '';
-    const whatsappHref = phoneWithCountry ? `https://api.whatsapp.com/send?phone=${phoneWithCountry}` : '#';
 
-    // Calcular total de serviços extras do agendamento (soma ao preço exibido)
-    const es: any = (appointment as any).extra_services || null;
-    const extrasTotal: number = (() => {
-        if (!es) return 0;
-        let total = 0;
-        if (es.pernoite?.enabled) total += Number(es.pernoite.value || 0);
-        if (es.banho_tosa?.enabled) total += Number(es.banho_tosa.value || 0);
-        if (es.so_banho?.enabled) total += Number(es.so_banho.value || 0);
-        if (es.adestrador?.enabled) total += Number(es.adestrador.value || 0);
-        if (es.despesa_medica?.enabled) total += Number(es.despesa_medica.value || 0);
-        if (es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
-        return total;
-    })();
-    const hasExtras: boolean = Boolean(
-        es && (
-            es.pernoite?.enabled ||
-            es.banho_tosa?.enabled ||
-            es.so_banho?.enabled ||
-            es.adestrador?.enabled ||
-            es.despesa_medica?.enabled ||
-            (es.dias_extras?.quantity > 0)
-        )
-    );
-    const monthlyDiscount = monthly_client_id ? 10 : 0;
-    const displayPrice: number = Math.max(0, Number(price || 0) - monthlyDiscount) + extrasTotal;
-
-    const statusStyles: Record<string, string> = {
-        'AGENDADO': 'bg-blue-100 text-blue-800',
-        'CONCLUÍDO': 'bg-green-100 text-green-800',
-        'pending': 'bg-blue-100 text-blue-800',
-    };
-
-    return (
-        <div className={`bg-white rounded-2xl shadow-md overflow-hidden transition-all duration-300 ${isDeleting ? 'opacity-40 animate-pulse' : 'transform hover:scale-[1.02]'}`}>
-            <div className="p-5">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <div className="flex items-center text-sm font-semibold text-pink-600">
-                            <ClockIcon />
-                            <span>
-                                {new Date(appointment_time).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' })}, {new Date(appointment_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}
-                            </span>
-                        </div>
-                        <p className="mt-1 text-3xl font-bold text-gray-900">{pet_name}</p>
-                        <p className="text-base text-gray-600">Dono(a): {owner_name}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                        <div className={`px-3 py-1 text-xs font-bold rounded-full ${statusStyles[status] || 'bg-gray-100 text-gray-800'}`}>
-                            {status === 'pending' ? 'AGENDADO' : status}
-                        </div>
-                        {monthly_client_id && (
-                            <div className="px-3 py-1 text-xs font-bold rounded-full bg-yellow-100 text-yellow-800">
-                                Mensalista
-                            </div>
-                        )}
-                        {appointment.responsible && (
-                            <div className="px-3 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-                                Responsável: {appointment.responsible}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="mt-4 border-t border-gray-200 pt-4">
-                    <div className="flex items-center justify-between text-base text-gray-700">
-                        <div className="flex items-center">
-                            <TagIcon />
-                            <span className="font-semibold mr-2">Serviço:</span> {service}
-                        </div>
-                        {((service === 'Creche Pet' || service === 'Hotel Pet') && !monthly_client_id) && (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                🏠 Visita
-                            </span>
-                        )}
-                    </div>
-                    {addons && addons.length > 0 &&
-                        <div className="text-xs text-gray-500 mt-1 ml-6">
-                            + {addons.join(', ')}
-                        </div>
-                    }
-                    <a
-                        href={whatsappHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center text-base text-gray-700 mt-2 hover:text-green-700"
-                        aria-label="Conversar no WhatsApp"
-                    >
-                        <WhatsAppIcon />
-                        <span className="font-semibold mr-2 ml-1.5">Contato:</span>
-                        <span className="text-green-600 ml-1 underline">{whatsapp}</span>
-                    </a>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                    <p className="text-2xl font-bold text-gray-800">R$ {displayPrice.toFixed(2).replace('.', ',')}
-                        {hasExtras && (
-                            <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700" title="Serviços extras adicionados">(i)</span>
-                        )}
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={(e) => onOpenActionMenu(appointment, e)}
-                            disabled={isUpdating || isDeleting}
-                            className="p-2 rounded-full text-blue-500 hover:bg-blue-100 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            aria-label="Mais ações"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                        </button>
-                        <button
-                            onClick={() => onEdit(appointment)}
-                            disabled={isUpdating || isDeleting}
-                            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            aria-label="Editar agendamento"
-                        >
-                            <EditIcon />
-                        </button>
-
-                        <button
-                            onClick={() => onDelete(appointment)}
-                            disabled={isUpdating || isDeleting}
-                            className="p-2 rounded-full text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            aria-label="Excluir agendamento"
-                        >
-                            <DeleteIcon />
-                        </button>
-                        <button
-                            onClick={() => onRequestCompletion(id)}
-                            disabled={isCompleted || isUpdating || isDeleting}
-                            className={`p-2 rounded-full text-white transition-colors duration-200 disabled:cursor-not-allowed ${isCompleted ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
-                                }`}
-                            aria-label="Concluir serviço"
-                        >
-                            {isUpdating && !isDeleting ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <CheckCircleIcon />}
-                        </button>
-                    </div>
-                </div>
-                {observation && (
-                    <div className="mt-4 pt-3 border-t border-gray-200">
-                        <div className="flex items-start gap-2 bg-gray-50 p-3 rounded-lg">
-                            <p className="text-sm text-gray-600 flex-1">
-                                <strong className="text-gray-800">Observação:</strong> {observation}
-                            </p>
-                            <button
-                                onClick={() => onDeleteObservation(appointment)}
-                                disabled={isUpdating || isDeleting}
-                                className="p-2 rounded-full text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                aria-label="Excluir observação"
-                            >
-                                <DeleteIcon />
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
 
 // FIX: Define the missing Calendar component
 const Calendar: React.FC<{
@@ -4618,6 +4442,8 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     const [applyBathGroom, setApplyBathGroom] = useState(true);
     const [applyPetMovel, setApplyPetMovel] = useState(true);
     const [confirmingCompletionId, setConfirmingCompletionId] = useState<string | null>(null);
+    const [confirmingCompletionPrice, setConfirmingCompletionPrice] = useState<number | null>(null);
+    const [selectedTab, setSelectedTab] = useState<'scheduled' | 'completed'>('scheduled');
 
     useEffect(() => {
         // A busca de agendamentos agora é feita no componente App
@@ -4627,7 +4453,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     }, [refreshKey, appointments]);
 
     // FIX: Changed `newStatus` type from `string` to the specific union type to match `AdminAppointment['status']`.
-    const handleUpdateStatus = async (id: string, newStatus: 'AGENDADO' | 'CONCLUÍDO', responsible?: string) => {
+    const handleUpdateStatus = async (id: string, newStatus: 'AGENDADO' | 'CONCLUÍDO', responsible?: string, finalPrice?: number) => {
         const appointmentToUpdate = appointments.find(app => app.id === id);
         if (!appointmentToUpdate) return;
         setUpdatingStatusId(id);
@@ -4670,6 +4496,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             ...updatedAppointment,
+                            price: finalPrice ?? updatedAppointment.price,
                             message: isVisit ? 'Visita Realizada' : 'Serviço Concluído',
                             isVisit,
                             responsible: responsible || null // Inclui o responsável no payload do webhook
@@ -4728,14 +4555,16 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         setAppointmentToDelete(null);
     };
 
-    const handleRequestCompletion = (id: string) => {
+    const handleRequestCompletion = (id: string, price: number) => {
         setConfirmingCompletionId(id);
+        setConfirmingCompletionPrice(price);
     };
 
     const handleConfirmCompletion = (responsible: string) => {
         if (confirmingCompletionId) {
-            handleUpdateStatus(confirmingCompletionId, 'CONCLUÍDO', responsible);
+            handleUpdateStatus(confirmingCompletionId, 'CONCLUÍDO', responsible, confirmingCompletionPrice);
             setConfirmingCompletionId(null);
+            setConfirmingCompletionPrice(null);
         }
     };
 
@@ -4772,7 +4601,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         return { upcomingAppointments: upcoming, pastAppointments: past };
     }, [filteredAppointments, adminView]);
 
-    const renderAppointments = (apps: AdminAppointment[]) => apps.map(app => <AppointmentCard key={app.id} appointment={app} onUpdateStatus={handleUpdateStatus} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />);
+    const renderAppointments = (apps: AdminAppointment[]) => apps.map(app => <AppointmentCard key={app.id} appointment={app} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />);
 
     return (
         <>
@@ -4904,7 +4733,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                     <div key={app.id} className="w-full">
                                         <AppointmentCard
                                             appointment={app}
-                                            onUpdateStatus={handleUpdateStatus}
                                             isUpdating={updatingStatusId === app.id}
                                             onEdit={handleOpenEditModal}
                                             onDelete={handleRequestDelete}
@@ -4942,33 +4770,72 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                     )}
                                 </div>
                                 {dailyAppointments.length > 0 ? (
-                                    <>
-                                        <h3 className="text-lg font-semibold text-gray-700 mb-3">Agendados</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {dailyScheduled.map(app => (
-                                                <div key={app.id} className="w-full">
-                                                    <AppointmentCard appointment={app} onUpdateStatus={handleUpdateStatus} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />
-                                                </div>
-                                            ))}
+                                    <div className="space-y-6">
+                                        <div className="flex space-x-4 mb-6">
+                                            <button
+                                                onClick={() => setSelectedTab('scheduled')}
+                                                className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center gap-2 ${
+                                                    selectedTab === 'scheduled'
+                                                        ? 'bg-pink-600 text-white shadow-md'
+                                                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                                }`}
+                                            >
+                                                Agendados
+                                                <span className={`px-2 py-0.5 rounded-full text-xs ${selectedTab === 'scheduled' ? 'bg-pink-700 bg-opacity-30 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {dailyScheduled.length}
+                                                </span>
+                                            </button>
+                                            <button
+                                                onClick={() => setSelectedTab('completed')}
+                                                className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-2 ${
+                                                    selectedTab === 'completed'
+                                                        ? 'bg-green-600 text-white shadow-md'
+                                                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                                }`}
+                                            >
+                                                Concluídos
+                                                <span className={`px-2 py-0.5 rounded-full text-xs ${selectedTab === 'completed' ? 'bg-green-700 bg-opacity-30 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {dailyCompleted.length}
+                                                </span>
+                                            </button>
                                         </div>
 
-                                        <div className="mt-8">
-                                            <h3 className="text-lg font-semibold text-gray-700 mb-3">Concluídos</h3>
-                                            {dailyCompleted.length > 0 ? (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                    {dailyCompleted.map(app => (
-                                                        <div key={app.id} className="w-full">
-                                                            <AppointmentCard appointment={app} onUpdateStatus={handleUpdateStatus} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="text-center py-6 bg-white rounded-lg shadow-sm">
-                                                    <p className="text-gray-500">Nenhum concluído para este dia.</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
+                                        {selectedTab === 'scheduled' && (
+                                            <div className="animate-fadeIn">
+                                                {dailyScheduled.length > 0 ? (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                        {dailyScheduled.map(app => (
+                                                            <div key={app.id} className="w-full">
+                                                                <AppointmentCard appointment={app} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                                                        <p className="text-gray-500">Nenhum agendamento pendente para este dia.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {selectedTab === 'completed' && (
+                                            <div className="animate-fadeIn">
+                                                {dailyCompleted.length > 0 ? (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                        {dailyCompleted.map(app => (
+                                                            <div key={app.id} className="w-full">
+                                                                <AppointmentCard appointment={app} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                                                        <p className="text-gray-500">Nenhum serviço concluído neste dia.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 ) : (
                                     <div className="text-center py-16 bg-white rounded-lg shadow-sm"><p className="text-gray-500 text-lg">Nenhum agendamento para este dia.</p></div>
                                 )}
@@ -7380,7 +7247,10 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                         setIsMonthlyExtraServicesModalOpen(false);
                         setMonthlyClientForExtraServices(null);
                     }}
-                    onSuccess={handleExtraServicesSuccess}
+                    onSuccess={() => {
+                        handleExtraServicesSuccess();
+                        handleClientUpdated(); // Força a atualização da lista principal
+                    }}
                     data={monthlyClientForExtraServices}
                     type="monthly"
                     title="Serviços Extras - Cliente Mensalista"
@@ -13634,12 +13504,12 @@ const AdminDashboard: React.FC<{
             try {
                 const { data: bathAppointments, error: bathError } = await supabase
                     .from('appointments')
-                    .select('*');
+                    .select('*, monthly_clients(pet_photo_url, recurrence_type)');
                 if (bathError) console.warn('Erro ao buscar appointments (Banho & Tosa):', bathError);
 
                 const { data: petMovelAppointments, error: petMovelError } = await supabase
                     .from('pet_movel_appointments')
-                    .select('*');
+                    .select('*, monthly_clients(pet_photo_url, recurrence_type)');
                 if (petMovelError) console.warn('Erro ao buscar pet_movel_appointments:', petMovelError);
 
                 // Remover duplicados por mensalista e mesmo minuto de appointment_time, mantendo o mais antigo
@@ -13709,6 +13579,9 @@ const AdminDashboard: React.FC<{
                         condominium: rec.condominium ?? rec.condo ?? undefined,
                         extra_services: rec.extra_services ?? undefined,
                         observation: rec.observation ?? rec.notes ?? undefined,
+                        pet_photo_url: rec.monthly_clients?.pet_photo_url ?? undefined,
+                        recurrence_type: rec.monthly_clients?.recurrence_type ?? undefined,
+                        responsible: rec.responsible ?? undefined,
                     }));
                 };
 
@@ -14240,12 +14113,12 @@ const App: React.FC = () => {
             try {
                 const { data: bathAppointments, error: bathError } = await supabase
                     .from('appointments')
-                    .select('*');
+                    .select('*, monthly_clients(pet_photo_url, recurrence_type)');
                 if (bathError) console.warn('Erro ao buscar appointments (Banho & Tosa):', bathError);
 
                 const { data: petMovelAppointments, error: petMovelError } = await supabase
                     .from('pet_movel_appointments')
-                    .select('*');
+                    .select('*, monthly_clients(pet_photo_url, recurrence_type)');
                 if (petMovelError) console.warn('Erro ao buscar pet_movel_appointments:', petMovelError);
 
                 const normalize = (arr: any[] | null | undefined): AdminAppointment[] => {
@@ -14268,6 +14141,9 @@ const App: React.FC = () => {
                         condominium: rec.condominium ?? rec.condo ?? undefined,
                         extra_services: rec.extra_services ?? undefined,
                         observation: rec.observation ?? rec.notes ?? undefined,
+                        pet_photo_url: rec.monthly_clients?.pet_photo_url ?? undefined,
+                        recurrence_type: rec.monthly_clients?.recurrence_type ?? undefined,
+                        responsible: rec.responsible ?? undefined,
                     }));
                 };
 
