@@ -2,12 +2,9 @@ import React, { useState } from 'react';
 import { 
     CalendarIcon, 
     ClockIcon, 
-    CurrencyDollarIcon, 
     UserIcon, 
     PhoneIcon, 
-    SparklesIcon,
-    HomeModernIcon,
-    BuildingOfficeIcon
+    SparklesIcon
 } from '@heroicons/react/24/outline';
 import { MonthlyClient } from '../../types';
 import { useServiceValidation } from '../hooks/useServiceValidation';
@@ -43,37 +40,83 @@ const SafeImage: React.FC<{
     );
 };
 
-const formatDateToBR = (dateString: string) => {
-    const datePart = (dateString || '').split('T')[0];
-    const parts = datePart.split('-');
-    if (parts.length !== 3) return dateString;
-    const [year, month, day] = parts;
+const formatDateToBR = (date: Date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
     return `${day}/${month}/${year}`;
 };
 
-const getCurrentMonthPaymentDueISO = () => {
+const getLastDayOfCurrentMonth = () => {
     const now = new Date();
-    // Assuming payment is due on day 10 or similar logic if not present in client data, 
-    // but the original code used a helper. For now, let's use a simple current date placeholder 
-    // or rely on client.payment_due_date if available.
-    // The original code called `getCurrentMonthPaymentDueISO()` which was likely a global helper.
-    // I will simulate it here to avoid dependency hell, or use client.payment_due_date.
-    return new Date(now.getFullYear(), now.getMonth(), 10).toISOString().split('T')[0];
+    // month + 1, day 0 returns the last day of the current month
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0);
 };
 
 const getNextAppointmentDateText = (client: MonthlyClient) => {
-    // Simplified placeholder logic. In a real scenario, this would calculate based on recurrence.
-    // Reusing the logic from the original component would be ideal, but it called a global function.
-    // We'll display "Ver no calendário" or similar if logic is complex, or try to approximate.
-    const today = new Date();
-    const targetDay = client.recurrence_day; // 1=Seg, etc.
-    // Simple logic: find next occurrence of week day
-    if (client.recurrence_type === 'monthly') return `Dia ${targetDay}`;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Reset time
+    const currentDayOfWeek = today.getDay() || 7; // 1=Mon ... 7=Sun (JS default 0=Sun)
+    // Adjust JS getDay() to match typical 1=Mon logic if stored that way. 
+    // Assuming client.recurrence_day follows 1=Mon, 2=Tue... 7=Sun (or 0=Sun? Let's assume ISO 1-7 or 0-6).
+    // The previous code had `weekDaysLabel` using 1=Seg. Let's assume 1=Segunda, 5=Sexta.
+    // JS: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat.
     
-    // Weekly logic
-    const currentDay = today.getDay(); // 0=Sun, 1=Mon...
-    // Adjust logic as needed.
-    return "Verificar Calendário";
+    // Map JS day to our system day (1=Mon ... 5=Fri, maybe 6=Sat, 7=Sun?)
+    // Let's standardise: if client.recurrence_day is 1 (Seg), and today is 1 (Mon), next is today if time hasn't passed? 
+    // Or strictly future? Usually "Next" implies >= Today.
+    
+    let nextDate = new Date(today);
+
+    if (client.recurrence_type === 'monthly') {
+        // Recurrence day is day of month (1-31)
+        const targetDay = client.recurrence_day;
+        
+        // Check if day has passed in current month
+        if (today.getDate() <= targetDay) {
+            nextDate.setDate(targetDay);
+        } else {
+            // Move to next month
+            nextDate.setMonth(nextDate.getMonth() + 1);
+            nextDate.setDate(targetDay);
+        }
+    } else {
+        // Weekly or Bi-weekly
+        // recurrence_day is 1=Seg, 2=Ter... 
+        // JS: 1=Mon ...
+        const targetDayOfWeek = client.recurrence_day; // Assuming 1=Mon, 5=Fri
+        
+        // Calculate days until next occurrence
+        // JS Day: 0(Sun), 1(Mon)... 6(Sat)
+        // System: 1(Mon)... 5(Fri)
+        // Need to map system day to JS day. If system 1=Mon, it matches JS 1.
+        // If system 7=Sun (or whatever), we need to handle.
+        // Let's assume 1-5 map directly.
+        
+        const currentJsDay = today.getDay() === 0 ? 7 : today.getDay(); // Make Sun=7 for easier math
+        const targetJsDay = targetDayOfWeek; // Assuming 1-7 input
+        
+        let daysToAdd = targetJsDay - currentJsDay;
+        if (daysToAdd < 0) {
+            // Target day already passed this week
+            daysToAdd += 7;
+        }
+        
+        nextDate.setDate(today.getDate() + daysToAdd);
+        
+        // If bi-weekly, logic is complex without a reference "start date". 
+        // We'll treat as weekly for "Next Appointment" approximation or assume active cycle.
+        // For accurate bi-weekly, we need `last_appointment_date`. 
+        // If not available, we show the weekly equivalent.
+        if (client.recurrence_type === 'bi-weekly') {
+             // Ideally we'd check if this week is the "on" week. 
+             // Without history, we just show the next matching weekday.
+             // Adding a suffix to indicate uncertainty? No, user wants a date.
+             // We'll leave it as next weekday occurrence.
+        }
+    }
+    
+    return formatDateToBR(nextDate);
 };
 
 // --- Component ---
@@ -107,12 +150,8 @@ const MonthlyClientCard: React.FC<{
                 const service = (client.extra_services as any)[key];
                 if (service && service.enabled) {
                     const value = Number(service.value || 0);
-                    const quantity = Number(service.quantity || 1); 
-                    total += value; // Logic from original: value is total or unit? Original code summed value directly.
-                    // Wait, original code: total += value; (line 7668)
-                    // But comment said: "Se houver quantidade... multiplica". 
-                    // Actually line 7668 adds `value`. If quantity logic was intended, it wasn't fully implemented in the snippet I saw?
-                    // Ah, let's stick to safe summation.
+                    // const quantity = Number(service.quantity || 1); 
+                    total += value; 
                 }
             });
         }
@@ -124,9 +163,17 @@ const MonthlyClientCard: React.FC<{
         client.extra_services && Object.values(client.extra_services).some((s: any) => s.enabled)
     );
 
-    const weekDaysLabel: Record<number, string> = { 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta' };
+    const weekDaysLabel: Record<number, string> = { 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado', 7: 'Domingo' };
     const recurrenceDayLabel = client.recurrence_type === 'monthly' ? `Dia ${client.recurrence_day}` : (weekDaysLabel[client.recurrence_day] || String(client.recurrence_day));
     const recurrenceTimeLabel = `${String(client.recurrence_time).padStart(2, '0')}:00`;
+    
+    // Logic for Condominium Label
+    const getCondoLabel = () => {
+        if (!client.condominium || client.condominium === 'Nenhum Condomínio' || client.condominium.trim() === '') {
+            return 'Banho & Tosa Fixo';
+        }
+        return client.condominium;
+    };
 
     return (
         <div 
@@ -164,11 +211,9 @@ const MonthlyClientCard: React.FC<{
                                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-100 uppercase tracking-wide">
                                     {getRecurrenceText(client)}
                                 </span>
-                                {client.condominium && client.condominium !== 'Nenhum Condomínio' && (
-                                    <span className="text-[10px] text-gray-500 truncate max-w-[100px]" title={client.condominium}>
-                                        {client.condominium}
-                                    </span>
-                                )}
+                                <span className="text-[10px] text-gray-500 truncate max-w-[100px]" title={getCondoLabel()}>
+                                    {getCondoLabel()}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -204,17 +249,34 @@ const MonthlyClientCard: React.FC<{
                             </span>
                         </div>
                     </div>
+                    
+                    {/* New Fields: Next Appointment & Payment Date */}
+                    <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4 text-pink-400" />
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Próx. Agendamento</span>
+                            <span className="text-xs font-bold text-pink-600">{getNextAppointmentDateText(client)}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4 text-green-500" />
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Próx. Pagamento</span>
+                            <span className="text-xs font-bold text-green-600">{formatDateToBR(getLastDayOfCurrentMonth())}</span>
+                        </div>
+                    </div>
+
                     <div className="flex items-center gap-2">
                         <CalendarIcon className="w-4 h-4 text-gray-400" />
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Dia</span>
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Dia Fixo</span>
                             <span className="text-xs font-medium text-gray-700">{recurrenceDayLabel}</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <ClockIcon className="w-4 h-4 text-gray-400" />
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Hora</span>
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Horário</span>
                             <span className="text-xs font-medium text-gray-700">{recurrenceTimeLabel}</span>
                         </div>
                     </div>

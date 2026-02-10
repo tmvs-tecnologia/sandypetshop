@@ -6686,127 +6686,7 @@ const MonthlyClientDetailsModal: React.FC<{ client: MonthlyClient | null; onClos
 };
 
 
-const EditMonthlyClientAdvancedModal: React.FC<{ client: MonthlyClient; onClose: () => void; onMonthlyClientUpdated: () => void; }> = ({ client, onClose, onMonthlyClientUpdated }) => {
-    const [data, setData] = useState<any | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
-    const [alertInfo, setAlertInfo] = useState<{ title: string; message: string; variant: 'success' | 'error' } | null>(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const { data, error } = await supabase
-                    .from('monthly_clients')
-                    .select('*')
-                    .eq('id', client.id)
-                    .single();
-                if (error) {
-                    setError('Falha ao carregar os dados completos.');
-                    setData(client);
-                } else {
-                    setData(data);
-                }
-            } catch (_) {
-                setError('Erro inesperado ao carregar os dados completos.');
-                setData(client);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, [client]);
-
-    const PT_LABELS: Record<string, string> = { id: 'ID', created_at: 'Criado em', pet_name: 'Pet', pet_breed: 'Raça', owner_name: 'Tutor', owner_address: 'Endereço', whatsapp: 'WhatsApp', service: 'Serviço', weight: 'Peso', price: 'Preço', recurrence_type: 'Recorrência', recurrence_day: 'Dia da recorrência', recurrence_time: 'Hora da recorrência', is_active: 'Ativo', payment_status: 'Status do pagamento', payment_due_date: 'Data de vencimento', condominium: 'Condomínio', extra_services: 'Serviços extras', pet_photo_url: 'Foto do pet' };
-    const formatLabel = (k: string) => PT_LABELS[k] || k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-    const isReadOnly = (k: string) => ['id', 'created_at'].includes(k);
-    const isDateField = (k: string) => k.endsWith('_date') || k === 'payment_due_date' || k === 'created_at';
-
-    const handleChange = (k: string, v: any) => {
-        setData((prev: any) => ({ ...(prev || {}), [k]: v }));
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!data) return;
-        setIsSaving(true);
-        const payload: any = { ...data };
-        delete payload.id;
-        if (payload.payment_due_date === '') payload.payment_due_date = null;
-        if (typeof payload.extra_services === 'string') {
-            try { payload.extra_services = JSON.parse(payload.extra_services); } catch { }
-        }
-        const { error } = await supabase.from('monthly_clients').update(payload).eq('id', client.id);
-        if (error) {
-            setAlertInfo({ title: 'Erro', message: 'Erro ao salvar os dados completos do mensalista.', variant: 'error' });
-        } else {
-            setAlertInfo({ title: 'Sucesso', message: 'Dados completos atualizados com sucesso.', variant: 'success' });
-        }
-        setIsSaving(false);
-    };
-
-    const handleAlertClose = () => {
-        const ok = alertInfo?.variant === 'success';
-        setAlertInfo(null);
-        if (ok) {
-            onMonthlyClientUpdated();
-            onClose();
-        }
-    };
-
-    return (
-        <>
-            {alertInfo && <AlertModal isOpen={true} onClose={handleAlertClose} title={alertInfo.title} message={alertInfo.message} variant={alertInfo.variant} />}
-            <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <form onSubmit={handleSubmit}>
-                        <div className="p-6 border-b flex items-center justify-between">
-                            <h2 className="text-3xl font-bold text-gray-800">Editar Mensalista</h2>
-                            <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-gray-100"><CloseIcon /></button>
-                        </div>
-                        <div className="p-6">
-                            {loading ? (
-                                <div className="flex justify-center py-12"><LoadingSpinner /></div>
-                            ) : (
-                                <>
-                                    {error && <div className="p-3 bg-yellow-50 text-yellow-700 rounded-md text-sm">{error}</div>}
-                                    {data && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {Object.entries(data).map(([k, v]) => (
-                                                <div key={k} className="flex flex-col">
-                                                    <label className="text-sm font-semibold text-gray-700">{formatLabel(k)}</label>
-                                                    {k === 'extra_services' ? (
-                                                        <textarea value={typeof v === 'string' ? v : JSON.stringify(v || {}, null, 2)} onChange={(e) => handleChange(k, e.target.value)} className="mt-1 w-full px-3 py-2 border rounded-md" rows={4} />
-                                                    ) : isReadOnly(k) ? (
-                                                        <input value={String(v ?? '')} readOnly className="mt-1 w-full px-3 py-2 bg-gray-100 border rounded-md" />
-                                                    ) : typeof v === 'boolean' ? (
-                                                        <div className="mt-1"><input type="checkbox" checked={!!v} onChange={(e) => handleChange(k, e.target.checked)} /></div>
-                                                    ) : typeof v === 'number' ? (
-                                                        <input type="number" value={Number(v)} onChange={(e) => handleChange(k, Number(e.target.value))} className="mt-1 w-full px-3 py-2 border rounded-md" />
-                                                    ) : isDateField(k) ? (
-                                                        <input type="date" value={(String(v || '')).split('T')[0] || ''} onChange={(e) => handleChange(k, e.target.value)} className="mt-1 w-full px-3 py-2 border rounded-md" />
-                                                    ) : (
-                                                        <input type="text" value={String(v ?? '')} onChange={(e) => handleChange(k, e.target.value)} className="mt-1 w-full px-3 py-2 border rounded-md" />
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                        <div className="p-6 bg-gray-50 flex justify-end gap-4">
-                            <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 font-bold py-3.5 px-4 rounded-lg">Cancelar</button>
-                            <button type="submit" disabled={isSaving} className="bg-pink-600 text-white font-bold py-3.5 px-4 rounded-lg disabled:opacity-50">{isSaving ? 'Salvando...' : 'Salvar'}</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </>
-    );
-};
 
 const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () => void; }> = ({ onAddClient, onDataChanged }) => {
     const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>([]);
@@ -7181,7 +7061,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     return (
         <>
             {alertInfo && <AlertModal isOpen={!!alertInfo} onClose={() => setAlertInfo(null)} title={alertInfo.title} message={alertInfo.message} variant={alertInfo.variant} />}
-            {editingClient && <EditMonthlyClientAdvancedModal client={editingClient} onClose={() => setEditingClient(null)} onMonthlyClientUpdated={handleUpdateSuccess} />}
+            {editingClient && <EditMonthlyClientModal client={editingClient} onClose={() => setEditingClient(null)} onMonthlyClientUpdated={handleUpdateSuccess} />}
             {deletingClient && <ConfirmationModal isOpen={!!deletingClient} onClose={() => setDeletingClient(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o mensalista ${deletingClient.pet_name}? Todos os seus agendamentos futuros também serão removidos.`} confirmText="Excluir" variant="danger" isLoading={isDeleting} />}
 
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">

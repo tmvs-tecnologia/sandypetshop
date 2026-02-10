@@ -17,6 +17,7 @@ export interface ExtraServicesData {
   tintura: { enabled: boolean; value: string | number };
   penteado: { enabled: boolean; value: string | number };
   desembolo: { enabled: boolean; value: string | number };
+  transporte: { enabled: boolean; value: string | number };
   
   // Serviços Daycare
   adestrador: { enabled: boolean; value: string | number };
@@ -57,6 +58,7 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
     tintura: { enabled: data.extra_services?.tintura?.enabled || false, value: data.extra_services?.tintura?.value || '' },
     penteado: { enabled: data.extra_services?.penteado?.enabled || false, value: data.extra_services?.penteado?.value || '' },
     desembolo: { enabled: data.extra_services?.desembolo?.enabled || false, value: data.extra_services?.desembolo?.value || '' },
+    transporte: { enabled: data.extra_services?.transporte?.enabled || false, value: data.extra_services?.transporte?.value || '' },
 
     // Serviços Daycare
     adestrador: { enabled: data.extra_services?.adestrador?.enabled || false, value: data.extra_services?.adestrador?.value || '' },

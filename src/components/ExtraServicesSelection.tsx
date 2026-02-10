@@ -6,6 +6,7 @@ import {
     PaintBrushIcon, 
     HomeIcon, 
     ClockIcon,
+    TruckIcon,
     PlusCircleIcon
 } from '@heroicons/react/24/outline';
 
@@ -114,6 +115,7 @@ const ExtraServicesSelection: React.FC<ExtraServicesSelectionProps> = ({
         { key: 'tintura', label: 'Tintura', icon: <PaintBrushIcon className="w-5 h-5" />, category: 'general' },
         { key: 'penteado', label: 'Penteado', icon: <ScissorsIcon className="w-5 h-5" />, category: 'general' },
         { key: 'desembolo', label: 'Desembolo', icon: <ScissorsIcon className="w-5 h-5" />, category: 'general' },
+        { key: 'transporte', label: 'Transporte', icon: <TruckIcon className="w-5 h-5" />, category: 'general' },
         
         // Daycare/Hotel specific
         { key: 'adestrador', label: 'Adestrador', icon: <UserIcon className="w-5 h-5" />, category: 'care' },
