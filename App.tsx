@@ -10855,8 +10855,30 @@ const TimeSlotPicker: React.FC<{
     isAdmin?: boolean;
 }> = ({ selectedDate, selectedService, appointments: allAppointments, onTimeSelect, selectedTime, workingHours, isPetMovel, allowedDays, selectedCondo, disablePastTimes, isAdmin = false }) => {
 
-    // Unified blocking: Use all appointments regardless of service type
-    const appointments = allAppointments;
+    // FILTER APPOINTMENTS: Separate Store vs Pet Mobile to prevent cross-blocking
+    const appointments = useMemo(() => {
+        return allAppointments.filter(appt => {
+            const s = String(appt.service || '').toLowerCase();
+            // Basic check based on service name or type if available
+            // If service type is available in appt.service (enum), use that.
+            // But appt.service might be string from DB.
+            // Let's rely on the fact that Pet Mobile services usually contain "Pet Móvel" or "Pet Mobile" in label or type.
+
+            // However, we can also check against the SERVICES constant keys if we map them correctly.
+            // In App.tsx, reloadAppointments maps them to ServiceType enum.
+
+            // ROBUST CHECK: Check enum values OR string content
+            const isMobile =
+                appt.service === ServiceType.PET_MOBILE_BATH ||
+                appt.service === ServiceType.PET_MOBILE_BATH_AND_GROOMING ||
+                appt.service === ServiceType.PET_MOBILE_GROOMING_ONLY ||
+                s.includes('movel') ||
+                s.includes('móvel') ||
+                s.includes('mobile');
+
+            return isPetMovel ? isMobile : !isMobile;
+        });
+    }, [allAppointments, isPetMovel]);
 
     const capacity = isPetMovel ? 1 : MAX_CAPACITY_PER_SLOT;
 
