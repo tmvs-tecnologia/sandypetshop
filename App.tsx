@@ -2033,15 +2033,6 @@ const MonthlyClientsStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => 
 
             const calculateMonthlyClientTotal = (client: any) => {
                 let total = Number(client.price || 0);
-
-                // Extrair quantidade de agendamentos do campo service (ex: "2x Banho" → 2, "4x Banho" → 4)
-                // e adicionar R$5 por cada agendamento (taxa de mensalista)
-                const serviceStr = client.service || '';
-                const match = serviceStr.match(/^(\d+)x/i);
-                const appointmentCount = match ? parseInt(match[1], 10) : 0;
-                const mensalistaFee = appointmentCount * 5; // R$5 por agendamento
-                total += mensalistaFee;
-
                 const ex: any = client.extra_services || {};
                 if (ex.pernoite?.enabled) total += Number(ex.pernoite.value || 0);
                 if (ex.banho_tosa?.enabled) total += Number(ex.banho_tosa.value || 0);
@@ -5698,14 +5689,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                                                         </div>
                                                                         <div className="text-right">
                                                                             <p className="text-xs opacity-90">Preço</p>
-                                                                            <p className="text-lg font-extrabold">R$ {(() => {
-                                                                                let total = Number(client.price || 0);
-                                                                                const serviceStr = client.service || '';
-                                                                                const match = serviceStr.match(/^(\d+)x/i);
-                                                                                const appointmentCount = match ? parseInt(match[1], 10) : 0;
-                                                                                total += appointmentCount * 5; // Taxa de R$5 por agendamento
-                                                                                return total.toFixed(2).replace('.', ',');
-                                                                            })()}</p>
+                                                                            <p className="text-lg font-extrabold">R$ {(client.price ?? 0).toFixed(2).replace('.', ',')}</p>
                                                                         </div>
                                                                     </div>
                                                                     <div className="space-y-2 text-sm">
@@ -6672,43 +6656,13 @@ const MonthlyClientDetailsModal: React.FC<{ client: MonthlyClient | null; onClos
                                     if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
                                     if (k === 'extra_services' && v) {
                                         const ex = v || {};
-                                        // Helper function to check if a service is enabled
-                                        const isServiceEnabled = (key: string, val: any): boolean => {
-                                            if (val === null || val === undefined) return false;
-                                            if (typeof val === 'boolean') return val === true;
-                                            if (typeof val === 'object') {
-                                                // Handle dias_extras specially - enabled if quantity > 0
-                                                if (key === 'dias_extras') {
-                                                    const qty = val.quantity ?? 0;
-                                                    return qty > 0 || val.enabled === true;
-                                                }
-                                                return val.enabled === true;
-                                            }
-                                            return false;
-                                        };
-                                        // Filter only enabled services
-                                        const enabledItems = Object.keys(ex).filter((ek) => isServiceEnabled(ek, ex[ek]));
-                                        const formatExtraServiceValue = (key: string, val: any): string => {
-                                            if (typeof val === 'boolean') return 'Sim';
-                                            if (typeof val === 'object') {
-                                                // Handle dias_extras specially
-                                                if (key === 'dias_extras') {
-                                                    const qty = val.quantity ?? 0;
-                                                    const price = val.value ?? 0;
-                                                    return `${qty} dia${qty > 1 ? 's' : ''} - R$ ${Number(price).toFixed(2).replace('.', ',')}`;
-                                                }
-                                                // Regular enabled service with value
-                                                const value = val.value ?? 0;
-                                                return `R$ ${Number(value).toFixed(2).replace('.', ',')}`;
-                                            }
-                                            return String(val);
-                                        };
-                                        return enabledItems.length ? (
+                                        const items = Object.keys(ex);
+                                        return items.length ? (
                                             <div className="space-y-1">
-                                                {enabledItems.map((ek) => (
+                                                {items.map((ek) => (
                                                     <div key={ek} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                                                         <span className="text-gray-700">{formatLabel(ek)}</span>
-                                                        <span className="font-semibold text-gray-900">{formatExtraServiceValue(ek, ex[ek])}</span>
+                                                        <span className="font-semibold text-gray-900">{typeof ex[ek] === 'object' ? JSON.stringify(ex[ek]) : String(ex[ek])}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -7707,14 +7661,6 @@ const MonthlyClientCard: React.FC<{
     const calculateTotalInvoiceValue = (client: MonthlyClient) => {
         let total = Number(client.price || 0);
 
-        // Extrair quantidade de agendamentos do campo service (ex: "2x Banho" → 2, "4x Banho" → 4)
-        // e adicionar R$5 por cada agendamento (taxa de mensalista)
-        const serviceStr = client.service || '';
-        const match = serviceStr.match(/^(\d+)x/i);
-        const appointmentCount = match ? parseInt(match[1], 10) : 0;
-        const mensalistaFee = appointmentCount * 5; // R$5 por agendamento
-        total += mensalistaFee;
-
         if (client.extra_services) {
             // Somente serviços extras permitidos
             if (client.extra_services.so_banho?.enabled) {
@@ -7738,24 +7684,6 @@ const MonthlyClientCard: React.FC<{
             if ((client.extra_services as any).patacure?.enabled) {
                 total += Number((client.extra_services as any).patacure?.value || 0);
             }
-            if ((client.extra_services as any).tintura?.enabled) {
-                total += Number((client.extra_services as any).tintura?.value || 0);
-            }
-            if ((client.extra_services as any).penteado?.enabled) {
-                total += Number((client.extra_services as any).penteado?.value || 0);
-            }
-            if ((client.extra_services as any).desembolo?.enabled) {
-                total += Number((client.extra_services as any).desembolo?.value || 0);
-            }
-            if ((client.extra_services as any).hora_extra?.enabled) {
-                total += Number((client.extra_services as any).hora_extra?.value || 0);
-            }
-            if ((client.extra_services as any).veterinario?.enabled) {
-                total += Number((client.extra_services as any).veterinario?.value || 0);
-            }
-            if ((client.extra_services as any).transporte?.enabled) {
-                total += Number((client.extra_services as any).transporte?.value || 0);
-            }
         }
 
         return total;
@@ -7770,13 +7698,7 @@ const MonthlyClientCard: React.FC<{
             (client.extra_services as any).botinha?.enabled ||
             (client.extra_services as any).contorno?.enabled ||
             (client.extra_services as any).pintura?.enabled ||
-            (client.extra_services as any).patacure?.enabled ||
-            (client.extra_services as any).tintura?.enabled ||
-            (client.extra_services as any).penteado?.enabled ||
-            (client.extra_services as any).desembolo?.enabled ||
-            (client.extra_services as any).hora_extra?.enabled ||
-            (client.extra_services as any).veterinario?.enabled ||
-            (client.extra_services as any).transporte?.enabled
+            (client.extra_services as any).patacure?.enabled
         )
     );
 
@@ -7877,14 +7799,7 @@ const MonthlyClientCard: React.FC<{
                     </div>
                     <div>
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Preço Base</p>
-                        <p className="text-gray-800 font-medium">R$ {(() => {
-                            let basePrice = Number(client.price || 0);
-                            const serviceStr = client.service || '';
-                            const match = serviceStr.match(/^(\d+)x/i);
-                            const appointmentCount = match ? parseInt(match[1], 10) : 0;
-                            basePrice += appointmentCount * 5; // Taxa de R$5 por agendamento
-                            return basePrice.toFixed(2).replace('.', ',');
-                        })()}</p>
+                        <p className="text-gray-800 font-medium">R$ {Number(client.price || 0).toFixed(2).replace('.', ',')}</p>
                     </div>
 
                 </div>
@@ -7925,12 +7840,7 @@ const MonthlyClientCard: React.FC<{
                             (ex?.botinha?.enabled) ||
                             (ex?.contorno?.enabled) ||
                             (ex?.pintura?.enabled) ||
-                            (ex?.patacure?.enabled) ||
-                            (ex?.tintura?.enabled) ||
-                            (ex?.penteado?.enabled) ||
-                            (ex?.desembolo?.enabled) ||
-                            (ex?.hora_extra?.enabled) ||
-                            (ex?.veterinario?.enabled)
+                            (ex?.patacure?.enabled)
                         );
                         if (!hasExtras) return null;
                         return (
@@ -7957,24 +7867,6 @@ const MonthlyClientCard: React.FC<{
                                     )}
                                     {(ex?.patacure?.enabled) && (
                                         <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">Patacure</span>
-                                    )}
-                                    {(ex?.tintura?.enabled) && (
-                                        <span className="px-2 py-1 bg-rose-100 text-rose-700 text-xs rounded-full">Tintura</span>
-                                    )}
-                                    {(ex?.penteado?.enabled) && (
-                                        <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">Penteado</span>
-                                    )}
-                                    {(ex?.desembolo?.enabled) && (
-                                        <span className="px-2 py-1 bg-lime-100 text-lime-700 text-xs rounded-full">Desembolo</span>
-                                    )}
-                                    {(ex?.hora_extra?.enabled) && (
-                                        <span className="px-2 py-1 bg-sky-100 text-sky-700 text-xs rounded-full">Hora Extra</span>
-                                    )}
-                                    {(ex?.veterinario?.enabled) && (
-                                        <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Veterinário</span>
-                                    )}
-                                    {(ex?.transporte?.enabled) && (
-                                        <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full">Transporte</span>
                                     )}
                                 </div>
                             </div>
