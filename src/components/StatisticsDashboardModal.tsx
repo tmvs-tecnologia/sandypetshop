@@ -132,8 +132,21 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, subValue, icon: Icon, t
                             <div key={idx} className="flex items-center justify-between bg-white/60 p-2 rounded-lg shadow-sm">
                                 <div className="flex items-center gap-3">
                                     {/* Avatar Placeholder or Photo */}
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${iconColorClasses[color]}`}>
-                                        {apt.pet_name?.substring(0,2).toUpperCase() || 'PET'}
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden shrink-0 ${!apt.photo_url ? iconColorClasses[color] : ''}`}>
+                                        {apt.photo_url ? (
+                                            <img 
+                                                src={apt.photo_url} 
+                                                alt={apt.pet_name} 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => { 
+                                                    e.currentTarget.style.display = 'none'; 
+                                                    e.currentTarget.parentElement?.classList.add(iconColorClasses[color]); 
+                                                    e.currentTarget.parentElement!.innerText = apt.pet_name?.substring(0,2).toUpperCase() || 'PT'; 
+                                                }}
+                                            />
+                                        ) : (
+                                            apt.pet_name?.substring(0,2).toUpperCase() || 'PET'
+                                        )}
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold leading-none">{apt.pet_name || 'Pet sem nome'}</p>
@@ -465,6 +478,11 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
                 if (matchedId && monthlyStats[matchedId]) {
                     monthlyStats[matchedId].servicesCount++;
                     monthlyStats[matchedId].totalSpent += price;
+                    
+                    // Inject photo from monthly client if available
+                    if (monthlyStats[matchedId].photo_url) {
+                        apt.photo_url = monthlyStats[matchedId].photo_url;
+                    }
                 }
             }
 
