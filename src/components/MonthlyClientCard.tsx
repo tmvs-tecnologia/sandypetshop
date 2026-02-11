@@ -145,8 +145,13 @@ const MonthlyClientCard: React.FC<{
 
     const calculateTotalInvoiceValue = (client: MonthlyClient) => {
         let total = Number(client.price || 0);
+        // Keys to exclude from extras calculation (base services that might be incorrectly saved as extras)
+        const IGNORED_EXTRAS = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
+        
         if (client.extra_services) {
             Object.keys(client.extra_services).forEach((key) => {
+                if (IGNORED_EXTRAS.includes(key)) return;
+
                 const service = (client.extra_services as any)[key];
                 if (service && service.enabled) {
                     const value = Number(service.value || 0);
@@ -159,8 +164,13 @@ const MonthlyClientCard: React.FC<{
     };
 
     const totalInvoiceValue = calculateTotalInvoiceValue(client);
+    // Keys to exclude from extras display
+    const IGNORED_EXTRAS_DISPLAY = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
+
     const hasMonthlyExtras = Boolean(
-        client.extra_services && Object.values(client.extra_services).some((s: any) => s.enabled)
+        client.extra_services && Object.entries(client.extra_services).some(([key, s]: [string, any]) => 
+            s.enabled && !IGNORED_EXTRAS_DISPLAY.includes(key)
+        )
     );
 
     const weekDaysLabel: Record<number, string> = { 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado', 7: 'Domingo' };
@@ -286,7 +296,7 @@ const MonthlyClientCard: React.FC<{
                 {hasMonthlyExtras && (
                     <div className="mb-4 flex flex-wrap gap-1.5">
                         {client.extra_services && Object.entries(client.extra_services).map(([key, value]: [string, any]) => {
-                            if (!value.enabled) return null;
+                            if (!value.enabled || IGNORED_EXTRAS_DISPLAY.includes(key)) return null;
                             const label = key.replace(/_/g, ' ').replace('so ', ''); // Simple formatting
                             return (
                                 <span key={key} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 capitalize">

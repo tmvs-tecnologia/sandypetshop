@@ -98,9 +98,11 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     const extrasTotal = (() => {
         if (!es) return 0;
         let total = 0;
+        // Ignored base services in extras calculation
+        // if (es.banho_tosa?.enabled) total += Number(es.banho_tosa.value || 0);
+        // if (es.so_banho?.enabled) total += Number(es.so_banho.value || 0);
+        
         if (es.pernoite?.enabled) total += Number(es.pernoite.value || 0);
-        if (es.banho_tosa?.enabled) total += Number(es.banho_tosa.value || 0);
-        if (es.so_banho?.enabled) total += Number(es.so_banho.value || 0);
         if (es.adestrador?.enabled) total += Number(es.adestrador.value || 0);
         if (es.despesa_medica?.enabled) total += Number(es.despesa_medica.value || 0);
         if (es.penteado?.enabled) total += Number(es.penteado.value || 0);
@@ -117,8 +119,12 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
     // Get active extras list
     const activeExtras: string[] = [];
+    const IGNORED_EXTRAS_DISPLAY = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
+
     if (es) {
         Object.entries(es).forEach(([key, value]: [string, any]) => {
+            if (IGNORED_EXTRAS_DISPLAY.includes(key)) return;
+            
             if (value) {
                 if (key === 'dias_extras') {
                     if (Number(value.quantity) > 0) activeExtras.push('Dias Extras');
