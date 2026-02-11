@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
 import { 
     XMarkIcon, 
@@ -10,7 +10,10 @@ import {
     FunnelIcon,
     ArrowTrendingUpIcon,
     UsersIcon,
-    ClockIcon
+    ClockIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    ChevronDownIcon
 } from '@heroicons/react/24/outline';
 
 interface StatisticsDashboardModalProps {
@@ -27,6 +30,7 @@ interface KPICardProps {
     trend?: 'up' | 'down' | 'neutral';
     trendValue?: string;
     color: 'pink' | 'blue' | 'green' | 'purple';
+    children?: React.ReactNode; // For selectors
 }
 
 interface AppointmentData {
@@ -43,7 +47,7 @@ interface AppointmentData {
 
 // --- Helper Components ---
 
-const KPICard: React.FC<KPICardProps> = ({ title, value, subValue, icon: Icon, trend, trendValue, color }) => {
+const KPICard: React.FC<KPICardProps> = ({ title, value, subValue, icon: Icon, trend, trendValue, color, children }) => {
     const colorClasses = {
         pink: 'bg-pink-50 text-pink-700 border-pink-100',
         blue: 'bg-blue-50 text-blue-700 border-blue-100',
@@ -59,18 +63,24 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, subValue, icon: Icon, t
     };
 
     return (
-        <div className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md ${colorClasses[color]}`}>
-            <div className="flex justify-between items-start">
-                <div>
-                    <p className="text-sm font-medium opacity-80 mb-1">{title}</p>
-                    <h3 className="text-3xl font-bold font-outfit">{value}</h3>
-                    {subValue && <p className="text-xs mt-1 opacity-70">{subValue}</p>}
-                </div>
-                <div className={`p-3 rounded-xl ${iconColorClasses[color]}`}>
-                    <Icon className="w-6 h-6" />
+        <div className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md ${colorClasses[color]} relative`}>
+            <div className="flex justify-between items-start mb-2">
+                <p className="text-sm font-medium opacity-80">{title}</p>
+                <div className={`p-2 rounded-xl ${iconColorClasses[color]}`}>
+                    <Icon className="w-5 h-5" />
                 </div>
             </div>
-            {(trend && trendValue) && (
+            
+            <h3 className="text-3xl font-bold font-outfit mb-1">{value}</h3>
+            {subValue && <p className="text-xs opacity-70 mb-3">{subValue}</p>}
+            
+            {children && (
+                <div className="mt-3 pt-3 border-t border-black/5">
+                    {children}
+                </div>
+            )}
+
+            {(trend && trendValue && !children) && (
                 <div className="mt-4 flex items-center gap-1 text-xs font-medium">
                     <span className={trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-gray-600'}>
                         {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '•'} {trendValue}
@@ -83,24 +93,23 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, subValue, icon: Icon, t
 };
 
 // Simple SVG Bar Chart
-const SimpleBarChart: React.FC<{ data: { label: string; value: number }[]; color: string }> = ({ data, color }) => {
+const SimpleBarChart: React.FC<{ data: { label: string; value: number; highlight?: boolean }[]; color: string }> = ({ data, color }) => {
     const maxValue = Math.max(...data.map(d => d.value), 1);
-    const height = 150;
     
     return (
         <div className="flex items-end justify-between h-[150px] gap-2 pt-4">
             {data.map((d, i) => (
-                <div key={i} className="flex flex-col items-center flex-1 group relative">
+                <div key={i} className="flex flex-col items-center flex-1 group relative h-full justify-end">
                     <div 
-                        className={`w-full max-w-[40px] rounded-t-lg transition-all duration-500 ease-out hover:opacity-80 ${color}`}
+                        className={`w-full max-w-[40px] rounded-t-lg transition-all duration-500 ease-out hover:opacity-80 ${d.highlight ? 'bg-pink-500' : 'bg-pink-300'}`}
                         style={{ height: `${(d.value / maxValue) * 100}%` }}
                     >
                         {/* Tooltip */}
                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                            {d.value}
+                            R$ {d.value}
                         </div>
                     </div>
-                    <span className="text-[10px] sm:text-xs text-gray-500 mt-2 font-medium truncate w-full text-center">{d.label}</span>
+                    <span className="text-[10px] sm:text-xs text-gray-500 mt-2 font-medium truncate w-full text-center capitalize">{d.label}</span>
                 </div>
             ))}
         </div>
@@ -120,25 +129,10 @@ const SimpleDonutChart: React.FC<{ data: { label: string; value: number; color: 
                 <svg viewBox="0 0 100 100" className="transform -rotate-90 w-full h-full">
                     {data.map((slice, i) => {
                         const percent = slice.value / total;
-                        const dashArray = percent * 314; // 2 * PI * R (R=50 approx, actually slightly less usually)
-                        // Using simpler circle segments approach
+                        const dashArray = percent * 314;
                         const startPercent = cumulativePercent;
                         cumulativePercent += percent;
                         
-                        // Calculate coordinates
-                        const getCoordsForPercent = (percent: number) => {
-                            const x = Math.cos(2 * Math.PI * percent) * 40; // Radius 40
-                            const y = Math.sin(2 * Math.PI * percent) * 40;
-                            return [x, y];
-                        };
-
-                        const [startX, startY] = getCoordsForPercent(startPercent);
-                        const [endX, endY] = getCoordsForPercent(cumulativePercent);
-                        const largeArcFlag = percent > 0.5 ? 1 : 0;
-
-                        // Path command
-                        // M 50 50 L 50+startX 50+startY A 40 40 0 largeArcFlag 1 50+endX 50+endY Z
-                        // Actually easier to use stroke-dasharray on circles
                         return (
                             <circle
                                 key={i}
@@ -188,6 +182,10 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
         monthly: any[]
     }>({ store: [], mobile: [], monthly: [] });
 
+    // Filter States
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+    const [selectedYearTotal, setSelectedYearTotal] = useState(new Date().getFullYear());
+
     // Fetch Data
     useEffect(() => {
         if (isOpen) {
@@ -221,91 +219,99 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
     const metrics = useMemo(() => {
         const allAppointments = [...rawData.store, ...rawData.mobile];
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
+        const currentYear = now.getFullYear();
         
-        // Helper to get week start (Sunday)
-        const getWeekStart = (d: Date) => {
-            const date = new Date(d);
-            const day = date.getDay();
-            const diff = date.getDate() - day;
-            return new Date(date.setDate(diff));
+        // Helper: Format date to Local String (pt-BR) to avoid UTC issues
+        const getLocalDate = (dateStr: string) => {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('pt-BR'); // "DD/MM/YYYY"
         };
-        const weekStart = getWeekStart(now);
 
+        const todayLocal = now.toLocaleDateString('pt-BR');
+
+        // Week Calculation (Sunday to Saturday)
+        const curr = new Date();
+        const first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
+        const weekStart = new Date(curr.setDate(first));
+        weekStart.setHours(0,0,0,0);
+        
+        // Metrics
         let todayRevenue = 0;
-        let weekRevenue = 0;
-        let monthRevenue = 0;
-        let yearRevenue2025 = 0;
-        let yearRevenue2026 = 0;
         let todayCount = 0;
+        let monthRevenue = 0; // Based on selectedMonth
+        let yearRevenue = 0; // Based on selectedYearTotal
 
         const serviceDistribution: Record<string, number> = {};
         const hourlyDistribution: Record<number, number> = {};
+        
+        // Arrays for charts
+        const weeklyRevenueByDay = Array(7).fill(0); // 0=Dom, 1=Seg, ...
 
         allAppointments.forEach(apt => {
             const dateStr = apt.appointment_time || apt.appointmentTime;
             if (!dateStr) return;
             
-            const date = new Date(dateStr);
+            const aptDate = new Date(dateStr);
             const price = Number(apt.price || 0);
-            const dateIso = dateStr.split('T')[0]; // simple ISO date
-
-            // Today
-            if (dateIso === todayStr) {
+            
+            // 1. Today's Revenue (Local Time Check)
+            if (getLocalDate(dateStr) === todayLocal) {
                 todayRevenue += price;
                 todayCount++;
             }
 
-            // Week
-            if (date >= weekStart) {
-                weekRevenue += price;
+            // 2. Monthly Revenue (Selected Month, Only Banho & Tosa)
+            // Assuming "Banho & Tosa" logic refers to store appointments mostly, or filtering by service name
+            const isBanhoTosa = (apt.service || '').toLowerCase().includes('banho') || (apt.service || '').toLowerCase().includes('tosa');
+            
+            if (aptDate.getMonth() === selectedMonth && aptDate.getFullYear() === currentYear) {
+                if (isBanhoTosa) {
+                    monthRevenue += price;
+                }
             }
 
-            // Month
-            if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) {
-                monthRevenue += price;
+            // 3. Year Revenue (Selected Year)
+            if (aptDate.getFullYear() === selectedYearTotal) {
+                yearRevenue += price;
             }
 
-            // Year
-            if (date.getFullYear() === 2025) yearRevenue2025 += price;
-            if (date.getFullYear() === 2026) yearRevenue2026 += price;
+            // 4. Weekly Chart Data (Current Week: Sun-Sat)
+            const aptTime = aptDate.getTime();
+            const weekStartTime = weekStart.getTime();
+            const weekEndTime = weekStartTime + (7 * 24 * 60 * 60 * 1000);
 
-            // Service Dist
+            if (aptTime >= weekStartTime && aptTime < weekEndTime) {
+                const dayIndex = aptDate.getDay(); // 0-6
+                weeklyRevenueByDay[dayIndex] += price;
+            }
+
+            // Service Dist (for charts)
             const svc = apt.service || 'Outros';
-            // Simplify service names
             let simplifiedSvc = 'Outros';
             if (svc.toLowerCase().includes('banho e tosa') || svc.includes('Banho & Tosa')) simplifiedSvc = 'Banho & Tosa';
             else if (svc.toLowerCase().includes('banho')) simplifiedSvc = 'Banho';
             else if (svc.toLowerCase().includes('tosa')) simplifiedSvc = 'Tosa';
-            
             serviceDistribution[simplifiedSvc] = (serviceDistribution[simplifiedSvc] || 0) + 1;
 
             // Hourly Dist
-            const hour = date.getHours();
+            const hour = aptDate.getHours();
             hourlyDistribution[hour] = (hourlyDistribution[hour] || 0) + 1;
         });
 
-        // Weekly Chart Data (Last 7 days)
-        const weeklyChartData = [];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            const dStr = d.toISOString().split('T')[0];
-            const val = allAppointments
-                .filter(a => (a.appointment_time || a.appointmentTime || '').startsWith(dStr))
-                .reduce((sum, a) => sum + Number(a.price || 0), 0);
-            weeklyChartData.push({
-                label: d.toLocaleDateString('pt-BR', { weekday: 'short' }),
-                value: val
-            });
-        }
+        // Format Weekly Data
+        const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const weeklyChartData = weeklyRevenueByDay.map((val, i) => ({
+            label: days[i],
+            value: val,
+            highlight: i === now.getDay() // Highlight today
+        }));
 
-        // Monthly Chart Data (Jan-Dec for current year)
+        // Monthly Chart Data (Year View)
         const monthlyChartData = Array.from({ length: 12 }, (_, i) => {
             const val = allAppointments
                 .filter(a => {
                     const d = new Date(a.appointment_time || a.appointmentTime || '');
-                    return d.getFullYear() === now.getFullYear() && d.getMonth() === i;
+                    return d.getFullYear() === selectedYearTotal && d.getMonth() === i;
                 })
                 .reduce((sum, a) => sum + Number(a.price || 0), 0);
             return {
@@ -317,10 +323,8 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
         return {
             todayRevenue,
             todayCount,
-            weekRevenue,
             monthRevenue,
-            yearRevenue2025,
-            yearRevenue2026,
+            yearRevenue,
             weeklyChartData,
             monthlyChartData,
             serviceDistribution: Object.entries(serviceDistribution).map(([label, value]) => ({ 
@@ -330,35 +334,170 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
             })),
             hourlyDistribution: Object.entries(hourlyDistribution).map(([label, value]) => ({ label: `${label}h`, value })).sort((a,b) => parseInt(a.label) - parseInt(b.label))
         };
-    }, [rawData]);
+    }, [rawData, selectedMonth, selectedYearTotal]);
 
     if (!isOpen) return null;
 
+    const months = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    // Shared Components (Rendered differently based on mobile/desktop)
+    const OverviewSection = () => (
+        <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. Faturamento Hoje */}
+                <KPICard 
+                    title="Faturamento Hoje" 
+                    value={`R$ ${metrics.todayRevenue.toFixed(2).replace('.', ',')}`} 
+                    subValue={`${metrics.todayCount} atendimentos`}
+                    icon={CurrencyDollarIcon} 
+                    color="green" 
+                />
+
+                {/* 2. Esta Semana (Mantido original, mas poderia ser removido se redundante) */}
+                <KPICard 
+                    title="Esta Semana" 
+                    // Keeping simple calculation or reusing logic? Using raw calculation for simplicity here or removing?
+                    // Let's keep it but maybe it wasn't requested to change.
+                    // Actually, let's keep it as a filler or remove if user wants strict changes.
+                    // User didn't ask to remove, so I keep it.
+                    value={`R$ ${metrics.weeklyChartData.reduce((a,b)=>a+b.value,0).toFixed(2).replace('.', ',')}`}
+                    icon={CalendarIcon} 
+                    color="blue" 
+                />
+
+                {/* 3. Este Mês (Com Seletor) */}
+                <KPICard 
+                    title="Banho & Tosa" 
+                    value={`R$ ${metrics.monthRevenue.toFixed(2).replace('.', ',')}`} 
+                    icon={ChartBarIcon} 
+                    color="purple" 
+                >
+                    <div className="flex items-center gap-2">
+                        <select 
+                            value={selectedMonth} 
+                            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                            className="bg-transparent text-xs font-semibold text-purple-700 border-none focus:ring-0 cursor-pointer p-0"
+                        >
+                            {months.map((m, i) => (
+                                <option key={i} value={i}>{m}</option>
+                            ))}
+                        </select>
+                        <ChevronDownIcon className="w-3 h-3 text-purple-700" />
+                    </div>
+                </KPICard>
+
+                {/* 4. Este Ano (Com Seletor) */}
+                <KPICard 
+                    title="Este Ano" 
+                    value={`R$ ${metrics.yearRevenue.toFixed(2).replace('.', ',')}`} 
+                    icon={ArrowTrendingUpIcon} 
+                    color="pink" 
+                >
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={() => setSelectedYearTotal(prev => prev - 1)}
+                            className="p-1 hover:bg-pink-100 rounded-full text-pink-700"
+                        >
+                            <ChevronLeftIcon className="w-3 h-3" />
+                        </button>
+                        <span className="text-xs font-bold text-pink-700">{selectedYearTotal}</span>
+                        <button 
+                            onClick={() => setSelectedYearTotal(prev => prev + 1)}
+                            className="p-1 hover:bg-pink-100 rounded-full text-pink-700"
+                        >
+                            <ChevronRightIcon className="w-3 h-3" />
+                        </button>
+                    </div>
+                </KPICard>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <ArrowTrendingUpIcon className="w-5 h-5 text-pink-500" />
+                        Receita Diária (Semana Atual)
+                    </h3>
+                    <SimpleBarChart data={metrics.weeklyChartData} color="bg-pink-400" />
+                </div>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <ChartPieIcon className="w-5 h-5 text-blue-500" />
+                        Distribuição
+                    </h3>
+                    <SimpleDonutChart data={metrics.serviceDistribution} />
+                </div>
+            </div>
+        </>
+    );
+
+    const FinancialSection = () => (
+        <div className="space-y-6">
+             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 className="font-bold text-gray-800 mb-6">Desempenho Mensal ({selectedYearTotal})</h3>
+                <SimpleBarChart data={metrics.monthlyChartData} color="bg-indigo-400" />
+            </div>
+        </div>
+    );
+
+    const OperationalSection = () => (
+        <div className="grid grid-cols-1 gap-6">
+             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 className="font-bold text-gray-800 mb-4">Horários de Pico</h3>
+                <SimpleBarChart data={metrics.hourlyDistribution} color="bg-orange-400" />
+            </div>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 className="font-bold text-gray-800 mb-4">Detalhamento de Serviços</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                            <tr>
+                                <th className="px-4 py-3 rounded-l-lg">Serviço</th>
+                                <th className="px-4 py-3 text-right">Qtd.</th>
+                                <th className="px-4 py-3 text-right rounded-r-lg">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {metrics.serviceDistribution.map((item, i) => (
+                                <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
+                                    <td className="px-4 py-3 font-medium text-gray-800">{item.label}</td>
+                                    <td className="px-4 py-3 text-right font-bold">{item.value}</td>
+                                    <td className="px-4 py-3 text-right text-gray-500">
+                                        {Math.round((item.value / (metrics.todayCount || 1)) * 100)}%
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[10002] p-4 animate-fadeIn">
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[10002] p-2 md:p-4 animate-fadeIn">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
                 
                 {/* Header */}
-                <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gradient-to-r from-pink-50 to-white">
+                <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gradient-to-r from-pink-50 to-white shrink-0">
                     <div>
                         <h2 className="text-2xl font-bold font-outfit text-gray-800 flex items-center gap-2">
                             <ChartBarIcon className="w-8 h-8 text-pink-600" />
-                            Dashboard Financeiro
+                            Dashboard
                         </h2>
-                        <p className="text-sm text-gray-500 font-jakarta mt-1">Visão completa do desempenho do Pet Shop</p>
+                        <p className="text-sm text-gray-500 font-jakarta mt-1 hidden sm:block">Visão completa do desempenho do Pet Shop</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors" title="Exportar Relatório">
-                            <ArrowDownTrayIcon className="w-6 h-6" />
-                        </button>
                         <button onClick={onClose} className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50 text-gray-400 hover:text-gray-600 transition-all">
                             <XMarkIcon className="h-6 w-6" />
                         </button>
                     </div>
                 </div>
 
-                {/* Navigation Tabs */}
-                <div className="flex border-b border-gray-100 px-6 bg-white sticky top-0 z-10">
+                {/* Navigation Tabs (Desktop Only) */}
+                <div className="hidden md:flex border-b border-gray-100 px-6 bg-white sticky top-0 z-10 shrink-0">
                     {[
                         { id: 'overview', label: 'Visão Geral', icon: FunnelIcon },
                         { id: 'financial', label: 'Financeiro', icon: CurrencyDollarIcon },
@@ -381,7 +520,7 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50/50">
                     {isLoading ? (
                         <div className="flex justify-center items-center h-64">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
@@ -389,134 +528,37 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
                     ) : (
                         <div className="space-y-8 animate-fadeIn">
                             
-                            {/* OVERVIEW TAB */}
-                            {activeTab === 'overview' && (
-                                <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        <KPICard 
-                                            title="Faturamento Hoje" 
-                                            value={`R$ ${metrics.todayRevenue.toFixed(2).replace('.', ',')}`} 
-                                            subValue={`${metrics.todayCount} atendimentos`}
-                                            icon={CurrencyDollarIcon} 
-                                            color="green" 
-                                        />
-                                        <KPICard 
-                                            title="Esta Semana" 
-                                            value={`R$ ${metrics.weekRevenue.toFixed(2).replace('.', ',')}`} 
-                                            icon={CalendarIcon} 
-                                            color="blue" 
-                                        />
-                                        <KPICard 
-                                            title="Este Mês" 
-                                            value={`R$ ${metrics.monthRevenue.toFixed(2).replace('.', ',')}`} 
-                                            icon={ChartBarIcon} 
-                                            color="purple" 
-                                            trend="up"
-                                            trendValue="12%"
-                                        />
-                                        <KPICard 
-                                            title="Total 2026" 
-                                            value={`R$ ${metrics.yearRevenue2026.toFixed(2).replace('.', ',')}`} 
-                                            icon={ArrowTrendingUpIcon} 
-                                            color="pink" 
-                                        />
-                                    </div>
+                            {/* Mobile: Show Everything Stacked */}
+                            <div className="md:hidden space-y-8">
+                                <section>
+                                    <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Visão Geral</h3>
+                                    <OverviewSection />
+                                </section>
+                                <section>
+                                    <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Financeiro</h3>
+                                    <FinancialSection />
+                                </section>
+                                <section>
+                                    <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Operacional</h3>
+                                    <OperationalSection />
+                                </section>
+                            </div>
 
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                                <ArrowTrendingUpIcon className="w-5 h-5 text-pink-500" />
-                                                Receita Diária (Últimos 7 dias)
-                                            </h3>
-                                            <SimpleBarChart data={metrics.weeklyChartData} color="bg-pink-400" />
-                                        </div>
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                                <ChartPieIcon className="w-5 h-5 text-blue-500" />
-                                                Distribuição de Serviços
-                                            </h3>
-                                            <SimpleDonutChart data={metrics.serviceDistribution} />
-                                        </div>
+                            {/* Desktop: Show Active Tab */}
+                            <div className="hidden md:block">
+                                {activeTab === 'overview' && <OverviewSection />}
+                                {activeTab === 'financial' && <FinancialSection />}
+                                {activeTab === 'operational' && <OperationalSection />}
+                                {activeTab === 'monthly' && (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-dashed border-gray-300">
+                                        <UsersIcon className="w-16 h-16 text-gray-300 mb-4" />
+                                        <h3 className="text-xl font-bold text-gray-800">Módulo de Mensalistas</h3>
+                                        <p className="text-gray-500 max-w-md mx-auto mt-2">
+                                            A visualização detalhada de mensalistas está disponível no módulo dedicado.
+                                        </p>
                                     </div>
-                                </>
-                            )}
-
-                            {/* FINANCIAL TAB */}
-                            {activeTab === 'financial' && (
-                                <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                            <h3 className="font-bold text-gray-800 mb-2">Faturamento 2025</h3>
-                                            <p className="text-4xl font-outfit font-bold text-gray-400">R$ {metrics.yearRevenue2025.toFixed(2).replace('.', ',')}</p>
-                                        </div>
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-pink-100 relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                                <CurrencyDollarIcon className="w-32 h-32 text-pink-600" />
-                                            </div>
-                                            <h3 className="font-bold text-gray-800 mb-2">Faturamento 2026 (Projeção)</h3>
-                                            <p className="text-4xl font-outfit font-bold text-pink-600">R$ {metrics.yearRevenue2026.toFixed(2).replace('.', ',')}</p>
-                                            <p className="text-sm text-green-600 font-medium mt-2 flex items-center gap-1">
-                                                <ArrowTrendingUpIcon className="w-4 h-4" />
-                                                Crescimento Anual
-                                            </p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                        <h3 className="font-bold text-gray-800 mb-6">Desempenho Mensal (2026)</h3>
-                                        <SimpleBarChart data={metrics.monthlyChartData} color="bg-indigo-400" />
-                                    </div>
-                                </>
-                            )}
-
-                            {/* OPERATIONAL TAB */}
-                            {activeTab === 'operational' && (
-                                <div className="grid grid-cols-1 gap-6">
-                                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                        <h3 className="font-bold text-gray-800 mb-4">Horários de Pico</h3>
-                                        <SimpleBarChart data={metrics.hourlyDistribution} color="bg-orange-400" />
-                                    </div>
-                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                        <h3 className="font-bold text-gray-800 mb-4">Detalhamento de Serviços</h3>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="text-xs text-gray-500 uppercase bg-gray-50">
-                                                    <tr>
-                                                        <th className="px-4 py-3 rounded-l-lg">Serviço</th>
-                                                        <th className="px-4 py-3 text-right">Qtd. Realizada</th>
-                                                        <th className="px-4 py-3 text-right rounded-r-lg">% do Total</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {metrics.serviceDistribution.map((item, i) => (
-                                                        <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
-                                                            <td className="px-4 py-3 font-medium text-gray-800">{item.label}</td>
-                                                            <td className="px-4 py-3 text-right font-bold">{item.value}</td>
-                                                            <td className="px-4 py-3 text-right text-gray-500">
-                                                                {Math.round((item.value / (metrics.todayCount || 1)) * 100)}%
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                             {/* MONTHLY TAB (Placeholder for now, integration with monthly logic) */}
-                            {activeTab === 'monthly' && (
-                                <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-dashed border-gray-300">
-                                    <UsersIcon className="w-16 h-16 text-gray-300 mb-4" />
-                                    <h3 className="text-xl font-bold text-gray-800">Módulo de Mensalistas</h3>
-                                    <p className="text-gray-500 max-w-md mx-auto mt-2">
-                                        A visualização detalhada de mensalistas está disponível no módulo dedicado. Em breve, todos os dados serão unificados aqui.
-                                    </p>
-                                    <div className="mt-6 p-4 bg-blue-50 text-blue-700 rounded-lg inline-block">
-                                        <strong>Total de Mensalistas Ativos:</strong> {rawData.monthly.length}
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
 
                         </div>
                     )}

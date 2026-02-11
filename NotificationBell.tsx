@@ -1,7 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { BellIcon, BellAlertIcon, CheckIcon, TrashIcon } from '@heroicons/react/24/outline';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from './supabaseClient';
+import { 
+  Bell, 
+  Check, 
+  Trash2, 
+  X, 
+  Calendar, 
+  Truck, 
+  Home, 
+  Dog,
+  Clock,
+  MoreVertical
+} from 'lucide-react';
 
 type NotificationItem = {
   id: number;
@@ -11,227 +21,250 @@ type NotificationItem = {
   created_at: string;
 };
 
-const typeLabels: Record<string, string> = {
-  appointment: 'Novo agendamento (Banho & Tosa)',
-  pet_movel: 'Novo agendamento (Pet Móvel)',
-  daycare: 'Nova matrícula (Creche)',
-  hotel: 'Nova reserva (Hotel Pet)'
+const typeConfig: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
+  appointment: { 
+    label: 'Banho & Tosa', 
+    icon: Calendar, 
+    color: 'text-pink-600', 
+    bg: 'bg-pink-100' 
+  },
+  pet_movel: { 
+    label: 'Pet Móvel', 
+    icon: Truck, 
+    color: 'text-purple-600', 
+    bg: 'bg-purple-100' 
+  },
+  daycare: { 
+    label: 'Creche', 
+    icon: Dog, 
+    color: 'text-yellow-600', 
+    bg: 'bg-yellow-100' 
+  },
+  hotel: { 
+    label: 'Hotel Pet', 
+    icon: Home, 
+    color: 'text-blue-600', 
+    bg: 'bg-blue-100' 
+  },
+  default: { 
+    label: 'Notificação', 
+    icon: Bell, 
+    color: 'text-gray-600', 
+    bg: 'bg-gray-100' 
+  }
 };
 
 export const NotificationBell: React.FC = () => {
-  const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<NotificationItem[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const panelRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = useMemo(() => items.filter(i => !i.read).length, [items]);
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
-    const fetchInitial = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (!error && data) {
-        setItems(data as NotificationItem[]);
-      }
-      setLoading(false);
-    };
-    fetchInitial();
-
+    fetchNotifications();
     const channel = supabase
       .channel('notifications_channel')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload: any) => {
-        const newItem = payload.new as NotificationItem;
-        setItems(prev => [newItem, ...prev]);
+        setNotifications(prev => [payload.new as NotificationItem, ...prev]);
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
       }
     };
-    if (open) {
-      document.addEventListener('mousedown', handler);
-    }
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  // Prevent background scroll when the notifications panel is open
-  useEffect(() => {
-    if (open) {
-      const previousOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = previousOverflow;
-      };
-    }
-  }, [open]);
-
-  const markRead = async (id: number) => {
-    const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
-    if (!error) setItems(prev => prev.map(i => (i.id === id ? { ...i, read: true } : i)));
+  const fetchNotifications = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (data) setNotifications(data as NotificationItem[]);
+    setLoading(false);
   };
 
-  const markAllRead = async () => {
-    const ids = items.filter(i => !i.read).map(i => i.id);
-    if (ids.length === 0) return;
-    const { error } = await supabase.from('notifications').update({ read: true }).in('id', ids);
-    if (!error) setItems(prev => prev.map(i => ({ ...i, read: true })));
+  const markAsRead = async (id: number) => {
+    await supabase.from('notifications').update({ read: true }).eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllAsRead = async () => {
+    const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+    if (unreadIds.length === 0) return;
+    await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
   const clearAll = async () => {
-    const confirmed = window.confirm('Tem certeza que deseja limpar todas as notificações? Esta ação removerá o histórico.');
-    if (!confirmed) return;
-    // Delete all notifications records
-    const { error } = await supabase.from('notifications').delete().gte('id', 0);
-    if (!error) {
-      setItems([]);
-    }
+    if (!window.confirm('Deseja limpar todas as notificações?')) return;
+    await supabase.from('notifications').delete().gte('id', 0);
+    setNotifications([]);
   };
 
-  const formatApptDateTime = (n: NotificationItem) => {
-    const d = (n.data?.appointment_time || n.data?.scheduled_at || n.data?.date || null) as string | null;
-    const combined = n.data?.appointment_date && n.data?.appointment_hour
-      ? `${n.data.appointment_date}T${n.data.appointment_hour}`
-      : null;
-    const target = d || combined;
-    try {
-      const ref = target ? new Date(target) : new Date(n.created_at);
-      return ref.toLocaleString('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        hour12: false,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-    } catch {
-      return new Date(n.created_at).toLocaleString('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        hour12: false,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-    }
-  };
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  const renderDescription = (n: NotificationItem) => {
-    const pet = n.data?.pet_name;
-    const tutor = n.data?.owner_name || n.data?.tutor_name;
-    const service = n.data?.service;
-    const when = formatApptDateTime(n);
-    return (
-      <div className="flex flex-wrap gap-1">
-        {pet && (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-pink-50 text-pink-700">🐶 {pet}</span>
-        )}
-        {tutor && (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">👤 {tutor}</span>
-        )}
-        {service && (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">🧼 {service}</span>
-        )}
-        {when && (
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">🗓 {when}</span>
-        )}
-      </div>
-    );
+    if (diff < 60) return 'Agora mesmo';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m atrás`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
+      {/* Bell Button */}
       <button
-        onClick={() => setOpen(o => !o)}
-        className={`relative flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all shadow-sm hover:shadow ${
-          open ? 'text-pink-700 bg-pink-50' : 'text-gray-700 bg-white hover:bg-pink-50 hover:text-pink-700'
-        }`}
-        aria-label="Notificações"
-        title="Notificações"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`
+          relative p-2.5 rounded-xl transition-all duration-300 group
+          ${isOpen ? 'bg-pink-50 text-pink-600 shadow-sm' : 'hover:bg-gray-50 text-gray-600 hover:text-pink-600'}
+        `}
       >
-        {unreadCount > 0 ? <BellAlertIcon className="h-5 w-5"/> : <BellIcon className="h-5 w-5"/>}
-        <span className="hidden md:inline">Notificações</span>
+        <Bell className={`w-6 h-6 transition-transform duration-300 ${isOpen ? 'rotate-12 scale-110' : 'group-hover:scale-105'}`} />
+        
         {unreadCount > 0 && (
-          <span className="ml-1 inline-flex items-center justify-center text-xs font-bold text-white bg-pink-600 rounded-full min-w-6 h-6 px-2">
-            {unreadCount}
+          <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-pink-600 border-2 border-white"></span>
           </span>
         )}
       </button>
 
-      {open && createPortal(
-        <div className="fixed inset-0 z-[10002] flex items-start justify-center p-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-          <div className="absolute inset-0 bg-gray-800/40" onClick={() => setOpen(false)} />
-          <div ref={panelRef} className="relative w-full max-w-[95vw] sm:max-w-md md:max-w-lg bg-white border border-pink-100 rounded-2xl shadow-xl p-3">
-            <div className="flex items-center justify-between px-2 py-1">
-              <div className="font-semibold text-pink-800">Central de Notificações</div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={markAllRead}
-                  className="flex items-center gap-2 text-xs font-semibold text-pink-700 hover:text-pink-900 bg-pink-50 hover:bg-pink-100 px-3 py-1 rounded-lg"
-                >
-                  <CheckIcon className="h-4 w-4"/> Marcar todas como lidas
-                </button>
-                <button
-                  onClick={clearAll}
-                  className="flex items-center gap-2 text-xs font-semibold text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-lg"
-                  title="Limpar todas as notificações"
-                >
-                  <TrashIcon className="h-4 w-4"/> Limpar todas
-                </button>
-              </div>
-            </div>
-
-            <div className="max-h-[80vh] overflow-y-auto mt-2 divide-y divide-gray-100">
-              {loading && (
-                <div className="p-4 text-gray-500 text-sm">Carregando...</div>
-              )}
-              {!loading && items.length === 0 && (
-                <div className="p-4 text-gray-500 text-sm">Sem notificações por enquanto.</div>
-              )}
-              {items.map(n => (
-                <div key={n.id} className={`p-3 flex items-start gap-3 ${n.read ? 'bg-white' : 'bg-pink-50'}`}>
-                  <div className="mt-0.5">
-                    {n.type === 'daycare' || n.type === 'hotel' ? (
-                      <BellIcon className="h-5 w-5 text-pink-600"/>
-                    ) : (
-                      <BellAlertIcon className="h-5 w-5 text-pink-600"/>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-gray-800">{typeLabels[n.type] ?? 'Nova notificação'}</div>
-                    <div className="text-sm text-gray-600 mt-0.5">{renderDescription(n)}</div>
-                    <div className="text-xs text-gray-400 mt-1">{new Date(n.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', hour12: false })}</div>
-                  </div>
-                  {!n.read && (
-                    <button
-                      onClick={() => markRead(n.id)}
-                      className="text-xs font-semibold text-pink-700 bg-pink-100 hover:bg-pink-200 px-2 py-1 rounded-lg"
-                    >
-                      Marcar como lida
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+      {/* Dropdown Panel */}
+      <div className={`
+        fixed left-4 right-4 top-24 w-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-3 sm:w-80 md:w-96 
+        bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 
+        transform transition-all duration-200 origin-top-right z-50 overflow-hidden
+        ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}
+      `}>
+        
+        {/* Header */}
+        <div className="bg-white/80 backdrop-blur-md px-5 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-gray-800 text-lg">Notificações</h3>
+            {unreadCount > 0 && (
+              <span className="bg-pink-100 text-pink-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {unreadCount} NOVA{unreadCount !== 1 && 'S'}
+              </span>
+            )}
           </div>
-        </div>,
-        document.body
-      )}
+          <div className="flex gap-1">
+            <button 
+              onClick={markAllAsRead}
+              title="Marcar todas como lidas"
+              className="p-1.5 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-colors"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={clearAll}
+              title="Limpar histórico"
+              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar bg-gray-50/50">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-3">
+              <div className="w-6 h-6 border-2 border-pink-200 border-t-pink-600 rounded-full animate-spin" />
+              <span className="text-sm font-medium">Carregando...</span>
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+              <div className="bg-gray-100 p-4 rounded-full mb-3">
+                <Bell className="w-6 h-6 text-gray-300" />
+              </div>
+              <h4 className="text-gray-900 font-semibold mb-1">Tudo tranquilo!</h4>
+              <p className="text-gray-500 text-sm">Nenhuma notificação por enquanto.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {notifications.map((item) => {
+                const config = typeConfig[item.type] || typeConfig.default;
+                const Icon = config.icon;
+                
+                return (
+                  <div 
+                    key={item.id}
+                    onClick={() => markAsRead(item.id)}
+                    className={`
+                      group relative px-5 py-4 transition-all duration-200 hover:bg-white cursor-pointer
+                      ${!item.read ? 'bg-white' : 'bg-gray-50/50 opacity-75 hover:opacity-100'}
+                    `}
+                  >
+                    {!item.read && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-pink-500 to-pink-600" />
+                    )}
+                    
+                    <div className="flex gap-4">
+                      {/* Icon */}
+                      <div className={`
+                        flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
+                        ${config.bg} ${config.color}
+                      `}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-bold text-gray-900 truncate">
+                            {config.label}
+                          </p>
+                          <span className="flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-white px-1.5 py-0.5 rounded-full border border-gray-100 shadow-sm">
+                            <Clock className="w-3 h-3" />
+                            {formatTime(item.created_at)}
+                          </span>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600 leading-snug">
+                          {item.data?.pet_name && (
+                            <span className="font-medium text-gray-800 block mb-0.5">
+                              {item.data.pet_name}
+                            </span>
+                          )}
+                          <span className="text-gray-500">
+                            {item.data?.service || 'Novo agendamento realizado'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="bg-gray-50 p-2 border-t border-gray-100 text-center">
+          <button 
+            onClick={() => setIsOpen(false)}
+            className="w-full py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors uppercase tracking-wide"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
