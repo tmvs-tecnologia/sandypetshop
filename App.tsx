@@ -5303,15 +5303,18 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
         const dbId = getDbId(selectedForDelete.id);
 
         try {
+            // Delete all appointments for this client (both tables to be safe, though mainly 'appointments')
             await Promise.all([
                 supabase.from('appointments').delete().eq('monthly_client_id', dbId),
                 supabase.from('pet_movel_appointments').delete().eq('monthly_client_id', dbId)
             ]);
+            
             const { error: delErr } = await supabase.from('monthly_clients').delete().eq('id', dbId);
             if (delErr) {
                 alert('Falha ao excluir o mensalista.');
             } else {
                 setMonthlyClients(prev => prev.filter(client => client.id !== selectedForDelete.id));
+                alert('Mensalista e agendamentos excluídos com sucesso!');
             }
         } finally {
             setIsDeleting(false);

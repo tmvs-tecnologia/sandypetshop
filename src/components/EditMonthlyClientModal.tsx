@@ -140,6 +140,107 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
         });
     };
 
+    const generateFutureAppointments = async (client: MonthlyClient) => {
+        // Only generate if active
+        if (!client.is_active) return;
+
+        const appointmentsToCreate: any[] = [];
+        let startDate = new Date();
+        const limitDate = new Date('2026-12-31T23:59:59');
+
+        // Check last appointment to avoid duplicates or start from scratch
+        const { data: lastAppt } = await supabase
+            .from('appointments')
+            .select('appointment_time')
+            .eq('monthly_client_id', client.id)
+            .order('appointment_time', { ascending: false })
+            .limit(1);
+
+        if (lastAppt && lastAppt.length > 0) {
+            startDate = new Date(lastAppt[0].appointment_time);
+            startDate = addInterval(startDate, client.recurrence_type);
+        } else {
+            // No history, start from next occurrence from today
+            startDate = new Date();
+             // Adjust to next occurrence
+             // Logic similar to mass script but relative to today if no history
+             // But for new clients, we want to start ASAP.
+             // If today is Monday and recurrence is Monday, schedule today? 
+             // Usually yes.
+             startDate.setHours(0,0,0,0);
+        }
+        
+        // Helper to adjust day
+        const getDayOfWeekSystem = (d: Date) => { const js = d.getDay(); return js === 0 ? 7 : js; };
+
+        // Adjust start date to match recurrence day
+        if (client.recurrence_type !== 'monthly') {
+            // Find next matching weekday
+            // If today matches and time hasn't passed (handled by hour logic), could be today.
+            // But let's keep it simple: find next matching date >= startDate
+            while (getDayOfWeekSystem(startDate) !== client.recurrence_day) {
+                startDate.setDate(startDate.getDate() + 1);
+            }
+        } else {
+            // Monthly
+            if (startDate.getDate() > client.recurrence_day) {
+                startDate.setMonth(startDate.getMonth() + 1);
+            }
+            startDate.setDate(client.recurrence_day);
+        }
+        
+        // Hour logic
+        let hour = 12; // Default UTC noon
+        try {
+             if (typeof client.recurrence_time === 'string') {
+                const parts = client.recurrence_time.split(':');
+                if (parts.length >= 1) hour = parseInt(parts[0]) + 3;
+            } else if (typeof client.recurrence_time === 'number') {
+                hour = client.recurrence_time + 3;
+            }
+        } catch(e) {}
+
+        let currentDate = new Date(startDate);
+        
+        // Generate loop
+        while (currentDate <= limitDate) {
+            const apptDate = new Date(currentDate);
+            apptDate.setUTCHours(hour, 0, 0, 0);
+            const isoString = apptDate.toISOString().replace('.000Z', '+00:00');
+
+            appointmentsToCreate.push({
+                monthly_client_id: client.id,
+                pet_name: client.pet_name,
+                owner_name: client.owner_name,
+                pet_breed: client.pet_breed,
+                owner_address: client.owner_address,
+                whatsapp: client.whatsapp,
+                service: client.service,
+                weight: client.weight,
+                price: client.price,
+                condominium: client.condominium,
+                status: 'AGENDADO',
+                appointment_time: isoString,
+                recurrence_type: client.recurrence_type,
+                pet_photo_url: client.pet_photo_url
+            });
+
+            currentDate = addInterval(currentDate, client.recurrence_type);
+        }
+
+        if (appointmentsToCreate.length > 0) {
+            await supabase.from('appointments').insert(appointmentsToCreate);
+        }
+    };
+
+    const addInterval = (date: Date, type: string) => {
+        const newDate = new Date(date);
+        if (type === 'weekly') newDate.setDate(newDate.getDate() + 7);
+        else if (type === 'bi-weekly') newDate.setDate(newDate.getDate() + 14);
+        else if (type === 'monthly') newDate.setMonth(newDate.getMonth() + 1);
+        return newDate;
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
@@ -173,6 +274,9 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                 .eq('id', client.id);
 
             if (updateError) throw updateError;
+
+            // Generate future appointments automatically
+            await generateFutureAppointments(payload);
 
             onMonthlyClientUpdated();
             onClose();
