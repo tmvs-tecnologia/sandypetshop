@@ -13,7 +13,9 @@ import {
     ClockIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
-    ChevronDownIcon
+    ChevronDownIcon,
+    ChevronUpIcon,
+    SparklesIcon
 } from '@heroicons/react/24/outline';
 
 interface StatisticsDashboardModalProps {
@@ -31,6 +33,7 @@ interface KPICardProps {
     trendValue?: string;
     color: 'pink' | 'blue' | 'green' | 'purple';
     children?: React.ReactNode; // For selectors
+    details?: AppointmentData[]; // For expanded view
 }
 
 interface AppointmentData {
@@ -43,11 +46,15 @@ interface AppointmentData {
     service: string;
     pet_name?: string;
     owner_name?: string;
+    photo_url?: string; // If available
+    monthly_client_id?: string;
 }
 
 // --- Helper Components ---
 
-const KPICard: React.FC<KPICardProps> = ({ title, value, subValue, icon: Icon, trend, trendValue, color, children }) => {
+const KPICard: React.FC<KPICardProps> = ({ title, value, subValue, icon: Icon, trend, trendValue, color, children, details }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
     const colorClasses = {
         pink: 'bg-pink-50 text-pink-700 border-pink-100',
         blue: 'bg-blue-50 text-blue-700 border-blue-100',
@@ -62,30 +69,93 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, subValue, icon: Icon, t
         purple: 'text-purple-500 bg-purple-100',
     };
 
+    const formatCurrency = (value: number) => {
+        return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    // Toggle expansion only if there are details
+    const handleToggle = () => {
+        if (details && details.length > 0) {
+            setIsExpanded(!isExpanded);
+        }
+    };
+
     return (
-        <div className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md ${colorClasses[color]} relative`}>
-            <div className="flex justify-between items-start mb-2">
-                <p className="text-sm font-medium opacity-80">{title}</p>
-                <div className={`p-2 rounded-xl ${iconColorClasses[color]}`}>
-                    <Icon className="w-5 h-5" />
+        <div 
+            className={`
+                rounded-2xl border shadow-sm transition-all duration-300 relative overflow-hidden
+                ${colorClasses[color]} 
+                ${isExpanded ? 'row-span-2 md:col-span-2' : 'hover:shadow-md'}
+                ${details && details.length > 0 ? 'cursor-pointer' : ''}
+            `}
+            onClick={handleToggle}
+        >
+            <div className="p-6">
+                <div className="flex justify-between items-start mb-2">
+                    <p className="text-sm font-medium opacity-80">{title}</p>
+                    <div className={`p-2 rounded-xl ${iconColorClasses[color]}`}>
+                        <Icon className="w-5 h-5" />
+                    </div>
+                </div>
+                
+                <h3 className="text-3xl font-bold font-outfit mb-1">{value}</h3>
+                {subValue && <p className="text-xs opacity-70 mb-3">{subValue}</p>}
+                
+                {children && (
+                    <div className="mt-3 pt-3 border-t border-black/5" onClick={(e) => e.stopPropagation()}>
+                        {children}
+                    </div>
+                )}
+
+                {(trend && trendValue && !children) && (
+                    <div className="mt-4 flex items-center gap-1 text-xs font-medium">
+                        <span className={trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-gray-600'}>
+                            {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '•'} {trendValue}
+                        </span>
+                        <span className="opacity-60">vs período anterior</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Expanded Content */}
+            <div className={`
+                bg-white/50 backdrop-blur-sm border-t border-black/5 transition-all duration-500 ease-in-out
+                ${isExpanded ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'}
+            `}>
+                <div className="p-4">
+                    <h4 className="text-sm font-bold mb-3 opacity-80 flex justify-between items-center">
+                        Detalhamento 
+                        <span className="text-xs font-normal bg-white/60 px-2 py-1 rounded-full">{details?.length} itens</span>
+                    </h4>
+                    <div className="space-y-3 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
+                        {details?.slice(0, 50).map((apt, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-white/60 p-2 rounded-lg shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    {/* Avatar Placeholder or Photo */}
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${iconColorClasses[color]}`}>
+                                        {apt.pet_name?.substring(0,2).toUpperCase() || 'PET'}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold leading-none">{apt.pet_name || 'Pet sem nome'}</p>
+                                        <p className="text-[10px] opacity-70 leading-none mt-1">{apt.service}</p>
+                                    </div>
+                                </div>
+                                <span className="text-sm font-bold font-outfit">
+                                    {formatCurrency(Number(apt.price))}
+                                </span>
+                            </div>
+                        ))}
+                         {details && details.length > 50 && (
+                            <p className="text-center text-xs opacity-50 pt-2">Exibindo os primeiros 50 itens</p>
+                        )}
+                    </div>
                 </div>
             </div>
-            
-            <h3 className="text-3xl font-bold font-outfit mb-1">{value}</h3>
-            {subValue && <p className="text-xs opacity-70 mb-3">{subValue}</p>}
-            
-            {children && (
-                <div className="mt-3 pt-3 border-t border-black/5">
-                    {children}
-                </div>
-            )}
 
-            {(trend && trendValue && !children) && (
-                <div className="mt-4 flex items-center gap-1 text-xs font-medium">
-                    <span className={trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-gray-600'}>
-                        {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '•'} {trendValue}
-                    </span>
-                    <span className="opacity-60">vs período anterior</span>
+             {/* Expand Indicator */}
+             {details && details.length > 0 && (
+                <div className="absolute bottom-2 right-2 opacity-30">
+                    {isExpanded ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
                 </div>
             )}
         </div>
@@ -93,23 +163,28 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, subValue, icon: Icon, t
 };
 
 // Simple SVG Bar Chart
-const SimpleBarChart: React.FC<{ data: { label: string; value: number; highlight?: boolean }[]; color: string }> = ({ data, color }) => {
+const SimpleBarChart: React.FC<{ 
+    data: { label: string; value: number; highlight?: boolean }[]; 
+    color: string;
+    tooltipPrefix?: string;
+    tooltipSuffix?: string;
+}> = ({ data, color, tooltipPrefix = 'R$ ', tooltipSuffix = '' }) => {
     const maxValue = Math.max(...data.map(d => d.value), 1);
     
     return (
-        <div className="flex items-end justify-between h-[150px] gap-2 pt-4">
+        <div className="flex items-end justify-between h-[150px] gap-1 sm:gap-2 pt-4">
             {data.map((d, i) => (
-                <div key={i} className="flex flex-col items-center flex-1 group relative h-full justify-end">
+                <div key={i} className="flex flex-col items-center flex-1 group relative h-full justify-end min-w-0">
                     <div 
-                        className={`w-full max-w-[40px] rounded-t-lg transition-all duration-500 ease-out hover:opacity-80 ${d.highlight ? 'bg-pink-500' : 'bg-pink-300'}`}
+                        className={`w-full max-w-[40px] rounded-t-lg transition-all duration-500 ease-out hover:opacity-80 ${d.highlight ? 'bg-pink-500' : color}`}
                         style={{ height: `${(d.value / maxValue) * 100}%` }}
                     >
                         {/* Tooltip */}
                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                            R$ {d.value}
+                            {tooltipPrefix}{d.value}{tooltipSuffix}
                         </div>
                     </div>
-                    <span className="text-[10px] sm:text-xs text-gray-500 mt-2 font-medium truncate w-full text-center capitalize">{d.label}</span>
+                    <span className="text-[9px] sm:text-xs text-gray-500 mt-2 font-medium truncate w-full text-center capitalize">{d.label}</span>
                 </div>
             ))}
         </div>
@@ -118,10 +193,14 @@ const SimpleBarChart: React.FC<{ data: { label: string; value: number; highlight
 
 // Simple SVG Donut Chart
 const SimpleDonutChart: React.FC<{ data: { label: string; value: number; color: string }[] }> = ({ data }) => {
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const total = data.reduce((acc, curr) => acc + curr.value, 0);
     let cumulativePercent = 0;
 
     if (total === 0) return <div className="h-48 flex items-center justify-center text-gray-400">Sem dados</div>;
+
+    const displayValue = activeIndex !== null ? data[activeIndex].value : total;
+    const displayLabel = activeIndex !== null ? data[activeIndex].label : 'Total';
 
     return (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-8 h-full">
@@ -129,9 +208,11 @@ const SimpleDonutChart: React.FC<{ data: { label: string; value: number; color: 
                 <svg viewBox="0 0 100 100" className="transform -rotate-90 w-full h-full">
                     {data.map((slice, i) => {
                         const percent = slice.value / total;
-                        const dashArray = percent * 314;
+                        const circumference = 2 * Math.PI * 40;
+                        const dashArray = percent * circumference;
                         const startPercent = cumulativePercent;
                         cumulativePercent += percent;
+                        const isActive = activeIndex === i;
                         
                         return (
                             <circle
@@ -141,32 +222,92 @@ const SimpleDonutChart: React.FC<{ data: { label: string; value: number; color: 
                                 cy="50"
                                 fill="transparent"
                                 stroke={slice.color}
-                                strokeWidth="16"
-                                strokeDasharray={`${dashArray} 314`}
-                                strokeDashoffset={-startPercent * 314}
-                                className="transition-all duration-700 hover:stroke-width-20 cursor-pointer"
-                            >
-                                <title>{slice.label}: {slice.value} ({Math.round(percent * 100)}%)</title>
-                            </circle>
+                                strokeWidth={isActive ? "20" : "16"}
+                                strokeDasharray={`${dashArray} ${circumference}`}
+                                strokeDashoffset={-startPercent * circumference}
+                                className="transition-all duration-300 cursor-pointer"
+                                onMouseEnter={() => setActiveIndex(i)}
+                                onMouseLeave={() => setActiveIndex(null)}
+                                onClick={() => setActiveIndex(i === activeIndex ? null : i)}
+                            />
                         );
                     })}
-                    {/* Inner Text */}
-                    <text x="50" y="50" textAnchor="middle" dy="0.3em" className="fill-gray-700 text-xs font-bold transform rotate-90">
-                        Total: {total}
-                    </text>
                 </svg>
+                {/* Inner Text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-3xl font-bold text-gray-800 transition-all duration-300">{displayValue}</span>
+                    <span className="text-xs text-gray-500 uppercase font-medium max-w-[80px] text-center truncate px-2">{displayLabel}</span>
+                </div>
             </div>
             <div className="flex flex-col gap-3 w-full max-w-[200px]">
                 {data.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
+                    <div 
+                        key={i} 
+                        className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded hover:bg-gray-50 transition-colors ${activeIndex === i ? 'bg-gray-50 font-semibold' : ''}`}
+                        onMouseEnter={() => setActiveIndex(i)}
+                        onMouseLeave={() => setActiveIndex(null)}
+                    >
                         <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
+                            <span className="w-3 h-3 rounded-full shrink-0 block" style={{ backgroundColor: item.color, minWidth: '0.75rem' }}></span>
                             <span className="text-gray-600 truncate max-w-[100px]" title={item.label}>{item.label}</span>
                         </div>
                         <span className="font-bold text-gray-800">{Math.round((item.value / total) * 100)}%</span>
                     </div>
                 ))}
             </div>
+        </div>
+    );
+};
+
+// Simple Horizontal Bar Chart
+const HorizontalBarChart: React.FC<{ 
+    data: { label: string; value: number; photoUrl?: string; secondaryLabel?: string }[]; 
+    color: string;
+    valuePrefix?: string;
+    valueSuffix?: string;
+    showRank?: boolean;
+}> = ({ data, color, valuePrefix = '', valueSuffix = '', showRank = false }) => {
+    const maxValue = Math.max(...data.map(d => d.value), 1);
+    
+    return (
+        <div className="space-y-4">
+            {data.map((d, i) => (
+                <div key={i} className="group">
+                    <div className="flex items-center justify-between text-sm mb-1">
+                        <div className="flex items-center gap-2">
+                            {showRank && (
+                                <span className={`
+                                    w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold
+                                    ${i === 0 ? 'bg-yellow-100 text-yellow-700' : 
+                                      i === 1 ? 'bg-gray-100 text-gray-700' : 
+                                      i === 2 ? 'bg-orange-100 text-orange-700' : 'bg-transparent text-gray-400'}
+                                `}>
+                                    {i + 1}
+                                </span>
+                            )}
+                            {d.photoUrl && (
+                                <img 
+                                    src={d.photoUrl || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'} 
+                                    alt={d.label}
+                                    className="w-6 h-6 rounded-full object-cover border border-gray-100"
+                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'; }}
+                                />
+                            )}
+                            <div>
+                                <span className="font-medium text-gray-800">{d.label}</span>
+                                {d.secondaryLabel && <span className="text-xs text-gray-400 ml-2">({d.secondaryLabel})</span>}
+                            </div>
+                        </div>
+                        <span className="font-bold text-gray-700">{valuePrefix}{d.value.toLocaleString('pt-BR')}{valueSuffix}</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div 
+                            className={`h-full rounded-full transition-all duration-1000 ease-out ${color}`}
+                            style={{ width: `${(d.value / maxValue) * 100}%` }}
+                        />
+                    </div>
+                </div>
+            ))}
         </div>
     );
 };
@@ -198,9 +339,9 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
         try {
             // Parallel fetch
             const [storeRes, mobileRes, monthlyRes] = await Promise.all([
-                supabase.from('appointments').select('*').eq('status', 'CONCLUÍDO'),
-                supabase.from('pet_movel_appointments').select('*').eq('status', 'CONCLUÍDO'),
-                supabase.from('monthly_clients').select('*').eq('is_active', true)
+                supabase.from('appointments').select('*').in('status', ['CONCLUÍDO', 'AGENDADO']),
+                supabase.from('pet_movel_appointments').select('*').in('status', ['CONCLUÍDO', 'AGENDADO']),
+                supabase.from('monthly_clients').select('*') // Removed .eq('is_active', true) to include historical data
             ]);
 
             setRawData({
@@ -217,7 +358,11 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
 
     // --- Calculations ---
     const metrics = useMemo(() => {
-        const allAppointments = [...rawData.store, ...rawData.mobile];
+        // Tagging source for correct classification
+        const storeApts = rawData.store.map(a => ({ ...a, _source: 'store' }));
+        const mobileApts = rawData.mobile.map(a => ({ ...a, _source: 'mobile' }));
+        const allAppointments = [...storeApts, ...mobileApts];
+        
         const now = new Date();
         const currentYear = now.getFullYear();
         
@@ -238,14 +383,59 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
         // Metrics
         let todayRevenue = 0;
         let todayCount = 0;
-        let monthRevenue = 0; // Based on selectedMonth
-        let yearRevenue = 0; // Based on selectedYearTotal
+        const todayDetails: AppointmentData[] = [];
 
-        const serviceDistribution: Record<string, number> = {};
+        let monthRevenue = 0; // Based on selectedMonth
+        const monthDetails: AppointmentData[] = [];
+
+        let yearRevenue = 0; // Based on selectedYearTotal
+        const yearDetails: AppointmentData[] = [];
+        
+        // Week details (not strictly requested but good to have if we kept "Esta Semana" card logic consistent)
+        const weekDetails: AppointmentData[] = []; 
+
+        const serviceDistribution: Record<string, number> = {
+            'Banho': 0,
+            'Banho & Tosa': 0,
+            'Pet Móvel': 0
+        };
+        
         const hourlyDistribution: Record<number, number> = {};
         
         // Arrays for charts
         const weeklyRevenueByDay = Array(7).fill(0); // 0=Dom, 1=Seg, ...
+
+        // Monthly Clients Analytics
+        const monthlyStats: Record<string, {
+            id: string;
+            pet_name: string;
+            owner_name: string;
+            photo_url?: string;
+            servicesCount: number;
+            totalSpent: number;
+            monthlyPrice: number;
+        }> = {};
+        
+        // Map for fallback name matching: "pet_owner" -> id
+        const nameToIdMap: Record<string, string> = {};
+
+        // Initialize with all monthly clients (even if no services yet)
+        rawData.monthly.forEach(mc => {
+            // Index by ID for reliability
+            monthlyStats[mc.id] = {
+                id: mc.id,
+                pet_name: mc.pet_name,
+                owner_name: mc.owner_name,
+                photo_url: mc.pet_photo_url,
+                servicesCount: 0,
+                totalSpent: 0,
+                monthlyPrice: Number(mc.price || 0)
+            };
+            
+            // Populate fallback map
+            const key = `${mc.pet_name?.trim().toLowerCase()}_${mc.owner_name?.trim().toLowerCase()}`;
+            nameToIdMap[key] = mc.id;
+        });
 
         allAppointments.forEach(apt => {
             const dateStr = apt.appointment_time || apt.appointmentTime;
@@ -253,47 +443,85 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
             
             const aptDate = new Date(dateStr);
             const price = Number(apt.price || 0);
+            const serviceLower = (apt.service || '').toLowerCase();
+            const isCompleted = apt.status === 'CONCLUÍDO';
             
-            // 1. Today's Revenue (Local Time Check)
-            if (getLocalDate(dateStr) === todayLocal) {
-                todayRevenue += price;
-                todayCount++;
-            }
+            // --- Monthly Client Matching ---
+            if (isCompleted) {
+                let matchedId = null;
 
-            // 2. Monthly Revenue (Selected Month, Only Banho & Tosa)
-            // Assuming "Banho & Tosa" logic refers to store appointments mostly, or filtering by service name
-            const isBanhoTosa = (apt.service || '').toLowerCase().includes('banho') || (apt.service || '').toLowerCase().includes('tosa');
-            
-            if (aptDate.getMonth() === selectedMonth && aptDate.getFullYear() === currentYear) {
-                if (isBanhoTosa) {
-                    monthRevenue += price;
+                // 1. Priority: Match by monthly_client_id (if available)
+                if (apt.monthly_client_id && monthlyStats[apt.monthly_client_id]) {
+                    matchedId = apt.monthly_client_id;
+                }
+                // 2. Fallback: Match by Name (for older records or missing IDs)
+                else {
+                    const key = `${apt.pet_name?.trim().toLowerCase()}_${apt.owner_name?.trim().toLowerCase()}`;
+                    if (nameToIdMap[key]) {
+                        matchedId = nameToIdMap[key];
+                    }
+                }
+
+                if (matchedId && monthlyStats[matchedId]) {
+                    monthlyStats[matchedId].servicesCount++;
+                    monthlyStats[matchedId].totalSpent += price;
                 }
             }
 
-            // 3. Year Revenue (Selected Year)
-            if (aptDate.getFullYear() === selectedYearTotal) {
-                yearRevenue += price;
+            // --- Service Classification for Chart (Operacional - Todos) ---
+            // Priority: 
+            // 1. Mobile Source -> 'Pet Móvel'
+            // 2. Service name contains 'banho e tosa' -> 'Banho & Tosa'
+            // 3. Service name contains 'banho' -> 'Banho'
+            // 4. Others
+            if (apt._source === 'mobile') {
+                serviceDistribution['Pet Móvel']++;
+            } else if (serviceLower.includes('banho') && serviceLower.includes('tosa')) {
+                serviceDistribution['Banho & Tosa']++;
+            } else if (serviceLower.includes('banho')) {
+                serviceDistribution['Banho']++;
+            } else {
+                if (serviceLower.includes('tosa')) serviceDistribution['Banho & Tosa']++;
+                else serviceDistribution['Banho']++; // Catch-all for store
             }
 
-            // 4. Weekly Chart Data (Current Week: Sun-Sat)
+            // --- Time-based Metrics ---
+
+            // 1. Today's Revenue (Financeiro - Apenas Concluídos)
+            if (isCompleted && getLocalDate(dateStr) === todayLocal) {
+                todayRevenue += price;
+                todayCount++;
+                todayDetails.push(apt);
+            }
+
+            // 2. Monthly Revenue (Financeiro - Apenas Concluídos)
+            if (isCompleted && aptDate.getMonth() === selectedMonth && aptDate.getFullYear() === currentYear) {
+                const isBanhoTosaFilter = serviceLower.includes('banho') || serviceLower.includes('tosa');
+                
+                if (isBanhoTosaFilter) {
+                    monthRevenue += price;
+                    monthDetails.push(apt);
+                }
+            }
+
+            // 3. Year Revenue (Financeiro - Apenas Concluídos)
+            if (isCompleted && aptDate.getFullYear() === selectedYearTotal) {
+                yearRevenue += price;
+                yearDetails.push(apt);
+            }
+
+            // 4. Weekly Chart Data (Financeiro - Apenas Concluídos)
             const aptTime = aptDate.getTime();
             const weekStartTime = weekStart.getTime();
             const weekEndTime = weekStartTime + (7 * 24 * 60 * 60 * 1000);
 
-            if (aptTime >= weekStartTime && aptTime < weekEndTime) {
+            if (isCompleted && aptTime >= weekStartTime && aptTime < weekEndTime) {
                 const dayIndex = aptDate.getDay(); // 0-6
                 weeklyRevenueByDay[dayIndex] += price;
+                weekDetails.push(apt); // For "Esta Semana" card
             }
 
-            // Service Dist (for charts)
-            const svc = apt.service || 'Outros';
-            let simplifiedSvc = 'Outros';
-            if (svc.toLowerCase().includes('banho e tosa') || svc.includes('Banho & Tosa')) simplifiedSvc = 'Banho & Tosa';
-            else if (svc.toLowerCase().includes('banho')) simplifiedSvc = 'Banho';
-            else if (svc.toLowerCase().includes('tosa')) simplifiedSvc = 'Tosa';
-            serviceDistribution[simplifiedSvc] = (serviceDistribution[simplifiedSvc] || 0) + 1;
-
-            // Hourly Dist
+            // Hourly Dist (Operacional - Todos)
             const hour = aptDate.getHours();
             hourlyDistribution[hour] = (hourlyDistribution[hour] || 0) + 1;
         });
@@ -306,12 +534,12 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
             highlight: i === now.getDay() // Highlight today
         }));
 
-        // Monthly Chart Data (Year View)
+        // Monthly Chart Data (Year View - Financeiro - Apenas Concluídos)
         const monthlyChartData = Array.from({ length: 12 }, (_, i) => {
             const val = allAppointments
                 .filter(a => {
                     const d = new Date(a.appointment_time || a.appointmentTime || '');
-                    return d.getFullYear() === selectedYearTotal && d.getMonth() === i;
+                    return a.status === 'CONCLUÍDO' && d.getFullYear() === selectedYearTotal && d.getMonth() === i;
                 })
                 .reduce((sum, a) => sum + Number(a.price || 0), 0);
             return {
@@ -320,19 +548,59 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
             };
         });
 
+        // Prepare Distribution Data for Chart (Strict 3 colors)
+        const distributionData = [
+            { label: 'Banho', value: serviceDistribution['Banho'], color: '#3b82f6' }, // Blue
+            { label: 'Banho & Tosa', value: serviceDistribution['Banho & Tosa'], color: '#ec4899' }, // Pink
+            { label: 'Pet Móvel', value: serviceDistribution['Pet Móvel'], color: '#a855f7' } // Purple
+        ].filter(d => d.value > 0);
+
+        // Prepare Monthly Client Charts
+        const monthlyClientsList = Object.values(monthlyStats);
+        
+        const topServicesClients = [...monthlyClientsList]
+            .sort((a, b) => b.servicesCount - a.servicesCount)
+            .slice(0, 5)
+            .map(c => ({
+                label: c.pet_name,
+                secondaryLabel: c.owner_name,
+                value: c.servicesCount,
+                photoUrl: c.photo_url
+            }));
+
+        const topRevenueClients = [...monthlyClientsList]
+            .sort((a, b) => b.totalSpent - a.totalSpent)
+            .slice(0, 5)
+            .map(c => ({
+                label: c.pet_name,
+                secondaryLabel: c.owner_name,
+                value: c.totalSpent,
+                photoUrl: c.photo_url
+            }));
+
         return {
             todayRevenue,
             todayCount,
+            todayDetails: todayDetails.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+            
             monthRevenue,
+            monthDetails: monthDetails.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+            
             yearRevenue,
+            yearDetails: yearDetails.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+            
+            weekDetails: weekDetails.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+
             weeklyChartData,
             monthlyChartData,
-            serviceDistribution: Object.entries(serviceDistribution).map(([label, value]) => ({ 
-                label, 
-                value,
-                color: label === 'Banho' ? '#3b82f6' : label === 'Banho & Tosa' ? '#ec4899' : '#a855f7'
-            })),
-            hourlyDistribution: Object.entries(hourlyDistribution).map(([label, value]) => ({ label: `${label}h`, value })).sort((a,b) => parseInt(a.label) - parseInt(b.label))
+            serviceDistribution: distributionData,
+            hourlyDistribution: Object.entries(hourlyDistribution).map(([label, value]) => ({ label: `${label}h`, value })).sort((a,b) => parseInt(a.label) - parseInt(b.label)),
+            
+            monthlyStats: {
+                list: monthlyClientsList.sort((a,b) => a.pet_name.localeCompare(b.pet_name)),
+                topServices: topServicesClients,
+                topRevenue: topRevenueClients
+            }
         };
     }, [rawData, selectedMonth, selectedYearTotal]);
 
@@ -343,6 +611,10 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
     ];
 
+    const formatCurrency = (value: number) => {
+        return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
     // Shared Components (Rendered differently based on mobile/desktop)
     const OverviewSection = () => (
         <>
@@ -350,36 +622,36 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
                 {/* 1. Faturamento Hoje */}
                 <KPICard 
                     title="Faturamento Hoje" 
-                    value={`R$ ${metrics.todayRevenue.toFixed(2).replace('.', ',')}`} 
+                    value={formatCurrency(metrics.todayRevenue)} 
                     subValue={`${metrics.todayCount} atendimentos`}
                     icon={CurrencyDollarIcon} 
                     color="green" 
+                    details={metrics.todayDetails}
                 />
 
-                {/* 2. Esta Semana (Mantido original, mas poderia ser removido se redundante) */}
+                {/* 2. Esta Semana */}
                 <KPICard 
                     title="Esta Semana" 
-                    // Keeping simple calculation or reusing logic? Using raw calculation for simplicity here or removing?
-                    // Let's keep it but maybe it wasn't requested to change.
-                    // Actually, let's keep it as a filler or remove if user wants strict changes.
-                    // User didn't ask to remove, so I keep it.
-                    value={`R$ ${metrics.weeklyChartData.reduce((a,b)=>a+b.value,0).toFixed(2).replace('.', ',')}`}
+                    value={formatCurrency(metrics.weeklyChartData.reduce((a,b)=>a+b.value,0))}
                     icon={CalendarIcon} 
-                    color="blue" 
+                    color="blue"
+                    details={metrics.weekDetails} 
                 />
 
                 {/* 3. Este Mês (Com Seletor) */}
                 <KPICard 
-                    title="Banho & Tosa" 
-                    value={`R$ ${metrics.monthRevenue.toFixed(2).replace('.', ',')}`} 
+                    title={selectedMonth === new Date().getMonth() ? "Este mês" : months[selectedMonth]} 
+                    value={formatCurrency(metrics.monthRevenue)} 
                     icon={ChartBarIcon} 
-                    color="purple" 
+                    color="purple"
+                    details={metrics.monthDetails} 
                 >
                     <div className="flex items-center gap-2">
                         <select 
                             value={selectedMonth} 
                             onChange={(e) => setSelectedMonth(Number(e.target.value))}
                             className="bg-transparent text-xs font-semibold text-purple-700 border-none focus:ring-0 cursor-pointer p-0"
+                            onClick={(e) => e.stopPropagation()}
                         >
                             {months.map((m, i) => (
                                 <option key={i} value={i}>{m}</option>
@@ -392,20 +664,21 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
                 {/* 4. Este Ano (Com Seletor) */}
                 <KPICard 
                     title="Este Ano" 
-                    value={`R$ ${metrics.yearRevenue.toFixed(2).replace('.', ',')}`} 
+                    value={formatCurrency(metrics.yearRevenue)} 
                     icon={ArrowTrendingUpIcon} 
-                    color="pink" 
+                    color="pink"
+                    details={metrics.yearDetails} 
                 >
                     <div className="flex items-center gap-3">
                         <button 
-                            onClick={() => setSelectedYearTotal(prev => prev - 1)}
+                            onClick={(e) => { e.stopPropagation(); setSelectedYearTotal(prev => prev - 1); }}
                             className="p-1 hover:bg-pink-100 rounded-full text-pink-700"
                         >
                             <ChevronLeftIcon className="w-3 h-3" />
                         </button>
                         <span className="text-xs font-bold text-pink-700">{selectedYearTotal}</span>
                         <button 
-                            onClick={() => setSelectedYearTotal(prev => prev + 1)}
+                            onClick={(e) => { e.stopPropagation(); setSelectedYearTotal(prev => prev + 1); }}
                             className="p-1 hover:bg-pink-100 rounded-full text-pink-700"
                         >
                             <ChevronRightIcon className="w-3 h-3" />
@@ -414,20 +687,14 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
                 </KPICard>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="grid grid-cols-1 gap-6 mt-6">
+                <h3 className="text-lg font-bold text-gray-800 -mb-2">Financeiro</h3>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <ArrowTrendingUpIcon className="w-5 h-5 text-pink-500" />
                         Receita Diária (Semana Atual)
                     </h3>
                     <SimpleBarChart data={metrics.weeklyChartData} color="bg-pink-400" />
-                </div>
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <ChartPieIcon className="w-5 h-5 text-blue-500" />
-                        Distribuição
-                    </h3>
-                    <SimpleDonutChart data={metrics.serviceDistribution} />
                 </div>
             </div>
         </>
@@ -437,41 +704,28 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
         <div className="space-y-6">
              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <h3 className="font-bold text-gray-800 mb-6">Desempenho Mensal ({selectedYearTotal})</h3>
-                <SimpleBarChart data={metrics.monthlyChartData} color="bg-indigo-400" />
+                <SimpleBarChart data={metrics.monthlyChartData} color="bg-pink-400" />
             </div>
         </div>
     );
 
     const OperationalSection = () => (
         <div className="grid grid-cols-1 gap-6">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <ChartPieIcon className="w-5 h-5 text-blue-500" />
+                    Distribuição por Serviços
+                </h3>
+                <SimpleDonutChart data={metrics.serviceDistribution} />
+            </div>
              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <h3 className="font-bold text-gray-800 mb-4">Horários de Pico</h3>
-                <SimpleBarChart data={metrics.hourlyDistribution} color="bg-orange-400" />
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="font-bold text-gray-800 mb-4">Detalhamento de Serviços</h3>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-gray-500 uppercase bg-gray-50">
-                            <tr>
-                                <th className="px-4 py-3 rounded-l-lg">Serviço</th>
-                                <th className="px-4 py-3 text-right">Qtd.</th>
-                                <th className="px-4 py-3 text-right rounded-r-lg">%</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {metrics.serviceDistribution.map((item, i) => (
-                                <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
-                                    <td className="px-4 py-3 font-medium text-gray-800">{item.label}</td>
-                                    <td className="px-4 py-3 text-right font-bold">{item.value}</td>
-                                    <td className="px-4 py-3 text-right text-gray-500">
-                                        {Math.round((item.value / (metrics.todayCount || 1)) * 100)}%
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <SimpleBarChart 
+                    data={metrics.hourlyDistribution} 
+                    color="bg-pink-400" 
+                    tooltipPrefix="" 
+                    tooltipSuffix=" agend." 
+                />
             </div>
         </div>
     );
@@ -542,6 +796,77 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
                                     <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Operacional</h3>
                                     <OperationalSection />
                                 </section>
+                                <section>
+                                    <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Mensalistas</h3>
+                                    <div className="space-y-6">
+                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                                <SparklesIcon className="w-5 h-5 text-yellow-500" />
+                                                Top 5: Mais Serviços Concluídos
+                                            </h3>
+                                            {metrics.monthlyStats.topServices.length > 0 ? (
+                                                <HorizontalBarChart 
+                                                    data={metrics.monthlyStats.topServices} 
+                                                    color="bg-yellow-400" 
+                                                    valueSuffix=" serviços"
+                                                    showRank
+                                                />
+                                            ) : (
+                                                <p className="text-gray-400 text-sm text-center py-8">Sem dados suficientes</p>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                                <CurrencyDollarIcon className="w-5 h-5 text-green-500" />
+                                                Top 5: Maior Investimento
+                                            </h3>
+                                            {metrics.monthlyStats.topRevenue.length > 0 ? (
+                                                <HorizontalBarChart 
+                                                    data={metrics.monthlyStats.topRevenue} 
+                                                    color="bg-green-400" 
+                                                    valuePrefix="R$ "
+                                                    showRank
+                                                />
+                                            ) : (
+                                                <p className="text-gray-400 text-sm text-center py-8">Sem dados suficientes</p>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                                             <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                                <UsersIcon className="w-5 h-5 text-purple-500" />
+                                                Lista de Mensalistas ({metrics.monthlyStats.list.length})
+                                            </h3>
+                                            <div className="space-y-3 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                                                {metrics.monthlyStats.list.map(client => (
+                                                    <div key={client.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50/30">
+                                                        <div className="flex items-center gap-3">
+                                                             <img 
+                                                                src={client.photo_url || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'} 
+                                                                alt={client.pet_name}
+                                                                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                                                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'; }}
+                                                            />
+                                                            <div>
+                                                                <p className="font-bold text-gray-800">{client.pet_name}</p>
+                                                                <p className="text-xs text-gray-500">{client.owner_name}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="font-outfit font-bold text-lg text-gray-900 whitespace-nowrap">
+                                                            R$ {client.monthlyPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {metrics.monthlyStats.list.length === 0 && (
+                                                    <div className="text-center py-8 text-gray-400">
+                                                        Nenhum mensalista encontrado.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
                             </div>
 
                             {/* Desktop: Show Active Tab */}
@@ -550,12 +875,80 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
                                 {activeTab === 'financial' && <FinancialSection />}
                                 {activeTab === 'operational' && <OperationalSection />}
                                 {activeTab === 'monthly' && (
-                                    <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-dashed border-gray-300">
-                                        <UsersIcon className="w-16 h-16 text-gray-300 mb-4" />
-                                        <h3 className="text-xl font-bold text-gray-800">Módulo de Mensalistas</h3>
-                                        <p className="text-gray-500 max-w-md mx-auto mt-2">
-                                            A visualização detalhada de mensalistas está disponível no módulo dedicado.
-                                        </p>
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Top Services Chart */}
+                                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                                    <SparklesIcon className="w-5 h-5 text-yellow-500" />
+                                                    Top 5: Mais Serviços Concluídos
+                                                </h3>
+                                                {metrics.monthlyStats.topServices.length > 0 ? (
+                                                    <HorizontalBarChart 
+                                                        data={metrics.monthlyStats.topServices} 
+                                                        color="bg-yellow-400" 
+                                                        valueSuffix=" serviços"
+                                                        showRank
+                                                    />
+                                                ) : (
+                                                    <p className="text-gray-400 text-sm text-center py-8">Sem dados suficientes</p>
+                                                )}
+                                            </div>
+
+                                            {/* Top Revenue Chart */}
+                                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                                    <CurrencyDollarIcon className="w-5 h-5 text-green-500" />
+                                                    Top 5: Maior Investimento
+                                                </h3>
+                                                {metrics.monthlyStats.topRevenue.length > 0 ? (
+                                                    <HorizontalBarChart 
+                                                        data={metrics.monthlyStats.topRevenue} 
+                                                        color="bg-green-400" 
+                                                        valuePrefix="R$ "
+                                                        showRank
+                                                    />
+                                                ) : (
+                                                    <p className="text-gray-400 text-sm text-center py-8">Sem dados suficientes</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* All Monthly Clients Grid */}
+                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                                            <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2">
+                                                <UsersIcon className="w-5 h-5 text-purple-500" />
+                                                Lista de Mensalistas ({metrics.monthlyStats.list.length})
+                                            </h3>
+                                            
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                {metrics.monthlyStats.list.map((client) => (
+                                                    <div key={client.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:shadow-md transition-shadow bg-gray-50/30">
+                                                        <img 
+                                                            src={client.photo_url || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'} 
+                                                            alt={client.pet_name}
+                                                            className="w-10 h-10 rounded-full object-cover border border-white shadow-sm"
+                                                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'; }}
+                                                        />
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="font-bold text-gray-800 text-sm truncate">{client.pet_name}</p>
+                                                            <p className="text-xs text-gray-500 truncate">{client.owner_name}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="block text-xs font-bold text-pink-600">{client.servicesCount} serv.</span>
+                                                            <span className="block text-[10px] text-gray-400 font-medium">
+                                                                R$ {client.totalSpent.toLocaleString('pt-BR')}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {metrics.monthlyStats.list.length === 0 && (
+                                                    <div className="col-span-full text-center py-8 text-gray-400">
+                                                        Nenhum mensalista encontrado.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
