@@ -688,7 +688,10 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
             </div>
 
             <div className="grid grid-cols-1 gap-6 mt-6">
-                <h3 className="text-lg font-bold text-gray-800 -mb-2">Financeiro</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <ArrowTrendingUpIcon className="w-5 h-5 text-pink-500" />
+                    Financeiro
+                </h3>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <ArrowTrendingUpIcon className="w-5 h-5 text-pink-500" />
@@ -703,7 +706,10 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
     const FinancialSection = () => (
         <div className="space-y-6">
              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="font-bold text-gray-800 mb-6">Desempenho Mensal ({selectedYearTotal})</h3>
+                <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <ArrowTrendingUpIcon className="w-5 h-5 text-pink-500" />
+                    Desempenho Mensal ({selectedYearTotal})
+                </h3>
                 <SimpleBarChart data={metrics.monthlyChartData} color="bg-pink-400" />
             </div>
         </div>
@@ -789,15 +795,20 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
                                     <OverviewSection />
                                 </section>
                                 <section>
-                                    <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Financeiro</h3>
                                     <FinancialSection />
                                 </section>
                                 <section>
-                                    <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Operacional</h3>
+                                    <h3 className="text-lg font-bold text-gray-800 mb-4 px-1 flex items-center gap-2">
+                                        <ClockIcon className="w-5 h-5 text-blue-500" />
+                                        Operacional
+                                    </h3>
                                     <OperationalSection />
                                 </section>
                                 <section>
-                                    <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Mensalistas</h3>
+                                    <h3 className="text-lg font-bold text-gray-800 mb-4 px-1 flex items-center gap-2">
+                                        <UsersIcon className="w-5 h-5 text-green-500" />
+                                        Mensalistas
+                                    </h3>
                                     <div className="space-y-6">
                                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                                             <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
