@@ -200,6 +200,15 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
             }
         } catch(e) {}
 
+        // Calculate unit price
+        let unitPrice = client.price;
+        if (client.recurrence_type === 'weekly') {
+            unitPrice = client.price / 4;
+        } else if (client.recurrence_type === 'bi-weekly') {
+            unitPrice = client.price / 2;
+        }
+        unitPrice = Math.round(unitPrice * 100) / 100;
+
         let currentDate = new Date(startDate);
         
         // Generate loop
@@ -217,7 +226,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                 whatsapp: client.whatsapp,
                 service: client.service,
                 weight: client.weight,
-                price: client.price,
+                price: unitPrice, // Use calculated unit price
                 condominium: client.condominium,
                 status: 'AGENDADO',
                 appointment_time: isoString,
