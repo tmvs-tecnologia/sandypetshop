@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { 
-    ClockIcon, 
-    UserIcon, 
-    TagIcon, 
-    CheckCircleIcon, 
-    TrashIcon, 
+import {
+    ClockIcon,
+    UserIcon,
+    TagIcon,
+    CheckCircleIcon,
+    TrashIcon,
     PencilSquareIcon as EditIcon,
     SparklesIcon
 } from '@heroicons/react/24/outline';
@@ -42,13 +42,13 @@ const SafeImage: React.FC<{
 };
 
 const WhatsAppIcon = () => (
-    <img 
-        alt="WhatsApp Icon" 
-        className="h-4 w-4 opacity-60" 
-        loading="lazy" 
-        decoding="async" 
-        referrerPolicy="no-referrer" 
-        src="https://cdn-icons-png.flaticon.com/512/15713/15713434.png" 
+    <img
+        alt="WhatsApp Icon"
+        className="h-4 w-4 opacity-60"
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        src="https://cdn-icons-png.flaticon.com/512/15713/15713434.png"
     />
 );
 
@@ -101,7 +101,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         // Ignored base services in extras calculation
         // if (es.banho_tosa?.enabled) total += Number(es.banho_tosa.value || 0);
         // if (es.so_banho?.enabled) total += Number(es.so_banho.value || 0);
-        
+
         if (es.pernoite?.enabled) total += Number(es.pernoite.value || 0);
         if (es.adestrador?.enabled) total += Number(es.adestrador.value || 0);
         if (es.despesa_medica?.enabled) total += Number(es.despesa_medica.value || 0);
@@ -124,7 +124,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     if (es) {
         Object.entries(es).forEach(([key, value]: [string, any]) => {
             if (IGNORED_EXTRAS_DISPLAY.includes(key)) return;
-            
+
             if (value) {
                 if (key === 'dias_extras') {
                     if (Number(value.quantity) > 0) activeExtras.push('Dias Extras');
@@ -136,8 +136,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     }
 
     const hasExtras = activeExtras.length > 0;
-    const monthlyDiscount = monthly_client_id ? 10 : 0;
-    const displayPrice: number = Math.max(0, Number(price || 0) - monthlyDiscount) + extrasTotal;
+    const displayPrice: number = Number(price || 0) + extrasTotal;
 
     const whatsappHref = `https://wa.me/55${whatsapp.replace(/\D/g, '')}`;
 
@@ -146,13 +145,13 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         'CONCLUÍDO': 'bg-green-100 text-green-800',
         'pending': 'bg-blue-100 text-blue-800',
     };
-    
+
     const getRecurrenceLabel = () => {
         if (!recurrence_type) return null;
-        const map: Record<string, string> = { 
-            weekly: 'Semanal', 
-            'bi-weekly': 'Quinzenal', 
-            monthly: 'Mensal' 
+        const map: Record<string, string> = {
+            weekly: 'Semanal',
+            'bi-weekly': 'Quinzenal',
+            monthly: 'Mensal'
         };
         return map[recurrence_type];
     };
@@ -165,12 +164,12 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
     return (
         <div className={`group relative bg-white rounded-3xl shadow-sm hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 overflow-hidden flex flex-col h-full font-jakarta ${isDeleting ? 'opacity-40 animate-pulse' : ''}`}>
-            
+
             {/* --- Status Bar --- */}
             <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${status === 'CONCLUÍDO' ? 'from-green-400 to-emerald-500' : 'from-pink-400 to-purple-500'}`} />
 
             <div className="p-5 flex flex-col h-full">
-                
+
                 {/* Header Section */}
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-4">
@@ -211,10 +210,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                             R$ {displayPrice.toFixed(2).replace('.', ',')}
                         </div>
                         {hasExtras && activeExtras.map((extra, idx) => (
-                             <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 mt-0.5">
+                            <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 mt-0.5">
                                 <SparklesIcon className="w-3 h-3 mr-1" />
                                 {extra}
-                             </span>
+                            </span>
                         ))}
                     </div>
                 </div>
@@ -228,7 +227,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                             <span className="text-xs font-bold text-gray-700">{dateStr}, {timeStr}</span>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                         <UserIcon className="w-4 h-4 text-gray-400" />
                         <div className="flex flex-col">
@@ -269,14 +268,14 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
                     <div className="flex items-center gap-2 col-span-2">
                         <div className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">🏢</div>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Condomínio</span>
-                                <span className="text-xs font-medium text-gray-700">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Condomínio</span>
+                            <span className="text-xs font-medium text-gray-700">
                                 {(!condominium || condominium === 'Nenhum Condomínio') ? 'Banho & Tosa Fixo' : condominium}
-                                </span>
-                            </div>
+                            </span>
                         </div>
-                    
+                    </div>
+
                     {responsible && (
                         <div className="flex items-center gap-2 col-span-2 bg-purple-50 p-1.5 rounded-lg border border-purple-100">
                             <div className="w-4 h-4 flex items-center justify-center text-purple-500 text-[10px]">👤</div>
@@ -289,13 +288,13 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 {addons && addons.length > 0 && (
                     <div className="mb-4 flex flex-wrap gap-1.5">
                         {addons.map((addon, i) => (
-                             <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
                                 + {addon}
                             </span>
                         ))}
                     </div>
                 )}
-                
+
                 {/* Observation */}
                 {observation && (
                     <div className="mt-auto mb-4 bg-yellow-50 p-2.5 rounded-lg border border-yellow-100 relative group/obs">
@@ -321,10 +320,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                         title="Mais ações"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
                     </button>
-                    
+
                     <button
                         onClick={() => onEdit(appointment)}
                         disabled={isUpdating || isDeleting}
@@ -342,13 +341,12 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                     >
                         <TrashIcon className="w-5 h-5" />
                     </button>
-                    
+
                     <button
                         onClick={() => onRequestCompletion(id, displayPrice)}
                         disabled={isCompleted || isUpdating || isDeleting}
-                        className={`ml-2 px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed ${
-                            isCompleted ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700 hover:shadow-green-500/20 hover:-translate-y-0.5'
-                        }`}
+                        className={`ml-2 px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed ${isCompleted ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700 hover:shadow-green-500/20 hover:-translate-y-0.5'
+                            }`}
                         title="Concluir serviço"
                     >
                         {isUpdating && !isDeleting ? (

@@ -1220,10 +1220,8 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                             servicePrice = Number(prices[ServiceType.BATH]) + Number(prices[ServiceType.GROOMING_ONLY]);
                         }
                     }
-                    // Apply R$ 10 discount for each service in the monthly package
-                    const discountedServicePrice = Math.max(0, servicePrice - 10);
                     // FIX: Explicitly cast `quantity` to a number to prevent type errors during arithmetic operations.
-                    newTotalPrice += discountedServicePrice * Number(quantity);
+                    newTotalPrice += servicePrice * Number(quantity);
                 }
             }
 
@@ -1362,9 +1360,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                             else if (serviceKey === ServiceType.PET_MOBILE_GROOMING_ONLY) servicePrice = prices[ServiceType.GROOMING_ONLY];
                             else if (serviceKey === ServiceType.PET_MOBILE_BATH_AND_GROOMING) servicePrice = Number(prices[ServiceType.BATH]) + Number(prices[ServiceType.GROOMING_ONLY]);
                         }
-                        // Apply R$ 10 discount for each service in the monthly package
-                        const discountedServicePrice = Math.max(0, servicePrice - 10);
-                        newTotalPrice += discountedServicePrice * Number(quantity);
+                        newTotalPrice += servicePrice * Number(quantity);
                     }
                 }
                 // Calculate addon prices
@@ -4793,11 +4789,10 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                         <div className="flex gap-4 mb-6 w-full">
                                             <button
                                                 onClick={() => setSelectedTab('scheduled')}
-                                                className={`flex-1 justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center gap-2 ${
-                                                    selectedTab === 'scheduled'
+                                                className={`flex-1 justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center gap-2 ${selectedTab === 'scheduled'
                                                         ? 'bg-pink-600 text-white shadow-md'
                                                         : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 Agendados
                                                 <span className={`px-2 py-0.5 rounded-full text-xs ${selectedTab === 'scheduled' ? 'bg-pink-700 bg-opacity-30 text-white' : 'bg-gray-100 text-gray-600'}`}>
@@ -4806,11 +4801,10 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                             </button>
                                             <button
                                                 onClick={() => setSelectedTab('completed')}
-                                                className={`flex-1 justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-2 ${
-                                                    selectedTab === 'completed'
+                                                className={`flex-1 justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-2 ${selectedTab === 'completed'
                                                         ? 'bg-green-600 text-white shadow-md'
                                                         : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 Concluídos
                                                 <span className={`px-2 py-0.5 rounded-full text-xs ${selectedTab === 'completed' ? 'bg-green-700 bg-opacity-30 text-white' : 'bg-gray-100 text-gray-600'}`}>
@@ -5308,7 +5302,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                 supabase.from('appointments').delete().eq('monthly_client_id', dbId),
                 supabase.from('pet_movel_appointments').delete().eq('monthly_client_id', dbId)
             ]);
-            
+
             const { error: delErr } = await supabase.from('monthly_clients').delete().eq('id', dbId);
             if (delErr) {
                 alert('Falha ao excluir o mensalista.');
@@ -10610,7 +10604,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     ]);
 
                     const photoMap = new Map<string, string>();
-                    
+
                     const addToMap = (list: any[] | null) => {
                         list?.forEach(item => {
                             if (item.pet_name && item.pet_photo_url) {
@@ -10624,22 +10618,22 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     addToMap(hotelRes.data);
 
                     if (data && data.length > 0) {
-                         // Filter unique pets by name
+                        // Filter unique pets by name
                         const uniquePetsMap = new Map();
                         data.forEach((appt: any) => {
-                             const key = (appt.pet_name || '').toLowerCase().trim();
-                             if (key && !uniquePetsMap.has(key)) {
-                                 // Try to enrich with photo if missing
-                                 if (!appt.pet_photo_url && photoMap.has(key)) {
-                                     appt.pet_photo_url = photoMap.get(key);
-                                 }
-                                 uniquePetsMap.set(key, appt);
-                             }
+                            const key = (appt.pet_name || '').toLowerCase().trim();
+                            if (key && !uniquePetsMap.has(key)) {
+                                // Try to enrich with photo if missing
+                                if (!appt.pet_photo_url && photoMap.has(key)) {
+                                    appt.pet_photo_url = photoMap.get(key);
+                                }
+                                uniquePetsMap.set(key, appt);
+                            }
                         });
                         const uniquePets = Array.from(uniquePetsMap.values());
 
                         if (uniquePets.length === 1) {
-                             // Found a single match! Autofill the fields.
+                            // Found a single match! Autofill the fields.
                             const data = uniquePets[0];
                             console.log('Autofill found client:', data);
 
