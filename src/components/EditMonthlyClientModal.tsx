@@ -66,7 +66,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                     .select('*')
                     .eq('id', client.id)
                     .single();
-                
+
                 if (error) throw error;
                 if (data) {
                     // Ensure extra_services is parsed if string, or object if null
@@ -74,7 +74,26 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                     if (typeof extra === 'string') {
                         try { extra = JSON.parse(extra); } catch { extra = {}; }
                     }
-                    setFormData({ ...data, extra_services: extra || {} });
+                    extra = extra || {};
+
+                    // Derive base price by subtracting active extras from stored total price
+                    const IGNORED_EXTRAS_KEYS = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
+                    let existingExtrasTotal = 0;
+                    if (extra && typeof extra === 'object') {
+                        Object.entries(extra).forEach(([k, v]: [string, any]) => {
+                            if (IGNORED_EXTRAS_KEYS.includes(k)) return;
+                            if (v?.enabled) {
+                                if (k === 'dias_extras' && v.quantity) {
+                                    existingExtrasTotal += (Number(v.value) || 0) * Number(v.quantity);
+                                } else {
+                                    existingExtrasTotal += Number(v.value) || 0;
+                                }
+                            }
+                        });
+                    }
+                    const basePrice = Math.max(0, Number(data.price || 0) - existingExtrasTotal);
+
+                    setFormData({ ...data, extra_services: extra, price: basePrice });
                 }
             } catch (err: any) {
                 console.error('Erro ao carregar cliente:', err);
@@ -162,14 +181,14 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
         } else {
             // No history, start from next occurrence from today
             startDate = new Date();
-             // Adjust to next occurrence
-             // Logic similar to mass script but relative to today if no history
-             // But for new clients, we want to start ASAP.
-             // If today is Monday and recurrence is Monday, schedule today? 
-             // Usually yes.
-             startDate.setHours(0,0,0,0);
+            // Adjust to next occurrence
+            // Logic similar to mass script but relative to today if no history
+            // But for new clients, we want to start ASAP.
+            // If today is Monday and recurrence is Monday, schedule today? 
+            // Usually yes.
+            startDate.setHours(0, 0, 0, 0);
         }
-        
+
         // Helper to adjust day
         const getDayOfWeekSystem = (d: Date) => { const js = d.getDay(); return js === 0 ? 7 : js; };
 
@@ -188,17 +207,17 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
             }
             startDate.setDate(client.recurrence_day);
         }
-        
+
         // Hour logic
         let hour = 12; // Default UTC noon
         try {
-             if (typeof client.recurrence_time === 'string') {
+            if (typeof client.recurrence_time === 'string') {
                 const parts = client.recurrence_time.split(':');
                 if (parts.length >= 1) hour = parseInt(parts[0]) + 3;
             } else if (typeof client.recurrence_time === 'number') {
                 hour = client.recurrence_time + 3;
             }
-        } catch(e) {}
+        } catch (e) { }
 
         // Calculate unit price
         let unitPrice = client.price;
@@ -210,7 +229,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
         unitPrice = Math.round(unitPrice * 100) / 100;
 
         let currentDate = new Date(startDate);
-        
+
         // Generate loop
         while (currentDate <= limitDate) {
             const apptDate = new Date(currentDate);
@@ -258,21 +277,38 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
         try {
             // Prepare payload
             const payload = { ...formData };
-            
+
             // Clean up extra services
             const cleanExtras: any = {};
             if (payload.extra_services) {
                 Object.entries(payload.extra_services).forEach(([k, v]: [string, any]) => {
                     if (v.enabled || v.quantity > 0) { // Keep if enabled or has quantity logic
-                         cleanExtras[k] = {
-                             enabled: !!v.enabled,
-                             value: v.value ? Number(v.value) : 0,
-                             quantity: v.quantity ? Number(v.quantity) : undefined
-                         };
+                        cleanExtras[k] = {
+                            enabled: !!v.enabled,
+                            value: v.value ? Number(v.value) : 0,
+                            quantity: v.quantity ? Number(v.quantity) : undefined
+                        };
                     }
                 });
             }
             payload.extra_services = cleanExtras;
+
+            // Recalculate price = user-entered base value + extras total
+            const IGNORED_EXTRAS_KEYS = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
+            let extrasTotal = 0;
+            Object.entries(cleanExtras).forEach(([k, v]: [string, any]) => {
+                if (IGNORED_EXTRAS_KEYS.includes(k)) return;
+                if (v.enabled) {
+                    if (k === 'dias_extras' && v.quantity) {
+                        extrasTotal += (Number(v.value) || 0) * Number(v.quantity);
+                    } else {
+                        extrasTotal += Number(v.value) || 0;
+                    }
+                }
+            });
+            // The price field in the form shows the base price (without extras).
+            // We save the total (base + extras) to the DB.
+            payload.price = Number(payload.price) + extrasTotal;
 
             // Handle dates / nulls
             if (!payload.payment_due_date) (payload as any).payment_due_date = null;
@@ -305,7 +341,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
     return createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-fadeIn">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-scaleIn">
-                
+
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gradient-to-r from-pink-50 to-white">
                     <div>
@@ -319,7 +355,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
 
                 {/* Content */}
                 <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 bg-white custom-scrollbar">
-                    
+
                     {loading ? (
                         <div className="flex justify-center py-20">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
@@ -375,14 +411,14 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                                         </div>
                                         <div>
                                             <Label htmlFor="whatsapp">WhatsApp</Label>
-                                            <Input 
-                                                id="whatsapp" 
-                                                name="whatsapp" 
-                                                value={formatWhatsapp(formData.whatsapp || '')} 
+                                            <Input
+                                                id="whatsapp"
+                                                name="whatsapp"
+                                                value={formatWhatsapp(formData.whatsapp || '')}
                                                 onChange={(e) => {
                                                     const raw = e.target.value.replace(/\D/g, '');
                                                     handleInputChange({ target: { name: 'whatsapp', value: raw } } as any);
-                                                }} 
+                                                }}
                                                 placeholder="(00) 00000-0000"
                                             />
                                         </div>
@@ -425,7 +461,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                                         <Label htmlFor="recurrence_day">Dia</Label>
                                         <Select id="recurrence_day" name="recurrence_day" value={formData.recurrence_day} onChange={handleInputChange}>
                                             {formData.recurrence_type === 'monthly' ? (
-                                                Array.from({length: 31}, (_, i) => i + 1).map(d => (
+                                                Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
                                                     <option key={d} value={d}>Dia {d}</option>
                                                 ))
                                             ) : (
@@ -462,7 +498,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                                     Serviços Extras Recorrentes
                                 </SectionTitle>
                                 <div className="bg-gray-50/50 p-6 rounded-xl border border-gray-100">
-                                    <ExtraServicesSelection 
+                                    <ExtraServicesSelection
                                         extraServices={(formData.extra_services as any) || {}}
                                         onToggle={handleExtraServiceToggle}
                                         onValueChange={handleExtraServiceValueChange}
@@ -481,10 +517,10 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div>
                                         <Label htmlFor="is_active">Status do Cliente</Label>
-                                        <Select 
-                                            id="is_active" 
-                                            name="is_active" 
-                                            value={formData.is_active ? 'true' : 'false'} 
+                                        <Select
+                                            id="is_active"
+                                            name="is_active"
+                                            value={formData.is_active ? 'true' : 'false'}
                                             onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.value === 'true' }))}
                                         >
                                             <option value="true">Ativo</option>

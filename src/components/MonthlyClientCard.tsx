@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { 
-    CalendarIcon, 
-    ClockIcon, 
-    UserIcon, 
-    PhoneIcon, 
+import {
+    CalendarIcon,
+    ClockIcon,
+    UserIcon,
+    PhoneIcon,
     SparklesIcon
 } from '@heroicons/react/24/outline';
 import { MonthlyClient } from '../../types';
@@ -61,17 +61,17 @@ const getNextAppointmentDateText = (client: MonthlyClient) => {
     // Assuming client.recurrence_day follows 1=Mon, 2=Tue... 7=Sun (or 0=Sun? Let's assume ISO 1-7 or 0-6).
     // The previous code had `weekDaysLabel` using 1=Seg. Let's assume 1=Segunda, 5=Sexta.
     // JS: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat.
-    
+
     // Map JS day to our system day (1=Mon ... 5=Fri, maybe 6=Sat, 7=Sun?)
     // Let's standardise: if client.recurrence_day is 1 (Seg), and today is 1 (Mon), next is today if time hasn't passed? 
     // Or strictly future? Usually "Next" implies >= Today.
-    
+
     let nextDate = new Date(today);
 
     if (client.recurrence_type === 'monthly') {
         // Recurrence day is day of month (1-31)
         const targetDay = client.recurrence_day;
-        
+
         // Check if day has passed in current month
         if (today.getDate() <= targetDay) {
             nextDate.setDate(targetDay);
@@ -85,37 +85,37 @@ const getNextAppointmentDateText = (client: MonthlyClient) => {
         // recurrence_day is 1=Seg, 2=Ter... 
         // JS: 1=Mon ...
         const targetDayOfWeek = client.recurrence_day; // Assuming 1=Mon, 5=Fri
-        
+
         // Calculate days until next occurrence
         // JS Day: 0(Sun), 1(Mon)... 6(Sat)
         // System: 1(Mon)... 5(Fri)
         // Need to map system day to JS day. If system 1=Mon, it matches JS 1.
         // If system 7=Sun (or whatever), we need to handle.
         // Let's assume 1-5 map directly.
-        
+
         const currentJsDay = today.getDay() === 0 ? 7 : today.getDay(); // Make Sun=7 for easier math
         const targetJsDay = targetDayOfWeek; // Assuming 1-7 input
-        
+
         let daysToAdd = targetJsDay - currentJsDay;
         if (daysToAdd < 0) {
             // Target day already passed this week
             daysToAdd += 7;
         }
-        
+
         nextDate.setDate(today.getDate() + daysToAdd);
-        
+
         // If bi-weekly, logic is complex without a reference "start date". 
         // We'll treat as weekly for "Next Appointment" approximation or assume active cycle.
         // For accurate bi-weekly, we need `last_appointment_date`. 
         // If not available, we show the weekly equivalent.
         if (client.recurrence_type === 'bi-weekly') {
-             // Ideally we'd check if this week is the "on" week. 
-             // Without history, we just show the next matching weekday.
-             // Adding a suffix to indicate uncertainty? No, user wants a date.
-             // We'll leave it as next weekday occurrence.
+            // Ideally we'd check if this week is the "on" week. 
+            // Without history, we just show the next matching weekday.
+            // Adding a suffix to indicate uncertainty? No, user wants a date.
+            // We'll leave it as next weekday occurrence.
         }
     }
-    
+
     return formatDateToBR(nextDate);
 };
 
@@ -144,23 +144,8 @@ const MonthlyClientCard: React.FC<{
     };
 
     const calculateTotalInvoiceValue = (client: MonthlyClient) => {
-        let total = Number(client.price || 0);
-        // Keys to exclude from extras calculation (base services that might be incorrectly saved as extras)
-        const IGNORED_EXTRAS = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
-        
-        if (client.extra_services) {
-            Object.keys(client.extra_services).forEach((key) => {
-                if (IGNORED_EXTRAS.includes(key)) return;
-
-                const service = (client.extra_services as any)[key];
-                if (service && service.enabled) {
-                    const value = Number(service.value || 0);
-                    // const quantity = Number(service.quantity || 1); 
-                    total += value; 
-                }
-            });
-        }
-        return total;
+        // price already includes extras (saved as total in DB)
+        return Number(client.price || 0);
     };
 
     const totalInvoiceValue = calculateTotalInvoiceValue(client);
@@ -168,7 +153,7 @@ const MonthlyClientCard: React.FC<{
     const IGNORED_EXTRAS_DISPLAY = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
 
     const hasMonthlyExtras = Boolean(
-        client.extra_services && Object.entries(client.extra_services).some(([key, s]: [string, any]) => 
+        client.extra_services && Object.entries(client.extra_services).some(([key, s]: [string, any]) =>
             s.enabled && !IGNORED_EXTRAS_DISPLAY.includes(key)
         )
     );
@@ -176,7 +161,7 @@ const MonthlyClientCard: React.FC<{
     const weekDaysLabel: Record<number, string> = { 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado', 7: 'Domingo' };
     const recurrenceDayLabel = client.recurrence_type === 'monthly' ? `Dia ${client.recurrence_day}` : (weekDaysLabel[client.recurrence_day] || String(client.recurrence_day));
     const recurrenceTimeLabel = `${String(client.recurrence_time).padStart(2, '0')}:00`;
-    
+
     // Logic for Condominium Label
     const getCondoLabel = () => {
         if (!client.condominium || client.condominium === 'Nenhum Condomínio' || client.condominium.trim() === '') {
@@ -186,15 +171,15 @@ const MonthlyClientCard: React.FC<{
     };
 
     return (
-        <div 
+        <div
             className="group relative bg-white rounded-3xl shadow-sm hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 overflow-hidden flex flex-col h-full font-jakarta"
             onClick={() => onClick && onClick(client)}
         >
             {/* --- Status Bar & Badges --- */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-400 to-purple-500" />
-            
+
             <div className="p-5 flex flex-col h-full">
-                
+
                 {/* Header Section */}
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-4">
@@ -227,7 +212,7 @@ const MonthlyClientCard: React.FC<{
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Price Tag */}
                     <div className="text-right flex flex-col items-end min-w-[80px]">
                         <div className="font-outfit font-bold text-lg text-gray-900 whitespace-nowrap">
@@ -259,7 +244,7 @@ const MonthlyClientCard: React.FC<{
                             </span>
                         </div>
                     </div>
-                    
+
                     {/* New Fields: Next Appointment & Payment Date */}
                     <div className="flex items-center gap-2">
                         <CalendarIcon className="w-4 h-4 text-pink-400" />
@@ -312,22 +297,21 @@ const MonthlyClientCard: React.FC<{
                 <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between gap-3">
                     <button
                         onClick={(e) => { e.stopPropagation(); onTogglePaymentStatus(client, e); }}
-                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            client.payment_status === 'Pendente'
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${client.payment_status === 'Pendente'
                                 ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200'
                                 : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
-                        }`}
+                            }`}
                     >
                         {client.payment_status === 'Pendente' ? '⏳ Pendente' : '✅ Pago'}
                     </button>
-                    
+
                     <button
                         onClick={(e) => { e.stopPropagation(); onAddExtraServices(client); }}
                         className="px-3 py-1.5 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-gray-200 text-xs font-medium transition-all"
                     >
                         + Extras
                     </button>
-                    
+
                     <button
                         onClick={(e) => { e.stopPropagation(); onEdit(client); }}
                         className="p-1.5 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
@@ -337,7 +321,7 @@ const MonthlyClientCard: React.FC<{
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00 2 2h11a2 2 0 00 2-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </button>
-                     <button
+                    <button
                         onClick={(e) => { e.stopPropagation(); onDelete(client); }}
                         className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                         title="Excluir"

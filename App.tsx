@@ -4790,8 +4790,8 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                             <button
                                                 onClick={() => setSelectedTab('scheduled')}
                                                 className={`flex-1 justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center gap-2 ${selectedTab === 'scheduled'
-                                                        ? 'bg-pink-600 text-white shadow-md'
-                                                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                                    ? 'bg-pink-600 text-white shadow-md'
+                                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                                                     }`}
                                             >
                                                 Agendados
@@ -4802,8 +4802,8 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                             <button
                                                 onClick={() => setSelectedTab('completed')}
                                                 className={`flex-1 justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-2 ${selectedTab === 'completed'
-                                                        ? 'bg-green-600 text-white shadow-md'
-                                                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                                    ? 'bg-green-600 text-white shadow-md'
+                                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                                                     }`}
                                             >
                                                 Concluídos
@@ -7263,9 +7263,8 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                         setIsMonthlyExtraServicesModalOpen(false);
                         setMonthlyClientForExtraServices(null);
                     }}
-                    onSuccess={() => {
-                        handleExtraServicesSuccess();
-                        handleClientUpdated(); // Força a atualização da lista principal
+                    onSuccess={(updatedData: any) => {
+                        handleExtraServicesSuccess(updatedData);
                     }}
                     data={monthlyClientForExtraServices}
                     type="monthly"

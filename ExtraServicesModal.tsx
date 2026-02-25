@@ -18,7 +18,7 @@ export interface ExtraServicesData {
   penteado: { enabled: boolean; value: string | number };
   desembolo: { enabled: boolean; value: string | number };
   transporte: { enabled: boolean; value: string | number };
-  
+
   // Serviços Daycare
   adestrador: { enabled: boolean; value: string | number };
   dias_extras: { enabled: boolean; value: string | number; quantity?: number };
@@ -102,11 +102,14 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
     }));
   };
 
+  const IGNORED_EXTRAS_KEYS = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
+
   const calculateTotal = () => {
     let total = 0;
     (Object.keys(extraServices) as Array<keyof ExtraServicesData>).forEach((key) => {
       const service = extraServices[key];
       if (service && service.enabled) {
+        if (IGNORED_EXTRAS_KEYS.includes(key)) return;
         if (key === 'dias_extras' && 'quantity' in service && service.quantity) {
           total += (Number(service.value) || 0) * service.quantity;
         } else {
@@ -114,6 +117,24 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
         }
       }
     });
+    return total;
+  };
+
+  // Calculate old extras total to derive the TRUE base price (without extras)
+  const calculateOldExtrasTotal = () => {
+    let total = 0;
+    if (data?.extra_services) {
+      Object.entries(data.extra_services).forEach(([key, service]: [string, any]) => {
+        if (IGNORED_EXTRAS_KEYS.includes(key)) return;
+        if (service?.enabled) {
+          if (key === 'dias_extras' && service.quantity) {
+            total += (Number(service.value) || 0) * service.quantity;
+          } else {
+            total += Number(service.value) || 0;
+          }
+        }
+      });
+    }
     return total;
   };
 
@@ -125,8 +146,11 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
   };
 
   const totalExtras = calculateTotal();
-  const basePrice = getBasePrice();
-  const finalTotal = basePrice + totalExtras;
+  const currentDbPrice = getBasePrice();
+  const oldExtrasTotal = calculateOldExtrasTotal();
+  const trueBasePrice = Math.max(0, currentDbPrice - oldExtrasTotal);
+  const basePrice = trueBasePrice;
+  const finalTotal = trueBasePrice + totalExtras;
 
   const getTableName = () => {
     switch (type) {
@@ -143,7 +167,7 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
     try {
       const tableName = getTableName();
       const extraServicesForSave: any = {};
-      
+
       (Object.keys(extraServices) as Array<keyof ExtraServicesData>).forEach(key => {
         const service = extraServices[key];
         if (service) {
@@ -151,18 +175,24 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
             enabled: service.enabled,
             value: service.value === '' ? undefined : Number(service.value)
           };
-          
+
           if (key === 'dias_extras' && 'quantity' in service) {
             extraServicesForSave[key].quantity = service.quantity;
           }
         }
       });
-      
+
       const mergedExtras = { ...(data?.extra_services || {}), ...extraServicesForSave };
-      
+
+      // Build update payload: always save extra_services, and for monthly_clients also update price
+      const updatePayload: any = { extra_services: mergedExtras };
+      if (type === 'monthly') {
+        updatePayload.price = finalTotal;
+      }
+
       const { data: updatedData, error } = await supabase
         .from(tableName)
-        .update({ extra_services: mergedExtras })
+        .update(updatePayload)
         .eq('id', data.id)
         .select()
         .single();
@@ -184,7 +214,7 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
   return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10001] p-4 animate-fadeIn" role="dialog" aria-modal="true">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all animate-scaleIn">
-        
+
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gradient-to-r from-pink-50 to-white">
           <div>
@@ -198,57 +228,57 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30">
-            <ExtraServicesSelection 
-                extraServices={extraServices as any}
-                onToggle={handleServiceToggle}
-                onValueChange={handleValueChange}
-                onQuantityChange={handleQuantityChange}
-                type={type}
-            />
+          <ExtraServicesSelection
+            extraServices={extraServices as any}
+            onToggle={handleServiceToggle}
+            onValueChange={handleValueChange}
+            onQuantityChange={handleQuantityChange}
+            type={type}
+          />
         </div>
 
         {/* Footer */}
         <div className="flex flex-col sm:flex-row justify-between items-center p-4 sm:p-6 gap-4 border-t border-gray-100 bg-white">
-             <div className="flex flex-col items-center sm:items-start w-full sm:w-auto">
-                <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Total Final</span>
-                <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-pink-600 font-outfit">
-                        R$ {finalTotal.toFixed(2).replace('.', ',')}
-                    </span>
-                    {totalExtras > 0 && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium" title={`Serviço: R$ ${basePrice.toFixed(2)} + Extras: R$ ${totalExtras.toFixed(2)}`}>
-                            (+ Extras)
-                        </span>
-                    )}
-                </div>
-                <span className="text-xs text-gray-400 mt-0.5 whitespace-nowrap">
-                    Serviço: R$ {basePrice.toFixed(2).replace('.', ',')} + Extras: R$ {totalExtras.toFixed(2).replace('.', ',')}
+          <div className="flex flex-col items-center sm:items-start w-full sm:w-auto">
+            <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Total Final</span>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-pink-600 font-outfit">
+                R$ {finalTotal.toFixed(2).replace('.', ',')}
+              </span>
+              {totalExtras > 0 && (
+                <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium" title={`Serviço: R$ ${basePrice.toFixed(2)} + Extras: R$ ${totalExtras.toFixed(2)}`}>
+                  (+ Extras)
                 </span>
-             </div>
-             
-             <div className="flex space-x-3 w-full sm:w-auto">
-                <button
-                    onClick={onClose}
-                    className="flex-1 sm:flex-none px-4 py-2.5 text-gray-600 font-medium border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all focus:ring-2 focus:ring-gray-200 text-sm sm:text-base"
-                >
-                    Cancelar
-                </button>
-                <button
-                    onClick={handleSave}
-                    disabled={isLoading}
-                    className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base whitespace-nowrap"
-                >
-                    {isLoading ? (
-                        <span className="flex items-center justify-center gap-2">
-                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Salvando...
-                        </span>
-                    ) : 'Confirmar Alterações'}
-                </button>
-             </div>
+              )}
+            </div>
+            <span className="text-xs text-gray-400 mt-0.5 whitespace-nowrap">
+              Serviço: R$ {basePrice.toFixed(2).replace('.', ',')} + Extras: R$ {totalExtras.toFixed(2).replace('.', ',')}
+            </span>
+          </div>
+
+          <div className="flex space-x-3 w-full sm:w-auto">
+            <button
+              onClick={onClose}
+              className="flex-1 sm:flex-none px-4 py-2.5 text-gray-600 font-medium border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all focus:ring-2 focus:ring-gray-200 text-sm sm:text-base"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isLoading}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base whitespace-nowrap"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Salvando...
+                </span>
+              ) : 'Confirmar Alterações'}
+            </button>
+          </div>
         </div>
       </div>
     </div>,
