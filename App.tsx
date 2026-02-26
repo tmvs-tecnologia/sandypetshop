@@ -486,11 +486,18 @@ const calculateExtraServicesTotal = (extraServices: any): number => {
 
 // Função para calcular o valor total da fatura da creche
 const calculateDaycareInvoiceTotal = (enrollment: DaycareRegistration): number => {
-    const base = (typeof enrollment.total_price === 'number' && enrollment.total_price > 0)
-        ? Number(enrollment.total_price)
-        : (enrollment.contracted_plan && DAYCARE_PLAN_PRICES[enrollment.contracted_plan])
-            ? DAYCARE_PLAN_PRICES[enrollment.contracted_plan]
-            : 0;
+    // Se total_price foi definido manualmente pelo admin, ele representa o valor final completo.
+    // Não somamos extras em cima, pois o admin já definiu o total correto.
+    // NOTA: Supabase pode retornar total_price como string ou número, então verificamos ambos.
+    const totalPriceValue = parseFloat(String(enrollment.total_price ?? ''));
+    if (!isNaN(totalPriceValue) && totalPriceValue > 0) {
+        return totalPriceValue;
+    }
+
+    // Se não há total_price definido, calculamos a partir do plano contratado + extras
+    const base = (enrollment.contracted_plan && DAYCARE_PLAN_PRICES[enrollment.contracted_plan])
+        ? DAYCARE_PLAN_PRICES[enrollment.contracted_plan]
+        : 0;
 
     let extras = 0;
     const es: any = enrollment.extra_services as any;
