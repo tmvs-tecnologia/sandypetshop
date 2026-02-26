@@ -8328,32 +8328,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                                         </div>
                                     )}
                                 </div>
-                                {foundPets.length > 0 && (
-                                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fadeIn">
-                                        <div className="col-span-1 sm:col-span-2 text-sm text-gray-500 text-center mb-1">
-                                            Encontramos pets associados a este número. Selecione para preencher:
-                                        </div>
-                                        {foundPets.map((pet, idx) => (
-                                            <div
-                                                key={idx}
-                                                onClick={() => handleSelectPet(pet)}
-                                                className="cursor-pointer border border-pink-200 bg-pink-50/50 rounded-xl p-3 flex items-center gap-3 hover:bg-pink-100 transition-all shadow-sm"
-                                            >
-                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden border border-pink-100 shrink-0">
-                                                    {pet.pet_photo_url ? (
-                                                        <SafeImage src={pet.pet_photo_url} alt={pet.pet_name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <span className="text-xl">🐶</span>
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col overflow-hidden">
-                                                    <span className="font-bold text-gray-800 truncate text-sm">{pet.pet_name}</span>
-                                                    <span className="text-xs text-gray-500 truncate">{pet.pet_breed || 'Raça não informada'}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+
                             </div>
                         </div>
 
