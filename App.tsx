@@ -7498,12 +7498,12 @@ const DaycareEnrollmentCard: React.FC<{
                                 {((enrollment as any).extra_services?.despesa_medica?.enabled || (enrollment as any).extra_services?.despesa_medica === true) && (
                                     <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Despesa médica</span>
                                 )}
-                                {(((enrollment as any).extra_services?.dias_extras?.quantity ?? 0) > 0) && (
+                                {(((enrollment as any).extra_services?.dias_extras?.enabled !== false) && ((enrollment as any).extra_services?.dias_extras?.quantity ?? 0) > 0) && (
                                     <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
                                         {(enrollment as any).extra_services.dias_extras.quantity} dia{(enrollment as any).extra_services.dias_extras.quantity > 1 ? 's' : ''} extra{(enrollment as any).extra_services.dias_extras.quantity > 1 ? 's' : ''}
                                     </span>
                                 )}
-                                {(!((enrollment as any).extra_services?.pernoite?.enabled || (enrollment as any).extra_services?.banho_tosa?.enabled || (enrollment as any).extra_services?.so_banho?.enabled || (enrollment as any).extra_services?.adestrador?.enabled || (enrollment as any).extra_services?.despesa_medica?.enabled || (((enrollment as any).extra_services?.dias_extras?.quantity ?? 0) > 0) || (enrollment as any).extra_services?.pernoite === true || (enrollment as any).extra_services?.banho_tosa === true || (enrollment as any).extra_services?.so_banho === true || (enrollment as any).extra_services?.adestrador === true || (enrollment as any).extra_services?.despesa_medica === true || (typeof (enrollment as any).extra_services?.dia_extra === 'number' && (enrollment as any).extra_services?.dia_extra > 0))) && (
+                                {(!((enrollment as any).extra_services?.pernoite?.enabled || (enrollment as any).extra_services?.banho_tosa?.enabled || (enrollment as any).extra_services?.so_banho?.enabled || (enrollment as any).extra_services?.adestrador?.enabled || (enrollment as any).extra_services?.despesa_medica?.enabled || ((enrollment as any).extra_services?.dias_extras?.enabled !== false && ((enrollment as any).extra_services?.dias_extras?.quantity ?? 0) > 0) || (enrollment as any).extra_services?.pernoite === true || (enrollment as any).extra_services?.banho_tosa === true || (enrollment as any).extra_services?.so_banho === true || (enrollment as any).extra_services?.adestrador === true || (enrollment as any).extra_services?.despesa_medica === true)) && (
                                     <span className="text-xs text-gray-500">Nenhum serviço extra</span>
                                 )}
                             </div>
