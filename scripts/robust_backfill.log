@@ -1,0 +1,83 @@
+Starting robust backfill for 2026...
+Found 26 active monthly clients.
+
+Processing Ted (weekly, Dia: 4, Hora: 12)
+-> All appointments already exist.
+
+Processing Blue (weekly, Dia: 5, Hora: 17)
+-> Created 45 missing appointments for Blue.
+
+Processing princesa (bi-weekly, Dia: 2, Hora: 11)
+-> Created 22 missing appointments for princesa.
+
+Processing Theo (weekly, Dia: 5, Hora: 10)
+-> Created 44 missing appointments for Theo.
+
+Processing Bijou (bi-weekly, Dia: 4, Hora: 15)
+-> Created 27 missing appointments for Bijou.
+
+Processing Isis (bi-weekly, Dia: 5, Hora: 12)
+-> Created 22 missing appointments for Isis.
+
+Processing Catarina  (bi-weekly, Dia: 2, Hora: 11)
+-> Created 15 missing appointments for Catarina .
+
+Processing Kira (weekly, Dia: 5, Hora: 17)
+-> Created 44 missing appointments for Kira.
+
+Processing Bibi (bi-weekly, Dia: 4, Hora: 16)
+-> Created 11 missing appointments for Bibi.
+
+Processing Frederico (weekly, Dia: 5, Hora: 16)
+-> All appointments already exist.
+
+Processing Pandora  (weekly, Dia: 3, Hora: 14)
+-> Created 44 missing appointments for Pandora .
+
+Processing Luninha (bi-weekly, Dia: 3, Hora: 15)
+-> Created 22 missing appointments for Luninha.
+
+Processing Milly  (weekly, Dia: 2, Hora: 9)
+-> Created 44 missing appointments for Milly .
+
+Processing Leia (bi-weekly, Dia: 3, Hora: 9)
+-> Created 2 missing appointments for Leia.
+
+Processing Cacau (bi-weekly, Dia: 4, Hora: 10)
+-> Created 26 missing appointments for Cacau.
+
+Processing Fred (bi-weekly, Dia: 5, Hora: 11)
+-> Created 23 missing appointments for Fred.
+
+Processing Joaquim (weekly, Dia: 5, Hora: 16)
+-> Created 46 missing appointments for Joaquim.
+
+Processing Rocky (bi-weekly, Dia: 5, Hora: 9)
+-> Created 24 missing appointments for Rocky.
+
+Processing Maia (bi-weekly, Dia: 5, Hora: 10)
+-> Created 26 missing appointments for Maia.
+
+Processing Lorena  (bi-weekly, Dia: 3, Hora: 10)
+-> Created 22 missing appointments for Lorena .
+
+Processing Pipoca (bi-weekly, Dia: 5, Hora: 9)
+-> Created 26 missing appointments for Pipoca.
+
+Processing Tiny (bi-weekly, Dia: 5, Hora: 9)
+-> Created 24 missing appointments for Tiny.
+
+Processing Pandorinha (weekly, Dia: 5, Hora: 14)
+-> Created 44 missing appointments for Pandorinha.
+
+Processing Cloe  (bi-weekly, Dia: 4, Hora: 9)
+-> Created 26 missing appointments for Cloe .
+
+Processing Luna  (bi-weekly, Dia: 2, Hora: 10)
+-> Created 26 missing appointments for Luna .
+
+Processing Vicky (bi-weekly, Dia: 5, Hora: 15)
+-> Created 22 missing appointments for Vicky.
+
+----------------------------------
+Robust Backfill Complete. Total Created: 677

@@ -14,7 +14,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const COMPLETED_YEAR = 2026;
 const LOG_FILE = path.resolve(__dirname, 'backfill_debug.log');
-const FORCE_CLIENTS = ['Blue', 'Princesa'];
 
 // Setup Logger
 try {
@@ -101,8 +100,7 @@ async function backfill() {
     let totalCreated = 0;
 
     for (const client of clients) {
-        // Check if forced
-        const isForced = FORCE_CLIENTS.some(name => client.pet_name.trim().toLowerCase().includes(name.toLowerCase()));
+        // Determine if client needs an initial schedule
 
         const { data: appointments, error: appError } = await supabase
             .from('appointments')
@@ -120,63 +118,55 @@ async function backfill() {
         const newAppointments = [];
 
         if (!appointments || appointments.length === 0) {
-            if (isForced) {
-                log(`\nForcing backfill for ${client.pet_name}. No future appointments, starting from NOW.`);
+            log(`\nGenerating new schedule from NOW for ${client.pet_name}. No future appointments found.`);
 
-                const now = new Date();
-                let candidate = new Date(now);
-                // Set time to preferred recurrence time
-                candidate.setHours(client.recurrence_time, 0, 0, 0);
+            const now = new Date();
+            let candidate = new Date(now);
+            // Set time to preferred recurrence time
+            candidate.setHours(client.recurrence_time, 0, 0, 0);
 
-                // Ensure we start in Future (from 'now')
-                if (candidate < now) {
+            // Ensure we start in Future (from 'now')
+            if (candidate < now) {
+                candidate.setDate(candidate.getDate() + 1);
+            }
+
+            // Find first valid occurrence
+            if (client.recurrence_type === 'monthly') {
+                while (candidate.getDate() !== client.recurrence_day) {
                     candidate.setDate(candidate.getDate() + 1);
                 }
-
-                // Find first valid occurrence
-                if (client.recurrence_type === 'monthly') {
-                    while (candidate.getDate() !== client.recurrence_day) {
-                        candidate.setDate(candidate.getDate() + 1);
-                    }
-                } else {
-                    // Weekly/Bi-weekly
-                    // Code assume 1=Monday (based on usage like 1: 'Segunda')
-                    // JS getDay(): 0=Sun, 1=Mon
-                    // So we map system Day to JS Day
-                    // If system uses 7=Dom, we map to 0. Else 1-6 is same.
-                    let targetJsDay = client.recurrence_day;
-                    if (targetJsDay === 7) targetJsDay = 0;
-
-                    while (candidate.getDay() !== targetJsDay) {
-                        candidate.setDate(candidate.getDate() + 1);
-                    }
-                }
-
-                lastDate = candidate;
-                log(`   -> First computed start date: ${lastDate.toISOString()}`);
-
-                // Add this FIRST appointment
-                newAppointments.push({
-                    monthly_client_id: client.id,
-                    pet_name: client.pet_name,
-                    owner_name: client.owner_name,
-                    whatsapp: client.whatsapp,
-                    service: client.service,
-                    price: client.price,
-                    appointment_time: lastDate.toISOString(),
-                    status: 'AGENDADO',
-                    extra_services: client.extra_services,
-                    condominium: client.condominium,
-                    // pet_photo_url removed
-                    // recurrence_type removed
-                    weight: client.weight,
-                });
-
             } else {
-                // Not forced, no appointments -> Skip
-                log(`Skipping ${client.pet_name} (No future appointments found).`);
-                continue;
+                // Weekly/Bi-weekly
+                // Code assume 1=Monday (based on usage like 1: 'Segunda')
+                // JS getDay(): 0=Sun, 1=Mon
+                // So we map system Day to JS Day
+                // If system uses 7=Dom, we map to 0. Else 1-6 is same.
+                let targetJsDay = client.recurrence_day;
+                if (targetJsDay === 7) targetJsDay = 0;
+
+                while (candidate.getDay() !== targetJsDay) {
+                    candidate.setDate(candidate.getDate() + 1);
+                }
             }
+
+            lastDate = candidate;
+            log(`   -> First computed start date: ${lastDate.toISOString()}`);
+
+            // Add this FIRST appointment
+            newAppointments.push({
+                monthly_client_id: client.id,
+                pet_name: client.pet_name,
+                owner_name: client.owner_name,
+                whatsapp: client.whatsapp,
+                service: client.service,
+                price: client.price,
+                appointment_time: lastDate.toISOString(),
+                status: 'AGENDADO',
+                extra_services: client.extra_services,
+                condominium: client.condominium,
+                // recurrence_type removed
+                weight: client.weight,
+            });
         } else {
             const lastAppointment = appointments[0];
             lastDate = new Date(lastAppointment.appointment_time);
