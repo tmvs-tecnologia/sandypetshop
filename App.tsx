@@ -1482,7 +1482,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                                     <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
                                     <div className="relative mt-1">
                                         <span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span>
-                                        <input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg transition-all ${autoFilledFields.includes('petName') ? 'border-green-300 ring-1 ring-green-100' : 'border-gray-300'}`} />
+                                        <input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg transition-all" />
                                     </div>
                                 </div>
                                 <div>
@@ -8163,108 +8163,7 @@ const HotelRegistrationForm: React.FC<{
     const [isSubmitting, setIsSubmitting] = useState(false);
     const formRef = useRef<HTMLFormElement | null>(null);
     const [isSuccess, setIsSuccess] = useState(false);
-    const [isFetchingClient, setIsFetchingClient] = useState(false);
-    const [clientFound, setClientFound] = useState(false);
 
-    // Auto-fill hotel registration data based on tutor_phone
-    useEffect(() => {
-        const fetchHotelClientData = async () => {
-            const cleanPhone = formData.tutor_phone.replace(/\D/g, '');
-            if (cleanPhone.length < 10) return;
-
-            setIsFetchingClient(true);
-            setClientFound(false);
-
-            try {
-                // Try to find in hotel_registrations first (most recent)
-                const { data: registrationData, error } = await supabase
-                    .from('hotel_registrations')
-                    .select('*')
-                    .eq('tutor_phone', formData.tutor_phone)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .single();
-
-                if (registrationData) {
-                    setFormData(prev => ({
-                        ...prev,
-                        pet_name: registrationData.pet_name || prev.pet_name,
-                        pet_sex: registrationData.pet_sex || prev.pet_sex,
-                        pet_weight: registrationData.pet_weight || prev.pet_weight,
-                        pet_breed: registrationData.pet_breed || prev.pet_breed,
-                        pet_age: registrationData.pet_age || prev.pet_age,
-                        tutor_rg: registrationData.tutor_rg || prev.tutor_rg,
-                        tutor_name: registrationData.tutor_name || prev.tutor_name,
-                        tutor_email: registrationData.tutor_email || prev.tutor_email,
-                        tutor_address: registrationData.tutor_address || prev.tutor_address,
-                        tutor_social_media: registrationData.tutor_social_media || prev.tutor_social_media,
-                        emergency_contact_name: registrationData.emergency_contact_name || prev.emergency_contact_name,
-                        emergency_contact_phone: registrationData.emergency_contact_phone || prev.emergency_contact_phone,
-                        emergency_contact_relation: registrationData.emergency_contact_relation || prev.emergency_contact_relation,
-                        veterinarian: registrationData.veterinarian || prev.veterinarian,
-                        vet_phone: registrationData.vet_phone || prev.vet_phone,
-                        is_neutered: registrationData.is_neutered ?? prev.is_neutered,
-                        preexisting_disease: registrationData.preexisting_disease || prev.preexisting_disease,
-                        behavior: registrationData.behavior || prev.behavior,
-                        fears_traumas: registrationData.fears_traumas || prev.fears_traumas,
-                        wounds_marks: registrationData.wounds_marks || prev.wounds_marks,
-                        allergies: registrationData.allergies || prev.allergies,
-                        food_brand: registrationData.food_brand || prev.food_brand,
-                        food_quantity: registrationData.food_quantity || prev.food_quantity,
-                        feeding_frequency: registrationData.feeding_frequency || prev.feeding_frequency,
-                        food_observations: registrationData.food_observations || prev.food_observations,
-                        accepts_treats: registrationData.accepts_treats || prev.accepts_treats,
-                        special_food_care: registrationData.special_food_care || prev.special_food_care,
-
-                        // New fields added for complete autofill
-                        last_vaccination_date: registrationData.last_vaccination_date || prev.last_vaccination_date,
-                        has_rg_document: registrationData.has_rg_document ?? prev.has_rg_document,
-                        has_residence_proof: registrationData.has_residence_proof ?? prev.has_residence_proof,
-                        has_vaccination_card: registrationData.has_vaccination_card ?? prev.has_vaccination_card,
-                        has_vet_certificate: registrationData.has_vet_certificate ?? prev.has_vet_certificate,
-                        has_flea_tick_remedy: registrationData.has_flea_tick_remedy ?? prev.has_flea_tick_remedy,
-                        flea_tick_remedy_date: registrationData.flea_tick_remedy_date || prev.flea_tick_remedy_date,
-                        photo_authorization: registrationData.photo_authorization ?? prev.photo_authorization,
-                        retrieve_at_checkout: registrationData.retrieve_at_checkout ?? prev.retrieve_at_checkout,
-
-                        // Service preferences (boolean flags)
-                        service_bath: registrationData.service_bath ?? prev.service_bath,
-                        service_transport: registrationData.service_transport ?? prev.service_transport,
-                        service_daily_rate: registrationData.service_daily_rate ?? prev.service_daily_rate,
-                        service_extra_hour: registrationData.service_extra_hour ?? prev.service_extra_hour,
-                        service_vet: registrationData.service_vet ?? prev.service_vet,
-                        service_training: registrationData.service_training ?? prev.service_training,
-
-                        // Extra services (complex object)
-                        extra_services: registrationData.extra_services || prev.extra_services,
-                        additional_info: registrationData.additional_info || prev.additional_info
-                    }));
-                    setClientFound(true);
-
-                    // Update local boolean states for checkboxes
-                    if (registrationData.preexisting_disease) setHasPreexistingDisease(true);
-                    if (registrationData.behavior) setHasBehavior(true);
-                    if (registrationData.fears_traumas) setHasFearsTraumas(true);
-                    if (registrationData.wounds_marks) setHasWoundsMarks(true);
-                    if (registrationData.allergies) setHasAllergies(true);
-                    if (registrationData.special_food_care) setNeedsSpecialFoodCare(true);
-                }
-            } catch (error) {
-                console.error('Error fetching hotel client data:', error);
-            } finally {
-                setIsFetchingClient(false);
-            }
-        };
-
-        const timeoutId = setTimeout(() => {
-            const cleanPhone = formData.tutor_phone.replace(/\D/g, '');
-            if (cleanPhone.length >= 10) {
-                fetchHotelClientData();
-            }
-        }, 800);
-
-        return () => clearTimeout(timeoutId);
-    }, [formData.tutor_phone]);
 
     useEffect(() => {
         if (!formData.payment_date) {
@@ -8629,27 +8528,10 @@ const HotelRegistrationForm: React.FC<{
                                     name="tutor_phone"
                                     value={formData.tutor_phone}
                                     onChange={handleInputChange}
-                                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${clientFound ? 'border-green-500 ring-1 ring-green-500' : 'border-gray-300'}`}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 />
-                                {isFetchingClient && (
-                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-600"></div>
-                                    </div>
-                                )}
-                                {clientFound && !isFetchingClient && (
-                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
-                                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </div>
-                                )}
                             </div>
-                            {clientFound && (
-                                <p className="mt-1 text-xs text-green-600">
-                                    Dados preenchidos automaticamente.
-                                </p>
-                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -9111,74 +8993,6 @@ const DaycareRegistrationForm: React.FC<{
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
-    const [isFetchingClient, setIsFetchingClient] = useState(false);
-    const [clientFound, setClientFound] = useState(false);
-
-    // Auto-fill daycare enrollment data based on contact_phone
-    useEffect(() => {
-        const fetchDaycareClientData = async () => {
-            const cleanPhone = formData.contact_phone.replace(/\D/g, '');
-            if (cleanPhone.length < 10) return;
-
-            setIsFetchingClient(true);
-            setClientFound(false);
-
-            try {
-                // Try to find in daycare_enrollments first (most recent)
-                const { data: enrollmentData, error } = await supabase
-                    .from('daycare_enrollments')
-                    .select('*')
-                    .eq('contact_phone', formData.contact_phone)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .single();
-
-                if (enrollmentData) {
-                    setFormData(prev => ({
-                        ...prev,
-                        pet_name: enrollmentData.pet_name || prev.pet_name,
-                        pet_breed: enrollmentData.pet_breed || prev.pet_breed,
-                        is_neutered: enrollmentData.is_neutered ?? prev.is_neutered,
-                        pet_sex: enrollmentData.pet_sex || prev.pet_sex,
-                        pet_age: enrollmentData.pet_age || prev.pet_age,
-                        has_sibling_discount: enrollmentData.has_sibling_discount ?? prev.has_sibling_discount,
-                        tutor_name: enrollmentData.tutor_name || prev.tutor_name,
-                        tutor_rg: enrollmentData.tutor_rg || prev.tutor_rg,
-                        address: enrollmentData.address || prev.address,
-                        emergency_contact_name: enrollmentData.emergency_contact_name || prev.emergency_contact_name,
-                        vet_phone: enrollmentData.vet_phone || prev.vet_phone,
-                        gets_along_with_others: enrollmentData.gets_along_with_others ?? prev.gets_along_with_others,
-                        has_allergies: enrollmentData.has_allergies ?? prev.has_allergies,
-                        allergies_description: enrollmentData.allergies_description || prev.allergies_description,
-                        needs_special_care: enrollmentData.needs_special_care ?? prev.needs_special_care,
-                        special_care_description: enrollmentData.special_care_description || prev.special_care_description,
-                        pet_photo_url: enrollmentData.pet_photo_url || prev.pet_photo_url,
-                        // Novos campos mapeados
-                        contracted_plan: enrollmentData.contracted_plan || prev.contracted_plan,
-                        last_vaccine: enrollmentData.last_vaccine || prev.last_vaccine,
-                        last_deworming: enrollmentData.last_deworming || prev.last_deworming,
-                        last_flea_remedy: enrollmentData.last_flea_remedy || prev.last_flea_remedy,
-                        attendance_days: enrollmentData.attendance_days || prev.attendance_days,
-                        delivered_items: enrollmentData.delivered_items || prev.delivered_items,
-                        extra_services: enrollmentData.extra_services || prev.extra_services
-                    }));
-                    setClientFound(true);
-                }
-            } catch (error) {
-                console.error('Error fetching daycare client data:', error);
-            } finally {
-                setIsFetchingClient(false);
-            }
-        };
-
-        const timeoutId = setTimeout(() => {
-            if (formData.contact_phone.length > 13) {
-                fetchDaycareClientData();
-            }
-        }, 800);
-
-        return () => clearTimeout(timeoutId);
-    }, [formData.contact_phone]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -9285,19 +9099,7 @@ const DaycareRegistrationForm: React.FC<{
                                 value={formData.contact_phone}
                                 onChange={handleInputChange}
                                 required
-                                className={clientFound ? 'border-green-500 ring-1 ring-green-500' : ''}
                             />
-                            {isFetchingClient && (
-                                <div className="absolute right-3 top-9">
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-600"></div>
-                                </div>
-                            )}
-                            {clientFound && !isFetchingClient && (
-                                <div className="absolute right-3 top-9 text-green-500">
-                                    <CheckCircleOutlineIcon className="h-5 w-5" />
-                                </div>
-                            )}
-                            {clientFound && <p className="mt-1 text-xs text-green-600">Dados preenchidos automaticamente.</p>}
                         </div>
 
                         <Input label="Tutor" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} required />
@@ -10227,9 +10029,6 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const [allowedDays, setAllowedDays] = useState<number[] | undefined>(undefined);
     const [disabledBathGroomDates, setDisabledBathGroomDates] = useState<string[]>([]);
     const [disabledPetMovelDates, setDisabledPetMovelDates] = useState<string[]>([]);
-    const [isFetchingClient, setIsFetchingClient] = useState(false);
-    const [autoFilledFields, setAutoFilledFields] = useState<string[]>([]);
-    const [foundPets, setFoundPets] = useState<any[]>([]); // Stores multiple pets found for the same phone number
 
     const isVisitService = useMemo(() =>
         selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
@@ -10322,117 +10121,6 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
     useEffect(() => { reloadAppointments(); }, [reloadAppointments]);
 
-    // RESTORED AUTOFILL FUNCTIONALITY
-    useEffect(() => {
-        const timer = setTimeout(async () => {
-            // Clean input: remove non-digits to check length
-            const cleanPhone = formData.whatsapp.replace(/\D/g, '');
-
-            // Only search if we have a valid-ish length (e.g. at least 10 digits)
-            if (cleanPhone.length >= 10) {
-                setIsFetchingClient(true);
-                try {
-                    console.log('Autofill searching for:', formData.whatsapp);
-                    // Try to find the most recent appointment for this phone number
-                    // Use the exact formatted string since the app enforces formatting
-                    const { data, error } = await supabase
-                        .from('appointments')
-                        .select('*')
-                        .eq('whatsapp', formData.whatsapp)
-                        .order('created_at', { ascending: false });
-
-                    if (error) {
-                        console.error('Autofill error:', error);
-                    }
-
-                    // Parallel fetch for photos from other tables
-                    const [monthlyRes, daycareRes, hotelRes] = await Promise.all([
-                        supabase.from('monthly_clients').select('pet_name, pet_photo_url').eq('whatsapp', formData.whatsapp),
-                        supabase.from('daycare_enrollments').select('pet_name, pet_photo_url').eq('contact_phone', formData.whatsapp),
-                        supabase.from('hotel_registrations').select('pet_name, pet_photo_url').eq('tutor_phone', formData.whatsapp)
-                    ]);
-
-                    const photoMap = new Map<string, string>();
-
-                    const addToMap = (list: any[] | null) => {
-                        list?.forEach(item => {
-                            if (item.pet_name && item.pet_photo_url) {
-                                photoMap.set(item.pet_name.toLowerCase().trim(), item.pet_photo_url);
-                            }
-                        });
-                    };
-
-                    addToMap(monthlyRes.data);
-                    addToMap(daycareRes.data);
-                    addToMap(hotelRes.data);
-
-                    if (data && data.length > 0) {
-                        // Filter unique pets by name
-                        const uniquePetsMap = new Map();
-                        data.forEach((appt: any) => {
-                            const key = (appt.pet_name || '').toLowerCase().trim();
-                            if (key && !uniquePetsMap.has(key)) {
-                                // Try to enrich with photo if missing
-                                if (!appt.pet_photo_url && photoMap.has(key)) {
-                                    appt.pet_photo_url = photoMap.get(key);
-                                }
-                                uniquePetsMap.set(key, appt);
-                            }
-                        });
-                        const uniquePets = Array.from(uniquePetsMap.values());
-
-                        if (uniquePets.length === 1) {
-                            // Found a single match! Autofill the fields.
-                            const data = uniquePets[0];
-                            console.log('Autofill found client:', data);
-
-                            // Update form data
-                            setFormData(prev => ({
-                                ...prev,
-                                petName: data.pet_name || prev.petName,
-                                ownerName: data.owner_name || prev.ownerName,
-                                petBreed: data.pet_breed || prev.petBreed,
-                                ownerAddress: data.owner_address || prev.ownerAddress,
-                            }));
-
-                            // Update weight if available and valid
-                            if (data.weight) {
-                                // Reverse lookup for weight key based on value if needed, or check if it matches enum
-                                // The DB stores the Label (e.g. "Até 5kg") or the Key?
-                                // handleSubmit says: weight: ... PET_WEIGHT_OPTIONS[selectedWeight]
-                                // So DB stores "Até 5kg".
-                                // We need to find the Key (UP_TO_5) from the Value ("Até 5kg").
-                                const weightEntry = Object.entries(PET_WEIGHT_OPTIONS).find(([key, val]) => val === data.weight);
-                                if (weightEntry) {
-                                    setSelectedWeight(weightEntry[0] as PetWeight);
-                                }
-                            }
-                            setFoundPets([]);
-
-                            // Optional: Show visual feedback or toast
-                            // alert('Dados do cliente encontrados e preenchidos!');
-                        } else if (uniquePets.length > 1) {
-                            console.log('Autofill found multiple pets:', uniquePets);
-                            setFoundPets(uniquePets);
-                        } else {
-                            console.log('Autofill: No unique pets found.');
-                            setFoundPets([]);
-                        }
-                    } else {
-                        console.log('Autofill: No previous records found.');
-                        setFoundPets([]);
-                    }
-                } catch (err) {
-                    console.error('Error fetching client data for autofill:', err);
-                } finally {
-                    setIsFetchingClient(false);
-                }
-            } else {
-                setFoundPets([]);
-            }
-        }, 800); // 800ms debounce
-        return () => clearTimeout(timer);
-    }, [formData.whatsapp]);
 
     const loadDisabledDates = useCallback(async () => {
         try {
@@ -10879,59 +10567,25 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         required
                                         placeholder="(XX) XXXXX-XXXX"
                                         maxLength={15}
-                                        className={`block w-full pl-10 pr-10 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('whatsapp') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                                        className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors"
                                     />
-                                    {isFetchingClient && (
-                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                                            <svg className="animate-spin h-5 w-5 text-pink-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                        </div>
-                                    )}
                                 </div>
-                                {foundPets.length > 0 && (
-                                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fadeIn">
-                                        <div className="col-span-1 sm:col-span-2 text-sm text-gray-500 text-center mb-1">
-                                            Encontramos pets associados a este número. Selecione para preencher:
-                                        </div>
-                                        {foundPets.map((pet, idx) => (
-                                            <div
-                                                key={idx}
-                                                onClick={() => handleSelectPet(pet)}
-                                                className="cursor-pointer border border-pink-200 bg-pink-50/50 rounded-xl p-3 flex items-center gap-3 hover:bg-pink-100 transition-all shadow-sm"
-                                            >
-                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden border border-pink-100 shrink-0">
-                                                    {pet.pet_photo_url ? (
-                                                        <SafeImage src={pet.pet_photo_url} alt={pet.pet_name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <span className="text-xl">🐶</span>
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col overflow-hidden">
-                                                    <span className="font-bold text-gray-800 truncate text-sm">{pet.pet_name}</span>
-                                                    <span className="text-xs text-gray-500 truncate">{pet.pet_breed || 'Raça não informada'}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
                             <div>
                                 <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
-                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors" /></div>
                             </div>
                             <div>
                                 <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
-                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petName') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors" /></div>
                             </div>
                             <div>
                                 <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
-                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('petBreed') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors" /></div>
                             </div>
                             <div>
                                 <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Seu Endereço</label>
-                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors ${autoFilledFields.includes('ownerAddress') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`} /></div>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors" /></div>
                             </div>
                         </div>
 
