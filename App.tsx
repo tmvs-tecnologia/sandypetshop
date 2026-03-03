@@ -1489,20 +1489,19 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                                     <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
                                     <div className="relative mt-1">
                                         <span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span>
-                                        <input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg transition-all ${autoFilledFields.includes('petBreed') ? 'border-green-300 ring-1 ring-green-100' : 'border-gray-300'}`} />
+                                        <input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg transition-all" />
                                     </div>
                                 </div>
                                 <div>
                                     <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Nome do Dono</label>
                                     <div className="relative mt-1">
                                         <span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span>
-                                        <input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg transition-all ${autoFilledFields.includes('ownerName') ? 'border-green-300 ring-1 ring-green-100' : 'border-gray-300'}`} />
+                                        <input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg transition-all" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700 flex justify-between">
+                                    <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">
                                         WhatsApp
-                                        {isSearchingClient && <span className="text-xs text-pink-600 animate-pulse">Buscando...</span>}
                                     </label>
                                     <div className="relative mt-1">
                                         <span className="absolute inset-y-0 left-0 flex items-center pl-3"><WhatsAppIcon /></span>
@@ -1515,15 +1514,8 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                                             required
                                             placeholder="(XX) XXXXX-XXXX"
                                             maxLength={15}
-                                            className={`block w-full pl-10 pr-10 py-4 bg-gray-50 border rounded-lg transition-colors ${autoFilledFields.includes('whatsapp') ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                                            className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg transition-colors"
                                         />
-                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                                            {isSearchingClient ? (
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-500"></div>
-                                            ) : (
-                                                showAutoFillToast && <span className="text-green-500 text-xs font-bold animate-fadeIn">Encontrado!</span>
-                                            )}
-                                        </div>
                                     </div>
                                 </div>
                                 <div><label htmlFor="condominium" className="block text-base font-semibold text-gray-700">Condomínio</label><div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span>
@@ -1539,7 +1531,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                                     <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Endereço</label>
                                     <div className="relative mt-1">
                                         <span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span>
-                                        <input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg transition-all ${autoFilledFields.includes('ownerAddress') ? 'border-green-300 ring-1 ring-green-100' : 'border-gray-300'}`} />
+                                        <input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg transition-all" />
                                     </div>
                                 </div>
                             </div>
@@ -2921,120 +2913,6 @@ const AdminAddAppointmentModal: React.FC<{
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [allowedDays, setAllowedDays] = useState<number[] | undefined>(undefined);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [isFetchingClient, setIsFetchingClient] = useState(false);
-    const [clientFound, setClientFound] = useState(false);
-
-    // Auto-fill client data based on WhatsApp
-    useEffect(() => {
-        const fetchClientData = async () => {
-            const cleanPhone = formData.whatsapp.replace(/\D/g, '');
-            if (cleanPhone.length < 10) return;
-
-            setIsFetchingClient(true);
-            setClientFound(false);
-
-            try {
-                // Try to find in appointments first (most recent)
-                const { data: appointmentData, error } = await supabase
-                    .from('appointments')
-                    .select('*')
-                    .eq('whatsapp', formData.whatsapp)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .single();
-
-                if (appointmentData) {
-                    setFormData(prev => ({
-                        ...prev,
-                        petName: appointmentData.pet_name || prev.petName,
-                        ownerName: appointmentData.owner_name || prev.ownerName,
-                        petBreed: appointmentData.pet_breed || prev.petBreed,
-                        ownerAddress: appointmentData.owner_address || prev.ownerAddress
-                    }));
-
-                    // Map Service Label to Enum
-                    const foundServiceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === appointmentData.service) as ServiceType | undefined;
-
-                    // Map Weight Label to Enum
-                    const foundWeightKey = Object.keys(PET_WEIGHT_OPTIONS).find(key => PET_WEIGHT_OPTIONS[key as PetWeight] === appointmentData.weight) as PetWeight | undefined;
-
-                    if (foundServiceKey) {
-                        setSelectedService(foundServiceKey);
-
-                        // Determine View Step
-                        if (appointmentData.condominium) {
-                            setServiceStepView('pet_movel');
-                            setSelectedCondo(appointmentData.condominium);
-                        } else if ([ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(foundServiceKey)) {
-                            setServiceStepView('bath_groom');
-                        } else {
-                            setServiceStepView('main');
-                        }
-                    }
-
-                    if (foundWeightKey) {
-                        setSelectedWeight(foundWeightKey);
-                    }
-
-                    // Pre-fill addons if available (simple matching)
-                    if (appointmentData.addons && Array.isArray(appointmentData.addons)) {
-                        const newAddons: Record<string, boolean> = {};
-                        ADDON_SERVICES.forEach(addon => {
-                            if (appointmentData.addons.includes(addon.label)) {
-                                newAddons[addon.id] = true;
-                            }
-                        });
-                        setSelectedAddons(newAddons);
-                    }
-
-                    setClientFound(true);
-
-                    // Auto-advance to Step 3 (Date/Time) if we have enough data
-                    // We need a small timeout to let state updates propagate
-                    setTimeout(() => {
-                        // Check if we have minimal requirements for step 2 validity
-                        const hasService = !!foundServiceKey;
-                        const isVisit = foundServiceKey === ServiceType.VISIT_DAYCARE || foundServiceKey === ServiceType.VISIT_HOTEL;
-                        const hasWeight = !!foundWeightKey;
-                        const hasCondoIfMovel = !appointmentData.condominium || (appointmentData.condominium && !!appointmentData.condominium); // logic check
-
-                        if (hasService && (isVisit || hasWeight)) {
-                            setStep(3);
-                        }
-                    }, 100);
-
-                } else {
-                    // If not in appointments, check clients table
-                    const { data: clientData } = await supabase
-                        .from('clients')
-                        .select('*')
-                        .eq('phone', formData.whatsapp)
-                        .single();
-
-                    if (clientData) {
-                        setFormData(prev => ({
-                            ...prev,
-                            ownerName: clientData.name || prev.ownerName
-                        }));
-                        setClientFound(true);
-                        // Only step 1 data found, stay on step 1
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching client data:', error);
-            } finally {
-                setIsFetchingClient(false);
-            }
-        };
-
-        const timeoutId = setTimeout(() => {
-            if (formData.whatsapp.length > 13) { // (XX) XXXXX-XXXX is 15 chars, so >13 is safe
-                fetchClientData();
-            }
-        }, 800);
-
-        return () => clearTimeout(timeoutId);
-    }, [formData.whatsapp]);
 
     const isVisitService = useMemo(() =>
         selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
