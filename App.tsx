@@ -4370,10 +4370,17 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     const handleOpenEditModal = (appointment: AdminAppointment) => { setEditingAppointment(appointment); setIsEditModalOpen(true); };
     const handleCloseEditModal = () => { setEditingAppointment(null); setIsEditModalOpen(false); };
     const handleAppointmentUpdated = (updatedAppointment: AdminAppointment) => {
-        setAppointments(prev => prev.map(app => app.id === updatedAppointment.id ? updatedAppointment : app));
+        setAppointments(prev => {
+            const exists = prev.some(app => app.id === updatedAppointment.id);
+            if (exists) {
+                return prev.map(app => app.id === updatedAppointment.id ? updatedAppointment : app);
+            } else {
+                return [updatedAppointment, ...prev];
+            }
+        });
         try {
             const sp = getSaoPauloTimeParts(new Date(updatedAppointment.appointment_time));
-            const nextSelected = new Date(Date.UTC(sp.year, sp.month, sp.date));
+            const nextSelected = toSaoPauloUTC(sp.year, sp.month, sp.date, 12);
             setSelectedAdminDate(nextSelected);
         } catch { }
         if (onDataChanged) {
