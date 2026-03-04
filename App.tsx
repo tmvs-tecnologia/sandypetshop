@@ -4206,9 +4206,10 @@ interface AppointmentsViewProps {
     setAppointments: React.Dispatch<React.SetStateAction<AdminAppointment[]>>;
     onOpenActionMenu: (appointment: AdminAppointment, event: React.MouseEvent) => void;
     onDeleteObservation: (appointment: AdminAppointment) => void;
+    monthlyClients?: MonthlyClient[];
 }
 
-const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation }) => {
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [] }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
@@ -4376,7 +4377,97 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         );
     }, [appointments, searchTerm]);
 
-    const dailyAppointments = useMemo(() => filteredAppointments.filter(app => isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate)).sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime()), [filteredAppointments, selectedAdminDate]);
+    const dailyAppointments = useMemo(() => {
+        // 1. Filtrar agendamentos reais do dia
+        const realAppointments = filteredAppointments.filter(app => isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate));
+
+        // 2. Gerar agendamentos virtuais para mensalistas
+        const dateParts = getSaoPauloTimeParts(selectedAdminDate);
+        const selectedDayOfMonth = dateParts.date;
+
+        const virtualAppointments = (monthlyClients || []).filter(client => {
+            // Verificar se o cliente deve ter agendamento hoje
+            let shouldHaveAppointment = false;
+            
+            // Converter recurrence_day para número de forma segura
+            const recurrenceDay = Number(client.recurrence_day);
+            const currentDayISO = dateParts.day === 0 ? 7 : dateParts.day;
+
+            if (client.recurrence_type === 'weekly') {
+                shouldHaveAppointment = recurrenceDay === currentDayISO;
+            } else if (client.recurrence_type === 'bi-weekly') {
+                // Simplificação para MVP: Exibe em todas as semanas correspondentes ao dia
+                // Idealmente, checar paridade da semana ou data de início
+                shouldHaveAppointment = recurrenceDay === currentDayISO;
+            } else if (client.recurrence_type === 'monthly') {
+                shouldHaveAppointment = recurrenceDay === selectedDayOfMonth;
+            }
+
+            if (!shouldHaveAppointment) return false;
+
+            // FIX: Verificar se o cliente é do tipo 'Banho & Tosa' ou 'Pet Móvel'
+            // Se for Pet Móvel e estamos na view de Banho & Tosa, devemos mostrar?
+            // Sim, a view 'AppointmentsView' (Banho & Tosa) agrega tudo hoje.
+            // Mas se o serviço for EXCLUSIVAMENTE Pet Móvel, talvez devesse aparecer lá.
+            // Pela descrição do usuário, ele quer ver na tela de Banho & Tosa.
+            
+            // Verificar se JÁ EXISTE agendamento real para este cliente hoje
+            // Importante: comparar monthly_client_id E data
+            const hasReal = realAppointments.some(app => 
+                app.monthly_client_id === client.id && 
+                isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate)
+            );
+            
+            if (hasReal) return false;
+
+            // Verificar se o termo de busca exclui este cliente
+            if (searchTerm) {
+                const searchLower = searchTerm.toLowerCase();
+                const match = 
+                    client.pet_name.toLowerCase().includes(searchLower) ||
+                    client.owner_name.toLowerCase().includes(searchLower) ||
+                    client.service.toLowerCase().includes(searchLower);
+                if (!match) return false;
+            }
+
+            return true;
+        }).map(client => {
+            // Construir a data correta no fuso de SP
+            // recurrence_time vem como inteiro (ex: 11 para 11:00)
+            const hour = Number(client.recurrence_time);
+            
+            // Criar data UTC que representa esse horário em SP
+            // toSaoPauloUTC(2026, 2, 3, 11) -> 2026-03-03T14:00:00Z (que é 11:00 SP)
+            const appointmentTime = toSaoPauloUTC(dateParts.year, dateParts.month, dateParts.date, hour);
+            
+            return {
+                id: `virtual-${client.id}-${selectedAdminDate.getTime()}`,
+                appointment_time: appointmentTime.toISOString(),
+                pet_name: client.pet_name,
+                owner_name: client.owner_name,
+                service: client.service,
+                status: 'AGENDADO', // Status padrão para visualização
+                price: client.price, // Preço mensal? Deveria ser dividido? Para visualização ok.
+                addons: [],
+                whatsapp: client.whatsapp,
+                weight: client.weight,
+                monthly_client_id: client.id,
+                owner_address: client.owner_address,
+                pet_breed: client.pet_breed,
+                condominium: client.condominium,
+                pet_photo_url: client.pet_photo_url,
+                recurrence_type: client.recurrence_type,
+                // @ts-ignore
+                is_virtual: true // Flag para indicar que é uma projeção
+            } as AdminAppointment;
+        });
+
+        // Combinar e ordenar por horário
+        return [...realAppointments, ...virtualAppointments].sort((a, b) => 
+            new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime()
+        );
+
+    }, [filteredAppointments, selectedAdminDate, monthlyClients, searchTerm]);
     const dailyScheduled = useMemo(() => dailyAppointments.filter(a => String(a.status) === 'AGENDADO' || String(a.status) === 'pending'), [dailyAppointments]);
     const dailyCompleted = useMemo(() => dailyAppointments.filter(a => a.status === 'CONCLUÍDO'), [dailyAppointments]);
 
@@ -12997,7 +13088,9 @@ const AdminDashboard: React.FC<{
     setAppointments: React.Dispatch<React.SetStateAction<AdminAppointment[]>>;
     onOpenActionMenu: (appointment: AdminAppointment, event: React.MouseEvent) => void;
     onDeleteObservation: (appointment: AdminAppointment) => void;
-}> = ({ onLogout, isScheduleOpen, setIsScheduleOpen, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation }) => {
+    handleOpenExtraServicesModal: (appointment: AdminAppointment) => void;
+    monthlyClients?: MonthlyClient[];
+}> = ({ onLogout, isScheduleOpen, setIsScheduleOpen, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, handleOpenExtraServicesModal, monthlyClients = [] }) => {
     const [activeView, setActiveView] = useState('appointments');
     const [dataKey, setDataKey] = useState(Date.now()); // Used to force re-fetches
     const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -13148,14 +13241,14 @@ const AdminDashboard: React.FC<{
     // Renderiza a view ativa baseada no estado activeView
     const renderActiveView = () => {
         switch (activeView) {
-            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} />;
+            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} />;
             case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} setShowDaycareStatistics={setShowDaycareStatistics} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} />;
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
-            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} />;
+            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} />;
         }
     };
 
@@ -13397,6 +13490,7 @@ const App: React.FC = () => {
     const [selectedAppointmentForObservation, setSelectedAppointmentForObservation] = useState<AdminAppointment | null>(null);
     const [observationText, setObservationText] = useState('');
     const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
+    const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>([]);
 
     // Hooks de carregamento serão posicionados após a autenticação
 
@@ -13657,6 +13751,13 @@ const App: React.FC = () => {
                     .select('*, monthly_clients(pet_photo_url, recurrence_type)');
                 if (petMovelError) console.warn('Erro ao buscar pet_movel_appointments:', petMovelError);
 
+                const { data: monthlyClientsData } = await supabase
+                    .from('monthly_clients')
+                    .select('*')
+                    .eq('is_active', true);
+                
+                if (!cancelled && monthlyClientsData) setMonthlyClients(monthlyClientsData);
+
                 const normalize = (arr: any[] | null | undefined): AdminAppointment[] => {
                     if (!arr) return [];
                     return arr.map((rec: any) => ({
@@ -13732,6 +13833,7 @@ const App: React.FC = () => {
                     setAppointments={setAppointments}
                     handleOpenExtraServicesModal={handleOpenExtraServicesModal}
                     onOpenActionMenu={handleOpenActionMenu}
+                    monthlyClients={monthlyClients}
                     onDeleteObservation={async (appointment: AdminAppointment) => {
                         try {
                             const [appointmentsResult, petMovelResult] = await Promise.all([

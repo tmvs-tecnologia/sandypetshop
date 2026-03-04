@@ -77,40 +77,38 @@ async function robustBackfill() {
                 (existingApps || []).map(a => new Date(a.appointment_time).toISOString().split('T')[0])
             );
 
-            // Determine start date: max(2026-01-01, client.created_at)
+            // Start date should be max(2026-01-01, client.created_at) but WITHOUT time to prevent skipping the first day
             let startDate = new Date('2026-01-01T00:00:00Z');
             const clientCreated = new Date(client.created_at);
+            clientCreated.setHours(0, 0, 0, 0); // Strip time
+
             if (clientCreated > startDate) {
                 startDate = new Date(clientCreated);
             }
 
-            // Generate the VERY FIRST candidate date for this client on/after startDate
+            // Find the VERY FIRST candidate date for this client on/after startDate
             let candidate = new Date(startDate);
             candidate.setHours(recTime, 0, 0, 0);
 
             if (client.recurrence_type === 'monthly') {
-                // Find first day matching recurrence_day
                 if (candidate.getDate() > recDay) {
                     candidate.setMonth(candidate.getMonth() + 1);
                 }
                 candidate.setDate(recDay);
             } else {
                 // Weekly or Bi-weekly
-                let targetJsDay = recDay;
-                if (targetJsDay === 7) targetJsDay = 0; // Sun=0
+                const currentJsDay = candidate.getDay() === 0 ? 7 : candidate.getDay(); // 1=Mon, 7=Sun
+                const targetJsDay = recDay; // Assuming 1=Mon, 7=Sun from frontend logic
 
-                while (candidate.getDay() !== targetJsDay) {
-                    candidate.setDate(candidate.getDate() + 1);
+                let daysToAdd = targetJsDay - currentJsDay;
+                if (daysToAdd < 0) {
+                    daysToAdd += 7;
                 }
+                candidate.setDate(candidate.getDate() + daysToAdd);
             }
 
             const newAppointments = [];
             let currentDate = candidate;
-
-            // Ensure we don't start before the actual start date if manipulating dates pushed it back somehow
-            if (currentDate < startDate) {
-                currentDate = getNextDate(currentDate, client.recurrence_type, recDay);
-            }
 
             let iteration = 0;
             while (currentDate.getFullYear() === 2026 && iteration < 100) {
