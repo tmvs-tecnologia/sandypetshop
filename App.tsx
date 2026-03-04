@@ -4388,7 +4388,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         const virtualAppointments = (monthlyClients || []).filter(client => {
             // Verificar se o cliente deve ter agendamento hoje
             let shouldHaveAppointment = false;
-            
+
             // Converter recurrence_day para número de forma segura
             const recurrenceDay = Number(client.recurrence_day);
             const currentDayISO = dateParts.day === 0 ? 7 : dateParts.day;
@@ -4410,20 +4410,20 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             // Sim, a view 'AppointmentsView' (Banho & Tosa) agrega tudo hoje.
             // Mas se o serviço for EXCLUSIVAMENTE Pet Móvel, talvez devesse aparecer lá.
             // Pela descrição do usuário, ele quer ver na tela de Banho & Tosa.
-            
+
             // Verificar se JÁ EXISTE agendamento real para este cliente hoje
             // Importante: comparar monthly_client_id E data
-            const hasReal = realAppointments.some(app => 
-                app.monthly_client_id === client.id && 
+            const hasReal = realAppointments.some(app =>
+                app.monthly_client_id === client.id &&
                 isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate)
             );
-            
+
             if (hasReal) return false;
 
             // Verificar se o termo de busca exclui este cliente
             if (searchTerm) {
                 const searchLower = searchTerm.toLowerCase();
-                const match = 
+                const match =
                     client.pet_name.toLowerCase().includes(searchLower) ||
                     client.owner_name.toLowerCase().includes(searchLower) ||
                     client.service.toLowerCase().includes(searchLower);
@@ -4435,11 +4435,11 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             // Construir a data correta no fuso de SP
             // recurrence_time vem como inteiro (ex: 11 para 11:00)
             const hour = Number(client.recurrence_time);
-            
+
             // Criar data UTC que representa esse horário em SP
             // toSaoPauloUTC(2026, 2, 3, 11) -> 2026-03-03T14:00:00Z (que é 11:00 SP)
             const appointmentTime = toSaoPauloUTC(dateParts.year, dateParts.month, dateParts.date, hour);
-            
+
             return {
                 id: `virtual-${client.id}-${selectedAdminDate.getTime()}`,
                 appointment_time: appointmentTime.toISOString(),
@@ -4463,7 +4463,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         });
 
         // Combinar e ordenar por horário
-        return [...realAppointments, ...virtualAppointments].sort((a, b) => 
+        return [...realAppointments, ...virtualAppointments].sort((a, b) =>
             new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime()
         );
 
@@ -9907,7 +9907,7 @@ const TimeSlotPicker: React.FC<{
     selectedCondo?: string | null;
     disablePastTimes?: boolean;
     isAdmin?: boolean;
-} = ({ selectedDate, selectedService, appointments: allAppointments, onTimeSelect, selectedTime, workingHours, isPetMovel, allowedDays, selectedCondo, disablePastTimes, isAdmin = false }) => {
+}> = ({ selectedDate, selectedService, appointments: allAppointments, onTimeSelect, selectedTime, workingHours, isPetMovel, allowedDays, selectedCondo, disablePastTimes, isAdmin = false }) => {
 
     // FIX: Use ALL appointments for availability checks — any existing appointment at a time slot
     // should block it regardless of whether it's a Pet Móvel or Store service.
@@ -13655,7 +13655,7 @@ const App: React.FC = () => {
                     .from('monthly_clients')
                     .select('*')
                     .eq('is_active', true);
-                
+
                 if (!cancelled && monthlyClientsData) setMonthlyClients(monthlyClientsData);
 
                 const normalize = (arr: any[] | null | undefined): AdminAppointment[] => {
