@@ -2741,25 +2741,50 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
             ...(appointment.extra_services && { extra_services: appointment.extra_services }),
         };
 
-        const [appointmentsResult, petMovelResult] = await Promise.all([
-            supabase
-                .from('appointments')
-                .update(updatePayload)
-                .eq('id', appointment.id)
-                .select(),
-            supabase
-                .from('pet_movel_appointments')
-                .update(updatePayload)
-                .eq('id', appointment.id)
-                .select()
-        ]);
+        let updatedData = null;
 
-        if (appointmentsResult.error && petMovelResult.error) {
-            const msg = appointmentsResult.error?.message || petMovelResult.error?.message || 'Erro desconhecido';
-            alert(`Falha ao atualizar o agendamento: ${msg}`);
-            setIsSubmitting(false);
+        // If it's a virtual appointment, we must INSERT a new real appointment instead of UPDATING a non-existent one
+        // @ts-ignore
+        if (appointment.is_virtual || appointment.id.startsWith('virtual-')) {
+            const tableToInsert = (service.includes('Pet Móvel') || service.includes('Pet Movel')) ? 'pet_movel_appointments' : 'appointments';
+            const { data, error } = await supabase
+                .from(tableToInsert)
+                .insert([{
+                    ...updatePayload,
+                    monthly_client_id: appointment.monthly_client_id,
+                }])
+                .select();
+
+            if (error) {
+                alert(`Falha ao criar o agendamento a partir do mensalista: ${error.message}`);
+                setIsSubmitting(false);
+                return;
+            }
+            updatedData = data?.[0];
         } else {
-            const updatedData = (Array.isArray(appointmentsResult.data) && appointmentsResult.data[0]) || (Array.isArray(petMovelResult.data) && petMovelResult.data[0]) || null;
+            const [appointmentsResult, petMovelResult] = await Promise.all([
+                supabase
+                    .from('appointments')
+                    .update(updatePayload)
+                    .eq('id', appointment.id)
+                    .select(),
+                supabase
+                    .from('pet_movel_appointments')
+                    .update(updatePayload)
+                    .eq('id', appointment.id)
+                    .select()
+            ]);
+
+            if (appointmentsResult.error && petMovelResult.error) {
+                const msg = appointmentsResult.error?.message || petMovelResult.error?.message || 'Erro desconhecido';
+                alert(`Falha ao atualizar o agendamento: ${msg}`);
+                setIsSubmitting(false);
+                return;
+            }
+            updatedData = (Array.isArray(appointmentsResult.data) && appointmentsResult.data[0]) || (Array.isArray(petMovelResult.data) && petMovelResult.data[0]) || null;
+        }
+
+        if (updatedData) {
 
             // Check for date/time changes and trigger webhook
             const oldTime = new Date(appointment.appointment_time).getTime();
@@ -4329,6 +4354,16 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         if (!appointmentToDelete) return;
         setDeletingAppointmentId(appointmentToDelete.id);
 
+        // Se for um agendamento virtual (projeção de mensalista), não há o que excluir no banco
+        // Apenas recarregamos a view para que qualquer alteração de estado limpe isso
+        // @ts-ignore
+        if (appointmentToDelete.is_virtual || appointmentToDelete.id.startsWith('virtual-')) {
+            alert('Agendamentos projetados de mensalistas não podem ser excluídos individualmente. Edite o mensalista se desejar cancelar a recorrência.');
+            setDeletingAppointmentId(null);
+            setAppointmentToDelete(null);
+            return;
+        }
+
         // Try to delete from both tables since we don't know which table the appointment is in
         const [appointmentsResult, petMovelResult] = await Promise.all([
             supabase.from('appointments').delete().eq('id', appointmentToDelete.id),
@@ -4466,6 +4501,14 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             // toSaoPauloUTC(2026, 2, 3, 11) -> 2026-03-03T14:00:00Z (que é 11:00 SP)
             const appointmentTime = toSaoPauloUTC(dateParts.year, dateParts.month, dateParts.date, hour);
 
+            // Ajustar o preço com base na recorrência (preço mensal total -> preço por sessão)
+            let sessionPrice = Number(client.price) || 0;
+            if (client.recurrence_type === 'weekly') {
+                sessionPrice = sessionPrice / 4;
+            } else if (client.recurrence_type === 'bi-weekly') {
+                sessionPrice = sessionPrice / 2;
+            }
+
             return {
                 id: `virtual-${client.id}-${selectedAdminDate.getTime()}`,
                 appointment_time: appointmentTime.toISOString(),
@@ -4473,7 +4516,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 owner_name: client.owner_name,
                 service: client.service,
                 status: 'AGENDADO', // Status padrão para visualização
-                price: client.price, // Preço mensal? Deveria ser dividido? Para visualização ok.
+                price: sessionPrice,
                 addons: [],
                 whatsapp: client.whatsapp,
                 weight: client.weight,
@@ -13117,27 +13160,39 @@ const AdminDashboard: React.FC<{
 
                 const normalize = (arr: any[] | null | undefined): AdminAppointment[] => {
                     if (!arr) return [];
-                    return arr.map((rec: any) => ({
-                        id: rec.id,
-                        appointment_time: rec.appointment_time,
-                        pet_name: rec.pet_name,
-                        pet_breed: rec.pet_breed ?? undefined,
-                        owner_name: rec.owner_name ?? rec.client_name ?? '',
-                        owner_address: rec.owner_address ?? rec.address ?? undefined,
-                        whatsapp: rec.whatsapp ?? rec.phone ?? '',
-                        service: rec.service,
-                        weight: rec.weight,
-                        addons: rec.addons ?? [],
-                        price: rec.price ?? 0,
-                        status: rec.status,
-                        monthly_client_id: rec.monthly_client_id ?? undefined,
-                        condominium: rec.condominium ?? rec.condo ?? undefined,
-                        extra_services: rec.extra_services ?? undefined,
-                        observation: rec.observation ?? rec.notes ?? undefined,
-                        pet_photo_url: rec.monthly_clients?.pet_photo_url ?? undefined,
-                        recurrence_type: rec.monthly_clients?.recurrence_type ?? undefined,
-                        responsible: rec.responsible ?? undefined,
-                    }));
+                    return arr.map((rec: any) => {
+                        let sessionPrice = rec.price ?? 0;
+                        const recurrenceType = rec.monthly_clients?.recurrence_type;
+
+                        // Ajustar o preço se for um agendamento real de um cliente mensalista
+                        if (recurrenceType === 'weekly') {
+                            sessionPrice = sessionPrice / 4;
+                        } else if (recurrenceType === 'bi-weekly') {
+                            sessionPrice = sessionPrice / 2;
+                        }
+
+                        return {
+                            id: rec.id,
+                            appointment_time: rec.appointment_time,
+                            pet_name: rec.pet_name,
+                            pet_breed: rec.pet_breed ?? undefined,
+                            owner_name: rec.owner_name ?? rec.client_name ?? '',
+                            owner_address: rec.owner_address ?? rec.address ?? undefined,
+                            whatsapp: rec.whatsapp ?? rec.phone ?? '',
+                            service: rec.service,
+                            weight: rec.weight,
+                            addons: rec.addons ?? [],
+                            price: sessionPrice,
+                            status: rec.status,
+                            monthly_client_id: rec.monthly_client_id ?? undefined,
+                            condominium: rec.condominium ?? rec.condo ?? undefined,
+                            extra_services: rec.extra_services ?? undefined,
+                            observation: rec.observation ?? rec.notes ?? undefined,
+                            pet_photo_url: rec.monthly_clients?.pet_photo_url ?? undefined,
+                            recurrence_type: rec.monthly_clients?.recurrence_type ?? undefined,
+                            responsible: rec.responsible ?? undefined,
+                        };
+                    });
                 };
 
                 const { filteredA, filteredB } = await dedupeMonthlyByMinute(bathAppointments, petMovelAppointments);
