@@ -9991,16 +9991,17 @@ const TimeSlotPicker: React.FC<{
 
     const getAppointmentsAtHour = (hour: number) => {
         return allAppointments.filter(appt => {
-            // Normalização de data para garantir comparação correta independente do fuso horário
+            // Normalização de data: os agendamentos no banco estão salvos sem timezone e assumem UTC,
+            // então usamos os métodos UTC para recuperar os valores exatos armazenados
             const apptTime = new Date(appt.appointmentTime);
 
-            // Extrair componentes da data do agendamento
-            const apptYear = apptTime.getFullYear();
-            const apptMonth = apptTime.getMonth();
-            const apptDate = apptTime.getDate();
-            const apptHour = apptTime.getHours();
+            // Extrair componentes da data do agendamento usando UTC (como gravado no DB)
+            const apptYear = apptTime.getUTCFullYear();
+            const apptMonth = apptTime.getUTCMonth();
+            const apptDate = apptTime.getUTCDate();
+            const apptHour = apptTime.getUTCHours();
 
-            // Extrair componentes da data selecionada
+            // O selectedDate gerado pelo calendário está em hora local com a meia noite (00:00:00)
             const selectedYear = selectedDate.getFullYear();
             const selectedMonth = selectedDate.getMonth();
             const selectedDay = selectedDate.getDate();
