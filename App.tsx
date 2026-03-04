@@ -2744,8 +2744,10 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
         let updatedData = null;
 
         // If it's a virtual appointment, we must INSERT a new real appointment instead of UPDATING a non-existent one
-        // @ts-ignore
-        if (appointment.is_virtual || appointment.id.startsWith('virtual-')) {
+        const idStr = String(appointment.id || '');
+        const isVirtual = Boolean(appointment.is_virtual) || idStr.includes('virtual-');
+
+        if (isVirtual) {
             const tableToInsert = (service.includes('Pet Móvel') || service.includes('Pet Movel')) ? 'pet_movel_appointments' : 'appointments';
             const { data, error } = await supabase
                 .from(tableToInsert)
@@ -2938,6 +2940,9 @@ const AdminAddAppointmentModal: React.FC<{
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [allowedDays, setAllowedDays] = useState<number[] | undefined>(undefined);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [clientFound, setClientFound] = useState(false);
+    const [foundPets, setFoundPets] = useState<any[]>([]);
+    const [isFetchingClient, setIsFetchingClient] = useState(false);
 
     const isVisitService = useMemo(() =>
         selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
@@ -2961,6 +2966,9 @@ const AdminAddAppointmentModal: React.FC<{
             setSelectedTime(null);
             setIsSubmitting(false);
             setAllowedDays(undefined);
+            setClientFound(false);
+            setFoundPets([]);
+            setIsFetchingClient(false);
         }
     }, [isOpen]);
 
@@ -3135,9 +3143,41 @@ const AdminAddAppointmentModal: React.FC<{
         setFoundPets([]); // Close selection
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: name === 'whatsapp' ? formatWhatsapp(value) : value }));
+        const formattedValue = name === 'whatsapp' ? formatWhatsapp(value) : value;
+
+        setFormData(prev => ({ ...prev, [name]: formattedValue }));
+
+        // Only search if typing whatsapp and it looks complete (15 chars with mask)
+        if (name === 'whatsapp' && formattedValue.length >= 14 && !clientFound) {
+            setIsFetchingClient(true);
+            try {
+                const searchPhone = typeof formattedValue === 'string' ? formattedValue.replace(/\D/g, '') : '';
+                const { data, error } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .ilike('phone', `%${searchPhone}%`)
+                    .limit(1)
+                    .single();
+
+                if (data && !error) {
+                    setFormData(prev => ({
+                        ...prev,
+                        ownerName: data.name || prev.ownerName,
+                        ownerAddress: data.address || prev.ownerAddress,
+                    }));
+                    setClientFound(true);
+                } else {
+                    setClientFound(false);
+                }
+            } catch (error) {
+                console.error("Error searching client:", error);
+                setClientFound(false);
+            } finally {
+                setIsFetchingClient(false);
+            }
+        }
     };
 
     const handleWeightChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
