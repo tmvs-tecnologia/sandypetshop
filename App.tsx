@@ -4207,9 +4207,10 @@ interface AppointmentsViewProps {
     onOpenActionMenu: (appointment: AdminAppointment, event: React.MouseEvent) => void;
     onDeleteObservation: (appointment: AdminAppointment) => void;
     monthlyClients?: MonthlyClient[];
+    onDataChanged?: () => void;
 }
 
-const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [] }) => {
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
@@ -4310,6 +4311,9 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             const nextSelected = new Date(Date.UTC(sp.year, sp.month, sp.date));
             setSelectedAdminDate(nextSelected);
         } catch { }
+        if (onDataChanged) {
+            onDataChanged();
+        }
         handleCloseEditModal();
     };
     const handleOpenAddModal = () => {
@@ -4411,12 +4415,34 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             // Mas se o serviço for EXCLUSIVAMENTE Pet Móvel, talvez devesse aparecer lá.
             // Pela descrição do usuário, ele quer ver na tela de Banho & Tosa.
 
-            // Verificar se JÁ EXISTE agendamento real para este cliente hoje
-            // Importante: comparar monthly_client_id E data
-            const hasReal = realAppointments.some(app =>
-                app.monthly_client_id === client.id &&
-                isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate)
-            );
+            // Verificar se JÁ EXISTE agendamento real para este cliente neste ciclo (semana/mês)
+            // Importante: comparar monthly_client_id E ciclo
+            const adminDateParts = getSaoPauloTimeParts(selectedAdminDate);
+            const getWeek = (date: Date) => {
+                const spParts = getSaoPauloTimeParts(date);
+                const d = new Date(Date.UTC(spParts.year, spParts.month, spParts.date));
+                const day = d.getUTCDay();
+                return new Date(d.getTime() - day * 24 * 60 * 60 * 1000).getTime();
+            };
+            const adminWeek = getWeek(selectedAdminDate);
+            const adminMonth = `${adminDateParts.year}-${adminDateParts.month}`;
+
+            const hasReal = appointments.some(app => {
+                if (app.monthly_client_id !== client.id) return false;
+
+                const appDate = new Date(app.appointment_time);
+
+                if (client.recurrence_type === 'weekly' || client.recurrence_type === 'bi-weekly') {
+                    // Consider it fulfilled if there's any appointment for this client in the SAME week
+                    return getWeek(appDate) === adminWeek;
+                } else if (client.recurrence_type === 'monthly') {
+                    // Consider it fulfilled if there's any appointment for this client in the SAME month
+                    const parts = getSaoPauloTimeParts(appDate);
+                    return `${parts.year}-${parts.month}` === adminMonth;
+                }
+
+                return isSameSaoPauloDay(appDate, selectedAdminDate);
+            });
 
             if (hasReal) return false;
 
@@ -13141,14 +13167,14 @@ const AdminDashboard: React.FC<{
     // Renderiza a view ativa baseada no estado activeView
     const renderActiveView = () => {
         switch (activeView) {
-            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} />;
+            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} />;
             case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} setShowDaycareStatistics={setShowDaycareStatistics} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} />;
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
-            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} />;
+            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} />;
         }
     };
 
