@@ -9907,34 +9907,13 @@ const TimeSlotPicker: React.FC<{
     selectedCondo?: string | null;
     disablePastTimes?: boolean;
     isAdmin?: boolean;
-}> = ({ selectedDate, selectedService, appointments: allAppointments, onTimeSelect, selectedTime, workingHours, isPetMovel, allowedDays, selectedCondo, disablePastTimes, isAdmin = false }) => {
+} = ({ selectedDate, selectedService, appointments: allAppointments, onTimeSelect, selectedTime, workingHours, isPetMovel, allowedDays, selectedCondo, disablePastTimes, isAdmin = false }) => {
 
-    // FILTER APPOINTMENTS: Separate Store vs Pet Mobile to prevent cross-blocking
-    const appointments = useMemo(() => {
-        return allAppointments.filter(appt => {
-            const s = String(appt.service || '').toLowerCase();
-            // Basic check based on service name or type if available
-            // If service type is available in appt.service (enum), use that.
-            // But appt.service might be string from DB.
-            // Let's rely on the fact that Pet Mobile services usually contain "Pet Móvel" or "Pet Mobile" in label or type.
-
-            // However, we can also check against the SERVICES constant keys if we map them correctly.
-            // In App.tsx, reloadAppointments maps them to ServiceType enum.
-
-            // ROBUST CHECK: Check enum values OR string content
-            const isMobile =
-                appt.service === ServiceType.PET_MOBILE_BATH ||
-                appt.service === ServiceType.PET_MOBILE_BATH_AND_GROOMING ||
-                appt.service === ServiceType.PET_MOBILE_GROOMING_ONLY ||
-                s.includes('movel') ||
-                s.includes('móvel') ||
-                s.includes('mobile');
-
-            return isPetMovel ? isMobile : !isMobile;
-        });
-    }, [allAppointments, isPetMovel]);
-
-    const capacity = isPetMovel ? 1 : MAX_CAPACITY_PER_SLOT;
+    // FIX: Use ALL appointments for availability checks — any existing appointment at a time slot
+    // should block it regardless of whether it's a Pet Móvel or Store service.
+    // Previously, we filtered by isPetMovel which caused monthly client appointments
+    // (like "4x Banho") to NOT block Pet Móvel time slots.
+    const capacity = 1;
 
     const isSameDay = (d1: Date, d2: Date) =>
         d1.getDate() === d2.getDate() &&
@@ -9942,7 +9921,7 @@ const TimeSlotPicker: React.FC<{
         d1.getFullYear() === d2.getFullYear();
 
     const getAppointmentsAtHour = (hour: number) => {
-        return appointments.filter(appt => {
+        return allAppointments.filter(appt => {
             // Normalização de data para garantir comparação correta independente do fuso horário
             const apptTime = new Date(appt.appointmentTime);
 
@@ -9961,8 +9940,8 @@ const TimeSlotPicker: React.FC<{
             const isSameDate = apptYear === selectedYear && apptMonth === selectedMonth && apptDate === selectedDay;
             const isSameHour = apptHour === hour;
 
-            // Check for status if available (prevent blocking if cancelled)
-            if (appt.status && (appt.status === 'Cancelado' || appt.status === 'CANCELADO')) {
+            // Check for status if available (prevent blocking if cancelled or completed)
+            if (appt.status && (appt.status === 'Cancelado' || appt.status === 'CANCELADO' || appt.status === 'CONCLUÍDO' || appt.status === 'Concluído')) {
                 return false;
             }
 
@@ -9979,89 +9958,10 @@ const TimeSlotPicker: React.FC<{
             }
         }
 
-        // 2. Capacity Check (Effective Load)
-        // If it's Pet Movel, capacity is 1. If there's ANY appointment, it's blocked.
-        // If it's Store, capacity is MAX_CAPACITY_PER_SLOT.
+        // 2. Capacity Check — ANY appointment at this hour blocks the slot
         let load = getAppointmentsAtHour(hour);
 
-        // Check previous hour (hour - 1) for overlapping services (> 1h)
-        const prev1Appts = appointments.filter(a => {
-            const t = new Date(a.appointmentTime);
-            // @ts-ignore
-            const isCancelled = a.status && (a.status === 'Cancelado' || a.status === 'CANCELADO');
-            return !isCancelled && t.getHours() === hour - 1 && isSameDay(t, selectedDate);
-        });
-        /* 
-        // DISABLED AS REQUESTED: Do not block current slot based on previous appointment duration
-        prev1Appts.forEach(a => {
-            const s = SERVICES[a.service];
-            if (s && s.duration > 1) load++;
-        });
-        */
-
-        // Check hour - 2 for overlapping services (> 2h)
-        const prev2Appts = appointments.filter(a => {
-            const t = new Date(a.appointmentTime);
-            // @ts-ignore
-            const isCancelled = a.status && (a.status === 'Cancelado' || a.status === 'CANCELADO');
-            return !isCancelled && t.getHours() === hour - 2 && isSameDay(t, selectedDate);
-        });
-        /*
-        // DISABLED AS REQUESTED: Do not block current slot based on previous appointment duration
-        prev2Appts.forEach(a => {
-            const s = SERVICES[a.service];
-            if (s && s.duration > 2) load++;
-        });
-        */
-
-        // CRITICAL FIX: For Pet Movel AND Store Services, if there is ANY load (even 1), it must be blocked.
-        // The user explicitly requested that ANY existing appointment should block the slot.
-        // "Para Banho & Tosa e Pet Móvel deve ter a mesma indisponibilidade de slots... Há slots que estão agendandos, mas você mostra como disponível."
         if (load >= 1) return false;
-
-        if (load >= capacity) return false;
-
-        /*
-        // DISABLED AS REQUESTED: Do not block current slot based on future duration/capacity
-        // 3. Forward Check for Current Selection (Duration)
-        if (selectedService && SERVICES[selectedService]) {
-            const duration = SERVICES[selectedService].duration;
-            if (duration > 1) {
-                const nextHour = hour + 1;
-                if (workingHours.includes(nextHour)) {
-                    // Calculate load for nextHour
-                    let nextLoad = getAppointmentsAtHour(nextHour);
-
-                    // Check hour (current-1 relative to next) overlap
-                    // This includes appointments starting at 'hour' (which we are hypothetically adding, but checking existing ones)
-                    const currentStarts = appointments.filter(a => {
-                        const t = new Date(a.appointmentTime);
-                        const isCancelled = a.status && (a.status === 'Cancelado' || a.status === 'CANCELADO');
-                        return !isCancelled && t.getHours() === hour && isSameDay(t, selectedDate);
-                    });
-                    currentStarts.forEach(a => {
-                        const s = SERVICES[a.service];
-                        if (s && s.duration > 1) nextLoad++;
-                    });
-
-                    // Check hour-1 (current-2 relative to next) overlap
-                    prev1Appts.forEach(a => { // These are at hour-1
-                        const s = SERVICES[a.service];
-                        if (s && s.duration > 2) nextLoad++;
-                    });
-
-                    // CRITICAL FIX: For Pet Movel duration check
-                    if (isPetMovel && nextLoad >= 1) return false;
-
-                    if (nextLoad >= capacity) return false;
-
-                } else {
-                    // Next hour is not working hour. Cannot extend.
-                    return false;
-                }
-            }
-        }
-        */
 
         return true;
     };
