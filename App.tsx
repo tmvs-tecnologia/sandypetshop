@@ -6753,18 +6753,46 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         if (!deletingClient) return;
         setIsDeleting(true);
         const dbId = getMonthlyDbId(deletingClient.id);
+        const now = new Date().toISOString();
+
         try {
-            await Promise.all([
-                supabase.from('appointments').delete().eq('monthly_client_id', dbId),
-                supabase.from('pet_movel_appointments').delete().eq('monthly_client_id', dbId)
+            // 1. Unlink past appointments so we don't lose historical revenue data
+            const [updatePastAppts, updatePastPetMovel] = await Promise.all([
+                supabase.from('appointments').update({ monthly_client_id: null }).eq('monthly_client_id', dbId).lt('appointment_time', now),
+                supabase.from('pet_movel_appointments').update({ monthly_client_id: null }).eq('monthly_client_id', dbId).lt('appointment_time', now)
             ]);
+
+            if (updatePastAppts.error || updatePastPetMovel.error) {
+                setAlertInfo({ title: 'Erro', message: 'Falha ao desvincular agendamentos passados.', variant: 'error' });
+                return;
+            }
+
+            // 2. Delete future appointments
+            const [delFutureAppts, delFuturePetMovel] = await Promise.all([
+                supabase.from('appointments').delete().eq('monthly_client_id', dbId).gte('appointment_time', now),
+                supabase.from('pet_movel_appointments').delete().eq('monthly_client_id', dbId).gte('appointment_time', now)
+            ]);
+
+            if (delFutureAppts.error || delFuturePetMovel.error) {
+                setAlertInfo({ title: 'Erro', message: 'Falha ao remover agendamentos futuros.', variant: 'error' });
+                return;
+            }
+
+            // 3. Delete the client record
             const { error: clientError } = await supabase.from('monthly_clients').delete().eq('id', dbId);
+
             if (clientError) {
-                setAlertInfo({ title: 'Erro na Exclusão', message: 'Os agendamentos foram removidos, mas ocorreu um erro ao excluir o cadastro do mensalista.', variant: 'error' });
+                setAlertInfo({
+                    title: 'Erro na Exclusão',
+                    message: `Ocorreu um erro ao excluir o cadastro do mensalista: ${clientError.message || 'Erro desconhecido'}`,
+                    variant: 'error'
+                });
             } else {
                 setMonthlyClients(prev => prev.filter(c => c.id !== deletingClient.id));
                 onDataChanged();
             }
+        } catch (err: any) {
+            setAlertInfo({ title: 'Erro Crítico', message: `Falha na requisição: ${err.message}`, variant: 'error' });
         } finally {
             setIsDeleting(false);
             setDeletingClient(null);
