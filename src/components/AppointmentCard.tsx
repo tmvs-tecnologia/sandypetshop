@@ -8,7 +8,8 @@ import {
     PencilSquareIcon as EditIcon,
     SparklesIcon
 } from '@heroicons/react/24/outline';
-import { AdminAppointment } from '../../types';
+import { AdminAppointment, ServiceType, PetWeight } from '../../types';
+import { SERVICE_PRICES, PET_WEIGHT_OPTIONS } from '../../constants';
 
 // --- Helpers ---
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="28">🐾</text></svg>';
@@ -51,6 +52,33 @@ const WhatsAppIcon = () => (
         src="https://cdn-icons-png.flaticon.com/512/15713/15713434.png"
     />
 );
+
+const getWeightKeyFromLabel = (label: string): PetWeight | null => {
+    if (!label) return null;
+    const keys = Object.keys(PET_WEIGHT_OPTIONS) as PetWeight[];
+    return keys.find(k => PET_WEIGHT_OPTIONS[k] === label) || null;
+};
+
+const calculateAvulsoPrice = (weightLabel: string, serviceLabel: string): number => {
+    const weightKey = getWeightKeyFromLabel(weightLabel);
+    if (!weightKey) return 0;
+
+    let total = 0;
+    const s = (serviceLabel || '').toLowerCase();
+    const hasBathTosa = s.includes('banho & tosa') || s.includes('banho e tosa');
+    const hasBath = s.includes('banho');
+    const hasTosa = s.includes('tosa');
+
+    const prices = SERVICE_PRICES[weightKey];
+    if (hasBathTosa) {
+        total = Number(prices[ServiceType.BATH] || 0) + Number(prices[ServiceType.GROOMING_ONLY] || 0);
+    } else if (hasBath) {
+        total = Number(prices[ServiceType.BATH] || 0);
+    } else if (hasTosa) {
+        total = Number(prices[ServiceType.GROOMING_ONLY] || 0);
+    }
+    return total;
+};
 
 interface AppointmentCardProps {
     appointment: AdminAppointment;
@@ -136,7 +164,16 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     }
 
     const hasExtras = activeExtras.length > 0;
-    const displayPrice: number = Number(price || 0) + extrasTotal;
+
+    let basePrice = Number(price || 0);
+    if (monthly_client_id && (recurrence_type === 'weekly' || recurrence_type === 'bi-weekly')) {
+        const avulsoPrice = calculateAvulsoPrice(appointment.weight || '', service);
+        if (avulsoPrice > 0) {
+            basePrice = avulsoPrice;
+        }
+    }
+
+    const displayPrice: number = basePrice + extrasTotal;
 
     const whatsappHref = `https://wa.me/55${whatsapp.replace(/\D/g, '')}`;
 
