@@ -4208,12 +4208,8 @@ const ResponsibleModal: React.FC<{
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('ResponsibleModal handleSubmit called with name:', name);
         if (name.trim()) {
-            console.log('Calling onConfirm with:', name.trim());
             onConfirm(name.trim());
-        } else {
-            console.log('Name is empty, not submitting');
         }
     };
 
@@ -4314,6 +4310,104 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     }, [refreshKey, appointments]);
 
     // FIX: Changed `newStatus` type from `string` to the specific union type to match `AdminAppointment['status']`.
+    const handleUpdateStatus = async (id: string, newStatus: 'AGENDADO' | 'CONCLUÍDO', responsible?: string, finalPrice?: number) => {
+        const appointmentToUpdate = appointments.find(app => app.id === id);
+        if (!appointmentToUpdate) return;
+        setUpdatingStatusId(id);
+
+        // Check if it's a virtual appointment (starts with 'virtual-' or has is_virtual flag)
+        const isVirtual = id.startsWith('virtual-') || appointmentToUpdate.is_virtual;
+        let actualId = id;
+        
+        // If it's a virtual appointment, we need to create a real appointment first
+        if (isVirtual && appointmentToUpdate.monthly_client_id) {
+            // Determine which table to insert into based on service type
+            const isPetMovel = appointmentToUpdate.service?.toLowerCase().includes('móvel');
+            const tableToInsert = isPetMovel ? 'pet_movel_appointments' : 'appointments';
+            
+            const insertPayload: any = {
+                appointment_time: appointmentToUpdate.appointment_time,
+                pet_name: appointmentToUpdate.pet_name,
+                owner_name: appointmentToUpdate.owner_name,
+                whatsapp: appointmentToUpdate.whatsapp,
+                service: appointmentToUpdate.service,
+                weight: appointmentToUpdate.weight,
+                price: appointmentToUpdate.price,
+                status: newStatus,
+                monthly_client_id: appointmentToUpdate.monthly_client_id,
+                owner_address: appointmentToUpdate.owner_address,
+                pet_breed: appointmentToUpdate.pet_breed,
+                condominium: appointmentToUpdate.condominium,
+                pet_photo_url: appointmentToUpdate.pet_photo_url
+            };
+            
+            // Insert the new appointment
+            const { data, error } = await supabase.from(tableToInsert).insert(insertPayload).select();
+            
+            if (error) {
+                console.error('Error creating real appointment from virtual one:', error);
+                alert('Falha ao criar o agendamento real a partir do mensalista.');
+                setUpdatingStatusId(null);
+                return;
+            }
+            
+            // Use the new ID for subsequent operations
+            actualId = data[0].id;
+        }
+
+        const updatePayload: any = { status: newStatus };
+        if (responsible) {
+            updatePayload.responsible = responsible;
+        }
+
+        // Try to update in both tables since we don't know which table the appointment is in
+        const [appointmentsResult, petMovelResult] = await Promise.all([
+            supabase.from('appointments').update(updatePayload).eq('id', actualId),
+            supabase.from('pet_movel_appointments').update(updatePayload).eq('id', actualId)
+        ]);
+
+        // Check if at least one update was successful
+        const hasError = appointmentsResult.error && petMovelResult.error;
+
+        if (hasError) {
+            console.error('Error updating in appointments:', appointmentsResult.error);
+            console.error('Error updating in pet_movel_appointments:', petMovelResult.error);
+            alert('Falha ao atualizar o status.');
+        } else {
+            const updatedAppointment = { ...appointmentToUpdate, id: actualId, status: newStatus, ...(responsible ? { responsible } : {}) };
+            setAppointments(prev => prev.map(app => app.id === id ? updatedAppointment : app));
+            if (newStatus === 'CONCLUÍDO') {
+                // Dispara webhook específico quando for uma visita (Creche ou Hotel)
+                const visitLabels = [
+                    SERVICES[ServiceType.VISIT_DAYCARE].label,
+                    SERVICES[ServiceType.VISIT_HOTEL].label,
+                ];
+                // Só considera visita quando não for mensalista
+                const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
+                const url = isVisit
+                    ? 'https://n8n.intelektus.tech/webhook/visitaRealizada'
+                    : 'https://n8n.intelektus.tech/webhook/servicoConcluido';
+                try {
+                    await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...updatedAppointment,
+                            id: actualId, // Use the actual ID in the webhook
+                            price: finalPrice ?? updatedAppointment.price,
+                            message: isVisit ? 'Visita Realizada' : 'Serviço Concluído',
+                            isVisit,
+                            responsible: responsible || null // Inclui o responsável no payload do webhook
+                        }),
+                    });
+                } catch (webhookError) {
+                    console.error('Error sending webhook:', webhookError);
+                }
+            }
+        }
+        setUpdatingStatusId(null);
+    };
+
     const handleOpenEditModal = (appointment: AdminAppointment) => { setEditingAppointment(appointment); setIsEditModalOpen(true); };
     const handleCloseEditModal = () => { setEditingAppointment(null); setIsEditModalOpen(false); };
     const handleAppointmentUpdated = (updatedAppointment: AdminAppointment) => {
@@ -4379,25 +4473,13 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         setAppointmentToDelete(null);
     };
 
-    const handleRequestCompletion = (id: string, price: number) => {
-        console.log('handleRequestCompletion called with id:', id, 'and price:', price);
-        setConfirmingCompletionId(id);
-        setConfirmingCompletionPrice(price);
-    };
+    {'id': ", id, 'price:"}
 
     const handleConfirmCompletion = (responsible: string) => {
-        console.log('handleConfirmCompletion called with responsible:', responsible);
-        console.log('Current confirmingCompletionId:', confirmingCompletionId);
-        console.log('Current confirmingCompletionPrice:', confirmingCompletionPrice);
-        
         if (confirmingCompletionId) {
-            console.log('Calling handleUpdateStatus...');
             handleUpdateStatus(confirmingCompletionId, 'CONCLUÍDO', responsible, confirmingCompletionPrice);
             setConfirmingCompletionId(null);
             setConfirmingCompletionPrice(null);
-        } else {
-            console.error('ERROR: confirmingCompletionId is null/undefined inside handleConfirmCompletion!');
-            alert('Erro: ID do agendamento perdido. Tente novamente.');
         }
     };
 
@@ -4553,130 +4635,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         upcoming.sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
         return { upcomingAppointments: upcoming, pastAppointments: past };
     }, [filteredAppointments, adminView]);
-
-    const handleUpdateStatus = async (id: string, newStatus: 'AGENDADO' | 'CONCLUÍDO', responsible?: string, finalPrice?: number) => {
-        console.log('handleUpdateStatus STARTED with id:', id, 'status:', newStatus);
-        // Look in both real and virtual appointments (dailyAppointments contains both for the selected day)
-        const appointmentToUpdate = appointments.find(app => app.id === id) || dailyAppointments.find(app => app.id === id);
-        
-        if (!appointmentToUpdate) {
-            console.error('handleUpdateStatus: Appointment not found with id', id);
-            return;
-        }
-        setUpdatingStatusId(id);
-
-        // Check if it's a virtual appointment (starts with 'virtual-' or has is_virtual flag)
-        const isVirtual = id.startsWith('virtual-') || appointmentToUpdate.is_virtual;
-        console.log('handleUpdateStatus - isVirtual:', isVirtual, 'id:', id);
-        let actualId = id;
-        
-        // If it's a virtual appointment, we need to create a real appointment first
-        if (isVirtual && appointmentToUpdate.monthly_client_id) {
-            console.log('Converting virtual appointment to real one...');
-            // Determine which table to insert into based on service type
-            const isPetMovel = appointmentToUpdate.service?.toLowerCase().includes('móvel') || appointmentToUpdate.service?.toLowerCase().includes('mobile');
-            const tableToInsert = isPetMovel ? 'pet_movel_appointments' : 'appointments';
-            console.log('Target table:', tableToInsert);
-            
-            console.log('appointmentToUpdate:', appointmentToUpdate);
-            
-            const insertPayload: any = {
-                appointment_time: appointmentToUpdate.appointment_time,
-                pet_name: appointmentToUpdate.pet_name,
-                owner_name: appointmentToUpdate.owner_name,
-                whatsapp: appointmentToUpdate.whatsapp,
-                service: appointmentToUpdate.service,
-                weight: appointmentToUpdate.weight || 'PEQUENO', // Default weight if missing
-                price: appointmentToUpdate.price || 0, // Default price if missing
-                status: newStatus,
-                monthly_client_id: appointmentToUpdate.monthly_client_id,
-                owner_address: appointmentToUpdate.owner_address || '',
-                pet_breed: appointmentToUpdate.pet_breed || '',
-                condominium: appointmentToUpdate.condominium || ''
-            };
-
-            // Only add pet_photo_url if the target table is 'appointments' (it doesn't exist in pet_movel_appointments)
-            if (tableToInsert === 'appointments') {
-                insertPayload.pet_photo_url = appointmentToUpdate.pet_photo_url || '';
-            }
-            console.log('Insert payload:', insertPayload);
-            
-            // Insert the new appointment
-            const { data, error } = await supabase.from(tableToInsert).insert(insertPayload).select();
-            
-            console.log('Insert result - data:', data, 'error:', error);
-
-            if (error) {
-                console.error('Error creating real appointment from virtual one:', error);
-                alert(`Falha ao criar o agendamento real a partir do mensalista. Erro: ${error.message || JSON.stringify(error)}`);
-                setUpdatingStatusId(null);
-                return;
-            }
-            
-            if (!data || data.length === 0) {
-                console.error('Insert succeeded but no data returned');
-                alert('Erro interno ao criar agendamento.');
-                setUpdatingStatusId(null);
-                return;
-            }
-
-            // Use the new ID for subsequent operations
-            actualId = data[0].id;
-            console.log('New actual ID:', actualId);
-        }
-
-        const updatePayload: any = { status: newStatus };
-        if (responsible) {
-            updatePayload.responsible = responsible;
-        }
-
-        // Try to update in both tables since we don't know which table the appointment is in
-        const [appointmentsResult, petMovelResult] = await Promise.all([
-            supabase.from('appointments').update(updatePayload).eq('id', actualId),
-            supabase.from('pet_movel_appointments').update(updatePayload).eq('id', actualId)
-        ]);
-
-        // Check if at least one update was successful
-        const hasError = appointmentsResult.error && petMovelResult.error;
-
-        if (hasError) {
-            console.error('Error updating in appointments:', appointmentsResult.error);
-            console.error('Error updating in pet_movel_appointments:', petMovelResult.error);
-            alert('Falha ao atualizar o status.');
-        } else {
-            const updatedAppointment = { ...appointmentToUpdate, id: actualId, status: newStatus, ...(responsible ? { responsible } : {}) };
-            setAppointments(prev => prev.map(app => app.id === id ? updatedAppointment : app));
-            if (newStatus === 'CONCLUÍDO') {
-                // Dispara webhook específico quando for uma visita (Creche ou Hotel)
-                const visitLabels = [
-                    SERVICES[ServiceType.VISIT_DAYCARE].label,
-                    SERVICES[ServiceType.VISIT_HOTEL].label,
-                ];
-                // Só considera visita quando não for mensalista
-                const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
-                const url = isVisit
-                    ? 'https://n8n.intelektus.tech/webhook/visitaRealizada'
-                    : 'https://n8n.intelektus.tech/webhook/servicoConcluido';
-                try {
-                    await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            ...updatedAppointment,
-                            id: actualId, // Use the actual ID in the webhook
-                            price: finalPrice ?? updatedAppointment.price,
-                            message: isVisit ? 'Visita Realizada' : 'Serviço Concluído',
-                            isVisit,
-                            responsible: responsible || null // Inclui o responsável no payload do webhook
-                        }),
-                    });
-                } catch (webhookError) {
-                    console.error('Error sending webhook:', webhookError);
-                }
-            }
-        }
-        setUpdatingStatusId(null);
-    };
 
     const renderAppointments = (apps: AdminAppointment[]) => apps.map(app => <AppointmentCard key={app.id} appointment={app} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />);
 
@@ -5455,7 +5413,7 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
 
     return (
         <div className="animate-fadeIn bg-gray-50 min-h-screen px-0 sm:px-2 py-4">
-            {selectedForEdit && <EditMonthlyClientModal client={selectedForEdit} onClose={() => setSelectedForEdit(null)} onMonthlyClientUpdated={handleClientUpdated} />}
+            {selectedForEdit && <EditMonthlyClientAdvancedModal client={selectedForEdit} onClose={() => setSelectedForEdit(null)} onMonthlyClientUpdated={handleClientUpdated} />}
             {selectedForDelete && <ConfirmationModal isOpen={!!selectedForDelete} onClose={() => setSelectedForDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o mensalista ${selectedForDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={isDeleting} />}
 
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">

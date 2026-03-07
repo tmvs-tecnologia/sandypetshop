@@ -380,10 +380,12 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                     </button>
 
                     <button
-                        onClick={() => onRequestCompletion(id, displayPrice)}
+                        onClick={() => {
+                            console.log('Requesting completion for appointment:', id, 'with price:', displayPrice);
+                            onRequestCompletion(id, displayPrice);
+                        }}
                         disabled={isCompleted || isUpdating || isDeleting}
-                        className={`ml-2 px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed ${isCompleted ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700 hover:shadow-green-500/20 hover:-translate-y-0.5'
-                            }`}
+                        className={`ml-2 px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed ${isCompleted ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700 hover:shadow-green-500/20 hover:-translate-y-0.5'}`}
                         title="Concluir serviço"
                     >
                         {isUpdating && !isDeleting ? (
