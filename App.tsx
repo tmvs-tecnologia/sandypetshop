@@ -2815,9 +2815,12 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
         if (updatedData) {
 
             // Fix immediately visually dividing the price:
-            // Inject the recurrence_type if the original appointment had it, so the local state update doesn't lose it
+            // Inject the recurrence_type & monthly_client_id if the original appointment had it, so the local state update doesn't lose it
             if (appointment.recurrence_type && !updatedData.recurrence_type) {
                 updatedData.recurrence_type = appointment.recurrence_type;
+            }
+            if (appointment.monthly_client_id && !updatedData.monthly_client_id) {
+                updatedData.monthly_client_id = appointment.monthly_client_id;
             }
 
             // Check for date/time changes and trigger webhook
