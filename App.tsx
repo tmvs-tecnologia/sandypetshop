@@ -2814,6 +2814,12 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
 
         if (updatedData) {
 
+            // Fix immediately visually dividing the price:
+            // Inject the recurrence_type if the original appointment had it, so the local state update doesn't lose it
+            if (appointment.recurrence_type && !updatedData.recurrence_type) {
+                updatedData.recurrence_type = appointment.recurrence_type;
+            }
+
             // Check for date/time changes and trigger webhook
             const oldTime = new Date(appointment.appointment_time).getTime();
             const newTime = newAppointmentTime.getTime();
@@ -4348,18 +4354,27 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             if (exists) {
                 return prev.map(app => app.id === updatedAppointment.id ? updatedAppointment : app);
             } else {
-                return [updatedAppointment, ...prev];
+                // If it was virtual, we remove the virtual row by forcefully refreshing 
+                // the daily appointments view (or just relying on the fact that virtual 
+                // has string "virtual-" which doesn't match the new UUID).
+                // Just add the real one to the list.
+                return [updatedAppointment, ...prev.filter(app => app.id !== editingAppointment?.id)];
             }
         });
+
         try {
             const sp = getSaoPauloTimeParts(new Date(updatedAppointment.appointment_time));
             const nextSelected = toSaoPauloUTC(sp.year, sp.month, sp.date, 12);
             setSelectedAdminDate(nextSelected);
         } catch { }
+
         if (onDataChanged) {
             onDataChanged();
         }
         handleCloseEditModal();
+
+        // Quick trigger re-render hack if virtual -> real transition happens caching issues
+        setRefreshKey(Date.now());
     };
     const handleOpenAddModal = () => {
         setIsAddModalOpen(true);
