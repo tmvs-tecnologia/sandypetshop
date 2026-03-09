@@ -4464,6 +4464,19 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     }, [appointments, searchTerm]);
 
     const dailyAppointments = useMemo(() => {
+        const getWeek = (date: Date) => {
+            const spParts = getSaoPauloTimeParts(date);
+            const d = new Date(Date.UTC(spParts.year, spParts.month, spParts.date));
+            const day = d.getUTCDay(); // 0 is Sunday
+            // Retorna o timestamp do domingo anterior (início da semana)
+            return new Date(d.getTime() - day * 24 * 60 * 60 * 1000).getTime();
+        };
+
+        const adminWeek = getWeek(selectedAdminDate);
+        const adminDateParts = getSaoPauloTimeParts(selectedAdminDate);
+        const adminMonth = `${adminDateParts.year}-${adminDateParts.month}`;
+        const selectedDayOfMonth = adminDateParts.date;
+
         // 1. Filtrar agendamentos reais do dia e injetar dados do mensalista (se for o caso)
         const realAppointments = filteredAppointments
             .filter(app => isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate))
@@ -4480,67 +4493,50 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                         recurrence_type: parentClient.recurrence_type,
                         pet_photo_url: app.pet_photo_url || parentClient.pet_photo_url,
                         condominium: app.condominium || parentClient.condominium,
-                        // Fix for the UI bug: Ensure EditAppointmentModal uses this real price, not the virtual one
                     };
                 }
                 return app;
             });
 
         // 2. Gerar agendamentos virtuais para mensalistas
-        const dateParts = getSaoPauloTimeParts(selectedAdminDate);
-        const selectedDayOfMonth = dateParts.date;
-
         const virtualAppointments = (monthlyClients || []).filter(client => {
-            // Verificar se o cliente deve ter agendamento hoje
             let shouldHaveAppointment = false;
-
-            // Converter recurrence_day para número de forma segura
             const recurrenceDay = Number(client.recurrence_day);
-            const currentDayISO = dateParts.day === 0 ? 7 : dateParts.day;
+            const currentDayISO = adminDateParts.day === 0 ? 7 : adminDateParts.day;
 
             if (client.recurrence_type === 'weekly') {
                 shouldHaveAppointment = recurrenceDay === currentDayISO;
             } else if (client.recurrence_type === 'bi-weekly') {
-                // Simplificação para MVP: Exibe em todas as semanas correspondentes ao dia
-                // Idealmente, checar paridade da semana ou data de início
-                shouldHaveAppointment = recurrenceDay === currentDayISO;
+                const sameDayOfWeek = recurrenceDay === currentDayISO;
+                if (sameDayOfWeek) {
+                    // Cálculo de paridade de 14 dias baseado na data de criação (created_at)
+                    const refDate = client.created_at ? new Date(client.created_at) : new Date(2025, 0, 1);
+                    const refWeek = getWeek(refDate);
+                    const weeksDiff = Math.abs(Math.round((adminWeek - refWeek) / (7 * 24 * 60 * 60 * 1000)));
+                    shouldHaveAppointment = (weeksDiff % 2 === 0);
+                }
             } else if (client.recurrence_type === 'monthly') {
                 shouldHaveAppointment = recurrenceDay === selectedDayOfMonth;
             }
 
             if (!shouldHaveAppointment) return false;
 
-            // FIX: Verificar se o cliente é do tipo 'Banho & Tosa' ou 'Pet Móvel'
-            // Se for Pet Móvel e estamos na view de Banho & Tosa, devemos mostrar?
-            // Sim, a view 'AppointmentsView' (Banho & Tosa) agrega tudo hoje.
-            // Mas se o serviço for EXCLUSIVAMENTE Pet Móvel, talvez devesse aparecer lá.
-            // Pela descrição do usuário, ele quer ver na tela de Banho & Tosa.
-
             // Verificar se JÁ EXISTE agendamento real para este cliente neste ciclo (semana/mês)
-            // Importante: comparar monthly_client_id E ciclo
-            const adminDateParts = getSaoPauloTimeParts(selectedAdminDate);
-            const getWeek = (date: Date) => {
-                const spParts = getSaoPauloTimeParts(date);
-                const d = new Date(Date.UTC(spParts.year, spParts.month, spParts.date));
-                const day = d.getUTCDay();
-                return new Date(d.getTime() - day * 24 * 60 * 60 * 1000).getTime();
-            };
-            const adminWeek = getWeek(selectedAdminDate);
-            const adminMonth = `${adminDateParts.year}-${adminDateParts.month}`;
-
             const hasReal = filteredAppointments.some(app => {
                 const isMatchId = app.monthly_client_id === client.id;
-                const isMatchName = !app.monthly_client_id && app.pet_name === client.pet_name && app.owner_name === client.owner_name && app.service === client.service;
+                const isMatchName = !app.monthly_client_id &&
+                    app.pet_name?.trim().toLowerCase() === client.pet_name?.trim().toLowerCase() &&
+                    app.owner_name?.trim().toLowerCase() === client.owner_name?.trim().toLowerCase();
 
                 if (!isMatchId && !isMatchName) return false;
 
                 const appDate = new Date(app.appointment_time);
 
                 if (client.recurrence_type === 'weekly' || client.recurrence_type === 'bi-weekly') {
-                    // Consider it fulfilled if there's any appointment for this client in the SAME week
+                    // Considerar preenchido se houver qualquer agendamento na MESMA semana
                     return getWeek(appDate) === adminWeek;
                 } else if (client.recurrence_type === 'monthly') {
-                    // Consider it fulfilled if there's any appointment for this client in the SAME month
+                    // Considerar preenchido se houver qualquer agendamento no MESMO mês
                     const parts = getSaoPauloTimeParts(appDate);
                     return `${parts.year}-${parts.month}` === adminMonth;
                 }
@@ -4550,7 +4546,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
 
             if (hasReal) return false;
 
-            // Verificar se o termo de busca exclui este cliente
+            // Filtro de busca
             if (searchTerm) {
                 const searchLower = searchTerm.toLowerCase();
                 const match =
@@ -4562,17 +4558,10 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
 
             return true;
         }).map(client => {
-            // Construir a data correta no fuso de SP
-            // recurrence_time vem como inteiro (ex: 11 para 11:00)
             const hour = Number(client.recurrence_time);
+            const appointmentTime = toSaoPauloUTC(adminDateParts.year, adminDateParts.month, adminDateParts.date, hour);
 
-            // Criar data UTC que representa esse horário em SP
-            // toSaoPauloUTC(2026, 2, 3, 11) -> 2026-03-03T14:00:00Z (que é 11:00 SP)
-            const appointmentTime = toSaoPauloUTC(dateParts.year, dateParts.month, dateParts.date, hour);
-
-            // Ajustar o preço com base na recorrência (preço mensal total -> preço por sessão)
             let sessionPrice = Number(client.price) || 0;
-
             if (client.recurrence_type === 'weekly' || client.recurrence_type === 'bi-weekly') {
                 const weightKey = getWeightKeyFromLabel(client.weight);
                 const serviceType = inferServiceTypeFromLabel(client.service);
@@ -4591,7 +4580,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 pet_name: client.pet_name,
                 owner_name: client.owner_name,
                 service: client.service,
-                status: 'AGENDADO', // Status padrão para visualização
+                status: 'AGENDADO',
                 price: sessionPrice,
                 addons: [],
                 whatsapp: client.whatsapp,
@@ -4603,11 +4592,10 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 pet_photo_url: client.pet_photo_url,
                 recurrence_type: client.recurrence_type,
                 // @ts-ignore
-                is_virtual: true // Flag para indicar que é uma projeção
+                is_virtual: true
             } as AdminAppointment;
         });
 
-        // Combinar e ordenar por horário
         return [...realAppointments, ...virtualAppointments].sort((a, b) =>
             new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime()
         );
