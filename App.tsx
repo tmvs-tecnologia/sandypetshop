@@ -2625,7 +2625,28 @@ const HotelStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }> 
 };
 
 const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: () => void; onAppointmentUpdated: (updatedAppointment: AdminAppointment) => void; }> = ({ appointment, onClose, onAppointmentUpdated }) => {
-    const [formData, setFormData] = useState<Omit<AdminAppointment, 'id' | 'addons' | 'appointment_time'>>(appointment);
+
+    // Helper para calcular total de extras (replicado de AppointmentCard para consistência visual)
+    const calculateExtrasTotal = (es: any) => {
+        if (!es) return 0;
+        let total = 0;
+        if (es.pernoite?.enabled) total += Number(es.pernoite.value || 0);
+        if (es.adestrador?.enabled) total += Number(es.adestrador.value || 0);
+        if (es.despesa_medica?.enabled) total += Number(es.despesa_medica.value || 0);
+        if (es.penteado?.enabled) total += Number(es.penteado.value || 0);
+        if (es.desembolo?.enabled) total += Number(es.desembolo.value || 0);
+        if (es.transporte?.enabled) total += Number(es.transporte.value || 0);
+        if (es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
+        return total;
+    };
+
+    // O preço no banco pode ser "Base" (Total - Extras), mas queremos exibir/editar o "Total".
+    const initialPrice = Number(appointment.price || 0) + calculateExtrasTotal(appointment.extra_services);
+
+    const [formData, setFormData] = useState<Omit<AdminAppointment, 'id' | 'addons' | 'appointment_time'>>({
+        ...appointment,
+        price: initialPrice
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const initialSaoPauloDate = getSaoPauloTimeParts(new Date(appointment.appointment_time));
@@ -2724,13 +2745,18 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
         const { pet_name, owner_name, whatsapp, service, weight, price, status } = formData;
         const normalizedService = service === 'Creche Pet' ? visitDaycareLabel : (service === 'Hotel Pet' ? visitHotelLabel : service);
 
+        // Ao salvar, subtraímos os extras novamente para manter a consistência com o AppointmentCard que soma na visualização.
+        // Assim, o usuário edita o Total, mas o banco guarda o Base.
+        const extrasTotal = calculateExtrasTotal(appointment.extra_services);
+        const priceToSave = Number(price) - extrasTotal;
+
         const updatePayload = {
             pet_name,
             owner_name,
             whatsapp,
             service: normalizedService,
             weight,
-            price: Number(price),
+            price: priceToSave,
             status,
             appointment_time: newAppointmentTime.toISOString(),
             // Preservar campos opcionais importantes se existirem
@@ -4389,7 +4415,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         console.log('handleConfirmCompletion called with responsible:', responsible);
         console.log('Current confirmingCompletionId:', confirmingCompletionId);
         console.log('Current confirmingCompletionPrice:', confirmingCompletionPrice);
-        
+
         if (confirmingCompletionId) {
             console.log('Calling handleUpdateStatus...');
             handleUpdateStatus(confirmingCompletionId, 'CONCLUÍDO', responsible, confirmingCompletionPrice);
@@ -4420,8 +4446,27 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     }, [appointments, searchTerm]);
 
     const dailyAppointments = useMemo(() => {
-        // 1. Filtrar agendamentos reais do dia
-        const realAppointments = filteredAppointments.filter(app => isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate));
+        // 1. Filtrar agendamentos reais do dia e injetar dados do mensalista (se for o caso)
+        const realAppointments = filteredAppointments
+            .filter(app => isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate))
+            .map(app => {
+                const parentClient = (monthlyClients || []).find(c =>
+                    c.id === app.monthly_client_id ||
+                    (app.pet_name === c.pet_name && app.owner_name === c.owner_name && app.service === c.service)
+                );
+
+                if (parentClient) {
+                    return {
+                        ...app,
+                        monthly_client_id: parentClient.id,
+                        recurrence_type: parentClient.recurrence_type,
+                        pet_photo_url: app.pet_photo_url || parentClient.pet_photo_url,
+                        condominium: app.condominium || parentClient.condominium,
+                        // Fix for the UI bug: Ensure EditAppointmentModal uses this real price, not the virtual one
+                    };
+                }
+                return app;
+            });
 
         // 2. Gerar agendamentos virtuais para mensalistas
         const dateParts = getSaoPauloTimeParts(selectedAdminDate);
@@ -4466,7 +4511,10 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             const adminMonth = `${adminDateParts.year}-${adminDateParts.month}`;
 
             const hasReal = appointments.some(app => {
-                if (app.monthly_client_id !== client.id) return false;
+                const isMatchId = app.monthly_client_id === client.id;
+                const isMatchName = !app.monthly_client_id && app.pet_name === client.pet_name && app.owner_name === client.owner_name && app.service === client.service;
+
+                if (!isMatchId && !isMatchName) return false;
 
                 const appDate = new Date(app.appointment_time);
 
@@ -4506,10 +4554,17 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
 
             // Ajustar o preço com base na recorrência (preço mensal total -> preço por sessão)
             let sessionPrice = Number(client.price) || 0;
-            if (client.recurrence_type === 'weekly') {
-                sessionPrice = sessionPrice / 4;
-            } else if (client.recurrence_type === 'bi-weekly') {
-                sessionPrice = sessionPrice / 2;
+
+            if (client.recurrence_type === 'weekly' || client.recurrence_type === 'bi-weekly') {
+                const weightKey = getWeightKeyFromLabel(client.weight);
+                const serviceType = inferServiceTypeFromLabel(client.service);
+                const avulsoPrice = getUnitPriceByType(weightKey, serviceType);
+
+                if (avulsoPrice > 0) {
+                    sessionPrice = avulsoPrice;
+                } else {
+                    sessionPrice = client.recurrence_type === 'weekly' ? sessionPrice / 4 : sessionPrice / 2;
+                }
             }
 
             return {
@@ -4558,7 +4613,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         console.log('handleUpdateStatus STARTED with id:', id, 'status:', newStatus);
         // Look in both real and virtual appointments (dailyAppointments contains both for the selected day)
         const appointmentToUpdate = appointments.find(app => app.id === id) || dailyAppointments.find(app => app.id === id);
-        
+
         if (!appointmentToUpdate) {
             console.error('handleUpdateStatus: Appointment not found with id', id);
             return;
@@ -4569,7 +4624,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         const isVirtual = id.startsWith('virtual-') || appointmentToUpdate.is_virtual;
         console.log('handleUpdateStatus - isVirtual:', isVirtual, 'id:', id);
         let actualId = id;
-        
+
         // If it's a virtual appointment, we need to create a real appointment first
         if (isVirtual && appointmentToUpdate.monthly_client_id) {
             console.log('Converting virtual appointment to real one...');
@@ -4577,9 +4632,9 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             const isPetMovel = appointmentToUpdate.service?.toLowerCase().includes('móvel') || appointmentToUpdate.service?.toLowerCase().includes('mobile');
             const tableToInsert = isPetMovel ? 'pet_movel_appointments' : 'appointments';
             console.log('Target table:', tableToInsert);
-            
+
             console.log('appointmentToUpdate:', appointmentToUpdate);
-            
+
             const insertPayload: any = {
                 appointment_time: appointmentToUpdate.appointment_time,
                 pet_name: appointmentToUpdate.pet_name,
@@ -4600,10 +4655,10 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 insertPayload.pet_photo_url = appointmentToUpdate.pet_photo_url || '';
             }
             console.log('Insert payload:', insertPayload);
-            
+
             // Insert the new appointment
             const { data, error } = await supabase.from(tableToInsert).insert(insertPayload).select();
-            
+
             console.log('Insert result - data:', data, 'error:', error);
 
             if (error) {
@@ -4612,7 +4667,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 setUpdatingStatusId(null);
                 return;
             }
-            
+
             if (!data || data.length === 0) {
                 console.error('Insert succeeded but no data returned');
                 alert('Erro interno ao criar agendamento.');
@@ -4939,7 +4994,28 @@ const EditPetMovelAppointmentModal: React.FC<{
     onClose: () => void;
     onAppointmentUpdated: (updatedAppointment: PetMovelAppointment) => void;
 }> = ({ appointment, onClose, onAppointmentUpdated }) => {
-    const [formData, setFormData] = useState<Omit<PetMovelAppointment, 'id' | 'addons' | 'appointment_time' | 'monthly_client_id'>>(appointment);
+
+    // Helper para calcular total de extras (replicado de AppointmentCard para consistência visual)
+    const calculateExtrasTotal = (es: any) => {
+        if (!es) return 0;
+        let total = 0;
+        if (es.pernoite?.enabled) total += Number(es.pernoite.value || 0);
+        if (es.adestrador?.enabled) total += Number(es.adestrador.value || 0);
+        if (es.despesa_medica?.enabled) total += Number(es.despesa_medica.value || 0);
+        if (es.penteado?.enabled) total += Number(es.penteado.value || 0);
+        if (es.desembolo?.enabled) total += Number(es.desembolo.value || 0);
+        if (es.transporte?.enabled) total += Number(es.transporte.value || 0);
+        if (es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
+        return total;
+    };
+
+    // O preço no banco pode ser "Base" (Total - Extras), mas queremos exibir/editar o "Total".
+    const initialPrice = Number(appointment.price || 0) + calculateExtrasTotal(appointment.extra_services);
+
+    const [formData, setFormData] = useState<Omit<PetMovelAppointment, 'id' | 'addons' | 'appointment_time' | 'monthly_client_id'>>({
+        ...appointment,
+        price: initialPrice
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const initialSaoPauloDate = getSaoPauloTimeParts(new Date(appointment.appointment_time));
@@ -4963,13 +5039,18 @@ const EditPetMovelAppointmentModal: React.FC<{
 
         const { pet_name, owner_name, whatsapp, service, weight, price, status, owner_address, condominium } = formData;
 
+        // Ao salvar, subtraímos os extras novamente para manter a consistência com o AppointmentCard que soma na visualização.
+        // Assim, o usuário edita o Total, mas o banco guarda o Base.
+        const extrasTotal = calculateExtrasTotal(appointment.extra_services);
+        const priceToSave = Number(price) - extrasTotal;
+
         const updatePayload = {
             pet_name,
             owner_name,
             whatsapp,
             service,
             weight,
-            price: Number(price),
+            price: priceToSave,
             status,
             owner_address,
             condominium,

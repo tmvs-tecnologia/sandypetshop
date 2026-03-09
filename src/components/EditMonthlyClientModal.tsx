@@ -76,24 +76,10 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                     }
                     extra = extra || {};
 
-                    // Derive base price by subtracting active extras from stored total price
-                    const IGNORED_EXTRAS_KEYS = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
-                    let existingExtrasTotal = 0;
-                    if (extra && typeof extra === 'object') {
-                        Object.entries(extra).forEach(([k, v]: [string, any]) => {
-                            if (IGNORED_EXTRAS_KEYS.includes(k)) return;
-                            if (v?.enabled) {
-                                if (k === 'dias_extras' && v.quantity) {
-                                    existingExtrasTotal += (Number(v.value) || 0) * Number(v.quantity);
-                                } else {
-                                    existingExtrasTotal += Number(v.value) || 0;
-                                }
-                            }
-                        });
-                    }
-                    const basePrice = Math.max(0, Number(data.price || 0) - existingExtrasTotal);
+                    // Derive base price - REMOVED: Now showing full price
+                    // const basePrice = Math.max(0, Number(data.price || 0) - existingExtrasTotal);
 
-                    setFormData({ ...data, extra_services: extra, price: basePrice });
+                    setFormData({ ...data, extra_services: extra, price: data.price });
                 }
             } catch (err: any) {
                 console.error('Erro ao carregar cliente:', err);
@@ -293,22 +279,8 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
             }
             payload.extra_services = cleanExtras;
 
-            // Recalculate price = user-entered base value + extras total
-            const IGNORED_EXTRAS_KEYS = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
-            let extrasTotal = 0;
-            Object.entries(cleanExtras).forEach(([k, v]: [string, any]) => {
-                if (IGNORED_EXTRAS_KEYS.includes(k)) return;
-                if (v.enabled) {
-                    if (k === 'dias_extras' && v.quantity) {
-                        extrasTotal += (Number(v.value) || 0) * Number(v.quantity);
-                    } else {
-                        extrasTotal += Number(v.value) || 0;
-                    }
-                }
-            });
-            // The price field in the form shows the base price (without extras).
-            // We save the total (base + extras) to the DB.
-            payload.price = Number(payload.price) + extrasTotal;
+            // Recalculate price logic removed: Price input is now Total Price
+            // payload.price is already the total value entered by user
 
             // Handle dates / nulls
             if (!payload.payment_due_date) (payload as any).payment_due_date = null;
@@ -446,7 +418,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                                         </Select>
                                     </div>
                                     <div>
-                                        <Label htmlFor="price">Preço Base (R$)</Label>
+                                        <Label htmlFor="price">Preço Total (R$)</Label>
                                         <Input id="price" name="price" type="number" step="0.01" value={formData.price} onChange={handleInputChange} />
                                     </div>
                                     <div className="sm:col-span-2 lg:col-span-2">

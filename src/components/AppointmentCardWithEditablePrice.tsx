@@ -59,9 +59,28 @@ const getWeightKeyFromLabel = (label: string): PetWeight | null => {
     return keys.find(k => PET_WEIGHT_OPTIONS[k] === label) || null;
 };
 
+const calculateAvulsoPrice = (weightLabel: string, serviceLabel: string): number => {
+    const weightKey = getWeightKeyFromLabel(weightLabel);
+    if (!weightKey) return 0;
 
+    let total = 0;
+    const s = (serviceLabel || '').toLowerCase();
+    const hasBathTosa = s.includes('banho & tosa') || s.includes('banho e tosa');
+    const hasBath = s.includes('banho');
+    const hasTosa = s.includes('tosa');
 
-interface AppointmentCardProps {
+    const prices = SERVICE_PRICES[weightKey];
+    if (hasBathTosa) {
+        total = Number(prices[ServiceType.BATH] || 0) + Number(prices[ServiceType.GROOMING_ONLY] || 0);
+    } else if (hasBath) {
+        total = Number(prices[ServiceType.BATH] || 0);
+    } else if (hasTosa) {
+        total = Number(prices[ServiceType.GROOMING_ONLY] || 0);
+    }
+    return total;
+};
+
+interface AppointmentCardWithEditablePriceProps {
     appointment: AdminAppointment;
     onEdit: (appointment: AdminAppointment) => void;
     onDelete: (appointment: AdminAppointment) => void;
@@ -70,9 +89,10 @@ interface AppointmentCardProps {
     onDeleteObservation: (appointment: AdminAppointment) => void;
     isUpdating?: boolean;
     isDeleting?: boolean;
+    onPriceChange?: (id: string, newPrice: number) => void; // Nova prop para lidar com mudança de preço
 }
 
-const AppointmentCard: React.FC<AppointmentCardProps> = ({
+const AppointmentCardWithEditablePrice: React.FC<AppointmentCardWithEditablePriceProps> = ({
     appointment,
     onEdit,
     onDelete,
@@ -80,7 +100,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     onOpenActionMenu,
     onDeleteObservation,
     isUpdating = false,
-    isDeleting = false
+    isDeleting = false,
+    onPriceChange
 }) => {
     const {
         id,
@@ -103,14 +124,13 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
     const isCompleted = status === 'CONCLUÍDO';
 
-    // Price Calculation
-    const extrasTotal = (() => {
+    // Estado para edição de preço
+    const [isEditingPrice, setIsEditingPrice] = useState(false);
+    
+    // Calcula o preço inicial (Total = Base + Extras)
+    const initialExtrasTotal = (() => {
         if (!es) return 0;
         let total = 0;
-        // Ignored base services in extras calculation
-        // if (es.banho_tosa?.enabled) total += Number(es.banho_tosa.value || 0);
-        // if (es.so_banho?.enabled) total += Number(es.so_banho.value || 0);
-
         if (es.pernoite?.enabled) total += Number(es.pernoite.value || 0);
         if (es.adestrador?.enabled) total += Number(es.adestrador.value || 0);
         if (es.despesa_medica?.enabled) total += Number(es.despesa_medica.value || 0);
@@ -120,6 +140,11 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         if (es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
         return total;
     })();
+
+    const initialTotal = Number(price || 0) + initialExtrasTotal;
+    
+    const [currentPrice, setCurrentPrice] = useState(initialTotal);
+    const [priceInputValue, setPriceInputValue] = useState(initialTotal.toString());
 
     // Helper to format extra name
     const formatExtraName = (key: string) => {
@@ -146,9 +171,60 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
     const hasExtras = activeExtras.length > 0;
 
-    const basePrice = Number(price || 0);
+    // Price Calculation (apenas recalculando extras para exibição se mudar props, mas currentPrice agora é TOTAL)
+    const extrasTotal = initialExtrasTotal; // Mantemos a referência para consistência
+    
+    // NÃO somamos mais extrasTotal ao currentPrice para display, pois currentPrice JÁ É O TOTAL editado pelo usuário
+    const displayPrice: number = currentPrice; 
 
-    const displayPrice: number = basePrice + extrasTotal;
+    // Funções para edição de preço
+    const handlePriceEdit = () => {
+        setIsEditingPrice(true);
+        setPriceInputValue(currentPrice.toString());
+    };
+
+    const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setPriceInputValue(value);
+        
+        const numericValue = parseFloat(value);
+        if (!isNaN(numericValue) && numericValue >= 0) {
+            setCurrentPrice(numericValue);
+        }
+    };
+
+    const handlePriceBlur = () => {
+        setIsEditingPrice(false);
+        const numericValue = parseFloat(priceInputValue);
+        let finalPrice = 0;
+        
+        if (isNaN(numericValue) || numericValue < 0) {
+            finalPrice = 0;
+        } else {
+            finalPrice = numericValue;
+        }
+        
+        setCurrentPrice(finalPrice);
+        setPriceInputValue(finalPrice.toString());
+        
+        // Notificar o componente pai sobre a mudança
+        // IMPORTANTE: O pai espera o preço BASE para salvar no banco? 
+        // Se a lógica do sistema é salvar BASE no banco, devemos subtrair os extras antes de enviar.
+        if (onPriceChange) {
+            const priceToSave = Math.max(0, finalPrice - extrasTotal);
+            onPriceChange(id, priceToSave);
+        }
+    };
+
+    const handlePriceKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handlePriceBlur();
+        }
+        if (e.key === 'Escape') {
+            setIsEditingPrice(false);
+            setPriceInputValue(currentPrice.toString());
+        }
+    };
 
     const whatsappHref = `https://wa.me/55${whatsapp.replace(/\D/g, '')}`;
 
@@ -216,17 +292,40 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                         </div>
                     </div>
 
-                    {/* Price Tag */}
+                    {/* Price Tag - AGORA EDITÁVEL */}
                     <div className="text-right flex flex-col items-end">
-                        <div className="font-outfit font-bold text-lg text-gray-900 whitespace-nowrap">
-                            R$ {displayPrice.toFixed(2).replace('.', ',')}
-                        </div>
-                        {hasExtras && activeExtras.map((extra, idx) => (
-                            <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 mt-0.5">
-                                <SparklesIcon className="w-3 h-3 mr-1" />
-                                {extra}
-                            </span>
-                        ))}
+                        {isEditingPrice ? (
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-900">R$</span>
+                                <input
+                                    type="number"
+                                    value={priceInputValue}
+                                    onChange={handlePriceChange}
+                                    onBlur={handlePriceBlur}
+                                    onKeyDown={handlePriceKeyPress}
+                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-lg font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                    autoFocus
+                                    step="0.01"
+                                    min="0"
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-end">
+                                <div 
+                                    className="font-outfit font-bold text-lg text-gray-900 whitespace-nowrap cursor-pointer hover:text-pink-600 transition-colors"
+                                    onClick={handlePriceEdit}
+                                    title="Clique para editar o preço"
+                                >
+                                    R$ {displayPrice.toFixed(2).replace('.', ',')}
+                                </div>
+                                {hasExtras && activeExtras.map((extra, idx) => (
+                                    <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 mt-0.5">
+                                        <SparklesIcon className="w-3 h-3 mr-1" />
+                                        {extra}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -378,4 +477,4 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     );
 };
 
-export default AppointmentCard;
+export default AppointmentCardWithEditablePrice;
