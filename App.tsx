@@ -13416,15 +13416,10 @@ const AdminDashboard: React.FC<{
                 const normalize = (arr: any[] | null | undefined): AdminAppointment[] => {
                     if (!arr) return [];
                     return arr.map((rec: any) => {
-                        let sessionPrice = rec.price ?? 0;
-                        const recurrenceType = rec.monthly_clients?.recurrence_type;
-
-                        // Ajustar o preço se for um agendamento real de um cliente mensalista
-                        if (recurrenceType === 'weekly') {
-                            sessionPrice = sessionPrice / 4;
-                        } else if (recurrenceType === 'bi-weekly') {
-                            sessionPrice = sessionPrice / 2;
-                        }
+                        // Use the price directly from DB — it is already the per-session price.
+                        // Do NOT divide by recurrence (weekly/bi-weekly); that division was incorrect
+                        // and was causing the edited price to be overwritten on every fetch.
+                        const sessionPrice = Number(rec.price ?? 0);
 
                         return {
                             id: rec.id,
@@ -13456,7 +13451,15 @@ const AdminDashboard: React.FC<{
                     ...normalize(filteredB),
                 ].sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
 
-                setAppointments(combined);
+                setAppointments(prev => {
+                    // Merge: use fetched data as the base, but preserve any appointments
+                    // in current state that are NOT yet in the DB result (e.g. just inserted)
+                    const fetchedIds = new Set(combined.map(a => a.id));
+                    const localOnly = prev.filter(a => !fetchedIds.has(a.id));
+                    return [...combined, ...localOnly].sort((a, b) =>
+                        new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime()
+                    );
+                });
             } catch (err) {
                 console.warn('Falha ao recarregar agendamentos após alteração de dados:', err);
             }
