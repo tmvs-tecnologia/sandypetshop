@@ -4528,7 +4528,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             const adminWeek = getWeek(selectedAdminDate);
             const adminMonth = `${adminDateParts.year}-${adminDateParts.month}`;
 
-            const hasReal = appointments.some(app => {
+            const hasReal = filteredAppointments.some(app => {
                 const isMatchId = app.monthly_client_id === client.id;
                 const isMatchName = !app.monthly_client_id && app.pet_name === client.pet_name && app.owner_name === client.owner_name && app.service === client.service;
 
