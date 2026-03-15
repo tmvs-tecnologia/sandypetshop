@@ -267,6 +267,101 @@ const isSaoPauloWeekend = (date: Date): boolean => {
     return day === 0 || day === 6;
 };
 
+/**
+ * Returns the timestamp of the first day (Sunday) of the week for a given date, 
+ * considering São Paulo timezone.
+ */
+const getSaoPauloWeekStart = (date: Date): number => {
+    const spParts = getSaoPauloTimeParts(date);
+    // Use midday to avoid any DST transition issues when calculating week start
+    const d = new Date(Date.UTC(spParts.year, spParts.month, spParts.date, 12, 0, 0));
+    const day = d.getUTCDay(); // 0 is Sunday
+    // Go back to Sunday 12:00:00 UTC
+    return new Date(d.getTime() - day * 24 * 60 * 60 * 1000).getTime();
+};
+
+/**
+ * Generates virtual appointments for mensualists on a specific date, 
+ * avoiding duplicates if a real appointment already exists in the recurrence cycle.
+ */
+const getProjectedAppointments = (
+    targetDate: Date,
+    monthlyClients: MonthlyClient[],
+    realAppointments: AdminAppointment[]
+): AdminAppointment[] => {
+    const targetParts = getSaoPauloTimeParts(targetDate);
+    const targetWeekStart = getSaoPauloWeekStart(targetDate);
+    const targetMonthKey = `${targetParts.year}-${targetParts.month}`;
+    const targetDayOfMonth = targetParts.date;
+
+    return (monthlyClients || []).filter(client => {
+        let shouldHaveAppointment = false;
+        const recurrenceDay = Number(client.recurrence_day);
+        const currentDayISO = targetParts.day === 0 ? 7 : targetParts.day;
+
+        if (client.recurrence_type === 'weekly') {
+            shouldHaveAppointment = recurrenceDay === currentDayISO;
+        } else if (client.recurrence_type === 'bi-weekly') {
+            const sameDayOfWeek = recurrenceDay === currentDayISO;
+            if (sameDayOfWeek) {
+                const refDate = client.created_at ? new Date(client.created_at) : new Date(2025, 0, 1);
+                const refWeek = getSaoPauloWeekStart(refDate);
+                // Calculate difference in weeks using integer day math to avoid rounding weirdness
+                const diffDays = Math.round((targetWeekStart - refWeek) / (24 * 60 * 60 * 1000));
+                const weeksDiff = Math.floor(diffDays / 7);
+                shouldHaveAppointment = (weeksDiff % 2 === 0);
+            }
+        } else if (client.recurrence_type === 'monthly') {
+            shouldHaveAppointment = recurrenceDay === targetDayOfMonth;
+        }
+
+        if (!shouldHaveAppointment) return false;
+
+        // Check if a real appointment ALREADY EXISTS for this client in this cycle
+        const hasReal = realAppointments.some(app => {
+            const isMatchId = app.monthly_client_id === client.id;
+            const isMatchName = !app.monthly_client_id &&
+                app.pet_name?.trim().toLowerCase() === client.pet_name?.trim().toLowerCase() &&
+                app.owner_name?.trim().toLowerCase() === client.owner_name?.trim().toLowerCase();
+
+            if (!isMatchId && !isMatchName) return false;
+
+            const appDate = new Date(app.appointment_time);
+            if (client.recurrence_type === 'weekly' || client.recurrence_type === 'bi-weekly') {
+                return getSaoPauloWeekStart(appDate) === targetWeekStart;
+            } else if (client.recurrence_type === 'monthly') {
+                const parts = getSaoPauloTimeParts(appDate);
+                return `${parts.year}-${parts.month}` === targetMonthKey;
+            }
+            return isSameSaoPauloDay(appDate, targetDate);
+        });
+
+        return !hasReal;
+    }).map(client => {
+        const hour = Number(client.recurrence_time);
+        const appointmentTime = toSaoPauloUTC(targetParts.year, targetParts.month, targetParts.date, hour);
+
+        return {
+            id: `virtual-${client.id}-${targetDate.getTime()}`,
+            appointment_time: appointmentTime.toISOString(),
+            pet_name: client.pet_name,
+            owner_name: client.owner_name,
+            service: client.service,
+            status: 'AGENDADO',
+            price: Number(client.price) || 0,
+            addons: [],
+            whatsapp: client.whatsapp || '',
+            weight: client.weight || 'N/A',
+            monthly_client_id: client.id,
+            is_virtual: true,
+            recurrence_type: client.recurrence_type,
+            pet_photo_url: client.pet_photo_url,
+            condominium: client.condominium,
+        } as AdminAppointment;
+    });
+};
+
+
 const formatWhatsapp = (value: string): string => {
     let digits = value.replace(/\D/g, '');
     if (digits.startsWith('55')) {
@@ -3007,12 +3102,37 @@ const AdminAddAppointmentModal: React.FC<{
         }
     }, [isOpen]);
 
-    // Fetch appointments for time slot validation
+    // Fetch appointments for time slot validation - Optimized to fetch only relevant date
     useEffect(() => {
         const fetchAppointments = async () => {
+            if (!selectedDate) return;
+
+            // Define start and end of the selected day in UTC to match DB comparison
+            // However, Supabase filter on timestamptz works best with ISO strings range
+            // We need to cover the full day in local time converted to UTC.
+            // Simplest way: Fetch a slightly larger range (e.g. -1 day to +1 day) to be safe with timezones
+            // or just use the whole month if we want to cache? 
+            // For now, let's fetch the specific day.
+            
+            const startOfDay = new Date(selectedDate);
+            startOfDay.setHours(0, 0, 0, 0);
+            
+            const endOfDay = new Date(selectedDate);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            // Add buffer for timezone differences (UTC-3 vs UTC)
+            // It's safer to fetch the whole surrounding 24h window
+            const queryStart = new Date(startOfDay);
+            queryStart.setHours(queryStart.getHours() - 4); // Buffer
+            
+            const queryEnd = new Date(endOfDay);
+            queryEnd.setHours(queryEnd.getHours() + 4); // Buffer
+
             const { data: regularData, error: regularError } = await supabase
                 .from('appointments')
-                .select('*');
+                .select('*')
+                .gte('appointment_time', queryStart.toISOString())
+                .lte('appointment_time', queryEnd.toISOString());
 
             if (regularError) {
                 console.error('Error fetching appointments:', regularError);
@@ -3021,7 +3141,9 @@ const AdminAddAppointmentModal: React.FC<{
 
             const { data: petMovelData, error: petMovelError } = await supabase
                 .from('pet_movel_appointments')
-                .select('*');
+                .select('*')
+                .gte('appointment_time', queryStart.toISOString())
+                .lte('appointment_time', queryEnd.toISOString());
 
             if (petMovelError) {
                 console.error('Error fetching pet_movel_appointments:', petMovelError);
@@ -3030,50 +3152,77 @@ const AdminAddAppointmentModal: React.FC<{
 
             const combinedData = [...(regularData || []), ...(petMovelData || [])];
 
-            if (combinedData.length > 0) {
-                const allAppointments: Appointment[] = combinedData
-                    .map((dbRecord: any) => {
-                        let serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === dbRecord.service) as ServiceType | undefined;
+            const { data: mcData, error: mcError } = await supabase
+                .from('monthly_clients')
+                .select('*');
 
-                        if (!serviceKey && dbRecord.service) {
-                            const s = String(dbRecord.service).toLowerCase();
-                            // Try to map variations
-                            if (s.includes('movel') || s.includes('móvel')) {
-                                if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
-                                else if (s.includes('banho')) serviceKey = ServiceType.PET_MOBILE_BATH;
-                                else if (s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
-                            } else {
-                                if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
-                                else if (s.includes('banho')) serviceKey = ServiceType.BATH;
-                                else if (s.includes('tosa')) serviceKey = ServiceType.GROOMING_ONLY;
-                                else if (s.includes('creche')) serviceKey = ServiceType.VISIT_DAYCARE;
-                                else if (s.includes('hotel')) serviceKey = ServiceType.VISIT_HOTEL;
-                            }
-                        }
-
-                        if (!serviceKey) {
-                            serviceKey = ServiceType.UNKNOWN;
-                        }
-
-                        return {
-                            id: dbRecord.id,
-                            petName: dbRecord.pet_name,
-                            ownerName: dbRecord.owner_name,
-                            whatsapp: dbRecord.whatsapp,
-                            service: serviceKey,
-                            appointmentTime: new Date(dbRecord.appointment_time),
-                        };
-                    })
-                    .filter(Boolean) as Appointment[];
-
-                setAppointments(allAppointments);
+            if (mcError) {
+                console.error('Error fetching monthly_clients:', mcError);
             }
+
+            const allFetched: Appointment[] = (combinedData || [])
+                .map((dbRecord: any) => {
+                    let serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === dbRecord.service) as ServiceType | undefined;
+
+                    if (!serviceKey && dbRecord.service) {
+                        const s = String(dbRecord.service).toLowerCase();
+                        if (s.includes('movel') || s.includes('móvel')) {
+                            if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
+                            else if (s.includes('banho')) serviceKey = ServiceType.PET_MOBILE_BATH;
+                            else if (s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
+                        } else {
+                            if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
+                            else if (s.includes('banho')) serviceKey = ServiceType.BATH;
+                            else if (s.includes('tosa')) serviceKey = ServiceType.GROOMING_ONLY;
+                            else if (s.includes('creche')) serviceKey = ServiceType.VISIT_DAYCARE;
+                            else if (s.includes('hotel')) serviceKey = ServiceType.VISIT_HOTEL;
+                        }
+                    }
+
+                    if (!serviceKey) serviceKey = ServiceType.UNKNOWN;
+
+                    let dateStr = dbRecord.appointment_time;
+                    if (dateStr && typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+                        dateStr += 'Z';
+                    }
+
+                    return {
+                        id: dbRecord.id,
+                        petName: dbRecord.pet_name,
+                        ownerName: dbRecord.owner_name,
+                        whatsapp: dbRecord.whatsapp,
+                        service: serviceKey,
+                        appointmentTime: new Date(dateStr),
+                        status: dbRecord.status,
+                    };
+                })
+                .filter(Boolean) as Appointment[];
+
+            const projected = getProjectedAppointments(
+                selectedDate,
+                mcData || [],
+                allFetched.map(a => ({
+                    ...a,
+                    appointment_time: a.appointmentTime.toISOString(),
+                    pet_name: a.petName,
+                    owner_name: a.ownerName,
+                } as any as AdminAppointment))
+            ).map(v => ({
+                id: v.id,
+                petName: v.pet_name,
+                ownerName: v.owner_name,
+                whatsapp: v.whatsapp,
+                service: v.service,
+                appointmentTime: new Date(v.appointment_time),
+                status: v.status,
+                monthly_client_id: v.monthly_client_id,
+            }) as Appointment);
+
+            setAppointments([...allFetched, ...projected]);
         };
 
-        if (isOpen) {
-            fetchAppointments();
-        }
-    }, [isOpen]);
+        fetchAppointments();
+    }, [isOpen, selectedDate]); // Trigger when modal opens or date changes
 
     // State to store availability counts for the selected date
     // const [availabilityCounts, setAvailabilityCounts] = useState<Record<number, number>>({});
@@ -3251,82 +3400,64 @@ const AdminAddAppointmentModal: React.FC<{
         // All appointments go to the same table
         const targetTable = 'appointments';
 
-        // Capacity check com regra: Banho considera 1 slot consumido por Banho & Tosa do horário anterior
+        // Unified Capacity Check
         try {
-            if (selectedService === ServiceType.BATH) {
-                const { data: bathAtHour, error: bathErr } = await supabase
-                    .from(targetTable)
-                    .select('id')
-                    .eq('appointment_time', appointmentTime.toISOString())
-                    .eq('service', SERVICES[ServiceType.BATH].label);
-                if (bathErr) throw bathErr;
-                const prevHourTime = toSaoPauloUTC(year, month, day, selectedTime - 1);
-                const { data: bathGroomPrev, error: bgErr } = await supabase
-                    .from(targetTable)
-                    .select('id')
-                    .eq('appointment_time', prevHourTime.toISOString())
-                    .eq('service', SERVICES[ServiceType.BATH_AND_GROOMING].label);
-                if (bgErr) throw bgErr;
-                const total = (Array.isArray(bathAtHour) ? bathAtHour.length : 0) + (Array.isArray(bathGroomPrev) ? bathGroomPrev.length : 0);
-                if (total >= MAX_CAPACITY_PER_SLOT) {
-                    alert('Este horário está completo para Banho. Selecione outro horário.');
-                    setIsSubmitting(false);
-                    return;
-                }
-            } else if (selectedService === ServiceType.BATH_AND_GROOMING) {
-                const { data: bgtAtHour, error: bgtErr } = await supabase
-                    .from(targetTable)
-                    .select('id')
-                    .eq('appointment_time', appointmentTime.toISOString())
-                    .eq('service', SERVICES[ServiceType.BATH_AND_GROOMING].label);
-                if (bgtErr) throw bgtErr;
-                const count = Array.isArray(bgtAtHour) ? bgtAtHour.length : 0;
-                if (count >= MAX_CAPACITY_PER_SLOT) {
-                    alert('Este horário está completo para Banho & Tosa. Selecione outro horário.');
-                    setIsSubmitting(false);
-                    return;
-                }
-            } else {
-                const { data: existingAtTime, error: countError } = await supabase
-                    .from(targetTable)
-                    .select('id')
-                    .eq('appointment_time', appointmentTime.toISOString())
-                    .eq('service', SERVICES[selectedService].label);
-                if (countError) throw countError;
-                const count = Array.isArray(existingAtTime) ? existingAtTime.length : 0;
-                if (count >= MAX_CAPACITY_PER_SLOT) {
-                    alert('Este horário está completo. Selecione outro horário.');
-                    setIsSubmitting(false);
-                    return;
-                }
-            }
-        } catch (err) {
-            console.error('Erro ao validar capacidade do horário:', err);
-            alert('Não foi possível validar a disponibilidade deste horário. Tente outro horário.');
-            setIsSubmitting(false);
-            return;
-        }
-        if (isPetMovelSubmit) {
-            try {
-                const { data: monthlyBathAtTime, error: mbErr } = await supabase
-                    .from('appointments')
-                    .select('id')
-                    .eq('appointment_time', appointmentTime.toISOString())
-                    .eq('service', SERVICES[ServiceType.BATH].label)
-                    .not('monthly_client_id', 'is', null);
-                if (mbErr) throw mbErr;
-                const mbCount = Array.isArray(monthlyBathAtTime) ? monthlyBathAtTime.length : 0;
-                if (mbCount > 0) {
-                    alert('Horário indisponível para Pet Móvel devido a mensalistas de banho. Selecione outro horário.');
-                    setIsSubmitting(false);
-                    return;
-                }
-            } catch (error) {
-                console.error('Erro ao verificar mensalistas de banho:', error);
-                alert('Não foi possível verificar disponibilidade por mensalistas. Tente outro horário.');
+            // Re-fetch all appointments and monthly clients for current date to ensure fresh data
+            const startOfDay = new Date(selectedDate);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(selectedDate);
+            endOfDay.setHours(23, 59, 59, 999);
+            const queryStart = new Date(startOfDay); queryStart.setHours(queryStart.getHours() - 4);
+            const queryEnd = new Date(endOfDay); queryEnd.setHours(queryEnd.getHours() + 4);
+
+            const [{ data: regData }, { data: pmData }, { data: mcData }] = await Promise.all([
+                supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+                supabase.from('monthly_clients').select('*')
+            ]);
+
+            const allReal = [
+                ...(regData || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) })),
+                ...(pmData || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) }))
+            ].filter(appt => {
+                if (appt.status && (appt.status === 'Cancelado' || appt.status === 'CANCELADO')) return false;
+                return true;
+            });
+
+            const projected = getProjectedAppointments(
+                selectedDate,
+                mcData || [],
+                allReal.map(a => ({
+                    ...a,
+                    pet_name: a.pet_name,
+                    owner_name: a.owner_name,
+                    appointment_time: a.appointment_time || a.appointmentTime.toISOString(),
+                } as any as AdminAppointment))
+            );
+
+            const allExistingAtTime = [
+                ...allReal.filter(a => {
+                    const at = new Date(a.appointment_time);
+                    const { hour: ah } = getSaoPauloTimeParts(at);
+                    return isSameSaoPauloDay(at, selectedDate) && ah === selectedTime;
+                }),
+                ...projected.filter(p => {
+                    const at = new Date(p.appointment_time);
+                    const { hour: ph } = getSaoPauloTimeParts(at);
+                    return ph === selectedTime; // Projected are already for selectedDate
+                })
+            ];
+
+            if (allExistingAtTime.length >= MAX_CAPACITY_PER_SLOT) {
+                alert('Este horário já está ocupado (por um agendamento avulso ou mensalista). Por favor, selecione outro horário.');
                 setIsSubmitting(false);
                 return;
             }
+        } catch (error) {
+            console.error("Error during capacity check:", error);
+            alert("Erro ao verificar disponibilidade. Tente novamente.");
+            setIsSubmitting(false);
+            return;
         }
 
         const basePayload = {
@@ -4377,7 +4508,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         handleCloseEditModal();
 
         // Quick trigger re-render hack if virtual -> real transition happens caching issues
-        setRefreshKey(Date.now());
+        // Removed setRefreshKey as it was undefined. onDataChanged is already called above.
     };
     const handleOpenAddModal = () => {
         setIsAddModalOpen(true);
@@ -4464,19 +4595,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     }, [appointments, searchTerm]);
 
     const dailyAppointments = useMemo(() => {
-        const getWeek = (date: Date) => {
-            const spParts = getSaoPauloTimeParts(date);
-            const d = new Date(Date.UTC(spParts.year, spParts.month, spParts.date));
-            const day = d.getUTCDay(); // 0 is Sunday
-            // Retorna o timestamp do domingo anterior (início da semana)
-            return new Date(d.getTime() - day * 24 * 60 * 60 * 1000).getTime();
-        };
-
-        const adminWeek = getWeek(selectedAdminDate);
-        const adminDateParts = getSaoPauloTimeParts(selectedAdminDate);
-        const adminMonth = `${adminDateParts.year}-${adminDateParts.month}`;
-        const selectedDayOfMonth = adminDateParts.date;
-
         // 1. Filtrar agendamentos reais do dia e injetar dados do mensalista (se for o caso)
         const realAppointments = filteredAppointments
             .filter(app => isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate))
@@ -4498,108 +4616,26 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 return app;
             });
 
-        // 2. Gerar agendamentos virtuais para mensalistas
-        const virtualAppointments = (monthlyClients || []).filter(client => {
-            let shouldHaveAppointment = false;
-            const recurrenceDay = Number(client.recurrence_day);
-            const currentDayISO = adminDateParts.day === 0 ? 7 : adminDateParts.day;
+        // 2. Gerar agendamentos virtuais para mensalistas usando o helper compartilhado
+        let virtualAppointments = getProjectedAppointments(
+            selectedAdminDate,
+            monthlyClients || [],
+            filteredAppointments
+        );
 
-            if (client.recurrence_type === 'weekly') {
-                shouldHaveAppointment = recurrenceDay === currentDayISO;
-            } else if (client.recurrence_type === 'bi-weekly') {
-                const sameDayOfWeek = recurrenceDay === currentDayISO;
-                if (sameDayOfWeek) {
-                    // Cálculo de paridade de 14 dias baseado na data de criação (created_at)
-                    const refDate = client.created_at ? new Date(client.created_at) : new Date(2025, 0, 1);
-                    const refWeek = getWeek(refDate);
-                    const weeksDiff = Math.abs(Math.round((adminWeek - refWeek) / (7 * 24 * 60 * 60 * 1000)));
-                    shouldHaveAppointment = (weeksDiff % 2 === 0);
-                }
-            } else if (client.recurrence_type === 'monthly') {
-                shouldHaveAppointment = recurrenceDay === selectedDayOfMonth;
-            }
-
-            if (!shouldHaveAppointment) return false;
-
-            // Verificar se JÁ EXISTE agendamento real para este cliente neste ciclo (semana/mês)
-            const hasReal = filteredAppointments.some(app => {
-                const isMatchId = app.monthly_client_id === client.id;
-                const isMatchName = !app.monthly_client_id &&
-                    app.pet_name?.trim().toLowerCase() === client.pet_name?.trim().toLowerCase() &&
-                    app.owner_name?.trim().toLowerCase() === client.owner_name?.trim().toLowerCase();
-
-                if (!isMatchId && !isMatchName) return false;
-
-                const appDate = new Date(app.appointment_time);
-
-                if (client.recurrence_type === 'weekly' || client.recurrence_type === 'bi-weekly') {
-                    // Considerar preenchido se houver qualquer agendamento na MESMA semana
-                    return getWeek(appDate) === adminWeek;
-                } else if (client.recurrence_type === 'monthly') {
-                    // Considerar preenchido se houver qualquer agendamento no MESMO mês
-                    const parts = getSaoPauloTimeParts(appDate);
-                    return `${parts.year}-${parts.month}` === adminMonth;
-                }
-
-                return isSameSaoPauloDay(appDate, selectedAdminDate);
-            });
-
-            if (hasReal) return false;
-
-            // Filtro de busca
-            if (searchTerm) {
-                const searchLower = searchTerm.toLowerCase();
-                const match =
-                    client.pet_name.toLowerCase().includes(searchLower) ||
-                    client.owner_name.toLowerCase().includes(searchLower) ||
-                    client.service.toLowerCase().includes(searchLower);
-                if (!match) return false;
-            }
-
-            return true;
-        }).map(client => {
-            const hour = Number(client.recurrence_time);
-            const appointmentTime = toSaoPauloUTC(adminDateParts.year, adminDateParts.month, adminDateParts.date, hour);
-
-            let sessionPrice = Number(client.price) || 0;
-            if (client.recurrence_type === 'weekly' || client.recurrence_type === 'bi-weekly') {
-                const weightKey = getWeightKeyFromLabel(client.weight);
-                const serviceType = inferServiceTypeFromLabel(client.service);
-                const avulsoPrice = getUnitPriceByType(weightKey, serviceType);
-
-                if (avulsoPrice > 0) {
-                    sessionPrice = avulsoPrice;
-                } else {
-                    sessionPrice = client.recurrence_type === 'weekly' ? sessionPrice / 4 : sessionPrice / 2;
-                }
-            }
-
-            return {
-                id: `virtual-${client.id}-${selectedAdminDate.getTime()}`,
-                appointment_time: appointmentTime.toISOString(),
-                pet_name: client.pet_name,
-                owner_name: client.owner_name,
-                service: client.service,
-                status: 'AGENDADO',
-                price: sessionPrice,
-                addons: [],
-                whatsapp: client.whatsapp,
-                weight: client.weight,
-                monthly_client_id: client.id,
-                owner_address: client.owner_address,
-                pet_breed: client.pet_breed,
-                condominium: client.condominium,
-                pet_photo_url: client.pet_photo_url,
-                recurrence_type: client.recurrence_type,
-                // @ts-ignore
-                is_virtual: true
-            } as AdminAppointment;
-        });
+        // Aplicar filtro de busca aos virtuais se houver um termo de busca
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            virtualAppointments = virtualAppointments.filter(v => 
+                v.pet_name.toLowerCase().includes(searchLower) ||
+                v.owner_name.toLowerCase().includes(searchLower) ||
+                v.service.toLowerCase().includes(searchLower)
+            );
+        }
 
         return [...realAppointments, ...virtualAppointments].sort((a, b) =>
             new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime()
         );
-
     }, [filteredAppointments, selectedAdminDate, monthlyClients, searchTerm]);
     const dailyScheduled = useMemo(() => dailyAppointments.filter(a => String(a.status) === 'AGENDADO' || String(a.status) === 'pending'), [dailyAppointments]);
     const dailyCompleted = useMemo(() => dailyAppointments.filter(a => a.status === 'CONCLUÍDO'), [dailyAppointments]);
@@ -4881,10 +4917,25 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                         />
                                     </div>
                                 ))}
+                                {filteredAppointments.length > 5 && (
+                                    <p className="text-center text-xs text-gray-400 mt-2">
+                                        Mostrando apenas os 5 primeiros resultados...
+                                    </p>
+                                )}
+                                {dailyAppointments.length > 0 && dailyAppointments.some(a => !filteredAppointments.some(fa => fa.id === a.id)) && (
+                                    <p className="text-center text-xs text-orange-500 mt-1 font-medium italic">
+                                        ⚠️ Existem outros agendamentos hoje que não correspondem à sua busca.
+                                    </p>
+                                )}
                             </div>
                         ) : (
                             <div className="text-center py-4">
                                 <p className="text-gray-500">Nenhum resultado encontrado</p>
+                                {dailyAppointments.length > 0 && (
+                                    <p className="text-xs text-orange-500 mt-1 italic font-medium">
+                                        ⚠️ O slot ocupado pode estar oculto pelo filtro de busca.
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -10226,38 +10277,19 @@ const TimeSlotPicker: React.FC<{
     // (like "4x Banho") to NOT block Pet Móvel time slots.
     const capacity = 1;
 
-    const isSameDay = (d1: Date, d2: Date) =>
-        d1.getDate() === d2.getDate() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getFullYear() === d2.getFullYear();
+    const isSameDaySP = (d1: Date, d2: Date) => isSameSaoPauloDay(d1, d2);
 
     const getAppointmentsAtHour = (hour: number) => {
         return allAppointments.filter(appt => {
-            // Normalização de data: os agendamentos no banco estão salvos sem timezone e assumem UTC,
-            // então usamos os métodos UTC para recuperar os valores exatos armazenados
             const apptTime = new Date(appt.appointmentTime);
+            const { hour: apptHour } = getSaoPauloTimeParts(apptTime);
 
-            // Extrair componentes da data do agendamento usando UTC (como gravado no DB)
-            const apptYear = apptTime.getUTCFullYear();
-            const apptMonth = apptTime.getUTCMonth();
-            const apptDate = apptTime.getUTCDate();
-            const apptHour = apptTime.getUTCHours();
-
-            // O selectedDate gerado pelo calendário está em hora local com a meia noite (00:00:00)
-            const selectedYear = selectedDate.getFullYear();
-            const selectedMonth = selectedDate.getMonth();
-            const selectedDay = selectedDate.getDate();
-
-            // Comparação estrita de Ano, Mês, Dia e Hora
-            const isSameDate = apptYear === selectedYear && apptMonth === selectedMonth && apptDate === selectedDay;
-            const isSameHour = apptHour === hour;
-
-            // Check for status if available (prevent blocking if cancelled or completed)
-            if (appt.status && (appt.status === 'Cancelado' || appt.status === 'CANCELADO' || appt.status === 'CONCLUÍDO' || appt.status === 'Concluído')) {
+            // Check for status if available (prevent blocking if cancelled)
+            if (appt.status && (appt.status === 'Cancelado' || appt.status === 'CANCELADO')) {
                 return false;
             }
 
-            return isSameDate && isSameHour;
+            return isSameSaoPauloDay(apptTime, selectedDate) && apptHour === hour;
         }).length;
     };
 
@@ -10265,7 +10297,8 @@ const TimeSlotPicker: React.FC<{
         // 1. Past Time Check
         if (disablePastTimes && !isAdmin) {
             const now = new Date();
-            if (isSameDay(selectedDate, now) && hour <= now.getHours()) {
+            const { hour: currentHour } = getSaoPauloTimeParts(now);
+            if (isSameSaoPauloDay(selectedDate, now) && hour <= currentHour) {
                 return false;
             }
         }
@@ -10332,6 +10365,8 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const [allowedDays, setAllowedDays] = useState<number[] | undefined>(undefined);
     const [disabledBathGroomDates, setDisabledBathGroomDates] = useState<string[]>([]);
     const [disabledPetMovelDates, setDisabledPetMovelDates] = useState<string[]>([]);
+    const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>([]);
+    const [foundPets, setFoundPets] = useState<any[]>([]);
 
     const isVisitService = useMemo(() =>
         selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
@@ -10339,19 +10374,54 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     );
 
     const isPetMovel = useMemo(() => serviceStepView === 'pet_movel', [serviceStepView]);
-    const reloadAppointments = useCallback(async () => {
+    // State to store appointments for validation
+    // FIX: Using filtered fetch for specific date to avoid 1000-row limit and optimize performance
+    const fetchAppointmentsForDate = useCallback(async () => {
+        // Define start and end of the selected day in UTC to match DB comparison
+        // We use a buffer window to ensure we catch all relevant appointments regardless of timezone storage
+        
+        const startOfDay = new Date(selectedDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Add buffer (e.g. -4h to +4h) to cover UTC offsets safely
+        const queryStart = new Date(startOfDay);
+        queryStart.setHours(queryStart.getHours() - 4);
+        
+        const queryEnd = new Date(endOfDay);
+        queryEnd.setHours(queryEnd.getHours() + 4);
+
         const { data: regularData, error: regularError } = await supabase
             .from('appointments')
-            .select('*');
+            .select('*')
+            .gte('appointment_time', queryStart.toISOString())
+            .lte('appointment_time', queryEnd.toISOString());
+
         if (regularError) {
             console.error('Error fetching appointments:', regularError);
         }
 
         const { data: petMovelData, error: petMovelError } = await supabase
             .from('pet_movel_appointments')
-            .select('*');
+            .select('*')
+            .gte('appointment_time', queryStart.toISOString())
+            .lte('appointment_time', queryEnd.toISOString());
+
         if (petMovelError) {
             console.error('Error fetching pet_movel_appointments:', petMovelError);
+        }
+
+        // Fetch monthly clients as well for virtual appointment projection
+        const { data: mcData, error: mcError } = await supabase
+            .from('monthly_clients')
+            .select('*');
+
+        if (mcError) {
+            console.error('Error fetching monthly_clients:', mcError);
+        } else if (mcData) {
+            setMonthlyClients(mcData);
         }
 
         const regularAppointments: Appointment[] = (regularData || [])
@@ -10375,13 +10445,20 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
                 if (!serviceKey) serviceKey = ServiceType.UNKNOWN;
 
+                // FIX: Robust date parsing for timezone handling
+                // If date string lacks 'Z' or offset, append 'Z' to force UTC interpretation
+                let dateStr = rec.appointment_time;
+                if (dateStr && typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+                    dateStr += 'Z';
+                }
+
                 return {
                     id: rec.id,
                     petName: rec.pet_name,
                     ownerName: rec.owner_name,
                     whatsapp: rec.whatsapp,
                     service: serviceKey,
-                    appointmentTime: new Date(rec.appointment_time),
+                    appointmentTime: new Date(dateStr),
                     monthly_client_id: rec.monthly_client_id || undefined,
                     status: rec.status,
                 };
@@ -10399,10 +10476,11 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 else if (isSoTosa) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
                 else serviceKey = ServiceType.PET_MOBILE_BATH;
 
-                // Parse date with explicit timezone handling to ensure we don't shift days
-                const dateStr = rec.appointment_time;
-                // If the string is ISO (e.g. 2026-01-27T09:00:00), new Date() parses it in local time or UTC depending on Z.
-                // Assuming DB stores ISO strings. 
+                // FIX: Robust date parsing for timezone handling
+                let dateStr = rec.appointment_time;
+                if (dateStr && typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+                    dateStr += 'Z';
+                }
                 const appointmentTime = new Date(dateStr);
 
                 return {
@@ -10419,10 +10497,38 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             })
             .filter(Boolean) as Appointment[];
 
-        setAppointments([...regularAppointments, ...mobileAppointments]);
-    }, []);
+        const allFetched: Appointment[] = [...regularAppointments, ...mobileAppointments];
 
-    useEffect(() => { reloadAppointments(); }, [reloadAppointments]);
+        // Project virtual appointments from monthly clients for this date
+        const projected = getProjectedAppointments(
+            selectedDate,
+            mcData || monthlyClients,
+            allFetched.map(a => ({
+                ...a,
+                appointment_time: a.appointmentTime.toISOString(),
+                pet_name: a.petName,
+                owner_name: a.ownerName,
+            } as any as AdminAppointment))
+        ).map(v => ({
+            id: v.id,
+            petName: v.pet_name,
+            ownerName: v.owner_name,
+            whatsapp: v.whatsapp,
+            service: v.service,
+            appointmentTime: new Date(v.appointment_time),
+            status: v.status,
+            monthly_client_id: v.monthly_client_id,
+        }) as Appointment);
+
+        setAppointments([...allFetched, ...projected]);
+    }, [selectedDate, monthlyClients]);
+
+    useEffect(() => {
+        fetchAppointmentsForDate();
+    }, [fetchAppointmentsForDate]);
+
+    // Renaming for compatibility with old calls if any
+    const reloadAppointments = fetchAppointmentsForDate;
 
 
     const loadDisabledDates = useCallback(async () => {
@@ -10663,6 +10769,20 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         const month = selectedDate.getMonth();
         const day = selectedDate.getDate();
         const appointmentTime = toSaoPauloUTC(year, month, day, selectedTime);
+
+        // Security check: ensure slot is still available
+        const appointmentsAtHour = appointments.filter(app => {
+            const appDate = new Date(app.appointment_time);
+            return isSameSaoPauloDay(appDate, selectedDate) && 
+                   getSaoPauloTimeParts(appDate).hour === selectedTime &&
+                   (app.status === 'AGENDADO' || app.status === 'pending');
+        });
+
+        if (appointmentsAtHour.length >= MAX_CAPACITY_PER_SLOT) {
+            alert('Desculpe, este horário acabou de ser preenchido. Por favor, escolha outro horário.');
+            setIsSubmitting(false);
+            return;
+        }
 
         const isPetMovelSubmit = !!selectedCondo;
         const targetTable = isPetMovelSubmit ? 'pet_movel_appointments' : 'appointments';
