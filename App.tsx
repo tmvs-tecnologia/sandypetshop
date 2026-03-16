@@ -13463,14 +13463,28 @@ const AdminDashboard: React.FC<{
     useEffect(() => {
         const loadAllAdminAppointments = async () => {
             try {
+                // FIX: Order by appointment_time descending to ensure future appointments are fetched
+                // even if the 1000-row limit is reached. Old history might be truncated, but upcoming
+                // appointments (e.g. 2026) will be prioritized.
+                // ALSO: Added a date filter to fetch only appointments from the last 60 days 
+                // onwards to keep the result set well below the 1000-row limit.
+                const now = new Date();
+                const windowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days ago
+
                 const { data: bathAppointments, error: bathError } = await supabase
                     .from('appointments')
-                    .select('*, monthly_clients(pet_photo_url, recurrence_type)');
+                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
+                    .gte('appointment_time', windowStart)
+                    .order('appointment_time', { ascending: false });
+
                 if (bathError) console.warn('Erro ao buscar appointments (Banho & Tosa):', bathError);
 
                 const { data: petMovelAppointments, error: petMovelError } = await supabase
                     .from('pet_movel_appointments')
-                    .select('*, monthly_clients(pet_photo_url, recurrence_type)');
+                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
+                    .gte('appointment_time', windowStart)
+                    .order('appointment_time', { ascending: false });
+
                 if (petMovelError) console.warn('Erro ao buscar pet_movel_appointments:', petMovelError);
 
                 // Remover duplicados por mensalista e mesmo minuto de appointment_time, mantendo o mais antigo
@@ -14088,14 +14102,23 @@ const App: React.FC = () => {
 
         const loadAllAdminAppointments = async () => {
             try {
+                // FIX: Added same date filter as in AdminDashboard to prevent overwriting global state
+                // with truncated data due to the 1000-row limit in Supabase.
+                const now = new Date();
+                const windowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
                 const { data: bathAppointments, error: bathError } = await supabase
                     .from('appointments')
-                    .select('*, monthly_clients(pet_photo_url, recurrence_type)');
+                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
+                    .gte('appointment_time', windowStart)
+                    .order('appointment_time', { ascending: false });
                 if (bathError) console.warn('Erro ao buscar appointments (Banho & Tosa):', bathError);
 
                 const { data: petMovelAppointments, error: petMovelError } = await supabase
                     .from('pet_movel_appointments')
-                    .select('*, monthly_clients(pet_photo_url, recurrence_type)');
+                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
+                    .gte('appointment_time', windowStart)
+                    .order('appointment_time', { ascending: false });
                 if (petMovelError) console.warn('Erro ao buscar pet_movel_appointments:', petMovelError);
 
                 const { data: monthlyClientsData } = await supabase
