@@ -317,6 +317,14 @@ const getProjectedAppointments = (
 
         if (!shouldHaveAppointment) return false;
 
+        // Check if this date is in the excluded_dates list
+        if (client.excluded_dates && Array.isArray(client.excluded_dates)) {
+            const dateISO = targetDate.toISOString().split('T')[0];
+            if (client.excluded_dates.includes(dateISO)) {
+                return false;
+            }
+        }
+
         // Check if a real appointment ALREADY EXISTS for this client in this cycle
         const hasReal = realAppointments.some(app => {
             const isMatchId = app.monthly_client_id === client.id;
@@ -4442,10 +4450,11 @@ interface AppointmentsViewProps {
     onOpenActionMenu: (appointment: AdminAppointment, event: React.MouseEvent) => void;
     onDeleteObservation: (appointment: AdminAppointment) => void;
     monthlyClients?: MonthlyClient[];
+    setMonthlyClients?: React.Dispatch<React.SetStateAction<MonthlyClient[]>>;
     onDataChanged?: () => void;
 }
 
-const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged }) => {
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], setMonthlyClients, onDataChanged }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
@@ -4523,35 +4532,58 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         if (!appointmentToDelete) return;
         setDeletingAppointmentId(appointmentToDelete.id);
 
-        // Se for um agendamento virtual (projeção de mensalista), não há o que excluir no banco
-        // Apenas recarregamos a view para que qualquer alteração de estado limpe isso
-        // @ts-ignore
-        if (appointmentToDelete.is_virtual || appointmentToDelete.id.startsWith('virtual-')) {
-            alert('Agendamentos projetados de mensalistas não podem ser excluídos individualmente. Edite o mensalista se desejar cancelar a recorrência.');
+        const isVirtual = appointmentToDelete.is_virtual || appointmentToDelete.id.startsWith('virtual-');
+        
+        try {
+            // Se for um agendamento real, excluímos do banco
+            if (!isVirtual) {
+                const [appointmentsResult, petMovelResult] = await Promise.all([
+                    supabase.from('appointments').delete().eq('id', appointmentToDelete.id),
+                    supabase.from('pet_movel_appointments').delete().eq('id', appointmentToDelete.id)
+                ]);
+
+                if (appointmentsResult.error && petMovelResult.error) {
+                    throw new Error('Falha ao excluir o registro real do banco de dados.');
+                }
+            }
+
+            // Se for um agendamento de mensalista (real ou virtual), adicionamos a data à lista de excluídos para que não reapareça na projeção
+            if (appointmentToDelete.monthly_client_id && setMonthlyClients) {
+                const dateISO = new Date(appointmentToDelete.appointment_time).toISOString().split('T')[0];
+                const client = monthlyClients.find(c => c.id === appointmentToDelete.monthly_client_id);
+                
+                if (client) {
+                    const currentExcluded = Array.isArray(client.excluded_dates) ? client.excluded_dates : [];
+                    if (!currentExcluded.includes(dateISO)) {
+                        const newExcluded = [...currentExcluded, dateISO];
+                        
+                        const { error: updateError } = await supabase
+                            .from('monthly_clients')
+                            .update({ excluded_dates: newExcluded })
+                            .eq('id', client.id);
+                            
+                        if (updateError) {
+                            console.warn('Erro ao atualizar excluded_dates no mensalista:', updateError);
+                        } else {
+                            // Atualiza estado local de mensalistas para refletir a mudança imediatamente
+                            setMonthlyClients(prev => prev.map(c => 
+                                c.id === client.id ? { ...c, excluded_dates: newExcluded } : c
+                            ));
+                        }
+                    }
+                }
+            }
+
+            // Remove do estado local de agendamentos
+            setAppointments(prev => prev.filter(app => app.id !== appointmentToDelete.id));
+            
+        } catch (error: any) {
+            console.error('Erro ao excluir agendamento:', error);
+            alert(error.message || 'Falha ao excluir o agendamento.');
+        } finally {
             setDeletingAppointmentId(null);
             setAppointmentToDelete(null);
-            return;
         }
-
-        // Try to delete from both tables since we don't know which table the appointment is in
-        const [appointmentsResult, petMovelResult] = await Promise.all([
-            supabase.from('appointments').delete().eq('id', appointmentToDelete.id),
-            supabase.from('pet_movel_appointments').delete().eq('id', appointmentToDelete.id)
-        ]);
-
-        // Check if at least one deletion was successful
-        const hasError = appointmentsResult.error && petMovelResult.error;
-
-        if (hasError) {
-            console.error('Error deleting from appointments:', appointmentsResult.error);
-            console.error('Error deleting from pet_movel_appointments:', petMovelResult.error);
-            alert('Falha ao excluir o agendamento.');
-        } else {
-            setAppointments(prev => prev.filter(app => app.id !== appointmentToDelete.id));
-        }
-
-        setDeletingAppointmentId(null);
-        setAppointmentToDelete(null);
     };
 
     const handleRequestCompletion = (id: string, price: number) => {
@@ -13422,7 +13454,8 @@ const AdminDashboard: React.FC<{
     onDeleteObservation: (appointment: AdminAppointment) => void;
     handleOpenExtraServicesModal: (appointment: AdminAppointment) => void;
     monthlyClients?: MonthlyClient[];
-}> = ({ onLogout, isScheduleOpen, setIsScheduleOpen, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, handleOpenExtraServicesModal, monthlyClients = [] }) => {
+    setMonthlyClients?: React.Dispatch<React.SetStateAction<MonthlyClient[]>>;
+}> = ({ onLogout, isScheduleOpen, setIsScheduleOpen, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, handleOpenExtraServicesModal, monthlyClients = [], setMonthlyClients }) => {
     const [activeView, setActiveView] = useState('appointments');
     const [dataKey, setDataKey] = useState(Date.now()); // Used to force re-fetches
     const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -13602,14 +13635,14 @@ const AdminDashboard: React.FC<{
     // Renderiza a view ativa baseada no estado activeView
     const renderActiveView = () => {
         switch (activeView) {
-            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} />;
+            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} setMonthlyClients={setMonthlyClients} onDataChanged={handleDataChanged} />;
             case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} setShowDaycareStatistics={setShowDaycareStatistics} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} />;
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
-            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} />;
+            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} setMonthlyClients={setMonthlyClients} onDataChanged={handleDataChanged} />;
         }
     };
 
@@ -14204,6 +14237,7 @@ const App: React.FC = () => {
                     handleOpenExtraServicesModal={handleOpenExtraServicesModal}
                     onOpenActionMenu={handleOpenActionMenu}
                     monthlyClients={monthlyClients}
+                    setMonthlyClients={setMonthlyClients}
                     onDeleteObservation={async (appointment: AdminAppointment) => {
                         try {
                             const [appointmentsResult, petMovelResult] = await Promise.all([

@@ -110,6 +110,7 @@ export interface MonthlyClient {
   payment_status: 'Pendente' | 'Pago';
   condominium?: string;
   pet_photo_url?: string | null;
+  excluded_dates?: string[];
   extra_services?: {
     pernoite: { enabled: boolean; value: number };
     banho_tosa: { enabled: boolean; value: number };
