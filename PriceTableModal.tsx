@@ -64,7 +64,7 @@ const PriceTableModal: React.FC<PriceTableModalProps> = ({ isOpen, onClose }) =>
           <div className="w-full flex justify-center mb-[20px]">
             {!img1Error ? (
               <img 
-                src="https://i.imgur.com/QhCWX70.jpeg" 
+                src="https://i.imgur.com/4bJHpV4.jpeg" 
                 alt="Tabela de Preços Sandy's Pet Shop - Parte 1" 
                 className="w-full h-auto rounded-lg shadow-sm object-contain"
                 loading="eager"

@@ -32,11 +32,22 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
-const useMobileDemo = window.location.hash === '#mobile-ui-demo'
-root.render(
-  <React.StrictMode>
-    <ToastProvider>
-      {useMobileDemo ? <MobileUiDemo /> : <App />}
-    </ToastProvider>
-  </React.StrictMode>
-);
+
+function renderApp() {
+  const hash = window.location.hash;
+  const useMobileDemo = hash === '#mobile-ui-demo';
+
+  root.render(
+    <React.StrictMode>
+      <ToastProvider>
+        {useMobileDemo ? <MobileUiDemo /> : <App />}
+      </ToastProvider>
+    </React.StrictMode>
+  );
+}
+
+// Initial render
+renderApp();
+
+// Listen for hash changes to update the view without reload
+window.addEventListener('hashchange', renderApp);
