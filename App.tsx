@@ -4,7 +4,8 @@ import { createPortal } from 'react-dom';
 import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
-import { SERVICES, WORKING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
+import { SERVICES, WORKING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
+import { useServicePrices } from './src/hooks/useServicePrices';
 import { supabase } from './supabaseClient';
 import NotificationBell from './NotificationBell';
 import ExtraServicesModal from './ExtraServicesModal';
@@ -397,18 +398,21 @@ const inferServiceTypeFromLabel = (label: string | null): ServiceType | null => 
     return null;
 };
 
-const getUnitPriceByType = (weightKey: PetWeight | null | undefined, type: ServiceType | null | undefined): number => {
+const getUnitPriceByType = (weightKey: PetWeight | null | undefined, type: ServiceType | null | undefined, dynamicPrices?: ReturnType<typeof useServicePrices>['prices']): number => {
     if (!weightKey || !type) return 0;
-    const prices = SERVICE_PRICES[weightKey];
-    if (!prices) return 0;
+    
+    // Attempt to use dynamic prices if passed, else fallback
+    const pricesObj = dynamicPrices?.[weightKey] || FALLBACK_PRICES[weightKey];
+    if (!pricesObj) return 0;
+    
     if (type === ServiceType.BATH_AND_GROOMING || type === ServiceType.PET_MOBILE_BATH_AND_GROOMING) {
-        return Number(prices[ServiceType.BATH]) + Number(prices[ServiceType.GROOMING_ONLY]);
+        return Number(pricesObj.BATH) + Number(pricesObj.GROOMING_ONLY);
     }
     if (type === ServiceType.BATH || type === ServiceType.PET_MOBILE_BATH) {
-        return Number(prices[ServiceType.BATH]);
+        return Number(pricesObj.BATH);
     }
     if (type === ServiceType.GROOMING_ONLY || type === ServiceType.PET_MOBILE_GROOMING_ONLY) {
-        return Number(prices[ServiceType.GROOMING_ONLY]);
+        return Number(pricesObj.GROOMING_ONLY);
     }
     return 0;
 };
@@ -1083,6 +1087,7 @@ const AdminLogin: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }
 
 
 const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void; }> = ({ onBack, onSuccess }) => {
+    const { getPricesForWeight } = useServicePrices();
     const [step, setStep] = useState(1);
     const [isAnimating, setIsAnimating] = useState(false);
     const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', condominium: '' });
@@ -1096,8 +1101,6 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [alertInfo, setAlertInfo] = useState<{ title: string; message: string; variant: 'success' | 'error' } | null>(null);
 
-
-
     useEffect(() => {
         const calculatePrice = () => {
             if (!selectedWeight) {
@@ -1105,7 +1108,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                 return;
             }
 
-            const prices = SERVICE_PRICES[selectedWeight];
+            const prices = getPricesForWeight(selectedWeight);
             if (!prices) {
                 setPackagePrice(0);
                 return;
@@ -1118,22 +1121,18 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                 if (quantity > 0) {
                     let servicePrice = 0;
                     if (serviceKey === ServiceType.BATH_AND_GROOMING) {
-                        // FIX: Explicitly cast to number to prevent type errors in arithmetic operations.
-                        servicePrice = (prices[ServiceType.BATH] as number) + (prices[ServiceType.GROOMING_ONLY] as number);
+                        servicePrice = Number(prices.BATH) + Number(prices.GROOMING_ONLY);
                     } else if (serviceKey === ServiceType.BATH || serviceKey === ServiceType.GROOMING_ONLY) {
-                        // FIX: Explicitly cast to Number to prevent type errors in arithmetic operations.
                         servicePrice = Number(prices[serviceKey as keyof typeof prices]);
                     } else if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(serviceKey as ServiceType)) {
                         if (serviceKey === ServiceType.PET_MOBILE_BATH) {
-                            servicePrice = prices[ServiceType.BATH];
+                            servicePrice = prices.BATH;
                         } else if (serviceKey === ServiceType.PET_MOBILE_GROOMING_ONLY) {
-                            servicePrice = prices[ServiceType.GROOMING_ONLY];
+                            servicePrice = prices.GROOMING_ONLY;
                         } else if (serviceKey === ServiceType.PET_MOBILE_BATH_AND_GROOMING) {
-                            // FIX: Operator '+' cannot be applied to types 'unknown' and 'number'. Cast values to `number` to ensure type-safe addition.
-                            servicePrice = Number(prices[ServiceType.BATH]) + Number(prices[ServiceType.GROOMING_ONLY]);
+                            servicePrice = Number(prices.BATH) + Number(prices.GROOMING_ONLY);
                         }
                     }
-                    // FIX: Explicitly cast `quantity` to a number to prevent type errors during arithmetic operations.
                     newTotalPrice += servicePrice * Number(quantity);
                 }
             }
@@ -1256,7 +1255,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
         // Recalculate price directly before submission to ensure it's not stale.
         let finalPrice = 0;
         if (selectedWeight) {
-            const prices = SERVICE_PRICES[selectedWeight];
+            const prices = getPricesForWeight(selectedWeight);
             if (prices) {
                 let newTotalPrice = 0;
                 // Calculate main service prices
@@ -1265,13 +1264,13 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                     if (quantity > 0) {
                         let servicePrice = 0;
                         if (serviceKey === ServiceType.BATH_AND_GROOMING) {
-                            servicePrice = (prices[ServiceType.BATH] as number) + (prices[ServiceType.GROOMING_ONLY] as number);
+                            servicePrice = Number(prices.BATH) + Number(prices.GROOMING_ONLY);
                         } else if (serviceKey === ServiceType.BATH || serviceKey === ServiceType.GROOMING_ONLY) {
                             servicePrice = Number(prices[serviceKey as keyof typeof prices]);
                         } else if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(serviceKey as ServiceType)) {
-                            if (serviceKey === ServiceType.PET_MOBILE_BATH) servicePrice = prices[ServiceType.BATH];
-                            else if (serviceKey === ServiceType.PET_MOBILE_GROOMING_ONLY) servicePrice = prices[ServiceType.GROOMING_ONLY];
-                            else if (serviceKey === ServiceType.PET_MOBILE_BATH_AND_GROOMING) servicePrice = Number(prices[ServiceType.BATH]) + Number(prices[ServiceType.GROOMING_ONLY]);
+                            if (serviceKey === ServiceType.PET_MOBILE_BATH) servicePrice = prices.BATH;
+                            else if (serviceKey === ServiceType.PET_MOBILE_GROOMING_ONLY) servicePrice = prices.GROOMING_ONLY;
+                            else if (serviceKey === ServiceType.PET_MOBILE_BATH_AND_GROOMING) servicePrice = Number(prices.BATH) + Number(prices.GROOMING_ONLY);
                         }
                         newTotalPrice += servicePrice * Number(quantity);
                     }
@@ -2959,6 +2958,7 @@ const AdminAddAppointmentModal: React.FC<{
     onClose: () => void;
     onAppointmentCreated: (created: AdminAppointment) => void;
 }> = ({ isOpen, onClose, onAppointmentCreated }) => {
+    const { getPricesForWeight } = useServicePrices();
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         petName: '',
@@ -3180,14 +3180,14 @@ const AdminAddAppointmentModal: React.FC<{
         const isMobileService = [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
 
         if (isRegularService || isMobileService) {
-            const prices = SERVICE_PRICES[selectedWeight];
+            const prices = getPricesForWeight(selectedWeight);
             if (prices) {
                 if (selectedService === ServiceType.BATH || selectedService === ServiceType.PET_MOBILE_BATH) {
-                    basePrice = prices[ServiceType.BATH] ?? 0;
+                    basePrice = prices.BATH ?? 0;
                 } else if (selectedService === ServiceType.GROOMING_ONLY || selectedService === ServiceType.PET_MOBILE_GROOMING_ONLY) {
-                    basePrice = prices[ServiceType.GROOMING_ONLY] ?? 0;
+                    basePrice = prices.GROOMING_ONLY ?? 0;
                 } else if (selectedService === ServiceType.BATH_AND_GROOMING || selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING) {
-                    basePrice = (prices[ServiceType.BATH] ?? 0) + (prices[ServiceType.GROOMING_ONLY] ?? 0);
+                    basePrice = (prices.BATH ?? 0) + (prices.GROOMING_ONLY ?? 0);
                 }
             }
         }
@@ -6124,6 +6124,7 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
 };
 
 const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => void; onMonthlyClientUpdated: () => void; }> = ({ client, onClose, onMonthlyClientUpdated }) => {
+    const { getPricesForWeight } = useServicePrices();
     const serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === client.service) as ServiceType | undefined;
     const weightKey = Object.keys(PET_WEIGHT_OPTIONS).find(key => PET_WEIGHT_OPTIONS[key as PetWeight] === (client as any).weight) as PetWeight | undefined;
 
@@ -6319,16 +6320,16 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
 
 
             const unitPriceEdit = (() => {
-                const prices = selectedWeight ? SERVICE_PRICES[selectedWeight] : null;
+                const prices = getPricesForWeight(selectedWeight);
                 if (!prices || !selectedService) return Number(price || 0);
                 if (selectedService === ServiceType.BATH_AND_GROOMING || selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING) {
-                    return Number(prices[ServiceType.BATH]) + Number(prices[ServiceType.GROOMING_ONLY]);
+                    return Number(prices.BATH) + Number(prices.GROOMING_ONLY);
                 }
                 if (selectedService === ServiceType.BATH || selectedService === ServiceType.PET_MOBILE_BATH) {
-                    return Number(prices[ServiceType.BATH]);
+                    return Number(prices.BATH);
                 }
                 if (selectedService === ServiceType.GROOMING_ONLY || selectedService === ServiceType.PET_MOBILE_GROOMING_ONLY) {
-                    return Number(prices[ServiceType.GROOMING_ONLY]);
+                    return Number(prices.GROOMING_ONLY);
                 }
                 return Number(price || 0);
             })();
@@ -10192,6 +10193,7 @@ const TimeSlotPicker: React.FC<{
 
 // --- MAIN APP COMPONENT ---
 const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegistration' | 'hotelRegistration') => void }> = ({ setView }) => {
+    const { getPricesForWeight } = useServicePrices();
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
@@ -10489,14 +10491,14 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         const isMobileService = [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
 
         if (isRegularService || isMobileService) {
-            const prices = SERVICE_PRICES[selectedWeight];
+            const prices = getPricesForWeight(selectedWeight);
             if (prices) {
                 if (selectedService === ServiceType.BATH || selectedService === ServiceType.PET_MOBILE_BATH) {
-                    basePrice = prices[ServiceType.BATH] ?? 0;
+                    basePrice = prices.BATH ?? 0;
                 } else if (selectedService === ServiceType.GROOMING_ONLY || selectedService === ServiceType.PET_MOBILE_GROOMING_ONLY) {
-                    basePrice = prices[ServiceType.GROOMING_ONLY] ?? 0;
+                    basePrice = prices.GROOMING_ONLY ?? 0;
                 } else if (selectedService === ServiceType.BATH_AND_GROOMING || selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING) {
-                    basePrice = (prices[ServiceType.BATH] ?? 0) + (prices[ServiceType.GROOMING_ONLY] ?? 0);
+                    basePrice = (prices.BATH ?? 0) + (prices.GROOMING_ONLY ?? 0);
                 }
             }
         }
@@ -13251,6 +13253,7 @@ const AdminDashboard: React.FC<{
     };
     const [showDaycareStatistics, setShowDaycareStatistics] = useState(false);
     const [showHotelStatistics, setShowHotelStatistics] = useState(false);
+    const [isPriceManagementOpen, setIsPriceManagementOpen] = useState(false);
 
     const adminTitleFull = "Sandy's Pet Admin";
     const [adminTitle, setAdminTitle] = useState('');
@@ -13453,6 +13456,15 @@ const AdminDashboard: React.FC<{
                         </div>
                         <div className="hidden md:flex items-center gap-3">
                             <button
+                                onClick={() => setIsPriceManagementOpen(true)}
+                                className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all shadow-sm hover:shadow text-pink-700 bg-pink-50 hover:bg-pink-100"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                                Definir Preços
+                            </button>
+                            <button
                                 onClick={() => setIsScheduleOpen(!isScheduleOpen)}
                                 className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all shadow-sm hover:shadow ${isScheduleOpen
                                     ? 'text-green-700 bg-green-50 hover:bg-green-100'
@@ -13499,6 +13511,15 @@ const AdminDashboard: React.FC<{
                     </div>
                     <div className="mt-3 space-y-3 pt-3 border-t border-gray-100 shrink-0">
                         <button
+                            onClick={() => { setIsPriceManagementOpen(true); closeMobileMenu(); }}
+                            className="w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all text-pink-700 bg-pink-50 hover:bg-pink-100"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                            Definir Preços
+                        </button>
+                        <button
                             onClick={() => { setIsScheduleOpen(!isScheduleOpen); closeMobileMenu(); }}
                             className={`w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all ${isScheduleOpen
                                 ? 'text-green-700 bg-green-50 hover:bg-green-100'
@@ -13524,6 +13545,15 @@ const AdminDashboard: React.FC<{
                     `}>
                         <NavMenu />
                         <div className="mt-6 md:hidden space-y-3">
+                            <button
+                                onClick={() => setIsPriceManagementOpen(true)}
+                                className="w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all text-pink-700 bg-pink-50 hover:bg-pink-100"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                                Definir Preços
+                            </button>
                             <button
                                 onClick={() => setIsScheduleOpen(!isScheduleOpen)}
                                 className={`w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all ${isScheduleOpen
@@ -13556,6 +13586,11 @@ const AdminDashboard: React.FC<{
                     onClose={() => setShowHotelStatistics(false)}
                 />
             )}
+            <PriceManagementModal 
+                isOpen={isPriceManagementOpen} 
+                onClose={() => setIsPriceManagementOpen(false)} 
+                onPricesUpdated={handleDataChanged} 
+            />
         </div>
     );
 };
@@ -13631,6 +13666,7 @@ const ScheduleClosedPage: React.FC<{ setView: (view: string) => void }> = ({ set
 };
 
 import MonthlyResetManager from './src/components/MonthlyResetManager';
+import PriceManagementModal from './src/components/PriceManagementModal';
 
 const App: React.FC = () => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';

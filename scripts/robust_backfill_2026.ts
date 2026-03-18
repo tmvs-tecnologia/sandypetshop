@@ -45,14 +45,17 @@ async function runBackfill() {
         console.log(`Processando ${client.pet_name} (${client.owner_name})...`);
 
         // Get existing appointments to avoid duplication
+        const isPetMovel = client.service.toLowerCase().includes('móvel') || client.service.toLowerCase().includes('movel');
+        const tableName = isPetMovel ? 'pet_movel_appointments' : 'appointments';
+
         const { data: existingAppts } = await supabase
-            .from('appointments')
+            .from(tableName)
             .select('appointment_time')
             .eq('monthly_client_id', client.id);
         
         const existingTimes = new Set((existingAppts || []).map(a => new Date(a.appointment_time).toISOString()));
 
-        const appointmentsToCreateIndices: string[] = [];
+        const appointmentsToCreate: string[] = [];
         const startFrom = new Date(); // Start generating from today
         
         if (client.recurrence_type === 'weekly' || client.recurrence_type === 'bi-weekly') {
@@ -68,7 +71,7 @@ async function runBackfill() {
                 const appTime = toSaoPauloUTC(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), client.recurrence_time);
                 const iso = appTime.toISOString();
                 if (!existingTimes.has(iso)) {
-                    appointmentsToCreateIndices.push(iso);
+                    appointmentsToCreate.push(iso);
                 }
                 cursor.setDate(cursor.getDate() + intervalDays);
             }
@@ -84,7 +87,7 @@ async function runBackfill() {
                 if (appTime >= startFrom && appTime <= endLimit) {
                     const iso = appTime.toISOString();
                     if (!existingTimes.has(iso)) {
-                        appointmentsToCreateIndices.push(iso);
+                        appointmentsToCreate.push(iso);
                     }
                 }
                 cursor.setMonth(cursor.getMonth() + 1);
@@ -92,8 +95,8 @@ async function runBackfill() {
             }
         }
 
-        if (appointmentsToCreateIndices.length > 0) {
-            const payloads = appointmentsToCreateIndices.map(time => ({
+        if (appointmentsToCreate.length > 0) {
+            const payloads = appointmentsToCreate.map(time => ({
                 owner_name: client.owner_name,
                 pet_name: client.pet_name,
                 service: client.service.split(',')[0].trim(), // Use primary service
@@ -108,21 +111,9 @@ async function runBackfill() {
                 monthly_client_id: client.id
             }));
 
-            // Check if it's a pet mobile client
-            const isPetMovel = client.service.toLowerCase().includes('móvel') || client.service.toLowerCase().includes('movel');
-
-            if (isPetMovel) {
-                 const [res1, res2] = await Promise.all([
-                    supabase.from('appointments').insert(payloads),
-                    supabase.from('pet_movel_appointments').insert(payloads)
-                ]);
-                if (res1.error || res2.error) console.error(`Erro ao inserir para ${client.pet_name}:`, res1.error || res2.error);
-                else totalCreated += payloads.length;
-            } else {
-                const { error } = await supabase.from('appointments').insert(payloads);
-                if (error) console.error(`Erro ao inserir para ${client.pet_name}:`, error);
-                else totalCreated += payloads.length;
-            }
+            const { error } = await supabase.from(tableName).insert(payloads);
+            if (error) console.error(`Erro ao inserir para ${client.pet_name} em ${tableName}:`, error);
+            else totalCreated += payloads.length;
         }
     }
 
