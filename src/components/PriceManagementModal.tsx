@@ -150,7 +150,7 @@ const PriceManagementModal: React.FC<PriceManagementModalProps> = ({ isOpen, onC
           {/* Header */}
           <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Lobster Two, cursive' }}>
+              <h2 className="text-2xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>
                 Definir Preços dos Serviços
               </h2>
               <p className="text-sm text-gray-500 mt-1">

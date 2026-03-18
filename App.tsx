@@ -7162,7 +7162,8 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                 filteredClients.length > 0 ? (
                     viewMode === 'cards' ? (
                         // Visualização em Cards com carrossel horizontal no mobile
-                        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:mx-0 md:px-0 md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                        // Ajuste para altura dinâmica ocupando a tela com margem inferior
+                        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:mx-0 md:px-0 md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 pb-6 md:pb-0 h-[calc(100vh-180px)] md:h-auto">
                             {filteredClients.map(client => {
                                 const normalizeStr = (str: string | undefined | null) => str ? str.toLowerCase().trim() : '';
                                 const normalizePhone = (phone: string | undefined | null) => phone ? phone.replace(/\D/g, '') : '';
@@ -13510,9 +13511,12 @@ const AdminDashboard: React.FC<{
                         <NavMenu />
                     </div>
                     <div className="mt-3 space-y-3 pt-3 border-t border-gray-100 shrink-0">
+                        <div className="px-3 pb-2">
+                            <h3 className="text-2xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
+                        </div>
                         <button
                             onClick={() => { setIsPriceManagementOpen(true); closeMobileMenu(); }}
-                            className="w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all text-pink-700 bg-pink-50 hover:bg-pink-100"
+                            className="w-full mb-4 flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all text-pink-700 bg-pink-50 hover:bg-pink-100"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -13529,9 +13533,11 @@ const AdminDashboard: React.FC<{
                             {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
                             {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                         </button>
-                        <button onClick={() => { onLogout(); closeMobileMenu(); }} className="w-full flex items-center gap-4 text-base font-semibold text-gray-600 hover:text-pink-600 transition-colors p-2 rounded-lg hover:bg-gray-100">
-                            <LogoutIcon /> Sair
-                        </button>
+                        <div className="pt-6 mt-4 border-t border-gray-100">
+                            <button onClick={() => { onLogout(); closeMobileMenu(); }} className="w-full flex items-center gap-4 text-base font-semibold text-pink-600 hover:text-pink-700 transition-colors p-2 rounded-lg hover:bg-gray-100">
+                                <LogoutIcon /> Sair
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -13545,9 +13551,12 @@ const AdminDashboard: React.FC<{
                     `}>
                         <NavMenu />
                         <div className="mt-6 md:hidden space-y-3">
+                            <div className="px-3 pb-2">
+                                <h3 className="text-2xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
+                            </div>
                             <button
                                 onClick={() => setIsPriceManagementOpen(true)}
-                                className="w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all text-pink-700 bg-pink-50 hover:bg-pink-100"
+                                className="w-full mb-4 flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all text-pink-700 bg-pink-50 hover:bg-pink-100"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -13564,9 +13573,11 @@ const AdminDashboard: React.FC<{
                                 {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
                                 {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                             </button>
-                            <button onClick={onLogout} className="w-full flex items-center gap-4 text-base font-semibold text-gray-600 hover:text-pink-600 transition-colors p-2 rounded-lg hover:bg-gray-100">
-                                <LogoutIcon /> Sair
-                            </button>
+                            <div className="pt-6 mt-4 border-t border-gray-100">
+                                <button onClick={onLogout} className="w-full flex items-center gap-4 text-base font-semibold text-pink-600 hover:text-pink-700 transition-colors p-2 rounded-lg hover:bg-gray-100">
+                                    <LogoutIcon /> Sair
+                                </button>
+                            </div>
                         </div>
                     </aside>
                     <main className="flex-1">
