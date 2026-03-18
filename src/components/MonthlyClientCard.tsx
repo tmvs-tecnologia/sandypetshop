@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     CalendarIcon,
     ClockIcon,
@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { MonthlyClient } from '../../types';
 import { useServiceValidation } from '../hooks/useServiceValidation';
+import { supabase } from '../../supabaseClient';
 
 // --- Helpers ---
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="28">🐾</text></svg>';
@@ -203,6 +204,93 @@ const MonthlyClientCard: React.FC<{
 
     const { hasDaycare, hasHotel } = useServiceValidation(client.whatsapp);
 
+    const [upcomingAppointments, setUpcomingAppointments] = useState<{date: string, status: string, isPast: boolean}[]>([]);
+    const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchAppointments = async () => {
+            setIsLoadingAppointments(true);
+            try {
+                const now = new Date();
+                const yesterday = new Date(now);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const fetchAfter = yesterday.toISOString(); // Fetch from yesterday to ensure we don't miss any due to timezone
+
+                const [apptsRes, petMovelRes] = await Promise.all([
+                    supabase
+                        .from('appointments')
+                        .select('appointment_time, status')
+                        .eq('monthly_client_id', client.id)
+                        .gte('appointment_time', fetchAfter),
+                    supabase
+                        .from('pet_movel_appointments')
+                        .select('appointment_time, status')
+                        .eq('monthly_client_id', client.id)
+                        .gte('appointment_time', fetchAfter)
+                ]);
+
+                if (!isMounted) return;
+
+                const combined = [
+                    ...(apptsRes.data || []),
+                    ...(petMovelRes.data || [])
+                ];
+
+                combined.sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+
+                // Filter to only included today and future, or past if status isn't clear, actually we'll just format them
+                // and show the next 8
+                const formatted = combined.map(app => {
+                    const d = new Date(app.appointment_time);
+                    const isPast = d < now;
+                    return {
+                        date: formatDateToBR(d),
+                        status: app.status,
+                        isPast
+                    };
+                });
+
+                // Deduplicate by date
+                const uniqueDates: typeof formatted = [];
+                const seen = new Set();
+                for (const item of formatted) {
+                    if (!seen.has(item.date)) {
+                        // Only add if it's today or future, OR if it's the very first one we see
+                        seen.add(item.date);
+                        uniqueDates.push(item);
+                    }
+                }
+
+                // Filter out past dates that are just catching "yesterday" due to timezone, unless they are the only ones
+                // Actually, let's just find the dates >= today
+                const todayFormatted = formatDateToBR(now);
+                const filtered = uniqueDates.filter(item => {
+                    const [d, m, y] = item.date.split('/').map(Number);
+                    const itemDate = new Date(y, m - 1, d);
+                    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    return itemDate >= todayDate;
+                });
+
+                setUpcomingAppointments(filtered.slice(0, 8));
+            } catch (err) {
+                console.error("Error fetching appointments:", err);
+            } finally {
+                if (isMounted) setIsLoadingAppointments(false);
+            }
+        };
+
+        fetchAppointments();
+
+        return () => { isMounted = false; };
+    }, [client.id]);
+
+    const nextAppointmentText = isLoadingAppointments 
+        ? '...' 
+        : upcomingAppointments.length > 0 
+            ? upcomingAppointments[0].date 
+            : getNextAppointmentDateText(client);
+
     const getRecurrenceText = (client: MonthlyClient) => {
         if (client.recurrence_type === 'weekly') return 'Semanal';
         if (client.recurrence_type === 'bi-weekly') return 'Quinzenal';
@@ -312,12 +400,11 @@ const MonthlyClientCard: React.FC<{
                         </div>
                     </div>
 
-                    {/* New Fields: Next Appointment & Payment Date */}
                     <div className="flex items-center gap-2">
                         <CalendarIcon className="w-4 h-4 text-pink-400" />
                         <div className="flex flex-col">
                             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Próx. Agendamento</span>
-                            <span className="text-xs font-bold text-pink-600">{getNextAppointmentDateText(client)}</span>
+                            <span className="text-xs font-bold text-pink-600">{nextAppointmentText}</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -367,26 +454,51 @@ const MonthlyClientCard: React.FC<{
                         Próximos Agendamentos
                     </h4>
                     <div className="overflow-y-auto pr-1 custom-scrollbar flex-1 space-y-1.5 scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
-                        {getNextAppointmentsList(client).map((date, idx) => {
-                            const isCompleted = isAppointmentCompleted(date);
-                            return (
-                                <div key={idx} className="flex items-center justify-between text-xs bg-white/80 p-2 rounded-lg shadow-sm border border-pink-50/50 hover:bg-white transition-colors group/item">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-pink-600 font-outfit">{date}</span>
-                                    </div>
-                                    {isCompleted ? (
-                                        <div className="flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded text-green-600 border border-green-100" title="Concluído">
-                                            <span className="text-[10px] font-bold uppercase">Concluído</span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                                            </svg>
+                        {isLoadingAppointments ? (
+                            <div className="flex items-center justify-center h-full text-xs text-pink-400 font-medium py-4">Buscando agendamentos reais...</div>
+                        ) : upcomingAppointments.length > 0 ? (
+                            upcomingAppointments.map((app, idx) => {
+                                const isCompleted = app.status === 'CONCLUÍDO' || app.isPast;
+                                return (
+                                    <div key={idx} className="flex items-center justify-between text-xs bg-white/80 p-2 rounded-lg shadow-sm border border-pink-50/50 hover:bg-white transition-colors group/item">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-pink-600 font-outfit">{app.date}</span>
                                         </div>
-                                    ) : (
-                                        <span className="font-medium text-gray-400 text-[10px] uppercase tracking-wide group-hover/item:text-gray-600 transition-colors">Agendado</span>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                        {isCompleted ? (
+                                            <div className="flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded text-green-600 border border-green-100" title="Concluído">
+                                                <span className="text-[10px] font-bold uppercase">Concluído</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        ) : (
+                                            <span className="font-medium text-gray-400 text-[10px] uppercase tracking-wide group-hover/item:text-gray-600 transition-colors">Agendado</span>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            getNextAppointmentsList(client).map((date, idx) => {
+                                const isCompleted = isAppointmentCompleted(date);
+                                return (
+                                    <div key={idx} className="flex items-center justify-between text-xs bg-white/80 p-2 rounded-lg shadow-sm border border-pink-50/50 hover:bg-white transition-colors group/item">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-pink-600 font-outfit">{date}</span>
+                                        </div>
+                                        {isCompleted ? (
+                                            <div className="flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded text-green-600 border border-green-100" title="Concluído">
+                                                <span className="text-[10px] font-bold uppercase">Concluído</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        ) : (
+                                            <span className="font-medium text-gray-400 text-[10px] uppercase tracking-wide group-hover/item:text-gray-600 transition-colors">Agendado</span>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
 
