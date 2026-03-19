@@ -4791,9 +4791,11 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
 
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
                 <div className="space-y-3">
-                    <div className="space-y-1">
+                    <div className="space-y-1 w-full overflow-hidden flex flex-col items-center">
                         <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Banho & Tosa</h2>
-                        <p className="text-sm text-gray-600 text-center">Agenda Banho & Tosa - Pet Móvel - Mensalistas</p>
+                        <div className="w-full overflow-x-auto custom-scrollbar-hide">
+                            <p className="text-[11px] sm:text-sm text-gray-600 text-center whitespace-nowrap px-1 min-w-max mx-auto">Agenda Banho & Tosa - Pet Móvel - Mensalistas</p>
+                        </div>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-center">
                         <button onClick={handleOpenAddModal} title="Adicionar Agendamento" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
@@ -4820,7 +4822,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
 
                 <div className="mt-4">
                     <div className="relative">
-                        <input type="text" placeholder="Buscar por pet, dono ou serviço..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent" />
+                        <input type="text" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent" />
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><SearchIcon /></div>
                     </div>
                 </div>
@@ -5529,14 +5531,19 @@ const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                             <div className="text-sm text-gray-600">Condomínios</div>
                         </div>
                     </div>
-                    <div className="mt-2">
+                    <div className="mt-2 relative">
                         <input
                             type="text"
-                            placeholder="Buscar por nome do pet ou dono..."
+                            placeholder="Buscar..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-4 py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                            className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -7293,14 +7300,19 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                     </div>
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-4 relative">
                     <input
                         type="text"
-                        placeholder="Buscar por nome do pet ou dono..."
+                        placeholder="Buscar..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                     />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                        </svg>
+                    </div>
                 </div>
             </div>
 
