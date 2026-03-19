@@ -1556,7 +1556,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                         <div className="space-y-6">
                             <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 truncate">Escolha os Serviços do Pacote</h2>
                             <div>
-                                <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço(s)</h3>
+                                <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">1. Serviço(s)</h3>
                                 <div className="space-y-3">
                                     {Object.entries(SERVICES).filter(([key]) => [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_GROOMING_ONLY, ServiceType.PET_MOBILE_BATH_AND_GROOMING].includes(key as ServiceType)).map(([key, { label }]) => {
                                         const displayLabel = (key === ServiceType.PET_MOBILE_BATH)
@@ -1587,7 +1587,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                                 </select>
                             </div>
                             <div>
-                                <h3 className="text-md font-semibold text-gray-700 mb-2">3. Serviços Adicionais (Opcional)</h3>
+                                <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">3. Serviços Adicionais (Opcional)</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                                     {ADDON_SERVICES.filter(a => a.id !== 'tosa_higienica').map(addon => {
                                         const isDisabled = !selectedWeight || Object.values(serviceQuantities).reduce((a, b) => Number(a) + Number(b), 0) === 0 || addon.excludesWeight?.includes(selectedWeight!) || (addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight!));
@@ -3431,7 +3431,8 @@ const AdminAddAppointmentModal: React.FC<{
     };
 
     const isStep1Valid = formData.petName && formData.ownerName && formData.whatsapp.length > 13 && formData.petBreed && formData.ownerAddress;
-    const isStep2Valid = serviceStepView !== 'main' && selectedService && (isVisitService || selectedWeight);
+    const isPetMovelServiceSelected = !!selectedService && [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
+    const isStep2Valid = serviceStepView !== 'main' && selectedService && (isVisitService || selectedWeight) && (!isPetMovelServiceSelected || !!selectedCondo);
     const isStep3Valid = selectedTime !== null;
 
     if (!isOpen) return null;
@@ -3912,7 +3913,7 @@ const Calendar: React.FC<{
 
         const days = [];
         for (let i = 0; i < firstDay; i++) {
-            days.push(<div key={`empty-${i}`} className="p-2 w-10 h-10"></div>);
+            days.push(<div key={`empty-${i}`} className="w-8 h-8 sm:w-10 sm:h-10"></div>);
         }
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
@@ -3946,9 +3947,9 @@ const Calendar: React.FC<{
                         }
                         onDateChange(date);
                     }}
-                    className={`p-2 w-10 h-10 rounded-full text-center transition-colors flex items-center justify-center font-medium
-              ${isSelected ? 'bg-pink-600 text-white font-bold border border-pink-700 shadow-md' : 'hover:bg-pink-100'}
-              ${isDisabled ? 'text-gray-400 cursor-not-allowed' : isSelected ? '' : 'text-gray-900'}
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full text-center transition-all duration-300 flex items-center justify-center font-bold text-xs sm:text-base
+              ${isSelected ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-[0_4px_12px_rgba(244,114,182,0.4)] scale-105' : 'hover:bg-pink-100/80 hover:text-pink-700'}
+              ${isDisabled ? 'text-pink-900/30 cursor-not-allowed' : isSelected ? '' : 'text-pink-950'}
             `}
                 >
                     {day}
@@ -3959,18 +3960,18 @@ const Calendar: React.FC<{
     };
 
     return (
-        <div className="w-full max-w-full sm:max-w-sm mx-auto bg-white rounded-xl border border-gray-100 p-2 shadow-sm">
-            <div className="flex justify-between items-center mb-4 px-2 pt-2">
-                <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-gray-100 text-gray-700"><ChevronLeftIcon /></button>
-                <h3 className="font-bold text-lg capitalize text-gray-900">
+        <div className="w-full max-w-[25rem] aspect-auto sm:aspect-square mx-auto bg-white/80 backdrop-blur-sm rounded-[1.5rem] border border-pink-100 p-3 sm:p-4 shadow-[0_8px_30px_rgb(244,114,182,0.1)] flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center mb-2 px-2 pt-1">
+                <button type="button" onClick={() => changeMonth(-1)} className="p-1.5 sm:p-2 rounded-full hover:bg-pink-100 text-pink-500 transition-colors"><ChevronLeftIcon /></button>
+                <h3 className="font-extrabold text-lg capitalize text-pink-950 tracking-tight">
                     {currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                 </h3>
-                <button type="button" onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-gray-100 text-gray-700"><ChevronRightIcon /></button>
+                <button type="button" onClick={() => changeMonth(1)} className="p-1.5 sm:p-2 rounded-full hover:bg-pink-100 text-pink-500 transition-colors"><ChevronRightIcon /></button>
             </div>
-            <div className="grid grid-cols-7 gap-3 text-center text-sm text-gray-600 mb-2 font-bold uppercase tracking-wide">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[10px] sm:text-xs text-pink-800/60 mb-1 font-bold uppercase tracking-wider">
                 {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => <div key={i}>{d}</div>)}
             </div>
-            <div className="grid grid-cols-7 gap-3 place-items-center">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2 place-items-center flex-1 content-start pb-1">
                 {renderDays()}
             </div>
         </div>
@@ -4057,7 +4058,7 @@ const DatePicker: React.FC<{
                 </div>
 
                 {isOpen && (
-                    <div className="absolute z-[10001] top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[320px] max-w-[90vw] left-0 right-0 mx-auto">
+                    <div className="absolute z-[10001] top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 w-[min(24rem,calc(100vw-1rem))] max-w-[90vw] left-1/2 -translate-x-1/2">
                         <Calendar
                             selectedDate={selectedDate}
                             onDateChange={handleDateChange}
@@ -9380,12 +9381,12 @@ const DaycareRegistrationForm: React.FC<{
     }
 
     const formContent = (
-        <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto space-y-6 pb-20">
+        <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto space-y-6 pb-10">
             {isAdmin && <div className="flex justify-end mb-4"><Badge variant="secondary">Admin Mode</Badge></div>}
 
             <div className="space-y-6">
                 {/* Dados do Tutor */}
-                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
                     <CardHeader>
                         <CardTitle>Dados do Tutor</CardTitle>
                     </CardHeader>
@@ -9415,7 +9416,7 @@ const DaycareRegistrationForm: React.FC<{
                 </Card>
 
                 {/* Dados do Pet */}
-                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
                     <CardHeader>
                         <CardTitle>Dados do Pet</CardTitle>
                     </CardHeader>
@@ -9455,7 +9456,7 @@ const DaycareRegistrationForm: React.FC<{
                 </Card>
 
                 {/* Saúde e Comportamento */}
-                <Card className="rounded-3xl shadow-lg border-pink-100">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm">
                     <CardHeader>
                         <CardTitle>Saúde e Comportamento</CardTitle>
                     </CardHeader>
@@ -9517,7 +9518,7 @@ const DaycareRegistrationForm: React.FC<{
                 </Card>
 
                 {/* Objetos entregues */}
-                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
                     <CardHeader>
                         <CardTitle>Objetos entregues sempre</CardTitle>
                     </CardHeader>
@@ -9540,7 +9541,7 @@ const DaycareRegistrationForm: React.FC<{
                 </Card>
 
                 {/* Plano */}
-                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
                     <CardHeader>
                         <CardTitle>Plano contratado</CardTitle>
                     </CardHeader>
@@ -9565,7 +9566,7 @@ const DaycareRegistrationForm: React.FC<{
                     </CardContent>
                 </Card>
                 {/* Horários e Dias */}
-                <Card className="rounded-3xl shadow-lg border-pink-100">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm">
                     <CardHeader>
                         <CardTitle>Horários e Dias</CardTitle>
                     </CardHeader>
@@ -9632,7 +9633,7 @@ const DaycareRegistrationForm: React.FC<{
 
                 {/* Extra Services */}
                 {/* Extra Services */}
-                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
                     <CardHeader>
                         <CardTitle>Serviços Extras</CardTitle>
                     </CardHeader>
@@ -9962,7 +9963,7 @@ const DaycareRegistrationForm: React.FC<{
                 </div> */}
 
                 {/* Resumo & Detalhes Financeiros */}
-                <Card className="rounded-3xl shadow-lg border-pink-100 overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
                     <CardHeader>
                         <CardTitle>Resumo & Detalhes Financeiros</CardTitle>
                     </CardHeader>
@@ -10021,7 +10022,7 @@ const DaycareRegistrationForm: React.FC<{
                     </CardContent>
                 </Card>
             </div>
-            <div className="p-6 bg-white flex justify-between items-center mt-auto rounded-b-2xl border-t border-gray-100">
+            <div className="p-6 bg-white/90 backdrop-blur-sm flex justify-between items-center mt-auto rounded-b-[2rem] border-t border-pink-100">
                 <Button
                     type="button"
                     variant="secondary"
@@ -10041,7 +10042,7 @@ const DaycareRegistrationForm: React.FC<{
                             setShowSubmissionWarning(true);
                         }
                     }}
-                    className={isAdmin ? "" : "bg-pink-600 hover:bg-pink-700 text-white rounded-2xl text-lg px-8 shadow-lg hover:shadow-xl transition-all"}
+                    className={isAdmin ? "" : "bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-2xl text-lg px-8 shadow-[0_8px_24px_rgba(244,114,182,0.25)] hover:shadow-[0_8px_24px_rgba(244,114,182,0.4)] transition-all"}
                 >
                     {isSubmitting ? 'Enviando...' : (isAdmin ? 'Adicionar Matrícula' : 'Solicitar Matrícula')}
                 </Button>
@@ -10080,23 +10081,37 @@ const DaycareRegistrationForm: React.FC<{
     }
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100">
-            <header className="text-center mb-6 animate-fadeInUp">
-                <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-24 w-24 mx-auto mb-4 drop-shadow-lg" loading="eager" />
-                <h1 className="font-brand text-6xl text-pink-800 mb-2">Sandy's Pet Shop</h1>
-                <p className="text-gray-600 text-xl font-medium">Matrícula na Creche</p>
-                <button
-                    type="button"
-                    onClick={onBack || (() => setView && setView('scheduler'))}
-                    className="mt-4 px-6 py-2 bg-white/80 hover:bg-white text-pink-700 font-semibold rounded-full shadow-sm hover:shadow-md transition-all border border-pink-200 flex items-center gap-2 mx-auto"
-                >
-                    <span className="text-xl">⬅️</span> {isAdmin ? 'Sair' : 'Voltar'}
-                </button>
-            </header>
+        <div className="min-h-screen p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
+            <div className="w-full max-w-5xl mx-auto animate-fadeIn">
+                <header className="w-full flex flex-col md:flex-row items-center justify-between mb-8 animate-fadeInUp gap-6">
+                    <div className="flex items-center gap-5 text-center md:text-left">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-pink-300 rounded-full blur-xl opacity-50"></div>
+                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-20 w-20 object-contain drop-shadow-2xl" loading="eager" />
+                        </div>
+                        <div>
+                            <h1 className="font-brand text-4xl md:text-5xl text-pink-900 tracking-tight leading-none">Sandy's Pet Shop</h1>
+                            <p className="text-pink-800/70 text-sm md:text-base font-semibold tracking-wide uppercase mt-2">Matrícula na Creche</p>
+                        </div>
+                    </div>
+                </header>
 
-            <main className="w-full max-w-4xl animate-fadeIn">
-                {formContent}
-            </main>
+                <main className="w-full max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/50 backdrop-blur-sm relative">
+                    <button
+                        type="button"
+                        onClick={onBack || (() => setView && setView('scheduler'))}
+                        className="absolute left-4 top-4 p-2 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-sm border border-pink-100 transition-all z-10"
+                        title="Voltar"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                        </svg>
+                    </button>
+                    <div className="pt-8">
+                        {formContent}
+                    </div>
+                </main>
+            </div>
         </div>
     );
 };
@@ -10597,7 +10612,12 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             return;
         }
 
-        const isPetMovelSubmit = !!selectedCondo;
+        const isPetMovelSubmit = !!selectedService && [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
+        if (isPetMovelSubmit && !selectedCondo) {
+            alert('Selecione o condomínio para agendar no Pet Móvel.');
+            setIsSubmitting(false);
+            return;
+        }
         const targetTable = isPetMovelSubmit ? 'pet_movel_appointments' : 'appointments';
 
         const basePayload = {
@@ -10699,65 +10719,118 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     };
 
     const isStep1Valid = formData.petName && formData.ownerName && formData.whatsapp.length > 13 && formData.petBreed && formData.ownerAddress;
-    const isStep2Valid = serviceStepView !== 'main' && selectedService && (isVisitService || selectedWeight);
+    const isPetMovelServiceSelected = !!selectedService && [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
+    const isStep2Valid = serviceStepView !== 'main' && selectedService && (isVisitService || selectedWeight) && (!isPetMovelServiceSelected || !!selectedCondo);
     const isStep3Valid = selectedTime !== null;
 
     const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100">
-            <header className="text-center mb-6 animate-fadeInUp">
-                <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-24 w-24 mx-auto mb-4 drop-shadow-lg" loading="eager" />
-                <h1 className="font-brand text-6xl text-pink-800 mb-2">Sandy's Pet Shop</h1>
-                <p className="text-gray-600 text-xl font-medium">Agendamento Online</p>
-                <button
-                    onClick={() => setIsPriceModalOpen(true)}
-                    className="mt-4 px-6 py-2 bg-white/80 hover:bg-white text-pink-700 font-semibold rounded-full shadow-sm hover:shadow-md transition-all border border-pink-200 flex items-center gap-2 mx-auto"
-                >
-                    <span className="text-xl">📋</span> Tabela de Preços
-                </button>
-            </header>
-
-            <PriceTableModal isOpen={isPriceModalOpen} onClose={() => setIsPriceModalOpen(false)} />
-
-            {serviceStepView === 'main' && (
-                <section className="w-full max-w-4xl bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100 rounded-3xl shadow-xl border border-pink-200/60 mb-6 p-6 sm:p-8 animate-fadeIn">
-                    <p className="text-lg sm:text-2xl md:text-3xl font-bold text-pink-700 mb-2 text-center whitespace-nowrap leading-none tracking-tight">🎉 Bem-vindo a Sandy Pet! 🐶💗</p>
-                    <p className="text-gray-700 text-base sm:text-lg mb-3 text-center">Estamos muito felizes em receber você e seu pet por aqui!</p>
-                    <p className="text-gray-700 text-base sm:text-lg text-center">Escolha abaixo o serviço ideal para o seu melhor amigo e faça seu agendamento de forma simples e rápida:</p>
-                    <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-
-                        <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
-                            <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-12 h-12 rounded-full object-contain mb-2" loading="eager" />
-                            <span className="text-lg">Banho & Tosa</span>
-                            <span className="text-sm text-gray-600">Fixo</span>
-                        </button>
-
-
-                        <button type="button" onClick={() => { setServiceStepView('pet_movel_condo'); setSelectedService(null); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
-                            <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-12 h-12 rounded-full object-contain mb-2" loading="lazy" />
-                            <span className="text-lg">Pet Móvel</span>
-                            <span className="text-sm text-gray-600">Condomínios</span>
-                        </button>
-
-
-                        <button type="button" onClick={() => { setSelectedService(null); setView('daycareRegistration'); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
-                            <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-12 h-12 rounded-full object-contain mb-2" loading="lazy" />
-                            <span className="text-lg">Creche Pet</span>
-                        </button>
-
-
-                        <button type="button" onClick={() => { setView('visitSelector'); }} className="p-6 rounded-2xl text-center font-semibold transition-colors border-2 flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 text-gray-800 border-gray-300 w-full min-h-[140px] md:min-h-[160px]">
-                            <SafeImage src="https://cdn-icons-png.flaticon.com/512/2196/2196747.png" alt="Visita" className="w-12 h-12 rounded-full object-contain mb-2" loading="lazy" />
-                            <span className="text-lg">Visita</span>
-                        </button>
-
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
+            <div className="w-full max-w-5xl relative z-10 flex flex-col items-center">
+                <header className="w-full flex flex-col md:flex-row items-center justify-between mb-12 animate-fadeInUp gap-8">
+                    <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-pink-300 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500"></div>
+                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-28 w-28 object-contain transform group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl" loading="eager" />
+                        </div>
+                        <div>
+                            <h1 className="font-brand text-5xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1">Sandy's<br className="hidden md:block"/><span className="text-pink-600 md:ml-0 ml-2">Pet Shop</span></h1>
+                            <p className="text-pink-800/70 text-lg md:text-xl font-medium tracking-wide uppercase mt-2">Agendamento Online</p>
+                        </div>
                     </div>
-                </section>
-            )}
+                    <div className="flex-shrink-0">
+                        <button
+                            onClick={() => setIsPriceModalOpen(true)}
+                            className="group relative overflow-hidden px-8 py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center gap-3 transform hover:-translate-y-1"
+                        >
+                            <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
+                            <span className="relative z-10 text-2xl">📋</span>
+                            <span className="relative z-10 uppercase tracking-wider text-sm">Tabela de Preços</span>
+                        </button>
+                    </div>
+                </header>
 
-            {serviceStepView !== 'main' && (
-                <main className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/40 backdrop-blur-sm">
+                <PriceTableModal isOpen={isPriceModalOpen} onClose={() => setIsPriceModalOpen(false)} />
+
+                {serviceStepView === 'main' && (
+                    <section className="w-full animate-fadeIn">
+                        <div className="mb-10 text-center md:text-left max-w-2xl mx-auto md:mx-0">
+                            <h2 className="text-3xl md:text-5xl font-extrabold text-pink-950 mb-4 tracking-tight">
+                                Bem-vindo a <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400">Sandy Pet!</span> 🐶💗
+                            </h2>
+                            <p className="text-pink-900/80 text-lg md:text-xl leading-relaxed">
+                                Estamos muito felizes em receber você e seu pet por aqui! Escolha o serviço ideal para o seu melhor amigo e agende de forma simples.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 auto-rows-fr">
+                            {/* Bento Grid Layout */}
+                            
+                            <button 
+                                type="button" 
+                                onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); }} 
+                                className="group relative col-span-1 md:col-span-8 overflow-hidden rounded-[2.5rem] bg-white p-8 md:p-10 text-left transition-all duration-500 hover:shadow-2xl hover:shadow-pink-200/50 border border-pink-100/50 flex flex-col justify-between min-h-[260px] hover:-translate-y-1"
+                            >
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 group-hover:bg-pink-100 transition-colors duration-500"></div>
+                                <div className="relative z-10">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-20 h-20 mb-6 transform group-hover:scale-110 transition-transform duration-500" loading="eager" />
+                                </div>
+                                <div className="relative z-10">
+                                    <h3 className="text-4xl font-extrabold text-pink-950 mb-2 tracking-tight">Banho & Tosa</h3>
+                                    <p className="text-pink-800/60 font-bold uppercase tracking-[0.2em] text-xs">Atendimento Fixo</p>
+                                </div>
+                            </button>
+
+                            <button 
+                                type="button" 
+                                onClick={() => { setServiceStepView('pet_movel'); setSelectedService(null); setSelectedCondo(null); }} 
+                                className="group relative col-span-1 md:col-span-4 overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-pink-500 to-rose-500 p-8 md:p-10 text-left transition-all duration-500 hover:shadow-2xl hover:shadow-rose-300/50 border border-transparent flex flex-col justify-between min-h-[260px] hover:-translate-y-1"
+                            >
+                                <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
+                                <div className="relative z-10">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-16 h-16 mb-6 object-contain drop-shadow-md transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500" loading="lazy" />
+                                </div>
+                                <div className="relative z-10">
+                                    <h3 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Pet Móvel</h3>
+                                    <p className="text-white/80 font-bold uppercase tracking-[0.2em] text-xs">Condomínios</p>
+                                </div>
+                            </button>
+
+                            <button 
+                                type="button" 
+                                onClick={() => { setSelectedService(null); setView('daycareRegistration'); }} 
+                                className="group relative col-span-1 md:col-span-6 overflow-hidden rounded-[2rem] bg-white p-8 text-left transition-all duration-500 hover:shadow-2xl hover:shadow-pink-200/50 border border-pink-100/50 flex items-center justify-between min-h-[160px] hover:-translate-y-1"
+                            >
+                                <div className="relative z-10 flex flex-col">
+                                    <h3 className="text-4xl font-extrabold text-pink-950 mb-2 tracking-tight">Creche Pet</h3>
+                                    <p className="text-pink-800/60 font-bold uppercase tracking-[0.2em] text-xs">Matrícula</p>
+                                </div>
+                                <div className="relative z-10 bg-pink-50 p-5 rounded-full group-hover:bg-pink-100 transition-colors duration-300">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-14 h-14 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                </div>
+                            </button>
+
+                            <button 
+                                type="button" 
+                                onClick={() => { setView('visitSelector'); }} 
+                                className="group relative col-span-1 md:col-span-6 overflow-hidden rounded-[2rem] bg-gradient-to-br from-pink-500 to-rose-500 p-8 text-left transition-all duration-500 hover:shadow-2xl hover:shadow-rose-300/50 border border-transparent flex items-center justify-between min-h-[160px] hover:-translate-y-1"
+                            >
+                                <div className="relative z-10 flex flex-col">
+                                    <h3 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Visita</h3>
+                                    <p className="text-white/80 font-bold uppercase tracking-[0.2em] text-xs">Agendar Tour</p>
+                                </div>
+                                <div className="relative z-10 bg-white/20 p-5 rounded-full group-hover:bg-white/30 transition-colors duration-300">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/2196/2196747.png" alt="Visita" className="w-14 h-14 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                </div>
+                            </button>
+
+                        </div>
+                    </section>
+                )}
+
+                {serviceStepView !== 'main' && (
+                    <main className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/40 backdrop-blur-sm mx-auto mt-8">
                     {/* Progress Bar Removed as Requested */}
 
                     <form onSubmit={handleSubmit} className={`relative p-6 sm:p-8 transition-all duration-300 ${isAnimating ? 'animate-slideOutToLeft' : 'animate-slideInFromRight'}`}>
@@ -10789,11 +10862,11 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                         </div>
                         {/* SECTION 1: DADOS */}
                         <div className="space-y-7 border-b border-gray-100 pb-8">
-                            <h2 className="text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Informações</h2>
+                            <h2 className="text-3xl font-extrabold text-pink-950 whitespace-nowrap leading-none tracking-tight">Informações</h2>
                             <div>
-                                <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label>
+                                <label htmlFor="whatsapp" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">WhatsApp</label>
                                 <div className="relative mt-1">
-                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3"><WhatsAppIcon /></span>
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4"><WhatsAppIcon /></span>
                                     <input
                                         type="tel"
                                         name="whatsapp"
@@ -10803,39 +10876,39 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         required
                                         placeholder="(XX) XXXXX-XXXX"
                                         maxLength={15}
-                                        className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors"
+                                        className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
-                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors" /></div>
+                                <label htmlFor="ownerName" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">Seu Nome</label>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-4"><UserIcon /></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all" /></div>
                             </div>
                             <div>
-                                <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
-                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors" /></div>
+                                <label htmlFor="petName" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">Nome do Pet</label>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-4"><PawIcon /></span><input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all" /></div>
                             </div>
                             <div>
-                                <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
-                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors" /></div>
+                                <label htmlFor="petBreed" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">Raça do Pet</label>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-4"><BreedIcon /></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all" /></div>
                             </div>
                             <div>
-                                <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Seu Endereço</label>
-                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors" /></div>
+                                <label htmlFor="ownerAddress" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">Seu Endereço</label>
+                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-4"><AddressIcon /></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all" /></div>
                             </div>
                         </div>
 
                         {/* SECTION 2: SERVIÇOS */}
                         <div className="space-y-6 pt-6 border-b border-gray-100 pb-8">
                             {serviceStepView === 'main' ? (
-                                <h2 className="text-3xl font-bold text-gray-800">Escolha os Serviços</h2>
+                                <h2 className="text-3xl font-extrabold text-pink-950 whitespace-nowrap leading-none tracking-tight">Escolha os Serviços</h2>
                             ) : (
-                                <h2 className="text-3xl font-bold text-gray-800">Detalhes do Serviço</h2>
+                                <h2 className="text-3xl font-extrabold text-pink-950 whitespace-nowrap leading-none tracking-tight">Detalhes do Serviço</h2>
                             )}
 
                             {serviceStepView === 'main' && (
                                 <div>
-                                    <h3 className="text-md font-semibold text-gray-700 mb-2">1. Selecione a Categoria</h3>
+                                    <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">1. Selecione a Categoria</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
                                             <span className="text-lg">Banho & Tosa</span>
@@ -10845,7 +10918,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                             <span className="text-lg">{SERVICES[ServiceType.VISIT_DAYCARE].label}</span>
                                         </button>
 
-                                        <button type="button" onClick={() => { console.log('Clicou em Pet Móvel'); setServiceStepView('pet_movel_condo'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
+                                        <button type="button" onClick={() => { console.log('Clicou em Pet Móvel'); setServiceStepView('pet_movel'); setSelectedCondo(null); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center min-h-[56px] sm:min-h-[64px] bg-white hover:bg-pink-50 border-gray-200">
                                             <span className="text-lg">Pet Móvel</span>
                                             <span className="text-xs text-gray-600 mt-1">Condomínios</span>
                                         </button>
@@ -10855,7 +10928,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
                             {serviceStepView === 'pet_movel_condo' && (
                                 <div className="space-y-6">
-                                    <h3 className="text-md font-semibold text-gray-700 mb-2">1. Selecione o Condomínio</h3>
+                                    <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">1. Selecione o Condomínio</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         {['Vitta Parque', 'Max Haus', 'Paseo'].map(condo => (
                                             <button
@@ -10882,14 +10955,29 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
                             {serviceStepView === 'bath_groom' && (
                                 <div className="space-y-6">
-                                    <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço Principal</h3>
+                                    <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">1. Serviço Principal</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <button type="button" onClick={() => setSelectedService(ServiceType.BATH)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.BATH ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                            <span className="text-lg">{SERVICES[ServiceType.BATH].label}</span>
-                                            <span className="text-xs text-gray-600 mt-1">Tosa Higiênica inclusa</span>
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.BATH)} className={`group relative overflow-hidden rounded-[2rem] p-6 text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-between items-center min-h-[160px] hover:-translate-y-1 ${selectedService === ServiceType.BATH ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
+                                            <div className="relative z-10 flex items-center justify-center mb-4">
+                                                <div className={`p-4 rounded-full transition-colors duration-300 ${selectedService === ServiceType.BATH ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
+                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho" className="w-10 h-10 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                                </div>
+                                            </div>
+                                            <div className="relative z-10 text-center">
+                                                <h4 className="text-2xl font-bold tracking-tight mb-1">{SERVICES[ServiceType.BATH].label}</h4>
+                                                <p className="text-sm font-semibold uppercase tracking-[0.1em] opacity-70">Tosa Higiênica inclusa</p>
+                                            </div>
                                         </button>
-                                        <button type="button" onClick={() => setSelectedService(ServiceType.BATH_AND_GROOMING)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                            <span className="text-lg">{SERVICES[ServiceType.BATH_AND_GROOMING].label}</span>
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.BATH_AND_GROOMING)} className={`group relative overflow-hidden rounded-[2rem] p-6 text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-between items-center min-h-[160px] hover:-translate-y-1 ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
+                                            <div className="relative z-10 flex items-center justify-center mb-4">
+                                                <div className={`p-4 rounded-full transition-colors duration-300 ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
+                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-10 h-10 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                                </div>
+                                            </div>
+                                            <div className="relative z-10 text-center">
+                                                <h4 className="text-2xl font-bold tracking-tight mb-1">{SERVICES[ServiceType.BATH_AND_GROOMING].label}</h4>
+                                                <p className="text-sm font-semibold uppercase tracking-[0.1em] opacity-70">Serviço Completo</p>
+                                            </div>
                                         </button>
                                     </div>
 
@@ -10898,14 +10986,47 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
                             {serviceStepView === 'pet_movel' && (
                                 <div className="space-y-6">
-                                    <h3 className="text-md font-semibold text-gray-700 mb-2">1. Serviço Principal (Pet Móvel)</h3>
+                                    <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">1. Selecione o Condomínio</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        {['Vitta Parque', 'Max Haus', 'Paseo'].map(condo => (
+                                            <button
+                                                key={condo}
+                                                type="button"
+                                                onClick={() => setSelectedCondo(condo)}
+                                                className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex items-center justify-center min-h-[56px] sm:min-h-[64px] ${selectedCondo === condo ? 'bg-pink-100 border-pink-500 shadow-lg text-pink-950' : 'bg-white hover:bg-pink-50 border-gray-200 text-gray-800'}`}
+                                            >
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-lg">{condo}</span>
+                                                    <span className="text-xs text-gray-600 mt-1">
+                                                        {condo === 'Vitta Parque' ? 'Quartas-Feiras' : condo === 'Max Haus' ? 'Quintas-Feiras' : 'Sextas-Feiras'}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">2. Serviço Principal (Pet Móvel)</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                            <span className="text-lg">Banho</span>
-                                            <span className="text-xs text-gray-600 mt-1">Tosa Higiênica inclusa</span>
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH)} className={`group relative overflow-hidden rounded-[2rem] p-6 text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-between items-center min-h-[160px] hover:-translate-y-1 ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
+                                            <div className="relative z-10 flex items-center justify-center mb-4">
+                                                <div className={`p-4 rounded-full transition-colors duration-300 ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
+                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Banho Pet Móvel" className="w-10 h-10 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                                </div>
+                                            </div>
+                                            <div className="relative z-10 text-center">
+                                                <h4 className="text-2xl font-bold tracking-tight mb-1">Banho</h4>
+                                                <p className="text-sm font-semibold uppercase tracking-[0.1em] opacity-70">Tosa Higiênica inclusa</p>
+                                            </div>
                                         </button>
-                                        <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH_AND_GROOMING)} className={`p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center h-full ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-pink-300 text-black border-pink-600 shadow-lg' : 'bg-white hover:bg-pink-50 border-gray-200'}`}>
-                                            <span className="text-lg">Banho & Tosa</span>
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH_AND_GROOMING)} className={`group relative overflow-hidden rounded-[2rem] p-6 text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-between items-center min-h-[160px] hover:-translate-y-1 ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
+                                            <div className="relative z-10 flex items-center justify-center mb-4">
+                                                <div className={`p-4 rounded-full transition-colors duration-300 ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
+                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Banho & Tosa Pet Móvel" className="w-10 h-10 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                                </div>
+                                            </div>
+                                            <div className="relative z-10 text-center">
+                                                <h4 className="text-2xl font-bold tracking-tight mb-1">Banho & Tosa</h4>
+                                                <p className="text-sm font-semibold uppercase tracking-[0.1em] opacity-70">Serviço Completo</p>
+                                            </div>
                                         </button>
                                     </div>
 
@@ -10972,24 +11093,34 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             {selectedService && !isVisitService && (
                                 <>
                                     <div>
-                                        <label htmlFor="petWeight" className="block text-md font-semibold text-gray-700 mb-2 mt-6">2. Peso do Pet</label>
-                                        <select id="petWeight" value={selectedWeight || ''} onChange={handleWeightChange} required className="block w-full py-3 px-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900">
-                                            <option value="" disabled>Selecione o peso</option>
-                                            {(Object.keys(PET_WEIGHT_OPTIONS) as PetWeight[]).map(key => (<option key={key} value={key}>{PET_WEIGHT_OPTIONS[key]}</option>))}
-                                        </select>
+                                        <label htmlFor="petWeight" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">2. Peso do Pet</label>
+                                        <div className="relative">
+                                            <select id="petWeight" value={selectedWeight || ''} onChange={handleWeightChange} required className="block w-full pl-6 pr-10 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all appearance-none cursor-pointer">
+                                                <option value="" disabled>Selecione o peso</option>
+                                                {(Object.keys(PET_WEIGHT_OPTIONS) as PetWeight[]).map(key => (<option key={key} value={key}>{PET_WEIGHT_OPTIONS[key]}</option>))}
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-pink-400">
+                                                <svg className="fill-current h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div>
-                                        <h3 className="text-md font-semibold text-gray-700 mb-2 mt-6">3. Serviços Adicionais (Opcional)</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                                            {ADDON_SERVICES.filter(a => a.id !== 'tosa_higienica').map(addon => {
-                                                const isDisabled = !selectedWeight || !selectedService || addon.excludesWeight?.includes(selectedWeight!) || (addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight!)) || (addon.requiresService && addon.requiresService !== selectedService);
-                                                return (
-                                                    <label key={addon.id} className={`flex items-center p-6 sm:p-5 rounded-lg border-2 transition-all ${isDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer hover:bg-pink-50'} ${selectedAddons[addon.id] ? 'border-pink-500 bg-pink-50' : 'border-gray-200'}`}>
-                                                        <input type="checkbox" onChange={() => handleAddonToggle(addon.id)} checked={!!selectedAddons[addon.id]} disabled={isDisabled} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                                        <span className="ml-2.5">{addon.label}</span>
-                                                    </label>
-                                                );
-                                            })}
+                                        <h3 className="text-sm font-bold text-pink-900 uppercase tracking-widest mb-4 mt-8">3. Serviços Adicionais (Opcional)</h3>
+                                        <div className="max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
+                                                {ADDON_SERVICES.filter(a => a.id !== 'tosa_higienica').map(addon => {
+                                                    const isDisabled = !selectedWeight || !selectedService || addon.excludesWeight?.includes(selectedWeight!) || (addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight!)) || (addon.requiresService && addon.requiresService !== selectedService);
+                                                    return (
+                                                        <label key={addon.id} className={`group relative overflow-hidden flex items-center py-2.5 px-4 rounded-xl border transition-all duration-300 ${isDisabled ? 'bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed opacity-60' : 'cursor-pointer hover:-translate-y-0.5 hover:shadow-sm'} ${selectedAddons[addon.id] ? 'bg-pink-100 border-pink-400 shadow-sm' : 'bg-white border-pink-100/50 hover:border-pink-200'}`}>
+                                                            <div className={`flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedAddons[addon.id] ? 'bg-pink-500 border-pink-500' : 'border-pink-200 bg-white group-hover:border-pink-300'}`}>
+                                                                {selectedAddons[addon.id] && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
+                                                            </div>
+                                                            <input type="checkbox" onChange={() => handleAddonToggle(addon.id)} checked={!!selectedAddons[addon.id]} disabled={isDisabled} className="hidden" />
+                                                            <span className={`ml-3 text-sm font-semibold tracking-wide truncate ${selectedAddons[addon.id] ? 'text-pink-950' : 'text-pink-800/80'}`}>{addon.label}</span>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
                                 </>
@@ -11000,29 +11131,23 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
                         {/* SECTION 3: CALENDÁRIO */}
                         {selectedService && (
-                            <div className="space-y-6 pt-6 border-b border-gray-100 pb-8 animate-fadeIn">
-                                <h2 className="text-3xl font-bold text-gray-800">Selecione Data e Hora</h2>
-                                <div>
+                            <div className="space-y-6 pt-8 border-b border-pink-100 pb-10 animate-fadeIn">
+                                <h2 className="text-3xl font-extrabold text-pink-950 whitespace-nowrap leading-none tracking-tight mb-6">Selecione Data e Hora</h2>
+                                <div className="bg-pink-50/30 p-2 sm:p-3 rounded-[2rem] border border-pink-100/50">
                                     <Calendar
                                         selectedDate={selectedDate}
                                         onDateChange={setSelectedDate}
                                         disablePast
                                         disableWeekends={true}
                                         allowedDays={(() => {
-                                            // Para serviços Pet Móvel, definir dias permitidos baseado no condomínio
                                             if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService)) {
                                                 switch (selectedCondo) {
-                                                    case 'Vitta Parque':
-                                                        return [3]; // Quarta-feira (0=domingo, 1=segunda, 2=terça, 3=quarta, 4=quinta, 5=sexta, 6=sábado)
-                                                    case 'Max Haus':
-                                                        return [4]; // Quinta-feira
-                                                    case 'Paseo':
-                                                        return [5]; // Sexta-feira
-                                                    default:
-                                                        return []; // Nenhum dia permitido se condomínio não selecionado
+                                                    case 'Vitta Parque': return [3]; 
+                                                    case 'Max Haus': return [4];
+                                                    case 'Paseo': return [5];
+                                                    default: return []; 
                                                 }
                                             }
-                                            // Para outros serviços, usar allowedDays normal
                                             return allowedDays;
                                         })()}
                                         disabledDates={(() => {
@@ -11033,54 +11158,62 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         })()}
                                     />
                                 </div>
-                                <div>
-                                    <h3 className="text-md font-semibold text-gray-700 mb-4 text-center">Horários Disponíveis</h3>
-                                    <TimeSlotPicker
-                                        key={selectedDate.toISOString()}
-                                        selectedDate={selectedDate}
-                                        selectedService={selectedService}
-                                        appointments={appointments}
-                                        onTimeSelect={setSelectedTime}
-                                        selectedTime={selectedTime}
-                                        workingHours={isVisitService ? VISIT_WORKING_HOURS : WORKING_HOURS}
-                                        isPetMovel={!!selectedCondo}
-                                        allowedDays={(() => {
-                                            if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService)) {
-                                                switch (selectedCondo) {
-                                                    case 'Vitta Parque': return [3];
-                                                    case 'Max Haus': return [4];
-                                                    case 'Paseo': return [5];
-                                                    default: return [];
+                                <div className="mt-8">
+                                    <h3 className="text-sm font-bold text-pink-900 uppercase tracking-widest mb-4 text-center">Horários Disponíveis</h3>
+                                    <div className="bg-pink-50/30 p-6 rounded-[2rem] border border-pink-100/50">
+                                        <TimeSlotPicker
+                                            key={selectedDate.toISOString()}
+                                            selectedDate={selectedDate}
+                                            selectedService={selectedService}
+                                            appointments={appointments}
+                                            onTimeSelect={setSelectedTime}
+                                            selectedTime={selectedTime}
+                                            workingHours={isVisitService ? VISIT_WORKING_HOURS : WORKING_HOURS}
+                                            isPetMovel={!!selectedCondo}
+                                            allowedDays={(() => {
+                                                if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService)) {
+                                                    switch (selectedCondo) {
+                                                        case 'Vitta Parque': return [3];
+                                                        case 'Max Haus': return [4];
+                                                        case 'Paseo': return [5];
+                                                        default: return [];
+                                                    }
                                                 }
-                                            }
-                                            return allowedDays;
-                                        })()}
-                                        selectedCondo={selectedCondo}
-                                        disablePastTimes={true}
-                                    />
+                                                return allowedDays;
+                                            })()}
+                                            selectedCondo={selectedCondo}
+                                            disablePastTimes={true}
+                                        />
+                                    </div>
                                 </div>
                                 {selectedService && !isVisitService && selectedWeight && totalPrice > 0 && (
-                                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg animate-fadeIn">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-lg font-semibold text-gray-700">Preço Total:</span>
-                                            <span className="text-2xl font-bold text-green-600">R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</span>
+                                    <div className="mt-8 p-6 bg-gradient-to-r from-pink-100 to-rose-100 border-2 border-pink-200 rounded-[2rem] animate-fadeIn shadow-lg shadow-pink-200/50">
+                                        <div className="flex justify-between items-center gap-3 whitespace-nowrap">
+                                            <span className="text-lg font-bold text-pink-900 uppercase tracking-wider whitespace-nowrap">Preço Total:</span>
+                                            <span className="text-2xl sm:text-3xl font-extrabold text-pink-700 drop-shadow-sm whitespace-nowrap">R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</span>
                                         </div>
                                         {Object.keys(selectedAddons).some(key => selectedAddons[key]) && (
-                                            <div className="mt-2 text-sm text-gray-600">
-                                                <div>Serviço base: R$ {(totalPrice - Object.keys(selectedAddons).reduce((sum, addonId) => {
-                                                    if (selectedAddons[addonId]) {
-                                                        const addon = ADDON_SERVICES.find(a => a.id === addonId);
-                                                        return sum + (addon?.price || 0);
-                                                    }
-                                                    return sum;
-                                                }, 0)).toFixed(2)}</div>
-                                                <div>Adicionais: R$ {Object.keys(selectedAddons).reduce((sum, addonId) => {
-                                                    if (selectedAddons[addonId]) {
-                                                        const addon = ADDON_SERVICES.find(a => a.id === addonId);
-                                                        return sum + (addon?.price || 0);
-                                                    }
-                                                    return sum;
-                                                }, 0).toFixed(2)}</div>
+                                            <div className="mt-4 pt-4 border-t border-pink-200/50 text-sm font-medium text-pink-800 flex flex-col gap-1">
+                                                <div className="flex justify-between">
+                                                    <span>Serviço base:</span>
+                                                    <span>R$ {(totalPrice - Object.keys(selectedAddons).reduce((sum, addonId) => {
+                                                        if (selectedAddons[addonId]) {
+                                                            const addon = ADDON_SERVICES.find(a => a.id === addonId);
+                                                            return sum + (addon?.price || 0);
+                                                        }
+                                                        return sum;
+                                                    }, 0)).toFixed(2).replace('.', ',')}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Adicionais:</span>
+                                                    <span>R$ {Object.keys(selectedAddons).reduce((sum, addonId) => {
+                                                        if (selectedAddons[addonId]) {
+                                                            const addon = ADDON_SERVICES.find(a => a.id === addonId);
+                                                            return sum + (addon?.price || 0);
+                                                        }
+                                                        return sum;
+                                                    }, 0).toFixed(2).replace('.', ',')}</span>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -11091,7 +11224,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                         {/* SECTION 4: RESUMO E CONFIRMAÇÃO */}
                         {selectedTime && (
                             <div className="space-y-6 pt-6 animate-fadeIn">
-                                <h2 className="text-3xl font-bold text-gray-800 mb-4">Resumo do Agendamento</h2>
+                                <h2 className="text-3xl font-extrabold text-pink-950 leading-tight tracking-tight mb-4 break-words">Resumo do Agendamento</h2>
                                 <div className="p-6 bg-white rounded-lg space-y-2 text-gray-700 border border-gray-200">
                                     <p><strong>Pet:</strong> {formData.petName} ({formData.petBreed})</p>
                                     <p><strong>Responsável:</strong> {formData.ownerName}</p>
@@ -11106,9 +11239,12 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         <p className="text-2xl font-bold text-gray-900 text-right">Total: R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</p>
                                     </div>
                                 </div>
-                                <div className="mt-6">
-                                    <button type="submit" disabled={isSubmitting || !isStep1Valid || !isStep2Valid || !isStep3Valid} className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-4 px-8 rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed">
-                                        {isSubmitting ? 'Agendando...' : '✓ Confirmar Agendamento'}
+                                <div className="mt-8">
+                                    <button type="submit" disabled={isSubmitting || !isStep1Valid || !isStep2Valid || !isStep3Valid} className="group relative overflow-hidden w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-extrabold py-2.5 px-8 rounded-2xl transition-all duration-300 shadow-[0_8px_30px_rgb(244,114,182,0.3)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.5)] transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-lg tracking-wide uppercase">
+                                        <div className="absolute inset-0 bg-white/20 w-0 group-hover:w-full transition-all duration-500 ease-out"></div>
+                                        <span className="relative z-10 flex items-center justify-center gap-2">
+                                            {isSubmitting ? 'Agendando...' : <><span>✓</span> Confirmar Agendamento</>}
+                                        </span>
                                     </button>
                                 </div>
                             </div>
@@ -11117,22 +11253,23 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 </main>
             )}
 
-            <footer className="text-center mt-8 text-base">
-                <button onClick={() => setView('login')} className="text-gray-500 hover:text-pink-600 font-medium transition-colors underline-offset-4 hover:underline">Acesso Administrativo</button>
+            <footer className="text-center mt-12 text-base relative z-10">
+                <button onClick={() => setView('login')} className="text-pink-400 hover:text-pink-600 font-bold uppercase tracking-widest text-xs transition-colors underline-offset-8 hover:underline">Acesso Administrativo</button>
             </footer>
 
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
-                    <div className="text-center bg-white p-10 rounded-3xl shadow-2xl max-w-full sm:max-w-md mx-auto border-4 border-pink-200 animate-scaleIn">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn p-4">
+                    <div className="text-center bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-full sm:max-w-md mx-auto border border-pink-100 animate-scaleIn">
                         <SuccessIcon />
-                        <h2 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-pink-800 bg-clip-text text-transparent mt-4">Agendamento Confirmado!</h2>
-                        <p className="text-gray-600 mt-4 text-lg">Seu horário foi reservado com sucesso. Obrigado!</p>
-                        <div className="mt-6 p-4 bg-pink-50 rounded-xl">
-                            <p className="text-sm text-pink-800 font-medium">Você receberá uma confirmação via WhatsApp em breve</p>
+                        <h2 className="text-4xl font-extrabold bg-gradient-to-r from-pink-600 to-rose-500 bg-clip-text text-transparent mt-4 tracking-tight">Confirmado!</h2>
+                        <p className="text-pink-900/70 mt-4 text-lg">Seu horário foi reservado com sucesso. Obrigado!</p>
+                        <div className="mt-6 p-4 bg-pink-50 rounded-2xl border border-pink-100">
+                            <p className="text-sm text-pink-800 font-bold tracking-wide">Você receberá uma confirmação via WhatsApp em breve</p>
                         </div>
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 };
