@@ -4333,7 +4333,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState(false);
     const [isCloseDayModalOpen, setIsCloseDayModalOpen] = useState(false);
-    const [showCalendar, setShowCalendar] = useState(true);
     const [closeDaysMonth, setCloseDaysMonth] = useState<string>(() => {
         const d = new Date();
         const y = d.getFullYear();
@@ -4447,7 +4446,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             setAdminView('all');
         } else {
             setAdminView('daily');
-            setShowCalendar(true);
         }
     };
 
@@ -4790,18 +4788,10 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 <>
                     {adminView === 'daily' ? (
                         <>
-                            {showCalendar && (
-                                <section className="mb-8 p-4 bg-white rounded-2xl shadow-sm animate-fadeIn"><Calendar selectedDate={selectedAdminDate} onDateChange={(d: Date) => { setSelectedAdminDate(d); setShowCalendar(false); }} /></section>
-                            )}
+                            <section className="mb-8 p-4 bg-white rounded-2xl shadow-sm animate-fadeIn"><Calendar selectedDate={selectedAdminDate} onDateChange={setSelectedAdminDate} /></section>
                             <section className="animate-fadeInUp">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-2xl font-bold text-gray-700 pb-2 border-b-2 border-pink-200 whitespace-nowrap truncate">Agendamentos - {selectedAdminDate.toLocaleDateString('pt-BR')}</h2>
-                                    {!showCalendar && (
-                                        <button onClick={() => setShowCalendar(true)} className="inline-flex items-center justify-center gap-2 bg-gray-100 text-gray-700 font-semibold py-2 px-3 rounded-lg hover:bg-gray-200 transition-colors">
-                                            <CalendarIcon className="h-5 w-5" />
-                                            <span className="hidden sm:inline">Mostrar Calendário</span>
-                                        </button>
-                                    )}
+                                <div className="flex items-center justify-center mb-4">
+                                    <h2 className="text-2xl font-bold text-gray-700 pb-2 border-b-2 border-pink-200 whitespace-nowrap truncate text-center">Agendamentos - {selectedAdminDate.toLocaleDateString('pt-BR')}</h2>
                                 </div>
                                 {dailyAppointments.length > 0 ? (
                                     <div className="space-y-6">
