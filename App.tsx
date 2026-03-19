@@ -24,6 +24,7 @@ import { Select } from './src/components/ui/select';
 import MonthlyClientCard from './src/components/MonthlyClientCard';
 import AppointmentCard from './src/components/AppointmentCard';
 import StatisticsDashboardModal from './src/components/StatisticsDashboardModal';
+import MonthlyReminderModal from './src/components/MonthlyReminderModal';
 
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" fill=\"%23f3f4f6\"/><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-size=\"28\">🐾</text></svg>';
 
@@ -2890,61 +2891,142 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-[10001] p-4 animate-fadeIn">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scaleIn">
-                <form onSubmit={handleSubmit}>
-                    <div className="p-6 border-b">
-                        <h2 className="text-3xl font-bold text-gray-800">Editar Agendamento</h2>
-                    </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div><label className="font-semibold text-gray-600">Nome do Pet</label><input name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
-                        <div><label className="font-semibold text-gray-600">Nome do Dono</label><input name="owner_name" value={formData.owner_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
-                        <div><label className="font-semibold text-gray-600">WhatsApp</label><input name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
-                        <div><label className="font-semibold text-gray-600">Serviço</label><input name="service" value={formData.service} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
-                        <div><label className="font-semibold text-gray-600">Peso</label><input name="weight" value={formData.weight} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
-                        <div><label className="font-semibold text-gray-600">Preço (R$)</label><input type="number" name="price" value={formData.price} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
-                        <div><DatePicker value={datePart} onChange={setDatePart} label="Data" className="mt-1" /></div>
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[10001] p-4 sm:p-6 animate-fadeIn">
+            <div className="bg-white rounded-[2rem] shadow-2xl shadow-pink-500/10 w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar relative">
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+                <form onSubmit={handleSubmit} className="relative z-10">
+                    <div className="px-8 py-6 border-b border-pink-50/80 bg-white/50 sticky top-0 backdrop-blur-xl z-20 flex justify-between items-center">
                         <div>
-                            <label className="font-semibold text-gray-600">Hora</label>
-                            <select
-                                value={timePart}
-                                onChange={e => {
-                                    const val = Number(e.target.value);
-                                    if (availabilityCounts[val] >= MAX_CAPACITY_PER_SLOT) {
-                                        alert('Horário indisponível! Por favor selecione outro.');
-                                        return;
-                                    }
-                                    setTimePart(val);
-                                }}
-                                className="w-full mt-1 px-5 py-4 border rounded-lg bg-white"
-                            >
-                                {(['Creche Pet', 'Hotel Pet', visitDaycareLabel, visitHotelLabel].includes(formData.service) ? VISIT_WORKING_HOURS : WORKING_HOURS).map(h => {
-                                    const isFull = (availabilityCounts[h] || 0) >= MAX_CAPACITY_PER_SLOT;
-                                    return (
-                                        <option
-                                            key={h}
-                                            value={h}
-                                            disabled={isFull}
-                                            className={isFull ? 'text-red-400 bg-gray-100' : ''}
-                                        >
-                                            {`${h}:00`} {isFull ? '(Indisponível)' : ''}
-                                        </option>
-                                    );
-                                })}
-                            </select>
+                            <h2 className="text-2xl font-outfit font-bold text-gray-800">Editar Agendamento</h2>
+                            <p className="text-sm text-gray-500 mt-1">Atualize os detalhes do serviço agendado</p>
                         </div>
-                        <div className="md:col-span-2">
-                            <label className="font-semibold text-gray-600">Status</label>
-                            <select name="status" value={formData.status} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg bg-white">
-                                <option value="AGENDADO">Agendado</option>
-                                <option value="CONCLUÍDO">Concluído</option>
-                            </select>
-                        </div>
+                        <button type="button" onClick={onClose} className="p-2.5 bg-gray-50 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition-all">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
                     </div>
-                    <div className="p-6 bg-gray-50 flex justify-end gap-4">
-                        <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 font-bold py-3.5 px-4 rounded-lg">Cancelar</button>
-                        <button type="submit" disabled={isSubmitting} className="bg-pink-600 text-white font-bold py-3.5 px-4 rounded-lg disabled:bg-gray-400">
-                            {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
+
+                    <div className="p-8 space-y-8">
+                        {/* Identificação */}
+                        <section>
+                            <h3 className="text-lg font-outfit font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <div className="p-1.5 bg-pink-50 rounded-lg text-pink-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></div>
+                                Identificação do Cliente
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Nome do Pet</label>
+                                    <input type="text" name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Nome do Tutor</label>
+                                    <input type="text" name="owner_name" value={formData.owner_name} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">WhatsApp</label>
+                                    <input type="text" name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Detalhes do Serviço */}
+                        <section>
+                            <h3 className="text-lg font-outfit font-bold text-gray-800 mb-4 flex items-center gap-2 mt-8">
+                                <div className="p-1.5 bg-purple-50 rounded-lg text-purple-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" /></svg></div>
+                                Detalhes do Serviço
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Serviço</label>
+                                    <input type="text" name="service" value={formData.service} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Peso / Porte</label>
+                                    <input type="text" name="weight" value={formData.weight} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                </div>
+                                <div className="flex flex-col gap-1.5 md:col-span-2 lg:col-span-1">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Preço Total (R$)</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <span className="text-gray-500 font-medium">R$</span>
+                                        </div>
+                                        <input type="number" name="price" value={formData.price} onChange={handleInputChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-bold placeholder-gray-400" />
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Agendamento e Status */}
+                        <section className="bg-gray-50/50 rounded-2xl p-6 border border-gray-100 mt-8">
+                            <h3 className="text-lg font-outfit font-bold text-gray-800 mb-5 flex items-center gap-2">
+                                <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
+                                Agendamento e Status
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-end">
+                                <div className="flex flex-col gap-1.5">
+                                    <DatePicker 
+                                        value={datePart} 
+                                        onChange={setDatePart} 
+                                        label="Data do Agendamento" 
+                                        className="w-full [&_input]:!bg-white [&_input]:!py-3 [&_input]:!rounded-xl [&_input]:!border-gray-200 [&_input]:!shadow-sm focus-within:[&_input]:!ring-pink-500/50 focus-within:[&_input]:!border-pink-500 [&_label]:!ml-1" 
+                                        disableWeekends={false}
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Horário</label>
+                                    <div className="relative">
+                                        <select
+                                            value={timePart}
+                                            onChange={e => {
+                                                const val = Number(e.target.value);
+                                                if (availabilityCounts[val] >= MAX_CAPACITY_PER_SLOT) {
+                                                    alert('Horário indisponível! Por favor selecione outro.');
+                                                    return;
+                                                }
+                                                setTimePart(val);
+                                            }}
+                                            className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-700 font-medium shadow-sm"
+                                        >
+                                            {(['Creche Pet', 'Hotel Pet', visitDaycareLabel, visitHotelLabel].includes(formData.service) ? VISIT_WORKING_HOURS : WORKING_HOURS).map(h => {
+                                                const isFull = (availabilityCounts[h] || 0) >= MAX_CAPACITY_PER_SLOT;
+                                                return (
+                                                    <option
+                                                        key={h}
+                                                        value={h}
+                                                        disabled={isFull}
+                                                        className={isFull ? 'text-red-400 bg-gray-100' : ''}
+                                                    >
+                                                        {`${h}:00`} {isFull ? '(Indisponível)' : ''}
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg></div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-1.5 lg:col-span-1 md:col-span-2">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Status</label>
+                                    <div className="relative">
+                                        <select name="status" value={formData.status} onChange={handleInputChange} className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-700 font-medium shadow-sm">
+                                            <option value="AGENDADO">Agendado</option>
+                                            <option value="CONCLUÍDO">Concluído</option>
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div className="px-8 py-5 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3 rounded-b-[2rem]">
+                        <button type="button" onClick={onClose} className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm">
+                            Cancelar
+                        </button>
+                        <button type="submit" disabled={isSubmitting} className="px-8 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-semibold rounded-xl hover:from-pink-700 hover:to-rose-600 transition-all shadow-md shadow-pink-500/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2">
+                            {isSubmitting ? (
+                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Salvando...</>
+                            ) : (
+                                <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Salvar Alterações</>
+                            )}
                         </button>
                     </div>
                 </form>
@@ -6395,74 +6477,178 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
     return (
         <>
             {alertInfo && <AlertModal isOpen={true} onClose={handleAlertClose} title={alertInfo.title} message={alertInfo.message} variant={alertInfo.variant} />}
-            <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <form onSubmit={handleSubmit}>
-                        <div className="p-6 border-b"><h2 className="text-3xl font-bold text-gray-800">Editar Mensalista</h2></div>
-                        <div className="p-6 space-y-6">
-                            <input type="text" name="petName" placeholder="Nome do Pet" value={formData.petName} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg" />
-                            <input type="text" name="ownerName" placeholder="Nome do Dono" value={formData.ownerName} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg" />
-                            <input type="text" name="whatsapp" placeholder="WhatsApp" value={formData.whatsapp} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg" />
-                            <input type="text" name="condominium" placeholder="Nome do Condomínio" value={formData.condominium} onChange={handleInputChange} className="w-full px-5 py-4 border rounded-lg" />
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <select name="service" value={selectedService || ''} onChange={e => setSelectedService(e.target.value as ServiceType || null)} className="w-full px-5 py-4 border rounded-lg bg-white">
-                                    <option value="">Selecione o serviço (opcional)</option>
-                                    {Object.entries(SERVICES).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
-                                </select>
-                                <select name="weight" value={selectedWeight || ''} onChange={e => setSelectedWeight(e.target.value as PetWeight || null)} className="w-full px-5 py-4 border rounded-lg bg-white">
-                                    <option value="">Selecione o peso (opcional)</option>
-                                    {Object.entries(PET_WEIGHT_OPTIONS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                                </select>
+            <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6 animate-fadeIn">
+                <div className="bg-white rounded-[2rem] shadow-2xl shadow-pink-500/10 w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar relative">
+                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+                    <form onSubmit={handleSubmit} className="relative z-10">
+                        <div className="px-8 py-6 border-b border-pink-50/80 bg-white/50 sticky top-0 backdrop-blur-xl z-20 flex justify-between items-center">
+                            <div>
+                                <h2 className="text-2xl font-outfit font-bold text-gray-800">Editar Mensalista</h2>
+                                <p className="text-sm text-gray-500 mt-1">Atualize os dados e regras deste cliente</p>
                             </div>
-                            <input type="number" name="price" placeholder="Preço Fixo (R$)" value={price} onChange={handleInputChange} required className="w-full px-5 py-4 border rounded-lg" />
-                            <div className="p-4 bg-gray-50 rounded-lg border">
-                                <h3 className="font-semibold mb-2">Regra de Recorrência</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <select name="type" onChange={handleRecurrenceChange} value={recurrence.type} className="w-full px-5 py-4 border rounded-lg bg-white">
-                                        <option value="weekly">Semanal</option>
-                                        <option value="bi-weekly">Quinzenal</option>
-                                        <option value="monthly">Mensal</option>
-                                    </select>
-                                    {recurrence.type === 'weekly' || recurrence.type === 'bi-weekly' ? (
-                                        <select name="day" onChange={handleRecurrenceChange} value={recurrence.day} className="w-full px-5 py-4 border rounded-lg bg-white">
-                                            <option value={1}>Segunda-feira</option><option value={2}>Terça-feira</option><option value={3}>Quarta-feira</option><option value={4}>Quinta-feira</option><option value={5}>Sexta-feira</option>
-                                        </select>
-                                    ) : <input type="number" name="day" min="1" max="31" value={recurrence.day} onChange={handleRecurrenceChange} className="w-full px-5 py-4 border rounded-lg" />}
-                                </div>
-                                <select name="time" onChange={handleRecurrenceChange} value={recurrence.time} className="w-full px-5 py-4 border rounded-lg mt-4 bg-white">{WORKING_HOURS.map(h => <option key={h} value={h}>{`${h}:00`}</option>)}</select>
-                                <div className="mt-4">
-                                    <DatePicker
-                                        value={paymentDueDate}
-                                        onChange={setPaymentDueDate}
-                                        label="Data de Vencimento do Pagamento"
-                                        required
-                                        className="w-full mt-1"
-                                        disableWeekends={false}
-                                    />
-                                </div>
-                            </div>
-                            <div className="p-4 bg-gray-50 rounded-lg border">
-                                <h3 className="font-semibold mb-2">Status</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="font-semibold text-gray-700 text-sm">Status do Pagamento</label>
-                                        <select value={paymentStatus} onChange={e => setPaymentStatus(e.target.value as 'Pendente' | 'Pago')} className="w-full px-5 py-4 border rounded-lg bg-white mt-1">
-                                            <option value="Pendente">Pendente</option>
-                                            <option value="Pago">Pago</option>
-                                        </select>
-                                    </div>
-                                    <div className="flex items-end pb-1">
-                                        <label htmlFor="is_active" className="flex items-center gap-3 text-gray-700 cursor-pointer">
-                                            <input type="checkbox" id="is_active" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                            Manter mensalista ativo
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
+                            <button type="button" onClick={onClose} className="p-2.5 bg-gray-50 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition-all">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                         </div>
-                        <div className="p-6 bg-gray-50 flex justify-end gap-4">
-                            <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 font-bold py-3.5 px-4 rounded-lg">Cancelar</button>
-                            <button type="submit" disabled={isSubmitting} className="bg-pink-600 text-white font-bold py-3.5 px-4 rounded-lg disabled:bg-gray-400">{isSubmitting ? 'Salvando...' : 'Salvar Alterações'}</button>
+
+                        <div className="p-8 space-y-8">
+                            {/* Identificação */}
+                            <section>
+                                <h3 className="text-lg font-outfit font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <div className="p-1.5 bg-pink-50 rounded-lg text-pink-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></div>
+                                    Identificação
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-medium text-gray-700 ml-1">Nome do Pet <span className="text-pink-500">*</span></label>
+                                        <input type="text" name="petName" placeholder="Ex: Luna" value={formData.petName} onChange={handleInputChange} required className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-medium text-gray-700 ml-1">Nome do Tutor <span className="text-pink-500">*</span></label>
+                                        <input type="text" name="ownerName" placeholder="Ex: Ayrton" value={formData.ownerName} onChange={handleInputChange} required className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-medium text-gray-700 ml-1">WhatsApp <span className="text-pink-500">*</span></label>
+                                        <input type="text" name="whatsapp" placeholder="(00) 00000-0000" value={formData.whatsapp} onChange={handleInputChange} required className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-medium text-gray-700 ml-1">Condomínio</label>
+                                        <input type="text" name="condominium" placeholder="Ex: Paseo (Opcional)" value={formData.condominium} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Detalhes do Serviço */}
+                            <section>
+                                <h3 className="text-lg font-outfit font-bold text-gray-800 mb-4 flex items-center gap-2 mt-8">
+                                    <div className="p-1.5 bg-purple-50 rounded-lg text-purple-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" /></svg></div>
+                                    Serviço Principal
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                    <div className="flex flex-col gap-1.5 md:col-span-2">
+                                        <label className="text-sm font-medium text-gray-700 ml-1">Tipo de Serviço</label>
+                                        <div className="relative">
+                                            <select name="service" value={selectedService || ''} onChange={e => setSelectedService(e.target.value as ServiceType || null)} className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium">
+                                                <option value="">Nenhum específico</option>
+                                                {Object.entries(SERVICES).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg></div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-medium text-gray-700 ml-1">Porte / Peso</label>
+                                        <div className="relative">
+                                            <select name="weight" value={selectedWeight || ''} onChange={e => setSelectedWeight(e.target.value as PetWeight || null)} className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium">
+                                                <option value="">Não informado</option>
+                                                {Object.entries(PET_WEIGHT_OPTIONS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Recorrência e Financeiro */}
+                            <section className="bg-gray-50/50 rounded-2xl p-6 border border-gray-100 mt-8">
+                                <h3 className="text-lg font-outfit font-bold text-gray-800 mb-5 flex items-center gap-2">
+                                    <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
+                                    Regras e Financeiro
+                                </h3>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Regra de Recorrência */}
+                                    <div className="space-y-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-sm font-medium text-gray-700 ml-1">Frequência</label>
+                                            <div className="relative">
+                                                <select name="type" onChange={handleRecurrenceChange} value={recurrence.type} className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-700 font-medium shadow-sm">
+                                                    <option value="weekly">Semanal</option>
+                                                    <option value="bi-weekly">Quinzenal</option>
+                                                    <option value="monthly">Mensal</option>
+                                                </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-sm font-medium text-gray-700 ml-1">{recurrence.type === 'monthly' ? 'Dia do Mês' : 'Dia da Semana'}</label>
+                                                {recurrence.type === 'weekly' || recurrence.type === 'bi-weekly' ? (
+                                                    <div className="relative">
+                                                        <select name="day" onChange={handleRecurrenceChange} value={recurrence.day} className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-700 font-medium shadow-sm">
+                                                            <option value={1}>Segunda</option><option value={2}>Terça</option><option value={3}>Quarta</option><option value={4}>Quinta</option><option value={5}>Sexta</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg></div>
+                                                    </div>
+                                                ) : (
+                                                    <input type="number" name="day" min="1" max="31" value={recurrence.day} onChange={handleRecurrenceChange} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-700 font-medium shadow-sm" />
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-sm font-medium text-gray-700 ml-1">Horário</label>
+                                                <div className="relative">
+                                                    <select name="time" onChange={handleRecurrenceChange} value={recurrence.time} className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-700 font-medium shadow-sm">
+                                                        {WORKING_HOURS.map(h => <option key={h} value={h}>{`${h}:00`}</option>)}
+                                                    </select>
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Financeiro */}
+                                    <div className="space-y-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-sm font-medium text-gray-700 ml-1">Preço do Pacote (R$) <span className="text-pink-500">*</span></label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                    <span className="text-gray-500 font-medium">R$</span>
+                                                </div>
+                                                <input type="number" name="price" placeholder="0,00" value={price} onChange={handleInputChange} required className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-700 font-bold shadow-sm" />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <DatePicker
+                                                value={paymentDueDate}
+                                                onChange={setPaymentDueDate}
+                                                label="Vencimento do Pagamento"
+                                                required
+                                                className="w-full [&_input]:!bg-white [&_input]:!py-3 [&_input]:!rounded-xl [&_input]:!border-gray-200 [&_input]:!shadow-sm focus-within:[&_input]:!ring-pink-500/50 focus-within:[&_input]:!border-pink-500"
+                                                disableWeekends={false}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Status */}
+                            <section>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-end">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-medium text-gray-700 ml-1">Status do Pagamento Mensal</label>
+                                        <div className="relative">
+                                            <select value={paymentStatus} onChange={e => setPaymentStatus(e.target.value as 'Pendente' | 'Pago')} className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium">
+                                                <option value="Pendente">Pendente</option>
+                                                <option value="Pago">Pago</option>
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div className="px-8 py-5 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3 rounded-b-[2rem]">
+                            <button type="button" onClick={onClose} className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm">
+                                Cancelar
+                            </button>
+                            <button type="submit" disabled={isSubmitting} className="px-8 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-semibold rounded-xl hover:from-pink-700 hover:to-rose-600 transition-all shadow-md shadow-pink-500/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2">
+                                {isSubmitting ? (
+                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Salvando...</>
+                                ) : (
+                                    <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Salvar Alterações</>
+                                )}
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -6630,11 +6816,33 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     const [showFilterPanel, setShowFilterPanel] = useState(false);
     const [filterCondominium, setFilterCondominium] = useState('');
     const [filterDueDate, setFilterDueDate] = useState('');
+    const [filterRecurrence, setFilterRecurrence] = useState(''); // 'weekly', 'biweekly'
     const [sortBy, setSortBy] = useState(''); // 'pet-az', 'owner-az'
 
     // Estados para modal de serviços extras
     const [isMonthlyExtraServicesModalOpen, setIsMonthlyExtraServicesModalOpen] = useState(false);
     const [monthlyClientForExtraServices, setMonthlyClientForExtraServices] = useState<MonthlyClient | null>(null);
+
+    // Estado para modal de lembrete de mensalistas (Trigger: 3 dias antes do dia 30 e no dia 30)
+    const [isReminderOpen, setIsReminderOpen] = useState(false);
+
+    useEffect(() => {
+        const checkReminder = () => {
+            const today = new Date();
+            // MOCK PARA TESTE: Forçar o dia 27
+            const day = 27; // today.getDate();
+            const monthKey = today.toISOString().slice(0, 7);
+            const storageKey = `monthly_payment_reminder_completed_${monthKey}`;
+            const isCompleted = localStorage.getItem(storageKey) === 'true';
+
+            // Trigger: do dia 27 ao 30 (3 dias antes do 30 + o dia 30)
+            if (day >= 27 && day <= 30 && !isCompleted) {
+                setIsReminderOpen(true);
+            }
+        };
+
+        checkReminder();
+    }, []);
 
     // Estado para modal de estatísticas
     const [showStatisticsModal, setShowStatisticsModal] = useState(false);
@@ -6901,6 +7109,11 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
             console.log('Clientes após filtro:', filtered.length);
         }
 
+        // Filtro por Recorrência (Semanal/Quinzenal)
+        if (filterRecurrence) {
+            filtered = filtered.filter(client => client.recurrence_type === filterRecurrence);
+        }
+
         // Filtro por status de pagamento (Pendente/Pago)
         if (filterPaymentStatus) {
             filtered = filtered.filter(client => client.payment_status === filterPaymentStatus);
@@ -6917,7 +7130,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         }
 
         return filtered;
-    }, [monthlyClients, searchTerm, filterCondominium, filterDueDate, sortBy, filterPaymentStatus]);
+    }, [monthlyClients, searchTerm, filterCondominium, filterDueDate, filterRecurrence, sortBy, filterPaymentStatus]);
 
     const handleTogglePaymentStatus = async (client: MonthlyClient, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent the card's onClick from firing
@@ -7031,14 +7244,43 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                             title="Filtros"
                             className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-gray-100 text-gray-700 font-semibold h-11 px-5 text-base rounded-lg hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
                         >
-                            <SafeImage alt="Filtros" className="h-6 w-6" src="https://cdn-icons-png.flaticon.com/512/9702/9702724.png" />
+                            <svg 
+                                className={`w-5 h-5 transition-transform duration-300 ${showFilterPanel ? 'rotate-180' : ''}`} 
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                            </svg>
                         </button>
                         <button
                             onClick={() => setViewMode(prev => prev === 'cards' ? 'stack' : prev === 'stack' ? 'list' : 'cards')}
-                            title="Visualização"
-                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
+                            title={viewMode === 'cards' ? 'Modo Cartões' : viewMode === 'stack' ? 'Modo Pilha' : 'Modo Lista'}
+                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none group"
                         >
-                            <SafeImage alt="Visualização" className="w-6 h-6" src={viewMode === 'cards' ? 'https://i.imgur.com/JsRhJWq.png' : (viewMode === 'stack' ? 'https://i.imgur.com/oz6qjaI.png' : 'https://i.imgur.com/vRrOtbI.png')} />
+                            <div className="relative w-6 h-6">
+                                {/* Modo Cartões (Arrastar pro lado) - ViewColumns */}
+                                <svg 
+                                    className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${viewMode === 'cards' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'}`} 
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 4.5v15m6-15v15m-10.5-15h15c.828 0 1.5.672 1.5 1.5v12c0 .828-.672 1.5-1.5 1.5h-15c-.828 0-1.5-.672-1.5-1.5v-12c0-.828.672-1.5 1.5-1.5z" />
+                                </svg>
+
+                                {/* Modo Pilha - Square 3 Stack 3D */}
+                                <svg 
+                                    className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${viewMode === 'stack' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} 
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
+                                </svg>
+
+                                {/* Modo Lista (Detalhes) - List Bullet */}
+                                <svg 
+                                    className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${viewMode === 'list' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'}`} 
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                                </svg>
+                            </div>
                         </button>
                         <button
                             onClick={() => setShowStatisticsModal(true)}
@@ -7064,97 +7306,132 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
             </div>
 
             {/* Painel de Filtros */}
-            {showFilterPanel && (
-                <div className="mb-6 bg-white rounded-lg shadow-md border border-gray-200 p-4">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                        </svg>
+            <div 
+                className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                    showFilterPanel 
+                        ? 'max-h-[500px] opacity-100 mb-6 transform translate-y-0' 
+                        : 'max-h-0 opacity-0 mb-0 transform -translate-y-4'
+                }`}
+            >
+                <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-5 md:p-6 relative overflow-hidden">
+                    {/* Elemento de decoração de fundo */}
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-pink-50 to-purple-50 rounded-full blur-xl opacity-70 pointer-events-none"></div>
+                    
+                    <h3 className="text-lg font-outfit font-bold text-gray-800 mb-5 flex items-center gap-2">
+                        <div className="p-1.5 bg-pink-50 rounded-lg">
+                            <svg className="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                            </svg>
+                        </div>
                         Filtros e Ordenação
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                         {/* Filtro por Condomínio */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Condomínio</label>
-                            <select
-                                value={filterCondominium}
-                                onChange={(e) => setFilterCondominium(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="">Todos os condomínios</option>
-                                {Array.from(new Set(monthlyClients.map(client => client.condominium))).sort().map(condo => (
-                                    <option key={condo} value={condo}>{condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : condo}</option>
-                                ))}
-                            </select>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-medium text-gray-700 ml-1">Condomínio</label>
+                            <div className="relative">
+                                <select
+                                    value={filterCondominium}
+                                    onChange={(e) => setFilterCondominium(e.target.value)}
+                                    className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium"
+                                >
+                                    <option value="">Todos os condomínios</option>
+                                    {Array.from(new Set(monthlyClients.map(client => client.condominium))).sort().map(condo => (
+                                        <option key={condo} value={condo}>{condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : condo}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Filtro por Data de Vencimento */}
-                        <div>
-                            <DatePicker
-                                value={filterDueDate}
-                                onChange={setFilterDueDate}
-                                label="Data de Vencimento"
-                                className="w-full"
-                                disableWeekends={false}
-                            />
+                        {/* Filtro por Recorrência */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-medium text-gray-700 ml-1">Recorrência</label>
+                            <div className="relative">
+                                <select
+                                    value={filterRecurrence}
+                                    onChange={(e) => setFilterRecurrence(e.target.value)}
+                                    className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium"
+                                >
+                                    <option value="">Todas</option>
+                                    <option value="weekly">Semanal</option>
+                                    <option value="biweekly">Quinzenal</option>
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Filtro por Status de Pagamento */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Status de Pagamento</label>
-                            <select
-                                value={filterPaymentStatus}
-                                onChange={(e) => setFilterPaymentStatus(e.target.value as '' | 'Pendente' | 'Pago')}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="">Todos</option>
-                                <option value="Pendente">Pendente</option>
-                                <option value="Pago">Pago</option>
-                            </select>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-medium text-gray-700 ml-1">Status de Pagamento</label>
+                            <div className="relative">
+                                <select
+                                    value={filterPaymentStatus}
+                                    onChange={(e) => setFilterPaymentStatus(e.target.value as '' | 'Pendente' | 'Pago')}
+                                    className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium"
+                                >
+                                    <option value="">Todos</option>
+                                    <option value="Pendente">Pendente</option>
+                                    <option value="Pago">Pago</option>
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Ordenação */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Ordenar por</label>
-                            <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="">Padrão (Tutor A-Z)</option>
-                                <option value="pet-az">Pet A-Z</option>
-                                <option value="owner-az">Tutor A-Z</option>
-                            </select>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-medium text-gray-700 ml-1">Ordenar por</label>
+                            <div className="relative">
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium"
+                                >
+                                    <option value="">Padrão (Tutor A-Z)</option>
+                                    <option value="pet-az">Pet A-Z</option>
+                                    <option value="owner-az">Tutor A-Z</option>
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Botão Limpar Filtros */}
-                        <div className="flex items-end">
+                        <div className="flex items-end lg:col-span-4 mt-2">
                             <button
                                 onClick={() => {
                                     setFilterCondominium('');
-                                    setFilterDueDate('');
+                                    setFilterDueDate(''); // Mantido caso o estado ainda exista e seja usado em outro lugar, se não, não faz mal limpar
+                                    setFilterRecurrence('');
                                     setFilterPaymentStatus('');
                                     setSortBy('');
                                 }}
-                                className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                                className="ml-auto px-6 py-2.5 bg-pink-50 text-pink-700 font-semibold rounded-xl hover:bg-pink-100 hover:text-pink-800 transition-colors flex items-center justify-center gap-2 border border-pink-100"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
-                                Limpar
+                                Limpar Filtros
                             </button>
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
 
             {loading ? <div className="flex justify-center py-16"><LoadingSpinner /></div> : (
                 filteredClients.length > 0 ? (
                     viewMode === 'cards' ? (
                         // Visualização em Cards com carrossel horizontal no mobile
-                        // Ajuste para altura dinâmica ocupando a tela com margem inferior
-                        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:mx-0 md:px-0 md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 pb-6 md:pb-0 h-[calc(100vh-180px)] md:h-auto">
+                        // Removida a altura fixa 'h-[calc...]' que estava esticando o card e substituída por 'auto' para seguir o conteúdo, igual ao modo stack
+                        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:mx-0 md:px-0 md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 pb-6 md:pb-0 h-auto">
                             {filteredClients.map(client => {
                                 const normalizeStr = (str: string | undefined | null) => str ? str.toLowerCase().trim() : '';
                                 const normalizePhone = (phone: string | undefined | null) => phone ? phone.replace(/\D/g, '') : '';
@@ -7367,6 +7644,11 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                     </div>
                 </div>
             )}
+
+            <MonthlyReminderModal 
+                isOpen={isReminderOpen} 
+                onClose={() => setIsReminderOpen(false)} 
+            />
         </>
     );
 };
@@ -10746,7 +11028,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                 {serviceStepView === 'main' && (
                     <section className="w-full animate-fadeIn">
                         <div className="mb-10 text-center md:text-left max-w-2xl mx-auto md:mx-0">
-                            <h2 className="text-3xl md:text-5xl font-extrabold text-pink-950 mb-4 tracking-tight">
+                            <h2 className="text-[6vw] sm:text-3xl md:text-5xl font-extrabold text-pink-950 mb-4 tracking-tight whitespace-nowrap">
                                 Bem-vindo a <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400">Sandy Pet!</span> 🐶💗
                             </h2>
                             <p className="text-pink-900/80 text-lg md:text-xl leading-relaxed">

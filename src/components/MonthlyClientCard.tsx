@@ -333,19 +333,28 @@ const MonthlyClientCard: React.FC<{
             {/* --- Status Bar & Badges --- */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-400 to-purple-500" />
 
-            <div className="p-5 flex flex-col h-full">
+            <div className="p-4 sm:p-5 flex flex-col h-full">
 
                 {/* Header Section */}
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                        <div className="relative">
+                <div className="flex items-start justify-between mb-4 gap-2">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="relative flex-shrink-0">
                             <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
-                            <SafeImage
-                                src={client.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'}
-                                alt={client.pet_name}
-                                className="relative w-16 h-16 rounded-full object-cover border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform"
-                                onClick={(e) => { e.stopPropagation(); onChangePhoto(client); }}
-                            />
+                            {client.pet_photo_url ? (
+                                <SafeImage
+                                    src={client.pet_photo_url}
+                                    alt={client.pet_name}
+                                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform"
+                                    onClick={(e) => { e.stopPropagation(); onChangePhoto(client); }}
+                                />
+                            ) : (
+                                <div 
+                                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white flex items-center justify-center border-2 border-pink-50 shadow-sm text-2xl cursor-pointer hover:scale-105 transition-transform"
+                                    onClick={(e) => { e.stopPropagation(); onChangePhoto(client); }}
+                                >
+                                    🐶
+                                </div>
+                            )}
                             {(hasDaycare || hasHotel) && (
                                 <div className="absolute -bottom-1 -right-1 flex gap-0.5">
                                     {hasHotel && <span className="bg-blue-100 text-blue-600 p-0.5 rounded-full border border-white text-[8px]" title="Hotel">🏨</span>}
@@ -353,15 +362,15 @@ const MonthlyClientCard: React.FC<{
                                 </div>
                             )}
                         </div>
-                        <div>
-                            <h3 className="font-outfit font-bold text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors">
+                        <div className="min-w-0 flex-1">
+                            <h3 className="font-outfit font-bold text-lg sm:text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors truncate">
                                 {client.pet_name}
                             </h3>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-100 uppercase tracking-wide">
+                            <div className="flex items-center gap-1.5 mt-1 flex-nowrap overflow-x-auto custom-scrollbar-hide">
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-100 uppercase tracking-wide flex-shrink-0">
                                     {getRecurrenceText(client)}
                                 </span>
-                                <span className="text-[10px] text-gray-500 truncate max-w-[100px]" title={getCondoLabel()}>
+                                <span className="text-[10px] text-gray-500 whitespace-nowrap flex-shrink-0" title={getCondoLabel()}>
                                     {getCondoLabel()}
                                 </span>
                             </div>
@@ -369,8 +378,8 @@ const MonthlyClientCard: React.FC<{
                     </div>
 
                     {/* Price Tag */}
-                    <div className="text-right flex flex-col items-end min-w-[80px]">
-                        <div className="font-outfit font-bold text-lg text-gray-900 whitespace-nowrap">
+                    <div className="text-right flex flex-col items-end flex-shrink-0 pl-2">
+                        <div className="font-outfit font-bold text-lg sm:text-xl text-gray-900 whitespace-nowrap">
                             R$ {totalInvoiceValue.toFixed(2).replace('.', ',')}
                         </div>
                         {hasMonthlyExtras && (
@@ -382,51 +391,51 @@ const MonthlyClientCard: React.FC<{
                 </div>
 
                 {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-4 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
-                    <div className="flex items-center gap-2">
-                        <UserIcon className="w-4 h-4 text-gray-400" />
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Tutor</span>
-                            <span className="text-xs font-medium text-gray-700 truncate max-w-[100px]">{client.owner_name}</span>
+                <div className="grid grid-cols-2 gap-y-3 gap-x-2 mb-4 bg-gray-50/50 p-2.5 sm:p-3 rounded-xl border border-gray-100">
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <UserIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Tutor</span>
+                            <span className="text-xs font-medium text-gray-700 truncate">{client.owner_name}</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <PhoneIcon className="w-4 h-4 text-gray-400" />
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">WhatsApp</span>
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <PhoneIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">WhatsApp</span>
                             <span className="text-xs font-medium text-gray-700 truncate">
                                 {client.whatsapp ? client.whatsapp.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : '-'}
                             </span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <CalendarIcon className="w-4 h-4 text-pink-400" />
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Próx. Agendamento</span>
-                            <span className="text-xs font-bold text-pink-600">{nextAppointmentText}</span>
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <CalendarIcon className="w-4 h-4 text-pink-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate" title="Próx. Agendamento">Próx. Agend.</span>
+                            <span className="text-xs font-bold text-pink-600 truncate">{nextAppointmentText}</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <CalendarIcon className="w-4 h-4 text-green-500" />
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Próx. Pagamento</span>
-                            <span className="text-xs font-bold text-green-600">{formatDateToBR(getLastDayOfCurrentMonth())}</span>
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <CalendarIcon className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate" title="Próx. Pagamento">Próx. Pagam.</span>
+                            <span className="text-xs font-bold text-green-600 truncate">{formatDateToBR(getLastDayOfCurrentMonth())}</span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <CalendarIcon className="w-4 h-4 text-gray-400" />
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Dia Fixo</span>
-                            <span className="text-xs font-medium text-gray-700">{recurrenceDayLabel}</span>
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <CalendarIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Dia Fixo</span>
+                            <span className="text-xs font-medium text-gray-700 truncate">{recurrenceDayLabel}</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <ClockIcon className="w-4 h-4 text-gray-400" />
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Horário</span>
-                            <span className="text-xs font-medium text-gray-700">{recurrenceTimeLabel}</span>
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <ClockIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Horário</span>
+                            <span className="text-xs font-medium text-gray-700 truncate">{recurrenceTimeLabel}</span>
                         </div>
                     </div>
                 </div>
