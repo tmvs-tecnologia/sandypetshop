@@ -6829,14 +6829,13 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     useEffect(() => {
         const checkReminder = () => {
             const today = new Date();
-            // MOCK PARA TESTE: Forçar o dia 27
-            const day = 27; // today.getDate();
+            const day = today.getDate();
             const monthKey = today.toISOString().slice(0, 7);
             const storageKey = `monthly_payment_reminder_completed_${monthKey}`;
             const isCompleted = localStorage.getItem(storageKey) === 'true';
 
-            // Trigger: do dia 27 ao 30 (3 dias antes do 30 + o dia 30)
-            if (day >= 27 && day <= 30 && !isCompleted) {
+            // Trigger: somente no dia 27 de cada mês
+            if (day === 27 && !isCompleted) {
                 setIsReminderOpen(true);
             }
         };
