@@ -50,8 +50,8 @@ const formatDateToBR = (date: Date) => {
 
 const getLastDayOfCurrentMonth = () => {
     const now = new Date();
-    // month + 1, day 0 returns the last day of the current month
-    return new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    // Sempre retornar o dia 30 do mês atual para o vencimento do pagamento
+    return new Date(now.getFullYear(), now.getMonth(), 30);
 };
 
 const getNextAppointmentDateText = (client: MonthlyClient) => {
