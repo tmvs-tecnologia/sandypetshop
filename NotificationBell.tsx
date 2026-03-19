@@ -239,7 +239,7 @@ export const NotificationBell: React.FC = () => {
             <div className="divide-y divide-pink-50/50">
               {notifications.map((item) => {
                 const config = typeConfig[item.type] || typeConfig.default;
-                const Icon = config.icon;
+                const Icon = config.icon as React.ElementType;
                 
                 return (
                   <div 

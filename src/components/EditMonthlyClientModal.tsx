@@ -198,7 +198,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
         let hour = 12; // Default UTC noon
         try {
             if (typeof client.recurrence_time === 'string') {
-                const parts = client.recurrence_time.split(':');
+                const parts = (client.recurrence_time as string).split(':');
                 if (parts.length >= 1) hour = parseInt(parts[0]) + 3;
             } else if (typeof client.recurrence_time === 'number') {
                 hour = client.recurrence_time + 3;
@@ -362,8 +362,8 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                                             <div>
                                                 <Label htmlFor="weight">Porte</Label>
                                                 <Select id="weight" name="weight" value={formData.weight} onChange={handleInputChange}>
-                                                    {PET_WEIGHT_OPTIONS.map(opt => (
-                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                    {Object.entries(PET_WEIGHT_OPTIONS).map(([val, label]) => (
+                                                        <option key={val} value={val}>{label as string}</option>
                                                     ))}
                                                 </Select>
                                             </div>
@@ -413,7 +413,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                                         <Label htmlFor="service">Serviço Principal</Label>
                                         <Select id="service" name="service" value={formData.service} onChange={handleInputChange}>
                                             <option value={ServiceType.BATH}>Banho</option>
-                                            <option value={ServiceType.GROOMING}>Banho & Tosa</option>
+                                            <option value={ServiceType.BATH_AND_GROOMING}>Banho & Tosa</option>
                                             <option value="Pet Móvel">Pet Móvel</option>
                                         </Select>
                                     </div>

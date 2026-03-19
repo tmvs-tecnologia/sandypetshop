@@ -1089,7 +1089,6 @@ const AdminLogin: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }
 
 const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void; }> = ({ onBack, onSuccess }) => {
     const { getPricesForWeight } = useServicePrices();
-    const [step, setStep] = useState(1);
     const [isAnimating, setIsAnimating] = useState(false);
     const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', condominium: '' });
     const [serviceQuantities, setServiceQuantities] = useState<Record<string, number>>({});
@@ -1200,12 +1199,11 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
         setRecurrence(prev => ({ ...prev, [name]: name === 'type' ? value : Number(value) }));
     };
 
-    const changeStep = (nextStep: number) => {
+    const handleClose = () => {
         setIsAnimating(true);
         setTimeout(() => {
-            setStep(nextStep);
-            setIsAnimating(false);
-        }, 300);
+            onBack();
+        }, 500);
     };
 
     const handleAlertClose = () => {
@@ -1469,192 +1467,249 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
     };
 
     const isStep1Valid = formData.petName && formData.ownerName && formData.whatsapp.length > 13 && formData.petBreed && formData.ownerAddress && formData.condominium;
-    // FIX: Cast quantity to a number before checking if any service is selected.
     const isStep2Valid = Object.values(serviceQuantities).some(q => Number(q) > 0) && selectedWeight;
+    const isFormValid = isStep1Valid && isStep2Valid && serviceStartDate;
 
     return (
         <>
             {alertInfo && <AlertModal isOpen={true} onClose={handleAlertClose} title={alertInfo.title} message={alertInfo.message} variant={alertInfo.variant} />}
-            <div className="w-full max-w-3xl mx-auto bg-rose-50 rounded-2xl shadow-xl overflow-hidden animate-fadeIn">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <div className="flex justify-between items-center text-sm font-semibold text-gray-500">
-                        {['Dados', 'Serviços', 'Recorrência & Resumo'].map((name, index) => (
-                            <div key={name} className={`flex items-center gap-3 ${step > index + 1 ? 'text-pink-600' : ''} ${step === index + 1 ? 'text-pink-600 font-bold' : ''}`}>
-                                <div className={`h-8 w-8 rounded-full flex items-center justify-center transition-all ${step >= index + 1 ? 'bg-pink-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                    {step > index + 1 ? '✓' : index + 1}
-                                </div>
-                                <span className="hidden sm:inline">{name}</span>
-                            </div>
-                        ))}
+            <div className={`w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-xl border border-pink-100 mb-8 transition-all duration-500 ease-out transform origin-top ${isAnimating ? 'translate-y-full opacity-0 scale-95 pointer-events-none' : 'animate-fadeIn translate-y-0 opacity-100 scale-100'}`}>
+                {/* Header Elegante */}
+                <div className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                    <button 
+                        onClick={handleClose}
+                        className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        title="Fechar"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    <div className="relative z-10 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-3xl sm:text-4xl font-extrabold text-pink-950 tracking-tight mb-2">Novo Mensalista</h2>
+                            <p className="text-pink-800/80 font-medium text-sm sm:text-base">Cadastre um novo pacote de banho e tosa recorrente</p>
+                        </div>
+                        <div className="hidden sm:flex h-20 w-20 bg-white rounded-3xl shadow-sm items-center justify-center text-4xl transform rotate-3">
+                            🐶
+                        </div>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className={`relative p-6 sm:p-8 transition-all duration-300 ${isAnimating ? 'animate-slideOutToLeft' : 'animate-slideInFromRight'}`}>
-                    {step === 1 && (
-                        <div className="space-y-7">
-                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 truncate">Informações</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
-                                    <div className="relative mt-1">
-                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><PawIcon /></span>
-                                        <input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg transition-all" />
-                                    </div>
+                {/* Formulário Único */}
+                <form onSubmit={handleSubmit} className="p-6 sm:p-10 space-y-12">
+                    
+                    {/* Seção 1: Informações do Pet e Tutor */}
+                    <section className="space-y-6">
+                        <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-600 font-bold text-sm">1</span>
+                            <h3 className="text-xl font-bold text-gray-800">Dados do Pet & Tutor</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label htmlFor="petName" className="block text-sm font-semibold text-gray-700 mb-1.5">Nome do Pet</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><PawIcon /></span>
+                                    <input type="text" name="petName" id="petName" value={formData.petName} onChange={handleInputChange} required className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" placeholder="Ex: Buddy" />
                                 </div>
-                                <div>
-                                    <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
-                                    <div className="relative mt-1">
-                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><BreedIcon /></span>
-                                        <input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg transition-all" />
-                                    </div>
+                            </div>
+                            <div>
+                                <label htmlFor="petBreed" className="block text-sm font-semibold text-gray-700 mb-1.5">Raça</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><BreedIcon /></span>
+                                    <input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" placeholder="Ex: Golden Retriever" />
                                 </div>
-                                <div>
-                                    <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Nome do Dono</label>
-                                    <div className="relative mt-1">
-                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span>
-                                        <input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg transition-all" />
-                                    </div>
+                            </div>
+                            <div>
+                                <label htmlFor="ownerName" className="block text-sm font-semibold text-gray-700 mb-1.5">Nome do Dono</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><UserIcon /></span>
+                                    <input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" placeholder="Ex: João Silva" />
                                 </div>
-                                <div>
-                                    <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">
-                                        WhatsApp
-                                    </label>
-                                    <div className="relative mt-1">
-                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><WhatsAppIcon /></span>
-                                        <input
-                                            type="tel"
-                                            name="whatsapp"
-                                            id="whatsapp"
-                                            value={formData.whatsapp}
-                                            onChange={handleInputChange}
-                                            required
-                                            placeholder="(XX) XXXXX-XXXX"
-                                            maxLength={15}
-                                            className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg transition-colors"
-                                        />
-                                    </div>
+                            </div>
+                            <div>
+                                <label htmlFor="whatsapp" className="block text-sm font-semibold text-gray-700 mb-1.5">WhatsApp</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><WhatsAppIcon /></span>
+                                    <input type="tel" name="whatsapp" id="whatsapp" value={formData.whatsapp} onChange={handleInputChange} required placeholder="(XX) XXXXX-XXXX" maxLength={15} className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                                 </div>
-                                <div><label htmlFor="condominium" className="block text-base font-semibold text-gray-700">Condomínio</label><div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span>
-                                    <select name="condominium" id="condominium" value={formData.condominium} onChange={handleInputChange} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg">
-                                        <option value="">Selecione um condomínio</option>
+                            </div>
+                            <div>
+                                <label htmlFor="condominium" className="block text-sm font-semibold text-gray-700 mb-1.5">Condomínio</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><AddressIcon /></span>
+                                    <select name="condominium" id="condominium" value={formData.condominium} onChange={handleInputChange} className="block w-full pl-11 pr-10 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all appearance-none text-ellipsis overflow-hidden whitespace-nowrap">
+                                        <option value="">Selecione...</option>
                                         <option value="Nenhum Condomínio">Banho & Tosa Fixo</option>
                                         <option value="Vitta Parque">Vitta Parque</option>
                                         <option value="Max Haus">Max Haus</option>
                                         <option value="Paseo">Paseo</option>
                                     </select>
-                                </div></div>
-                                <div className="md:col-span-2">
-                                    <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Endereço</label>
-                                    <div className="relative mt-1">
-                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3"><AddressIcon /></span>
-                                        <input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className="block w-full pl-10 pr-5 py-4 bg-gray-50 border border-gray-300 rounded-lg transition-all" />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                     </div>
                                 </div>
                             </div>
+                            <div className="md:col-span-2">
+                                <label htmlFor="ownerAddress" className="block text-sm font-semibold text-gray-700 mb-1.5">Endereço Completo</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><AddressIcon /></span>
+                                    <input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" placeholder="Rua, Número, Bairro" />
+                                </div>
+                            </div>
                         </div>
-                    )}
-                    {step === 2 && (
-                        <div className="space-y-6">
-                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 truncate">Escolha os Serviços do Pacote</h2>
+                    </section>
+
+                    {/* Seção 2: Serviços e Adicionais */}
+                    <section className="space-y-6">
+                        <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-600 font-bold text-sm">2</span>
+                            <h3 className="text-xl font-bold text-gray-800">Serviços do Pacote</h3>
+                        </div>
+                        
+                        <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100 space-y-6">
                             <div>
-                                <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">1. Serviço(s)</h3>
-                                <div className="space-y-3">
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-wider mb-3">Serviços Base</label>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     {Object.entries(SERVICES).filter(([key]) => [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_GROOMING_ONLY, ServiceType.PET_MOBILE_BATH_AND_GROOMING].includes(key as ServiceType)).map(([key, { label }]) => {
-                                        const displayLabel = (key === ServiceType.PET_MOBILE_BATH)
-                                            ? 'Banho'
-                                            : (key === ServiceType.PET_MOBILE_BATH_AND_GROOMING)
-                                                ? 'Banho & Tosa'
-                                                : (key === ServiceType.PET_MOBILE_GROOMING_ONLY)
-                                                    ? 'Só Tosa'
-                                                    : label;
+                                        const displayLabel = (key === ServiceType.PET_MOBILE_BATH) ? 'Banho' : (key === ServiceType.PET_MOBILE_BATH_AND_GROOMING) ? 'Banho & Tosa' : 'Só Tosa';
+                                        const isSelected = (serviceQuantities[key] || 0) > 0;
                                         return (
-                                            <div key={key} className="flex items-center justify-between p-6 sm:p-5 rounded-lg bg-white border-2 border-gray-200">
-                                                <span className="font-semibold text-gray-800">{displayLabel}</span>
+                                            <div key={key} className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${isSelected ? 'border-pink-500 bg-white shadow-sm' : 'border-gray-200 bg-white'}`}>
+                                                <span className={`font-semibold ${isSelected ? 'text-pink-700' : 'text-gray-700'}`}>{displayLabel}</span>
                                                 <div className="flex items-center gap-2">
-                                                    <button type="button" onClick={() => handleQuantityChange(key as ServiceType, -1)} className="w-8 h-8 rounded-full bg-gray-200 text-lg font-bold hover:bg-gray-300">-</button>
-                                                    <span className="w-10 text-center font-semibold text-lg">{serviceQuantities[key] || 0}</span>
-                                                    <button type="button" onClick={() => handleQuantityChange(key as ServiceType, 1)} className="w-8 h-8 rounded-full bg-pink-500 text-white text-lg font-bold hover:bg-pink-600">+</button>
+                                                    <button type="button" onClick={() => handleQuantityChange(key as ServiceType, -1)} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">-</button>
+                                                    <span className="w-6 text-center font-bold text-gray-800">{serviceQuantities[key] || 0}</span>
+                                                    <button type="button" onClick={() => handleQuantityChange(key as ServiceType, 1)} className="w-7 h-7 flex items-center justify-center rounded-full bg-pink-100 text-pink-600 hover:bg-pink-200 transition-colors">+</button>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
                             </div>
+
                             <div>
-                                <label htmlFor="petWeight" className="block text-md font-semibold text-gray-700 mb-2">2. Peso do Pet</label>
-                                <select id="petWeight" value={selectedWeight || ''} onChange={e => setSelectedWeight(e.target.value as PetWeight)} required className="block w-full py-3 px-3 bg-gray-50 border border-gray-300 rounded-lg">
-                                    <option value="" disabled>Selecione o peso</option>
-                                    {(Object.keys(PET_WEIGHT_OPTIONS) as PetWeight[]).map(key => (<option key={key} value={key}>{PET_WEIGHT_OPTIONS[key]}</option>))}
-                                </select>
+                                <label htmlFor="petWeight" className="block text-sm font-bold text-pink-900 uppercase tracking-wider mb-3">Peso do Pet</label>
+                                <div className="relative">
+                                    <select id="petWeight" value={selectedWeight || ''} onChange={e => setSelectedWeight(e.target.value as PetWeight)} required className="block w-full py-3.5 pl-4 pr-10 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all shadow-sm appearance-none text-ellipsis overflow-hidden whitespace-nowrap">
+                                        <option value="" disabled>Selecione o porte do pet...</option>
+                                        {(Object.keys(PET_WEIGHT_OPTIONS) as PetWeight[]).map(key => (<option key={key} value={key}>{PET_WEIGHT_OPTIONS[key]}</option>))}
+                                    </select>
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                </div>
                             </div>
+
                             <div>
-                                <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">3. Serviços Adicionais (Opcional)</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-wider mb-3">Serviços Adicionais</label>
+                                <div className="flex flex-col gap-3 text-sm max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                                     {ADDON_SERVICES.filter(a => a.id !== 'tosa_higienica').map(addon => {
                                         const isDisabled = !selectedWeight || Object.values(serviceQuantities).reduce((a, b) => Number(a) + Number(b), 0) === 0 || addon.excludesWeight?.includes(selectedWeight!) || (addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight!));
+                                        const isSelected = !!selectedAddons[addon.id];
                                         return (
-                                            <label key={addon.id} className={`flex items-center p-6 sm:p-5 rounded-lg border-2 transition-all ${isDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer bg-white hover:bg-pink-50'} ${selectedAddons[addon.id] ? 'border-pink-500 bg-pink-50' : 'border-gray-200'}`}>
-                                                <input type="checkbox" onChange={() => handleAddonToggle(addon.id)} checked={!!selectedAddons[addon.id]} disabled={isDisabled} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                                <span className="ml-2.5">{addon.label}</span>
+                                            <label key={addon.id} className={`flex items-center p-3.5 rounded-xl border-2 transition-all ${isDisabled ? 'bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-pink-50/50'} ${isSelected ? 'border-pink-500 bg-pink-50/30' : 'border-gray-200 bg-white'}`}>
+                                                <input type="checkbox" onChange={() => handleAddonToggle(addon.id)} checked={isSelected} disabled={isDisabled} className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-gray-300" />
+                                                <span className={`ml-3 font-medium ${isSelected ? 'text-pink-800' : 'text-gray-700'}`}>{addon.label}</span>
                                             </label>
                                         );
                                     })}
                                 </div>
                             </div>
-                            <div className="w-full p-3 border rounded-lg bg-gray-100 flex justify-between items-center">
-                                <span className="font-semibold text-gray-700">Preço do Pacote Mensal:</span>
-                                <span className="font-bold text-2xl text-gray-900">R$ {(packagePrice ?? 0).toFixed(2).replace('.', ',')}</span>
-                            </div>
                         </div>
-                    )}
-                    {step === 3 && (
-                        <div className="space-y-6">
-                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 truncate">Recorrência e Resumo</h2>
-                            <div className="p-4 bg-white rounded-lg border space-y-6">
-                                <h3 className="font-semibold text-gray-700">Regra de Recorrência</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <select name="type" onChange={handleRecurrenceChange} value={recurrence.type} className="w-full px-5 py-4 border rounded-lg bg-gray-50">
-                                        <option value="weekly">Semanal (4x no mês)</option>
-                                        <option value="bi-weekly">Quinzenal (2x no mês)</option>
-                                        <option value="monthly">Mensal (1x no mês)</option>
-                                    </select>
-                                    {recurrence.type === 'weekly' || recurrence.type === 'bi-weekly' ? (
-                                        <select name="day" onChange={handleRecurrenceChange} value={recurrence.day} className="w-full px-5 py-4 border rounded-lg bg-gray-50">
-                                            <option value={1}>Segunda-feira</option><option value={2}>Terça-feira</option><option value={3}>Quarta-feira</option><option value={4}>Quinta-feira</option><option value={5}>Sexta-feira</option>
+                    </section>
+
+                    {/* Seção 3: Recorrência e Resumo */}
+                    <section className="space-y-6">
+                        <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-600 font-bold text-sm">3</span>
+                            <h3 className="text-xl font-bold text-gray-800">Recorrência & Agendamento</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Frequência</label>
+                                    <div className="relative">
+                                        <select name="type" onChange={handleRecurrenceChange} value={recurrence.type} className="w-full pl-4 pr-10 py-3.5 border border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-pink-500 transition-all appearance-none text-ellipsis overflow-hidden whitespace-nowrap">
+                                            <option value="weekly">Semanal (4x no mês)</option>
+                                            <option value="bi-weekly">Quinzenal (2x no mês)</option>
+                                            <option value="monthly">Mensal (1x no mês)</option>
                                         </select>
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Dia</label>
+                                    {recurrence.type === 'weekly' || recurrence.type === 'bi-weekly' ? (
+                                        <div className="relative">
+                                            <select name="day" onChange={handleRecurrenceChange} value={recurrence.day} className="w-full pl-4 pr-10 py-3.5 border border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-pink-500 transition-all appearance-none text-ellipsis overflow-hidden whitespace-nowrap">
+                                                <option value={1}>Segunda-feira</option><option value={2}>Terça-feira</option><option value={3}>Quarta-feira</option><option value={4}>Quinta-feira</option><option value={5}>Sexta-feira</option>
+                                            </select>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </div>
+                                        </div>
                                     ) : (
-                                        <input type="number" name="day" min="1" max="31" value={recurrence.day} onChange={handleRecurrenceChange} placeholder="Dia do mês" className="w-full px-5 py-4 border rounded-lg bg-gray-50" />
+                                        <input type="number" name="day" min="1" max="31" value={recurrence.day} onChange={handleRecurrenceChange} placeholder="Dia do mês" className="w-full px-4 py-3.5 border border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-pink-500 transition-all" />
                                     )}
                                 </div>
-                                <select name="time" onChange={handleRecurrenceChange} value={recurrence.time} className="w-full px-5 py-4 border rounded-lg bg-gray-50">
-                                    {WORKING_HOURS.map(h => <option key={h} value={h}>{`${h}:00`}</option>)}
-                                </select>
-
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Horário Padrão</label>
+                                    <div className="relative">
+                                        <select name="time" onChange={handleRecurrenceChange} value={recurrence.time} className="w-full pl-4 pr-10 py-3.5 border border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-pink-500 transition-all appearance-none text-ellipsis overflow-hidden whitespace-nowrap">
+                                            {WORKING_HOURS.map(h => <option key={h} value={h}>{`${h}:00`}</option>)}
+                                        </select>
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div>
                                     <DatePicker
                                         value={serviceStartDate}
                                         onChange={setServiceStartDate}
-                                        label="Data de Início do Serviço"
+                                        label="Data de Início"
                                         required
-                                        className="mt-1"
+                                        className="mt-0"
                                     />
                                 </div>
                             </div>
-                            <div className="p-4 bg-white rounded-lg space-y-2 text-gray-700 border">
-                                <h3 className="font-semibold mb-2 text-gray-700">Resumo</h3>
-                                <p><strong>Pet:</strong> {formData.petName} ({formData.petBreed})</p>
-                                <p><strong>Responsável:</strong> {formData.ownerName}</p>
-                                <p><strong>Serviços:</strong> {getPackageDetails().serviceString || 'Nenhum'}</p>
-                                <p><strong>Peso:</strong> {selectedWeight ? PET_WEIGHT_OPTIONS[selectedWeight] : 'Nenhum'}</p>
-                                <p className="mt-2 pt-2 border-t font-bold text-lg"><strong>Preço do Pacote: R$ {(packagePrice ?? 0).toFixed(2).replace('.', ',')}</strong></p>
+
+                            {/* Card de Resumo Fixo à Direita em Desktop */}
+                            <div className="md:col-span-1">
+                                <div className="bg-pink-50/50 border border-pink-100 rounded-2xl p-5 sticky top-6">
+                                    <h4 className="text-sm font-bold text-pink-900 uppercase tracking-wider mb-4 border-b border-pink-200/50 pb-2">Resumo do Pacote</h4>
+                                    <div className="space-y-3 text-sm text-gray-700 mb-6">
+                                        <div className="flex justify-between"><span className="text-gray-500">Pet:</span> <span className="font-semibold text-right">{formData.petName || '-'}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Serviço:</span> <span className="font-semibold text-right truncate max-w-[140px]">{recurrence.type === 'weekly' ? 'Semanal' : recurrence.type === 'bi-weekly' ? 'Quinzenal' : 'Mensal'}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Porte:</span> <span className="font-semibold text-right">{selectedWeight ? PET_WEIGHT_OPTIONS[selectedWeight] : '-'}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Início:</span> <span className="font-semibold text-right">{serviceStartDate ? new Date(serviceStartDate + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Dia:</span> <span className="font-semibold text-right">{recurrence.type === 'monthly' ? `Dia ${recurrence.day}` : ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][recurrence.day] || '-'}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Horário:</span> <span className="font-semibold text-right">{recurrence.time ? `${recurrence.time}:00` : '-'}</span></div>
+                                    </div>
+                                    <div className="bg-white rounded-xl p-4 border border-pink-100 text-center shadow-sm">
+                                        <p className="text-xs text-gray-500 font-medium uppercase tracking-widest mb-1">Total Mensal</p>
+                                        <p className="text-3xl font-extrabold text-pink-600">R$ {(packagePrice ?? 0).toFixed(2).replace('.', ',')}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    )}
-                    <div className="mt-8 flex justify-between items-center">
-                        <button type="button" onClick={onBack} className="bg-gray-200 text-gray-800 font-bold py-3.5 px-5 rounded-lg hover:bg-gray-300 transition-colors">{step === 1 ? 'Cancelar' : 'Voltar'}</button>
-                        <div className="flex-grow"></div>
-                        {step < 3 && <button type="button" onClick={() => changeStep(step + 1)} disabled={(step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)} className="w-full md:w-auto bg-pink-600 text-white font-bold py-3.5 px-5 rounded-lg hover:bg-pink-700 transition-colors disabled:bg-gray-300">Avançar</button>}
-                        {step === 3 && <button type="submit" disabled={isSubmitting} className="w-full md:w-auto bg-green-500 text-white font-bold py-3.5 px-5 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-300">{isSubmitting ? 'Salvando...' : 'Salvar Mensalista'}</button>}
+                    </section>
+
+                    {/* Footer Actions */}
+                    <div className="pt-6 border-t border-gray-100 flex flex-col-reverse sm:flex-row justify-between items-center gap-4">
+                        <button type="button" onClick={onBack} className="w-full sm:w-auto px-8 py-4 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-colors focus:ring-2 focus:ring-gray-200 outline-none">
+                            Cancelar
+                        </button>
+                        <button 
+                            type="submit" 
+                            disabled={isSubmitting || !isFormValid} 
+                            className="w-full sm:w-auto px-10 py-4 bg-pink-600 text-white font-bold rounded-xl shadow-lg shadow-pink-200 hover:bg-pink-700 hover:shadow-pink-300 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 outline-none"
+                        >
+                            {isSubmitting ? 'Salvando...' : 'Confirmar Cadastro'}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -6809,7 +6864,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     const [isDeleting, setIsDeleting] = useState(false);
     const [alertInfo, setAlertInfo] = useState<{ title: string; message: string; variant: 'success' | 'error' } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [viewMode, setViewMode] = useState<'cards' | 'stack' | 'list'>('cards');
+    const [viewMode, setViewMode] = useState<'cards' | 'stack'>('cards');
     // Filtro de status de pagamento: '' (Todos), 'Pendente' ou 'Pago'
     const [filterPaymentStatus, setFilterPaymentStatus] = useState<'' | 'Pendente' | 'Pago'>('');
     const [monthlyMobileSearchOpen, setMonthlyMobileSearchOpen] = useState(false);
@@ -7258,8 +7313,8 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                             </svg>
                         </button>
                         <button
-                            onClick={() => setViewMode(prev => prev === 'cards' ? 'stack' : prev === 'stack' ? 'list' : 'cards')}
-                            title={viewMode === 'cards' ? 'Modo Cartões' : viewMode === 'stack' ? 'Modo Pilha' : 'Modo Lista'}
+                            onClick={() => setViewMode(prev => prev === 'cards' ? 'stack' : 'cards')}
+                            title={viewMode === 'cards' ? 'Modo Cartões' : 'Modo Pilha'}
                             className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none group"
                         >
                             <div className="relative w-6 h-6">
@@ -7277,14 +7332,6 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                 >
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
-                                </svg>
-
-                                {/* Modo Lista (Detalhes) - List Bullet */}
-                                <svg 
-                                    className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${viewMode === 'list' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'}`} 
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
                                 </svg>
                             </div>
                         </button>
@@ -7490,7 +7537,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                 );
                             })}
                         </div>
-                    ) : viewMode === 'stack' ? (
+                    ) : (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                             {filteredClients.map(client => {
                                 const normalizeStr = (str: string | undefined | null) => str ? str.toLowerCase().trim() : '';
@@ -7538,54 +7585,6 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                     </div>
                                 );
                             })}
-                        </div>
-                    ) : (
-                        // Visualização em Lista
-                        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                            <div className="divide-y divide-gray-100">
-                                {filteredClients.map(client => (
-                                    <div key={client.id} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-x-4 gap-y-2 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setEditingClient(client)}>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-gray-900 truncate">{client.pet_name}</p>
-                                            <p className="text-base text-gray-600 truncate">{client.owner_name}</p>
-                                            {client.condominium && (
-                                                <p className="text-sm text-gray-500 truncate">
-                                                    <span className="font-medium">Condomínio:</span> {client.condominium === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : client.condominium}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="w-full sm:w-auto flex items-center justify-between mt-2 sm:mt-0">
-                                            <div className="flex items-center gap-3 flex-wrap">
-                                                <p className="text-xs text-pink-800 bg-pink-100 font-semibold py-1 px-2 rounded-full truncate">
-                                                    {getRecurrenceText(client)}
-                                                </p>
-                                                <p className="text-xs text-purple-800 bg-purple-100 font-semibold py-1 px-2 rounded-full truncate">
-                                                    Plano: {getPlanLabel(client)}
-                                                </p>
-                                                <p className="text-xs text-green-800 bg-green-100 font-semibold py-1 px-2 rounded-full truncate">
-                                                    Próximo: {getNextAppointmentDateText(client)}
-                                                </p>
-                                                <p className="text-xs text-blue-800 bg-blue-100 font-semibold py-1 px-2 rounded-full truncate">
-                                                    Vencimento: {formatDateToBR(getCurrentMonthPaymentDueISO())}
-                                                </p>
-                                                <button
-                                                    onClick={(e) => handleTogglePaymentStatus(client, e)}
-                                                    className={`px-2 py-1 text-xs font-bold rounded-full whitespace-nowrap transition-colors ${client.payment_status === 'Pendente'
-                                                        ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                                                        : 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                        }`}
-                                                >
-                                                    {client.payment_status === 'Pendente' ? 'Pagamento Pendente' : 'Pagamento Realizado'}
-                                                </button>
-                                            </div>
-                                            <div className="flex-shrink-0 flex items-center gap-1 sm:ml-4" onClick={e => e.stopPropagation()}>
-                                                <button onClick={() => setEditingClient(client)} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-blue-700 transition-colors" aria-label="Editar mensalista"><EditIcon /></button>
-                                                <button onClick={() => setDeletingClient(client)} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-red-700 transition-colors" aria-label="Excluir mensalista"><DeleteIcon /></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
                         </div>
                     )
                 ) : (

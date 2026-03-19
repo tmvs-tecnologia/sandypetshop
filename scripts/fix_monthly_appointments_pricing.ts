@@ -82,7 +82,7 @@ async function runFixes() {
         }
         if (!extras) extras = {};
 
-        Object.values(extras).forEach(service => {
+        Object.values(extras).forEach((service: any) => {
             if (service && (service.enabled || service.quantity > 0)) {
                 const val = Number(service.value || 0);
                 const qtd = Number(service.quantity || 1);
