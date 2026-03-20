@@ -3144,7 +3144,51 @@ const AdminAddAppointmentModal: React.FC<{
     onAppointmentCreated: (created: AdminAppointment) => void;
 }> = ({ isOpen, onClose, onAppointmentCreated }) => {
     const { getPricesForWeight } = useServicePrices();
-    const [step, setStep] = useState(1);
+    
+    // --- DRAG TO CLOSE STATES & REFS ---
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [dragY, setDragY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const startY = useRef(0);
+    const currentY = useRef(0);
+
+    const handleDragStart = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        setIsDragging(true);
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        startY.current = y;
+        currentY.current = y;
+    };
+
+    const handleDragMove = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        currentY.current = y;
+        const diff = y - startY.current;
+        if (diff > 0) {
+            setDragY(diff);
+        }
+    };
+
+    const handleDragEnd = () => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        if (dragY > 150) {
+            setDragY(0);
+            handleClose();
+        } else {
+            setDragY(0);
+        }
+    };
+
+    const handleClose = () => {
+        setIsAnimating(true);
+        setTimeout(() => {
+            setIsAnimating(false);
+            onClose();
+        }, 500);
+    };
+    // -----------------------------------
+
     const [formData, setFormData] = useState({
         petName: '',
         ownerName: '',
@@ -3190,7 +3234,6 @@ const AdminAddAppointmentModal: React.FC<{
     // Reset form when modal opens/closes
     useEffect(() => {
         if (isOpen) {
-            setStep(1);
             setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
             setSelectedService(null);
             setServiceStepView('main');
@@ -3212,13 +3255,6 @@ const AdminAddAppointmentModal: React.FC<{
     useEffect(() => {
         const fetchAppointments = async () => {
             if (!selectedDate) return;
-
-            // Define start and end of the selected day in UTC to match DB comparison
-            // However, Supabase filter on timestamptz works best with ISO strings range
-            // We need to cover the full day in local time converted to UTC.
-            // Simplest way: Fetch a slightly larger range (e.g. -1 day to +1 day) to be safe with timezones
-            // or just use the whole month if we want to cache? 
-            // For now, let's fetch the specific day.
             
             const startOfDay = new Date(selectedDate);
             startOfDay.setHours(0, 0, 0, 0);
@@ -3226,8 +3262,6 @@ const AdminAddAppointmentModal: React.FC<{
             const endOfDay = new Date(selectedDate);
             endOfDay.setHours(23, 59, 59, 999);
 
-            // Add buffer for timezone differences (UTC-3 vs UTC)
-            // It's safer to fetch the whole surrounding 24h window
             const queryStart = new Date(startOfDay);
             queryStart.setHours(queryStart.getHours() - 4); // Buffer
             
@@ -3300,33 +3334,22 @@ const AdminAddAppointmentModal: React.FC<{
         };
 
         fetchAppointments();
-    }, [isOpen, selectedDate]); // Trigger when modal opens or date changes
-
-    // State to store availability counts for the selected date
-    // const [availabilityCounts, setAvailabilityCounts] = useState<Record<number, number>>({});
-
-    // Fetch availability for the selected date whenever date changes
-    // useEffect(() => {
-    //     // Logic removed as per user request to disable blocking
-    // }, [selectedDate, appointments]);
+    }, [isOpen, selectedDate]);
 
     // Calendar day restrictions based on service type
     useEffect(() => {
-        if (step === 3) {
-            if (serviceStepView === 'bath_groom') {
-                setAllowedDays([1, 2]); // Monday and Tuesday
-            } else if (serviceStepView === 'pet_movel') {
-                // Pet Móvel is now available on all days - no restrictions
-                setAllowedDays(undefined);
-            } else {
-                setAllowedDays(undefined);
-            }
+        if (serviceStepView === 'bath_groom') {
+            setAllowedDays([1, 2]); // Monday and Tuesday
+        } else if (serviceStepView === 'pet_movel') {
+            setAllowedDays(undefined);
+        } else {
+            setAllowedDays(undefined);
         }
-    }, [step, serviceStepView, selectedCondo]);
+    }, [serviceStepView, selectedCondo]);
 
     // Ensure initial selected date is the next allowed (Mon/Tue), never today
     useEffect(() => {
-        if (step === 3 && serviceStepView === 'bath_groom' && allowedDays && allowedDays.length > 0) {
+        if (serviceStepView === 'bath_groom' && allowedDays && allowedDays.length > 0) {
             const now = new Date();
             const next = new Date(now);
             next.setDate(next.getDate() + 1);
@@ -3340,7 +3363,7 @@ const AdminAddAppointmentModal: React.FC<{
                 }
             }
         }
-    }, [step, serviceStepView, allowedDays]);
+    }, [serviceStepView, allowedDays]);
 
     // Reset selected time when date or service changes
     useEffect(() => {
@@ -3475,12 +3498,9 @@ const AdminAddAppointmentModal: React.FC<{
         const appointmentTime = toSaoPauloUTC(year, month, day, selectedTime);
 
         const isPetMovelSubmit = !!selectedCondo;
-        // All appointments go to the same table
         const targetTable = 'appointments';
 
-        // Unified Capacity Check
         try {
-            // Re-fetch all appointments and monthly clients for current date to ensure fresh data
             const startOfDay = new Date(selectedDate);
             startOfDay.setHours(0, 0, 0, 0);
             const endOfDay = new Date(selectedDate);
@@ -3532,7 +3552,6 @@ const AdminAddAppointmentModal: React.FC<{
             status: 'AGENDADO'
         };
 
-        // Always include owner_address and condominium fields (they can be null for regular services)
         const supabasePayload = {
             ...basePayload,
             owner_address: formData.ownerAddress || null,
@@ -3540,11 +3559,9 @@ const AdminAddAppointmentModal: React.FC<{
         };
 
         try {
-            // No conflict checking - all appointments are allowed
             const { data: newDbAppointment, error: supabaseError } = await supabase.from(targetTable).insert([supabasePayload]).select().single();
             if (supabaseError) throw supabaseError;
 
-            // Auto-register client if not exists
             try {
                 const { data: existingClient } = await supabase
                     .from('clients')
@@ -3568,9 +3585,7 @@ const AdminAddAppointmentModal: React.FC<{
                 console.error('An error occurred during client auto-registration:', error);
             }
 
-            // Send webhook notification
             try {
-                // Choose webhook based on whether this is a Pet Móvel submission
                 const webhookUrl = isPetMovelSubmit
                     ? 'https://n8n.intelektus.tech/webhook/petMovelAgendado'
                     : 'https://n8n.intelektus.tech/webhook/servicoAgendado';
@@ -3587,7 +3602,6 @@ const AdminAddAppointmentModal: React.FC<{
                 console.error('Error sending new appointment webhook:', webhookError);
             }
 
-            // Build AdminAppointment from inserted record and notify parent
             const createdAdminAppointment: AdminAppointment = {
                 id: newDbAppointment.id,
                 appointment_time: newDbAppointment.appointment_time,
@@ -3606,7 +3620,7 @@ const AdminAddAppointmentModal: React.FC<{
                 extra_services: newDbAppointment.extra_services,
             };
             onAppointmentCreated(createdAdminAppointment);
-            onClose();
+            handleClose();
         } catch (error: any) {
             console.error("Error submitting appointment:", error);
             alert(error.message || 'Não foi possível concluir o agendamento. Tente novamente.');
@@ -3619,96 +3633,78 @@ const AdminAddAppointmentModal: React.FC<{
     const isPetMovelServiceSelected = !!selectedService && [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
     const isStep2Valid = serviceStepView !== 'main' && selectedService && (isVisitService || selectedWeight) && (!isPetMovelServiceSelected || !!selectedCondo);
     const isStep3Valid = selectedTime !== null;
+    const isFormValid = isStep1Valid && isStep2Valid && isStep3Valid;
 
-    if (!isOpen) return null;
+    if (!isOpen && !isAnimating) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[10001]">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-6">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-800">Adicionar Agendamento</h2>
-                        <button
-                            onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            <CloseIcon />
-                        </button>
-                    </div>
-
-                    {/* Progress indicator */}
-                    <div className="flex items-center justify-center mb-8">
-                        <div className="flex items-center space-x-4">
-                            {[1, 2, 3].map((stepNumber) => (
-                                <div key={stepNumber} className="flex items-center">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= stepNumber ? 'bg-pink-600 text-white' : 'bg-gray-200 text-gray-600'
-                                        }`}>
-                                        {stepNumber}
-                                    </div>
-                                    {stepNumber < 3 && (
-                                        <div className={`w-12 h-1 mx-2 ${step > stepNumber ? 'bg-pink-600' : 'bg-gray-200'
-                                            }`} />
-                                    )}
-                                </div>
-                            ))}
+        <div className={`fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-start justify-center z-[10001] p-4 sm:p-6 overflow-y-auto custom-scrollbar transition-opacity duration-500 ${isAnimating ? 'opacity-0' : 'animate-fadeIn opacity-100'}`}>
+            <div 
+                className={`bg-white rounded-[2rem] shadow-2xl shadow-pink-500/10 w-full max-w-5xl my-4 sm:my-8 flex flex-col relative transition-all ease-out transform origin-top ${isAnimating ? 'translate-y-full opacity-0 duration-500' : 'opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
+                style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
+            >
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full blur-3xl opacity-50 pointer-events-none z-0"></div>
+                
+                {/* Drag Handle Area - Match Novo Mensalista style */}
+                <div 
+                    className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
+                    onTouchStart={handleDragStart}
+                    onTouchMove={handleDragMove}
+                    onTouchEnd={handleDragEnd}
+                    onMouseDown={handleDragStart}
+                    onMouseMove={handleDragMove}
+                    onMouseUp={handleDragEnd}
+                    onMouseLeave={handleDragEnd}
+                >
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                    <button 
+                        type="button" 
+                        onClick={(e) => { e.stopPropagation(); handleClose(); }} 
+                        className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        title="Fechar"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    <div className="relative z-10 flex items-center justify-between">
+                        <div className="flex-1 min-w-0 pr-4">
+                            <h2 className="text-2xl sm:text-3xl font-extrabold text-pink-950 tracking-tight mb-1 whitespace-nowrap truncate">Novo Agendamento</h2>
+                            <p className="text-pink-800/80 font-medium text-[11px] sm:text-sm whitespace-nowrap overflow-visible">Preencha os detalhes para um novo agendamento</p>
+                        </div>
+                        <div className="hidden sm:flex h-16 w-16 bg-white rounded-2xl shadow-sm items-center justify-center text-3xl transform rotate-3 shrink-0">
+                            📅
                         </div>
                     </div>
+                </div>
 
-                    <form onSubmit={handleSubmit}>
-                        {/* Step 1: Pet and Owner Information */}
-                        {step === 1 && (
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Informações do Pet e Tutor</h3>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Pet</label>
-                                    <input
-                                        type="text"
-                                        name="petName"
-                                        value={formData.petName}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
-                                        required
-                                    />
+                <form onSubmit={handleSubmit} className="flex flex-col relative z-10">
+                    <div className="p-6 sm:p-10 space-y-12 flex-1">
+                        {/* Seção 1: Identificação */}
+                        <section>
+                            <h3 className="text-lg font-outfit font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <div className="p-1.5 bg-pink-50 rounded-lg text-pink-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></div>
+                                Informações do Pet e Tutor
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Nome do Pet</label>
+                                    <input type="text" name="petName" value={formData.petName} onChange={handleInputChange} required className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all text-gray-700 font-medium placeholder-gray-400 ${clientFound ? 'border-green-300 bg-green-50/50' : 'border-gray-200 focus:border-pink-500 focus:bg-white'}`} />
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Raça do Pet</label>
-                                    <input
-                                        type="text"
-                                        name="petBreed"
-                                        value={formData.petBreed}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
-                                        required
-                                    />
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Raça do Pet</label>
+                                    <input type="text" name="petBreed" value={formData.petBreed} onChange={handleInputChange} required className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all text-gray-700 font-medium placeholder-gray-400 ${clientFound ? 'border-green-300 bg-green-50/50' : 'border-gray-200 focus:border-pink-500 focus:bg-white'}`} />
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Tutor</label>
-                                    <input
-                                        type="text"
-                                        name="ownerName"
-                                        value={formData.ownerName}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
-                                        required
-                                    />
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Nome do Tutor</label>
+                                    <input type="text" name="ownerName" value={formData.ownerName} onChange={handleInputChange} required className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all text-gray-700 font-medium placeholder-gray-400 ${clientFound ? 'border-green-300 bg-green-50/50' : 'border-gray-200 focus:border-pink-500 focus:bg-white'}`} />
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1 flex justify-between">
+                                        WhatsApp
+                                        {clientFound && <span className="text-xs text-green-600 font-normal">Cliente encontrado</span>}
+                                    </label>
                                     <div className="relative">
-                                        <input
-                                            type="tel"
-                                            name="whatsapp"
-                                            value={formData.whatsapp}
-                                            onChange={handleInputChange}
-                                            placeholder="(11) 99999-9999"
-                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-500 ring-1 ring-green-500' : 'border-gray-300'
-                                                }`}
-                                            required
-                                        />
+                                        <input type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} required placeholder="(11) 99999-9999" className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all text-gray-700 font-medium placeholder-gray-400 ${clientFound ? 'border-green-500 ring-1 ring-green-500 bg-green-50/50' : 'border-gray-200 focus:border-pink-500 focus:bg-white'}`} />
                                         {isFetchingClient && (
                                             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-pink-600"></div>
@@ -3716,294 +3712,129 @@ const AdminAddAppointmentModal: React.FC<{
                                         )}
                                         {clientFound && !isFetchingClient && (
                                             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
-                                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
+                                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                                             </div>
                                         )}
                                     </div>
-                                    {clientFound && (
-                                        <p className="mt-1 text-xs text-green-600">
-                                            Dados do cliente preenchidos automaticamente.
-                                        </p>
-                                    )}
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
-                                    <input
-                                        type="text"
-                                        name="ownerAddress"
-                                        value={formData.ownerAddress}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="flex justify-end pt-4">
-                                    {clientFound && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setClientFound(false);
-                                                setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
-                                                setStep(1);
-                                            }}
-                                            className="mr-auto px-4 py-2 text-sm text-red-600 hover:text-red-800 underline"
-                                        >
-                                            Limpar e novo cadastro
-                                        </button>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => setStep(2)}
-                                        disabled={!isStep1Valid}
-                                        className="px-6 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        Próximo
-                                    </button>
+                                <div className="flex flex-col gap-1.5 md:col-span-2">
+                                    <div className="flex justify-between items-end">
+                                        <label className="text-sm font-medium text-gray-700 ml-1">Endereço</label>
+                                        {clientFound && (
+                                            <button type="button" onClick={() => { setClientFound(false); setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' }); }} className="text-xs text-red-500 hover:text-red-700 underline">Limpar e novo cadastro</button>
+                                        )}
+                                    </div>
+                                    <input type="text" name="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all text-gray-700 font-medium placeholder-gray-400 ${clientFound ? 'border-green-300 bg-green-50/50' : 'border-gray-200 focus:border-pink-500 focus:bg-white'}`} />
                                 </div>
                             </div>
-                        )}
+                        </section>
 
-                        {/* Step 2: Service Selection */}
-                        {step === 2 && (
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Seleção de Serviço</h3>
+                        {/* Seção 2: Seleção de Serviço */}
+                        <section className={!isStep1Valid ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
+                            <h3 className="text-lg font-outfit font-bold text-gray-800 mb-4 flex items-center gap-2 mt-8">
+                                <div className="p-1.5 bg-purple-50 rounded-lg text-purple-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" /></svg></div>
+                                Detalhes do Serviço
+                            </h3>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); setSelectedCondo(null); }} className={`p-4 border-2 rounded-xl transition-all text-left flex items-center gap-4 ${serviceStepView === 'bath_groom' ? 'border-pink-500 bg-pink-50 shadow-md shadow-pink-500/10' : 'border-gray-200 hover:border-pink-300 bg-white'}`}>
+                                    <div className={`p-2 rounded-lg ${serviceStepView === 'bath_groom' ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-500'}`}><BathTosaIcon /></div>
+                                    <div><h4 className={`font-bold ${serviceStepView === 'bath_groom' ? 'text-pink-700' : 'text-gray-700'}`}>Banho & Tosa</h4><p className="text-xs text-gray-500">Serviços de higiene e estética</p></div>
+                                </button>
+                                <button type="button" onClick={() => { setServiceStepView('pet_movel'); setSelectedService(null); setSelectedCondo(null); }} className={`p-4 border-2 rounded-xl transition-all text-left flex items-center gap-4 ${serviceStepView === 'pet_movel' ? 'border-pink-500 bg-pink-50 shadow-md shadow-pink-500/10' : 'border-gray-200 hover:border-pink-300 bg-white'}`}>
+                                    <div className={`p-2 rounded-lg ${serviceStepView === 'pet_movel' ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-500'}`}><PetMovelIcon /></div>
+                                    <div><h4 className={`font-bold ${serviceStepView === 'pet_movel' ? 'text-pink-700' : 'text-gray-700'}`}>Pet Móvel</h4><p className="text-xs text-gray-500">Atendimento em condomínios</p></div>
+                                </button>
+                            </div>
 
-                                {serviceStepView === 'main' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setServiceStepView('bath_groom')}
-                                            className="p-4 border-2 border-gray-200 rounded-lg hover:border-pink-500 transition-colors text-left"
-                                        >
-                                            <div className="flex items-center space-x-3">
-                                                <BathTosaIcon />
-                                                <div>
-                                                    <h4 className="font-medium text-gray-800">Banho & Tosa</h4>
-                                                    <p className="text-sm text-gray-600">Serviços de higiene e estética</p>
-                                                </div>
-                                            </div>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => setServiceStepView('pet_movel')}
-                                            className="p-4 border-2 border-gray-200 rounded-lg hover:border-pink-500 transition-colors text-left"
-                                        >
-                                            <div className="flex items-center space-x-3">
-                                                <PetMovelIcon />
-                                                <div>
-                                                    <h4 className="font-medium text-gray-800">Pet Móvel</h4>
-                                                    <p className="text-sm text-gray-600">Atendimento em condomínios</p>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </div>
-                                )}
-
-                                {serviceStepView === 'bath_groom' && (
-                                    <div className="space-y-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setServiceStepView('main')}
-                                            className="flex items-center text-pink-600 hover:text-pink-700 mb-4"
-                                        >
-                                            <ChevronLeftIcon className="h-4 w-4 mr-1" />
-                                            Voltar
-                                        </button>
-
-                                        <div className="space-y-3">
-                                            {[ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING, ServiceType.VISIT_DAYCARE, ServiceType.VISIT_HOTEL].map((service) => (
-                                                <label key={service} className={`flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer ${clientFound ? 'border-green-200 bg-green-50' : ''}`}>
-                                                    <input
-                                                        type="radio"
-                                                        name="service"
-                                                        value={service}
-                                                        checked={selectedService === service}
-                                                        onChange={(e) => setSelectedService(e.target.value as ServiceType)}
-                                                        className="text-pink-600 focus:ring-pink-500"
-                                                    />
-                                                    <span className="text-gray-800">{SERVICES[service].label}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-
-                                        {selectedService && !isVisitService && (
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Porte do Pet</label>
-                                                <select
-                                                    value={selectedWeight || ''}
-                                                    onChange={handleWeightChange}
-                                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${clientFound ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
-                                                    required
-                                                >
-                                                    <option value="">Selecione o porte</option>
-                                                    {Object.entries(PET_WEIGHT_OPTIONS).map(([key, label]) => (
-                                                        <option key={key} value={key}>{label}</option>
-                                                    ))}
+                            {serviceStepView !== 'main' && (
+                                <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 space-y-5">
+                                    {serviceStepView === 'pet_movel' && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-sm font-medium text-gray-700 ml-1">Condomínio</label>
+                                            <div className="relative">
+                                                <select value={selectedCondo || ''} onChange={(e) => setSelectedCondo(e.target.value)} className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-700 font-medium shadow-sm">
+                                                    <option value="" disabled>Selecione o condomínio</option>
+                                                    <option value="Vitta Parque">Vitta Parque</option>
+                                                    <option value="Max Haus">Max Haus</option>
+                                                    <option value="Paseo">Paseo</option>
                                                 </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg></div>
                                             </div>
-                                        )}
+                                        </div>
+                                    )}
 
-                                        {selectedService && selectedWeight && !isVisitService && (
-                                            <div>
-                                                <h4 className="text-sm font-medium text-gray-700 mb-2">Serviços Adicionais</h4>
+                                    {((serviceStepView === 'bath_groom') || (serviceStepView === 'pet_movel' && selectedCondo)) && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-sm font-medium text-gray-700 ml-1">Serviço Específico</label>
                                                 <div className="space-y-2">
-                                                    {ADDON_SERVICES.filter(addon => {
-                                                        const isExcluded = addon.excludesWeight?.includes(selectedWeight);
-                                                        const requiresNotMet = addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight);
-                                                        return !isExcluded && !requiresNotMet;
-                                                    }).map((addon) => (
-                                                        <label key={addon.id} className={`flex items-center space-x-3 p-2 border rounded hover:bg-gray-50 cursor-pointer ${clientFound ? 'border-green-200 bg-green-50' : ''}`}>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedAddons[addon.id] || false}
-                                                                onChange={() => handleAddonToggle(addon.id)}
-                                                                className="text-pink-600 focus:ring-pink-500"
-                                                            />
-                                                            <span className="flex-1 text-gray-800">{addon.label}</span>
-                                                            <span className="text-pink-600 font-medium">R$ {addon.price.toFixed(2)}</span>
+                                                    {(serviceStepView === 'bath_groom' ? [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING, ServiceType.VISIT_DAYCARE, ServiceType.VISIT_HOTEL] : [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_GROOMING_ONLY, ServiceType.PET_MOBILE_BATH_AND_GROOMING]).map((service) => (
+                                                        <label key={service} className={`flex items-center space-x-3 p-3 border rounded-xl hover:bg-gray-50 cursor-pointer transition-colors ${selectedService === service ? 'border-pink-500 bg-pink-50/30' : 'border-gray-200 bg-white'}`}>
+                                                            <input type="radio" name="service" value={service} checked={selectedService === service} onChange={(e) => setSelectedService(e.target.value as ServiceType)} className="text-pink-600 focus:ring-pink-500 w-4 h-4" />
+                                                            <span className="text-gray-800 text-sm font-medium">{SERVICES[service].label}</span>
                                                         </label>
                                                     ))}
                                                 </div>
                                             </div>
-                                        )}
 
-                                        {totalPrice > 0 && (
-                                            <div className="bg-pink-50 p-4 rounded-lg">
-                                                <div className="text-lg font-semibold text-pink-800">
-                                                    Total: R$ {(totalPrice ?? 0).toFixed(2)}
+                                            {selectedService && !isVisitService && (
+                                                <div className="flex flex-col gap-5">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-sm font-medium text-gray-700 ml-1">Porte do Pet</label>
+                                                        <div className="relative">
+                                                            <select value={selectedWeight || ''} onChange={handleWeightChange} className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-700 font-medium shadow-sm">
+                                                                <option value="" disabled>Selecione o porte</option>
+                                                                {Object.entries(PET_WEIGHT_OPTIONS).map(([key, label]) => (
+                                                                    <option key={key} value={key}>{label}</option>
+                                                                ))}
+                                                            </select>
+                                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg></div>
+                                                        </div>
+                                                    </div>
+
+                                                    {selectedWeight && (
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <label className="text-sm font-medium text-gray-700 ml-1">Serviços Adicionais</label>
+                                                            <div className="space-y-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-2">
+                                                                {ADDON_SERVICES.filter(addon => {
+                                                                    const isExcluded = addon.excludesWeight?.includes(selectedWeight);
+                                                                    const requiresNotMet = addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight);
+                                                                    return !isExcluded && !requiresNotMet;
+                                                                }).map((addon) => (
+                                                                    <label key={addon.id} className="flex items-center space-x-3 p-2.5 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
+                                                                        <input type="checkbox" checked={selectedAddons[addon.id] || false} onChange={() => handleAddonToggle(addon.id)} className="text-pink-600 focus:ring-pink-500 w-4 h-4 rounded" />
+                                                                        <span className="flex-1 text-gray-800 text-sm">{addon.label}</span>
+                                                                        <span className="text-pink-600 font-bold text-sm">+ R$ {addon.price.toFixed(2)}</span>
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {serviceStepView === 'pet_movel' && (
-                                    <div className="space-y-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setServiceStepView('main')}
-                                            className="flex items-center text-pink-600 hover:text-pink-700 mb-4"
-                                        >
-                                            <ChevronLeftIcon className="h-4 w-4 mr-1" />
-                                            Voltar
-                                        </button>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Condomínio</label>
-                                            <select
-                                                value={selectedCondo || ''}
-                                                onChange={(e) => setSelectedCondo(e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                                required
-                                            >
-                                                <option value="">Selecione o condomínio</option>
-                                                <option value="Vitta Parque">Vitta Parque</option>
-                                                <option value="Max Haus">Max Haus</option>
-                                                <option value="Paseo">Paseo</option>
-                                            </select>
+                                            )}
                                         </div>
+                                    )}
 
-                                        {selectedCondo && (
-                                            <div className="space-y-3">
-                                                {[ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_GROOMING_ONLY, ServiceType.PET_MOBILE_BATH_AND_GROOMING].map((service) => (
-                                                    <label key={service} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                                                        <input
-                                                            type="radio"
-                                                            name="service"
-                                                            value={service}
-                                                            checked={selectedService === service}
-                                                            onChange={(e) => setSelectedService(e.target.value as ServiceType)}
-                                                            className="text-pink-600 focus:ring-pink-500"
-                                                        />
-                                                        <span className="text-gray-800">{SERVICES[service].label}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {selectedService && selectedCondo && (
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Porte do Pet</label>
-                                                <select
-                                                    value={selectedWeight || ''}
-                                                    onChange={handleWeightChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                                                    required
-                                                >
-                                                    <option value="">Selecione o porte</option>
-                                                    {Object.entries(PET_WEIGHT_OPTIONS).map(([key, label]) => (
-                                                        <option key={key} value={key}>{label}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        {selectedService && selectedWeight && selectedCondo && (
-                                            <div>
-                                                <h4 className="text-sm font-medium text-gray-700 mb-2">Serviços Adicionais</h4>
-                                                <div className="space-y-2">
-                                                    {ADDON_SERVICES.filter(addon => {
-                                                        const isExcluded = addon.excludesWeight?.includes(selectedWeight);
-                                                        const requiresNotMet = addon.requiresWeight && !addon.requiresWeight.includes(selectedWeight);
-                                                        return !isExcluded && !requiresNotMet;
-                                                    }).map((addon) => (
-                                                        <label key={addon.id} className="flex items-center space-x-3 p-2 border rounded hover:bg-gray-50 cursor-pointer">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedAddons[addon.id] || false}
-                                                                onChange={() => handleAddonToggle(addon.id)}
-                                                                className="text-pink-600 focus:ring-pink-500"
-                                                            />
-                                                            <span className="flex-1 text-gray-800">{addon.label}</span>
-                                                            <span className="text-pink-600 font-medium">R$ {addon.price.toFixed(2)}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {totalPrice > 0 && (
-                                            <div className="bg-pink-50 p-4 rounded-lg">
-                                                <div className="text-lg font-semibold text-pink-800">
-                                                    Total: R$ {(totalPrice ?? 0).toFixed(2)}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                <div className="flex justify-between pt-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setStep(1)}
-                                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                                    >
-                                        Anterior
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setStep(3)}
-                                        disabled={!isStep2Valid}
-                                        className="px-6 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        Próximo
-                                    </button>
+                                    {totalPrice > 0 && (
+                                        <div className="mt-4 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100 flex justify-between items-center">
+                                            <span className="text-pink-900 font-medium">Valor Total Estimado</span>
+                                            <span className="text-2xl font-bold text-pink-600">R$ {totalPrice.toFixed(2)}</span>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </section>
 
-                        {/* Step 3: Date and Time Selection */}
-                        {step === 3 && (
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Data e Horário</h3>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Data do Agendamento</label>
+                        {/* Seção 3: Agendamento */}
+                        <section className={!isStep2Valid ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
+                            <h3 className="text-lg font-outfit font-bold text-gray-800 mb-5 flex items-center gap-2 mt-8">
+                                <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
+                                Agendamento
+                            </h3>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Data do Agendamento</label>
                                     <Calendar
                                         selectedDate={selectedDate}
                                         onDateChange={setSelectedDate}
@@ -4012,45 +3843,41 @@ const AdminAddAppointmentModal: React.FC<{
                                         allowedDays={allowedDays}
                                     />
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Horário</label>
-                                    <TimeSlotPicker
-                                        isAdmin={true}
-                                        selectedDate={selectedDate}
-                                        selectedService={selectedService}
-                                        appointments={appointments}
-                                        onTimeSelect={setSelectedTime}
-                                        selectedTime={selectedTime}
-                                        workingHours={isVisitService ? VISIT_WORKING_HOURS : WORKING_HOURS}
-                                        isPetMovel={isPetMovel}
-                                        allowedDays={allowedDays}
-                                        selectedCondo={selectedCondo}
-                                        disablePastTimes={false}
-                                    />
-                                </div>
-
-                                <div className="flex justify-between pt-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setStep(2)}
-                                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                                    >
-                                        Anterior
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={!isStep3Valid || isSubmitting}
-                                        className="px-6 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-                                    >
-                                        {isSubmitting && <LoadingSpinner />}
-                                        <span>{isSubmitting ? 'Agendando...' : 'Confirmar Agendamento'}</span>
-                                    </button>
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Horário Disponível</label>
+                                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 h-full">
+                                        <TimeSlotPicker
+                                            isAdmin={true}
+                                            selectedDate={selectedDate}
+                                            selectedService={selectedService}
+                                            appointments={appointments}
+                                            onTimeSelect={setSelectedTime}
+                                            selectedTime={selectedTime}
+                                            workingHours={isVisitService ? VISIT_WORKING_HOURS : WORKING_HOURS}
+                                            isPetMovel={isPetMovel}
+                                            allowedDays={allowedDays}
+                                            selectedCondo={selectedCondo}
+                                            disablePastTimes={false}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        )}
-                    </form>
-                </div>
+                        </section>
+                    </div>
+
+                    <div className="px-6 sm:px-10 py-5 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3 rounded-b-[2rem] mt-auto">
+                        <button type="button" onClick={onClose} className="px-6 py-1.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm">
+                            Cancelar
+                        </button>
+                        <button type="submit" disabled={!isFormValid || isSubmitting} className="px-8 py-1.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-semibold rounded-xl hover:from-pink-700 hover:to-rose-600 transition-all shadow-md shadow-pink-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                            {isSubmitting ? (
+                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Agendando...</>
+                            ) : (
+                                <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Confirmar Agendamento</>
+                            )}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );
@@ -10240,7 +10067,7 @@ const DaycareRegistrationForm: React.FC<{
                                 />
                                 <Label htmlFor="extra_dia_extra" className="text-base font-semibold text-gray-700 cursor-pointer">Dia extra</Label>
                             </div>
-                            {(formData.extra_services?.dia_extra || 0) > 0 && (
+                            {formData.extra_services?.dia_extra && (
                                 <div className="grid grid-cols-2 gap-3 ml-7">
                                     <Input
                                         label="Quantidade (dias)"
