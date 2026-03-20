@@ -1,4 +1,4 @@
-Vou implementar a funcionalidade de autofill para Creche e Hotel Pet conforme solicitado:
+0Vou implementar a funcionalidade de autofill para Creche e Hotel Pet conforme solicitado:
 
 1.  **Creche Pet (DaycareEnrollmentForm)**:
     *   Adicionar estado `isFetchingClient` para controlar o feedback visual.

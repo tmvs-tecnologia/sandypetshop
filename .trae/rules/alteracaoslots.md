@@ -1,0 +1,1 @@
+Jamais altere a configuração dos slots de agendamento a não ser que eu te peça expressamente. Caso eu peça você deve me perguntar se eu quero prosseguir. 

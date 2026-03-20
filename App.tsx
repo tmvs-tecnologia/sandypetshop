@@ -1063,7 +1063,7 @@ const AdminLogin: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }
                 <h1 className="font-brand text-5xl text-pink-800">Sandy's Pet Shop</h1>
                 <p className="text-gray-600 text-lg">Admin Login</p>
             </header>
-            <div className="w-full max-w-full sm:max-w-sm bg-white p-8 rounded-2xl shadow-lg">
+            <main className="w-full max-w-full sm:max-w-sm bg-white p-8 rounded-2xl shadow-lg">
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div>
                         <label htmlFor="email" className="block text-base font-semibold text-gray-700">Email</label>
@@ -1078,7 +1078,7 @@ const AdminLogin: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }
                         {loading ? 'Entrando...' : 'Entrar'}
                     </button>
                 </form>
-            </div>
+            </main>
         </div>
     );
 };
@@ -1508,7 +1508,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
     return (
         <>
             {alertInfo && <AlertModal isOpen={true} onClose={handleAlertClose} title={alertInfo.title} message={alertInfo.message} variant={alertInfo.variant} />}
-            <div 
+            <main 
                 className={`w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-xl border border-pink-100 mb-8 transition-all ease-out transform origin-top ${isAnimating ? 'translate-y-full opacity-0 duration-500' : 'animate-fadeIn opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
                 style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
             >
@@ -1760,7 +1760,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                         </button>
                     </div>
                 </form>
-            </div>
+            </main>
         </>
     );
 };
@@ -3179,6 +3179,36 @@ const AdminAddAppointmentModal: React.FC<{
     const [foundPets, setFoundPets] = useState<any[]>([]);
     const [isFetchingClient, setIsFetchingClient] = useState(false);
 
+    // --- DRAG TO CLOSE STATES & REFS ---
+    const [dragY, setDragY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const startYRef = useRef(0);
+
+    const handleDragStart = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        setIsDragging(true);
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        startYRef.current = y;
+    };
+
+    const handleDragMove = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const diff = y - startYRef.current;
+        if (diff > 0) setDragY(diff);
+    };
+
+    const handleDragEnd = () => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        if (dragY > 150) {
+            setDragY(0);
+            onClose();
+        } else {
+            setDragY(0);
+        }
+    };
+    // ------------------------------------
+
     const isVisitService = useMemo(() =>
         selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
         [selectedService]
@@ -3593,77 +3623,104 @@ const AdminAddAppointmentModal: React.FC<{
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[10001] p-4 sm:p-6 animate-fadeIn">
-            <div className="bg-white rounded-[2rem] shadow-2xl shadow-pink-500/10 w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar relative">
-                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[10001] p-0 sm:p-6 animate-fadeIn">
+            <main
+                className="bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl shadow-pink-500/10 w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto custom-scrollbar relative transition-transform"
+                style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
+            >
                 <form onSubmit={handleSubmit} className="relative z-10">
-                    <div className="px-8 py-6 border-b border-pink-50/80 bg-white/50 sticky top-0 backdrop-blur-xl z-20 flex justify-between items-center">
-                        <div>
-                            <h2 className="text-2xl font-outfit font-bold text-gray-800">Adicionar Agendamento</h2>
-                            <p className="text-sm text-gray-500 mt-1">Preencha os detalhes para um novo agendamento</p>
-                        </div>
-                        <button type="button" onClick={onClose} className="p-2.5 bg-gray-50 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition-all">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    {/* Header estilo Mensalista */}
+                    <div
+                        className="relative p-6 sm:p-8 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
+                        onTouchStart={handleDragStart}
+                        onTouchMove={handleDragMove}
+                        onTouchEnd={handleDragEnd}
+                        onMouseDown={handleDragStart}
+                        onMouseMove={handleDragMove}
+                        onMouseUp={handleDragEnd}
+                        onMouseLeave={handleDragEnd}
+                    >
+                        {/* Drag handle */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
+                        {/* Background blob */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+                        {/* Close button */}
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onClose(); }}
+                            className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            title="Fechar"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
+                        <div className="relative z-10">
+                            <h2 className="text-3xl sm:text-4xl font-extrabold text-pink-950 tracking-tight mb-2">Novo Agendamento</h2>
+                            <p className="text-pink-800/80 font-medium text-sm sm:text-base">Preencha os detalhes para um novo agendamento</p>
+                        </div>
                     </div>
 
-                    <div className="p-8 space-y-8">
+                    <div className="p-6 sm:p-8 space-y-8">
                         {/* Seção 1: Identificação */}
                         <section>
-                            <h3 className="text-lg font-outfit font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <div className="p-1.5 bg-pink-50 rounded-lg text-pink-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></div>
-                                Informações do Pet e Tutor
-                            </h3>
+                            <div className="flex items-center gap-3 border-b border-gray-100 pb-3 mb-6">
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-600 font-bold text-sm">1</span>
+                                <h3 className="text-xl font-bold text-gray-800">Informações do Pet e Tutor</h3>
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-sm font-medium text-gray-700 ml-1">Nome do Pet</label>
-                                    <input type="text" name="petName" value={formData.petName} onChange={handleInputChange} required className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all text-gray-700 font-medium placeholder-gray-400 ${clientFound ? 'border-green-300 bg-green-50/50' : 'border-gray-200 focus:border-pink-500 focus:bg-white'}`} />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-sm font-medium text-gray-700 ml-1">Raça do Pet</label>
-                                    <input type="text" name="petBreed" value={formData.petBreed} onChange={handleInputChange} required className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all text-gray-700 font-medium placeholder-gray-400 ${clientFound ? 'border-green-300 bg-green-50/50' : 'border-gray-200 focus:border-pink-500 focus:bg-white'}`} />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-sm font-medium text-gray-700 ml-1">Nome do Tutor</label>
-                                    <input type="text" name="ownerName" value={formData.ownerName} onChange={handleInputChange} required className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all text-gray-700 font-medium placeholder-gray-400 ${clientFound ? 'border-green-300 bg-green-50/50' : 'border-gray-200 focus:border-pink-500 focus:bg-white'}`} />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-sm font-medium text-gray-700 ml-1 flex justify-between">
-                                        WhatsApp
-                                        {clientFound && <span className="text-xs text-green-600 font-normal">Cliente encontrado</span>}
-                                    </label>
+                                <div>
+                                    <label htmlFor="addAppt-petName" className="block text-sm font-semibold text-gray-700 mb-1.5">Nome do Pet</label>
                                     <div className="relative">
-                                        <input type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} required placeholder="(11) 99999-9999" className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all text-gray-700 font-medium placeholder-gray-400 ${clientFound ? 'border-green-500 ring-1 ring-green-500 bg-green-50/50' : 'border-gray-200 focus:border-pink-500 focus:bg-white'}`} />
-                                        {isFetchingClient && (
-                                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-pink-600"></div>
-                                            </div>
-                                        )}
-                                        {clientFound && !isFetchingClient && (
-                                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
-                                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                            </div>
-                                        )}
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><PawIcon /></span>
+                                        <input id="addAppt-petName" type="text" name="petName" value={formData.petName} onChange={handleInputChange} required placeholder="Ex: Buddy" className={`block w-full pl-11 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all ${clientFound ? 'border-green-300 bg-green-50/50' : 'bg-gray-50/50 border-gray-200 focus:bg-white'}`} />
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-1.5 md:col-span-2">
-                                    <div className="flex justify-between items-end">
-                                        <label className="text-sm font-medium text-gray-700 ml-1">Endereço</label>
+                                <div>
+                                    <label htmlFor="addAppt-petBreed" className="block text-sm font-semibold text-gray-700 mb-1.5">Raça do Pet</label>
+                                    <div className="relative">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><BreedIcon /></span>
+                                        <input id="addAppt-petBreed" type="text" name="petBreed" value={formData.petBreed} onChange={handleInputChange} required placeholder="Ex: Golden Retriever" className={`block w-full pl-11 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all ${clientFound ? 'border-green-300 bg-green-50/50' : 'bg-gray-50/50 border-gray-200 focus:bg-white'}`} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="addAppt-ownerName" className="block text-sm font-semibold text-gray-700 mb-1.5">Nome do Tutor</label>
+                                    <div className="relative">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><UserIcon /></span>
+                                        <input id="addAppt-ownerName" type="text" name="ownerName" value={formData.ownerName} onChange={handleInputChange} required placeholder="Ex: João Silva" className={`block w-full pl-11 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all ${clientFound ? 'border-green-300 bg-green-50/50' : 'bg-gray-50/50 border-gray-200 focus:bg-white'}`} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="addAppt-whatsapp" className="block text-sm font-semibold text-gray-700 mb-1.5 flex justify-between">
+                                        WhatsApp
+                                        {clientFound && <span className="text-xs text-green-600 font-normal">Cliente encontrado ✓</span>}
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><WhatsAppIcon /></span>
+                                        <input id="addAppt-whatsapp" type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} required placeholder="(XX) XXXXX-XXXX" className={`block w-full pl-11 pr-10 py-3.5 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all ${clientFound ? 'border-green-500 ring-1 ring-green-500 bg-green-50/50' : 'bg-gray-50/50 border-gray-200 focus:bg-white'}`} />
+                                        {isFetchingClient && <div className="absolute right-3 top-1/2 -translate-y-1/2"><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-pink-600"></div></div>}
+                                        {clientFound && !isFetchingClient && <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>}
+                                    </div>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <div className="flex justify-between items-end mb-1.5">
+                                        <label htmlFor="addAppt-ownerAddress" className="block text-sm font-semibold text-gray-700">Endereço</label>
                                         {clientFound && (
                                             <button type="button" onClick={() => { setClientFound(false); setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' }); }} className="text-xs text-red-500 hover:text-red-700 underline">Limpar e novo cadastro</button>
                                         )}
                                     </div>
-                                    <input type="text" name="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all text-gray-700 font-medium placeholder-gray-400 ${clientFound ? 'border-green-300 bg-green-50/50' : 'border-gray-200 focus:border-pink-500 focus:bg-white'}`} />
+                                    <div className="relative">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><AddressIcon /></span>
+                                        <input id="addAppt-ownerAddress" type="text" name="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required placeholder="Rua, número, bairro" className={`block w-full pl-11 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all ${clientFound ? 'border-green-300 bg-green-50/50' : 'bg-gray-50/50 border-gray-200 focus:bg-white'}`} />
+                                    </div>
                                 </div>
                             </div>
                         </section>
 
                         {/* Seção 2: Seleção de Serviço */}
                         <section className={!isStep1Valid ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
-                            <h3 className="text-lg font-outfit font-bold text-gray-800 mb-4 flex items-center gap-2 mt-8">
-                                <div className="p-1.5 bg-purple-50 rounded-lg text-purple-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" /></svg></div>
-                                Detalhes do Serviço
-                            </h3>
+                            <div className="flex items-center gap-3 border-b border-gray-100 pb-3 mb-6">
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-600 font-bold text-sm">2</span>
+                                <h3 className="text-xl font-bold text-gray-800">Detalhes do Serviço</h3>
+                            </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                 <button type="button" onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); setSelectedCondo(null); }} className={`p-4 border-2 rounded-xl transition-all text-left flex items-center gap-4 ${serviceStepView === 'bath_groom' ? 'border-pink-500 bg-pink-50 shadow-md shadow-pink-500/10' : 'border-gray-200 hover:border-pink-300 bg-white'}`}>
@@ -3757,10 +3814,10 @@ const AdminAddAppointmentModal: React.FC<{
 
                         {/* Seção 3: Agendamento */}
                         <section className={!isStep2Valid ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
-                            <h3 className="text-lg font-outfit font-bold text-gray-800 mb-5 flex items-center gap-2 mt-8">
-                                <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
-                                Agendamento
-                            </h3>
+                            <div className="flex items-center gap-3 border-b border-gray-100 pb-3 mb-6">
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-sm">3</span>
+                                <h3 className="text-xl font-bold text-gray-800">Data e Horário</h3>
+                            </div>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                                 <div className="flex flex-col gap-2">
                                     <label className="text-sm font-medium text-gray-700 ml-1">Data do Agendamento</label>
@@ -3807,7 +3864,7 @@ const AdminAddAppointmentModal: React.FC<{
                         </button>
                     </div>
                 </form>
-            </div>
+            </main>
         </div>
     );
 };
@@ -8520,8 +8577,9 @@ const EditDaycareEnrollmentModal: React.FC<{
 
 const HotelRegistrationForm: React.FC<{
     setView?: (view: 'scheduler' | 'login' | 'hotelRegistration') => void;
+    isAdmin?: boolean;
     onSuccess?: () => void;
-}> = ({ setView, onSuccess }) => {
+}> = ({ setView, isAdmin = false, onSuccess }) => {
     const [formData, setFormData] = useState<HotelRegistration>({
         pet_name: '', pet_sex: null, pet_breed: '', is_neutered: null, pet_age: '',
         pet_weight: null,
@@ -8854,10 +8912,8 @@ const HotelRegistrationForm: React.FC<{
     const isStep4Valid = formData.check_in_date && formData.check_in_time && formData.check_out_date && formData.check_out_time;
     const isStep5Valid = true;
 
-    return (
+    const formContent = (
         <div className="w-full max-w-3xl mx-auto bg-rose-50 rounded-2xl shadow-xl overflow-hidden animate-fadeIn">
-            {/* Barra de etapas removida */}
-
             <form ref={formRef} onSubmit={handleSubmit} className="relative p-6 sm:p-8">
                 {/* Seção 1: Dados do Pet e Tutor */}
                 <div className="bg-white p-6 rounded-lg shadow-md mb-6">
@@ -9355,6 +9411,45 @@ const HotelRegistrationForm: React.FC<{
                 </div>,
                 document.body
             )}
+        </div>
+    );
+
+    if (isAdmin) {
+        return formContent;
+    }
+
+    return (
+        <div className="min-h-screen p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
+            <div className="w-full max-w-5xl mx-auto animate-fadeIn">
+                <header className="w-full flex flex-col md:flex-row items-center justify-between mb-8 animate-fadeInUp gap-6">
+                    <div className="flex items-center gap-5 text-center md:text-left">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-pink-300 rounded-full blur-xl opacity-50"></div>
+                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-20 w-20 object-contain drop-shadow-2xl" loading="eager" />
+                        </div>
+                        <div>
+                            <h1 className="font-brand text-4xl md:text-5xl text-pink-900 tracking-tight leading-none">Sandy's Pet Shop</h1>
+                            <p className="text-pink-800/70 text-sm md:text-base font-semibold tracking-wide uppercase mt-2">Matrícula no Hotel</p>
+                        </div>
+                    </div>
+                </header>
+
+                <main className="w-full max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/50 backdrop-blur-sm relative">
+                    <button
+                        type="button"
+                        onClick={() => setView && setView('scheduler')}
+                        className="absolute left-4 top-4 p-2 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-sm border border-pink-100 transition-all z-10"
+                        title="Voltar"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                        </svg>
+                    </button>
+                    <div className="pt-8">
+                        {formContent}
+                    </div>
+                </main>
+            </div>
         </div>
     );
 };
@@ -11977,7 +12072,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
     }
 
     if (isAddFormOpen) {
-        return <HotelRegistrationForm setView={() => setIsAddFormOpen(false)} onSuccess={() => { fetchRegistrations(); setIsAddFormOpen(false); }} />;
+        return <HotelRegistrationForm isAdmin setView={() => setIsAddFormOpen(false)} onSuccess={() => { fetchRegistrations(); setIsAddFormOpen(false); }} />;
     }
 
     const HotelRegistrationCard: React.FC<{
@@ -14359,7 +14454,7 @@ const App: React.FC = () => {
                     <h1 className="font-brand text-4xl text-pink-800">Sandy's Pet Shop</h1>
                     <p className="text-gray-600 text-lg">Agendamento de Visita</p>
                 </div>
-                <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-pink-100">
+                <main className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-pink-100">
                     <h2 className="text-2xl font-bold text-gray-800 text-center mb-4">Escolha o local da visita</h2>
                     <div className="grid grid-cols-1 gap-3">
                         <button type="button" onClick={() => { setVisitServiceType('Creche Pet'); setViewWithLog('visitAppointment'); }} className="p-5 rounded-2xl text-center font-semibold transition-all border-2 flex flex-col items-center justify-center bg-white hover:bg-pink-50 border-gray-200">
@@ -14371,7 +14466,7 @@ const App: React.FC = () => {
                     <div className="mt-6 text-center">
                         <button type="button" onClick={() => setViewWithLog('scheduler')} className="text-sm text-pink-600 hover:underline">← Voltar</button>
                     </div>
-                </div>
+                </main>
             </div>
         );
     }
