@@ -3638,47 +3638,46 @@ const AdminAddAppointmentModal: React.FC<{
     if (!isOpen && !isAnimating) return null;
 
     return (
-        <div className={`fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-start justify-center z-[10001] sm:p-6 overflow-y-auto custom-scrollbar transition-opacity duration-500 ${isAnimating ? 'opacity-0' : 'animate-fadeIn opacity-100'}`}>
+        <div 
+            className={`h-full w-full bg-white flex flex-col relative transition-all ease-out duration-500 origin-top ${isAnimating ? 'translate-y-full opacity-0' : 'opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
+            style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
+        >
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full blur-3xl opacity-50 pointer-events-none z-0"></div>
+            
+            {/* Header / Nav Area */}
             <div 
-                className={`bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl shadow-pink-500/10 w-full min-h-[95vh] sm:min-h-0 sm:max-w-5xl mt-[5vh] sm:my-8 flex flex-col relative transition-all ease-out transform origin-bottom sm:origin-top ${isAnimating ? 'translate-y-full opacity-0 duration-500' : 'opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
-                style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
+                className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 shrink-0 cursor-grab active:cursor-grabbing select-none"
+                onTouchStart={handleDragStart}
+                onTouchMove={handleDragMove}
+                onTouchEnd={handleDragEnd}
+                onMouseDown={handleDragStart}
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
             >
-                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full blur-3xl opacity-50 pointer-events-none z-0"></div>
-                
-                {/* Drag Handle Area - Match Novo Mensalista style */}
-                <div 
-                    className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
-                    onTouchStart={handleDragStart}
-                    onTouchMove={handleDragMove}
-                    onTouchEnd={handleDragEnd}
-                    onMouseDown={handleDragStart}
-                    onMouseMove={handleDragMove}
-                    onMouseUp={handleDragEnd}
-                    onMouseLeave={handleDragEnd}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                <button 
+                    type="button" 
+                    onClick={(e) => { e.stopPropagation(); handleClose(); }} 
+                    className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    title="Fechar"
                 >
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-                    <button 
-                        type="button" 
-                        onClick={(e) => { e.stopPropagation(); handleClose(); }} 
-                        className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
-                        title="Fechar"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                    <div className="relative z-10 flex items-center justify-between">
-                        <div className="flex-1 min-w-0 pr-4">
-                            <h2 className="text-2xl sm:text-3xl font-extrabold text-pink-950 tracking-tight mb-1 whitespace-nowrap truncate">Novo Agendamento</h2>
-                            <p className="text-pink-800/80 font-medium text-[11px] sm:text-sm whitespace-nowrap overflow-visible">Preencha os detalhes para um novo agendamento</p>
-                        </div>
-                        <div className="hidden sm:flex h-16 w-16 bg-white rounded-2xl shadow-sm items-center justify-center text-3xl transform rotate-3 shrink-0">
-                            📅
-                        </div>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <div className="relative z-10 flex items-center justify-between">
+                    <div className="flex-1 min-w-0 pr-4">
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-pink-950 tracking-tight mb-1 whitespace-nowrap truncate">Novo Agendamento</h2>
+                        <p className="text-pink-800/80 font-medium text-[11px] sm:text-sm whitespace-nowrap overflow-visible">Preencha os detalhes para um novo agendamento</p>
+                    </div>
+                    <div className="hidden sm:flex h-16 w-16 bg-white rounded-2xl shadow-sm items-center justify-center text-3xl transform rotate-3 shrink-0">
+                        📅
                     </div>
                 </div>
+            </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col relative z-10">
-                    <div className="p-6 sm:p-10 space-y-12 flex-1">
+            <form onSubmit={handleSubmit} className="flex flex-col relative z-10 flex-1 overflow-y-auto custom-scrollbar">
+                <div className="p-6 sm:p-10 space-y-12">
                         {/* Seção 1: Identificação */}
                         <section>
                             <h3 className="text-lg font-outfit font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -3866,19 +3865,18 @@ const AdminAddAppointmentModal: React.FC<{
                     </div>
 
                     <div className="px-6 sm:px-10 py-5 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3 sm:rounded-b-[2rem] mt-auto">
-                        <button type="button" onClick={onClose} className="px-6 py-1.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm">
+                        <button type="button" onClick={handleClose} className="px-5 py-2 sm:px-6 sm:py-1.5 bg-white border border-gray-200 text-gray-700 font-semibold text-sm sm:text-base rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm">
                             Cancelar
                         </button>
-                        <button type="submit" disabled={!isFormValid || isSubmitting} className="px-8 py-1.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-semibold rounded-xl hover:from-pink-700 hover:to-rose-600 transition-all shadow-md shadow-pink-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                        <button type="submit" disabled={!isFormValid || isSubmitting} className="px-5 py-2 sm:px-8 sm:py-1.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-semibold text-sm sm:text-base rounded-xl hover:from-pink-700 hover:to-rose-600 transition-all shadow-md shadow-pink-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap min-w-0">
                             {isSubmitting ? (
-                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Agendando...</>
+                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0"></div> <span className="truncate">Agendando...</span></>
                             ) : (
-                                <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Confirmar Agendamento</>
+                                <><svg className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> <span className="truncate">Confirmar Agendamento</span></>
                             )}
                         </button>
                     </div>
                 </form>
-            </div>
         </div>
     );
 };
@@ -4330,9 +4328,10 @@ interface AppointmentsViewProps {
     onDeleteObservation: (appointment: AdminAppointment) => void;
     monthlyClients?: MonthlyClient[];
     onDataChanged?: () => void;
+    onOpenAddModal?: () => void;
 }
 
-const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged }) => {
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged, onOpenAddModal }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
@@ -4396,10 +4395,18 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         // Quick trigger re-render hack if virtual -> real transition happens caching issues
         // Removed setRefreshKey as it was undefined. onDataChanged is already called above.
     };
-    const handleOpenAddModal = () => {
-        setIsAddModalOpen(true);
+    const handleOpenAddModalInternal = () => {
+        if (onOpenAddModal) {
+            onOpenAddModal();
+        } else {
+            setIsAddModalOpen(true);
+        }
     };
-    const handleCloseAddModal = () => setIsAddModalOpen(false);
+    const handleCloseAddModal = () => {
+        if (onClose) {
+            onClose();
+        }
+    };
     const handleAppointmentCreated = (created: AdminAppointment) => {
         setAppointments(prev => [created, ...prev]);
         handleCloseAddModal();
@@ -4641,7 +4648,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 isSubmitting={!!updatingStatusId}
             />
             {isEditModalOpen && editingAppointment && <EditAppointmentModal appointment={editingAppointment} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdated} />}
-            {isAddModalOpen && <AdminAddAppointmentModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onAppointmentCreated={handleAppointmentCreated} />}
             {appointmentToDelete && <ConfirmationModal isOpen={!!appointmentToDelete} onClose={() => setAppointmentToDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o agendamento para ${appointmentToDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={deletingAppointmentId === appointmentToDelete.id} />}
             <StatisticsDashboardModal isOpen={isStatisticsModalOpen} onClose={() => setIsStatisticsModalOpen(false)} />
             {isCloseDayModalOpen && (
@@ -4728,7 +4734,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                         </div>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-center">
-                        <button onClick={handleOpenAddModal} title="Adicionar Agendamento" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
+                        <button onClick={handleOpenAddModalInternal} title="Adicionar Agendamento" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
                             <SafeImage alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" loading="eager" />
                         </button>
                         <button onClick={() => setIsStatisticsModalOpen(true)} title="Estatísticas" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
@@ -13707,17 +13713,17 @@ const AdminDashboard: React.FC<{
         { id: 'monthlyClients', label: 'Mensalistas', icon: <MonthlyIcon /> },
     ];
 
-    // Renderiza a view ativa baseada no estado activeView
     const renderActiveView = () => {
         switch (activeView) {
-            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} />;
+            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenAddModal={() => setActiveView('addAppointment')} />;
             case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} setShowDaycareStatistics={setShowDaycareStatistics} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} />;
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
-            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} />;
+            case 'addAppointment': return <AdminAddAppointmentModal isOpen={true} onClose={() => setActiveView('appointments')} onAppointmentCreated={() => { handleDataChanged(); setActiveView('appointments'); }} />;
+            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenAddModal={() => setActiveView('addAppointment')} />;
         }
     };
 
