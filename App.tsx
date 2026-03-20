@@ -3638,9 +3638,9 @@ const AdminAddAppointmentModal: React.FC<{
     if (!isOpen && !isAnimating) return null;
 
     return (
-        <div className={`fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-start justify-center z-[10001] p-4 sm:p-6 overflow-y-auto custom-scrollbar transition-opacity duration-500 ${isAnimating ? 'opacity-0' : 'animate-fadeIn opacity-100'}`}>
+        <div className={`fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-start justify-center z-[10001] sm:p-6 overflow-y-auto custom-scrollbar transition-opacity duration-500 ${isAnimating ? 'opacity-0' : 'animate-fadeIn opacity-100'}`}>
             <div 
-                className={`bg-white rounded-[2rem] shadow-2xl shadow-pink-500/10 w-full max-w-5xl my-4 sm:my-8 flex flex-col relative transition-all ease-out transform origin-top ${isAnimating ? 'translate-y-full opacity-0 duration-500' : 'opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
+                className={`bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl shadow-pink-500/10 w-full min-h-[95vh] sm:min-h-0 sm:max-w-5xl mt-[5vh] sm:my-8 flex flex-col relative transition-all ease-out transform origin-bottom sm:origin-top ${isAnimating ? 'translate-y-full opacity-0 duration-500' : 'opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
                 style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
             >
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full blur-3xl opacity-50 pointer-events-none z-0"></div>
@@ -3865,7 +3865,7 @@ const AdminAddAppointmentModal: React.FC<{
                         </section>
                     </div>
 
-                    <div className="px-6 sm:px-10 py-5 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3 rounded-b-[2rem] mt-auto">
+                    <div className="px-6 sm:px-10 py-5 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3 sm:rounded-b-[2rem] mt-auto">
                         <button type="button" onClick={onClose} className="px-6 py-1.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm">
                             Cancelar
                         </button>
