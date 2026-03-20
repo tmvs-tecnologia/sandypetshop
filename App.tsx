@@ -3815,13 +3815,6 @@ const AdminAddAppointmentModal: React.FC<{
                                             )}
                                         </div>
                                     )}
-
-                                    {totalPrice > 0 && (
-                                        <div className="mt-4 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100 flex justify-between items-center">
-                                            <span className="text-pink-900 font-medium">Valor Total Estimado</span>
-                                            <span className="text-2xl font-bold text-pink-600">R$ {totalPrice.toFixed(2)}</span>
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </section>
@@ -3860,6 +3853,13 @@ const AdminAddAppointmentModal: React.FC<{
                                             disablePastTimes={false}
                                         />
                                     </div>
+                                    
+                                    {totalPrice > 0 && (
+                                        <div className="mt-2 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100 flex justify-between items-center shadow-sm">
+                                            <span className="text-pink-900 font-medium">Valor Total Estimado</span>
+                                            <span className="text-2xl font-bold text-pink-600">R$ {totalPrice.toFixed(2)}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </section>
@@ -10892,7 +10892,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-28 w-28 object-contain transform group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl" loading="eager" />
                         </div>
                         <div>
-                            <h1 className="font-brand text-5xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1">Sandy's<br className="hidden md:block"/><span className="text-pink-600 md:ml-0 ml-2">Pet Shop</span></h1>
+                            <h1 className="font-brand text-5xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1 whitespace-nowrap">Sandy's <span className="text-pink-600">Pet Shop</span></h1>
                             <p className="text-pink-800/70 text-lg md:text-xl font-medium tracking-wide uppercase mt-2">Agendamento Online</p>
                         </div>
                     </div>
