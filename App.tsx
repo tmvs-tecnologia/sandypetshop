@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
-import { SERVICES, WORKING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
+import { SERVICES, WORKING_HOURS, BATH_GROOMING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
 import { useServicePrices } from './src/hooks/useServicePrices';
 import { supabase } from './supabaseClient';
 import NotificationBell from './NotificationBell';
@@ -3144,51 +3144,6 @@ const AdminAddAppointmentModal: React.FC<{
     onAppointmentCreated: (created: AdminAppointment) => void;
 }> = ({ isOpen, onClose, onAppointmentCreated }) => {
     const { getPricesForWeight } = useServicePrices();
-    
-    // --- DRAG TO CLOSE STATES & REFS ---
-    const [isAnimating, setIsAnimating] = useState(false);
-    const [dragY, setDragY] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
-    const startY = useRef(0);
-    const currentY = useRef(0);
-
-    const handleDragStart = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
-        setIsDragging(true);
-        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
-        startY.current = y;
-        currentY.current = y;
-    };
-
-    const handleDragMove = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
-        if (!isDragging) return;
-        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
-        currentY.current = y;
-        const diff = y - startY.current;
-        if (diff > 0) {
-            setDragY(diff);
-        }
-    };
-
-    const handleDragEnd = () => {
-        if (!isDragging) return;
-        setIsDragging(false);
-        if (dragY > 150) {
-            setDragY(0);
-            handleClose();
-        } else {
-            setDragY(0);
-        }
-    };
-
-    const handleClose = () => {
-        setIsAnimating(true);
-        setTimeout(() => {
-            setIsAnimating(false);
-            onClose();
-        }, 500);
-    };
-    // -----------------------------------
-
     const [formData, setFormData] = useState({
         petName: '',
         ownerName: '',
@@ -3339,7 +3294,7 @@ const AdminAddAppointmentModal: React.FC<{
     // Calendar day restrictions based on service type
     useEffect(() => {
         if (serviceStepView === 'bath_groom') {
-            setAllowedDays([1, 2]); // Monday and Tuesday
+            setAllowedDays([2, 3, 4, 5]); // Terça (2), Quarta (3), Quinta (4), Sexta (5)
         } else if (serviceStepView === 'pet_movel') {
             setAllowedDays(undefined);
         } else {
@@ -3620,7 +3575,7 @@ const AdminAddAppointmentModal: React.FC<{
                 extra_services: newDbAppointment.extra_services,
             };
             onAppointmentCreated(createdAdminAppointment);
-            handleClose();
+            onClose();
         } catch (error: any) {
             console.error("Error submitting appointment:", error);
             alert(error.message || 'Não foi possível concluir o agendamento. Tente novamente.');
@@ -3635,49 +3590,24 @@ const AdminAddAppointmentModal: React.FC<{
     const isStep3Valid = selectedTime !== null;
     const isFormValid = isStep1Valid && isStep2Valid && isStep3Valid;
 
-    if (!isOpen && !isAnimating) return null;
+    if (!isOpen) return null;
 
     return (
-        <div 
-            className={`h-full w-full bg-white flex flex-col relative transition-all ease-out duration-500 origin-top ${isAnimating ? 'translate-y-full opacity-0' : 'opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
-            style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
-        >
-            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full blur-3xl opacity-50 pointer-events-none z-0"></div>
-            
-            {/* Header / Nav Area */}
-            <div 
-                className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 shrink-0 cursor-grab active:cursor-grabbing select-none"
-                onTouchStart={handleDragStart}
-                onTouchMove={handleDragMove}
-                onTouchEnd={handleDragEnd}
-                onMouseDown={handleDragStart}
-                onMouseMove={handleDragMove}
-                onMouseUp={handleDragEnd}
-                onMouseLeave={handleDragEnd}
-            >
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-                <button 
-                    type="button" 
-                    onClick={(e) => { e.stopPropagation(); handleClose(); }} 
-                    className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    title="Fechar"
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-                <div className="relative z-10 flex items-center justify-between">
-                    <div className="flex-1 min-w-0 pr-4">
-                        <h2 className="text-2xl sm:text-3xl font-extrabold text-pink-950 tracking-tight mb-1 whitespace-nowrap truncate">Novo Agendamento</h2>
-                        <p className="text-pink-800/80 font-medium text-[11px] sm:text-sm whitespace-nowrap overflow-visible">Preencha os detalhes para um novo agendamento</p>
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[10001] p-4 sm:p-6 animate-fadeIn">
+            <div className="bg-white rounded-[2rem] shadow-2xl shadow-pink-500/10 w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar relative">
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+                <form onSubmit={handleSubmit} className="relative z-10">
+                    <div className="px-8 py-6 border-b border-pink-50/80 bg-white/50 sticky top-0 backdrop-blur-xl z-20 flex justify-between items-center">
+                        <div>
+                            <h2 className="text-2xl font-outfit font-bold text-gray-800">Adicionar Agendamento</h2>
+                            <p className="text-sm text-gray-500 mt-1">Preencha os detalhes para um novo agendamento</p>
+                        </div>
+                        <button type="button" onClick={onClose} className="p-2.5 bg-gray-50 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition-all">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
                     </div>
-                    <div className="hidden sm:flex h-16 w-16 bg-white rounded-2xl shadow-sm items-center justify-center text-3xl transform rotate-3 shrink-0">
-                        📅
-                    </div>
-                </div>
-            </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col relative z-10 flex-1 overflow-y-auto custom-scrollbar">
-                <div className="p-6 sm:p-10 space-y-12">
+                    <div className="p-8 space-y-8">
                         {/* Seção 1: Identificação */}
                         <section>
                             <h3 className="text-lg font-outfit font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -3814,6 +3744,13 @@ const AdminAddAppointmentModal: React.FC<{
                                             )}
                                         </div>
                                     )}
+
+                                    {totalPrice > 0 && (
+                                        <div className="mt-4 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100 flex justify-between items-center">
+                                            <span className="text-pink-900 font-medium">Valor Total Estimado</span>
+                                            <span className="text-2xl font-bold text-pink-600">R$ {totalPrice.toFixed(2)}</span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </section>
@@ -3845,38 +3782,32 @@ const AdminAddAppointmentModal: React.FC<{
                                             appointments={appointments}
                                             onTimeSelect={setSelectedTime}
                                             selectedTime={selectedTime}
-                                            workingHours={isVisitService ? VISIT_WORKING_HOURS : WORKING_HOURS}
+                                            workingHours={isVisitService ? VISIT_WORKING_HOURS : (serviceStepView === 'bath_groom' ? BATH_GROOMING_HOURS : WORKING_HOURS)}
                                             isPetMovel={isPetMovel}
                                             allowedDays={allowedDays}
                                             selectedCondo={selectedCondo}
                                             disablePastTimes={false}
                                         />
                                     </div>
-                                    
-                                    {totalPrice > 0 && (
-                                        <div className="mt-2 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100 flex justify-between items-center shadow-sm">
-                                            <span className="text-pink-900 font-medium">Valor Total Estimado</span>
-                                            <span className="text-2xl font-bold text-pink-600">R$ {totalPrice.toFixed(2)}</span>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </section>
                     </div>
 
-                    <div className="px-6 sm:px-10 py-5 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3 sm:rounded-b-[2rem] mt-auto">
-                        <button type="button" onClick={handleClose} className="px-5 py-2 sm:px-6 sm:py-1.5 bg-white border border-gray-200 text-gray-700 font-semibold text-sm sm:text-base rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm">
+                    <div className="px-8 py-5 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3 rounded-b-[2rem]">
+                        <button type="button" onClick={onClose} className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm">
                             Cancelar
                         </button>
-                        <button type="submit" disabled={!isFormValid || isSubmitting} className="px-5 py-2 sm:px-8 sm:py-1.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-semibold text-sm sm:text-base rounded-xl hover:from-pink-700 hover:to-rose-600 transition-all shadow-md shadow-pink-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap min-w-0">
+                        <button type="submit" disabled={!isFormValid || isSubmitting} className="px-8 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-semibold rounded-xl hover:from-pink-700 hover:to-rose-600 transition-all shadow-md shadow-pink-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                             {isSubmitting ? (
-                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0"></div> <span className="truncate">Agendando...</span></>
+                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Agendando...</>
                             ) : (
-                                <><svg className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> <span className="truncate">Confirmar Agendamento</span></>
+                                <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Confirmar Agendamento</>
                             )}
                         </button>
                     </div>
                 </form>
+            </div>
         </div>
     );
 };
@@ -4328,10 +4259,9 @@ interface AppointmentsViewProps {
     onDeleteObservation: (appointment: AdminAppointment) => void;
     monthlyClients?: MonthlyClient[];
     onDataChanged?: () => void;
-    onOpenAddModal?: () => void;
 }
 
-const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged, onOpenAddModal }) => {
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
@@ -4395,18 +4325,10 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         // Quick trigger re-render hack if virtual -> real transition happens caching issues
         // Removed setRefreshKey as it was undefined. onDataChanged is already called above.
     };
-    const handleOpenAddModalInternal = () => {
-        if (onOpenAddModal) {
-            onOpenAddModal();
-        } else {
-            setIsAddModalOpen(true);
-        }
+    const handleOpenAddModal = () => {
+        setIsAddModalOpen(true);
     };
-    const handleCloseAddModal = () => {
-        if (onClose) {
-            onClose();
-        }
-    };
+    const handleCloseAddModal = () => setIsAddModalOpen(false);
     const handleAppointmentCreated = (created: AdminAppointment) => {
         setAppointments(prev => [created, ...prev]);
         handleCloseAddModal();
@@ -4648,6 +4570,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 isSubmitting={!!updatingStatusId}
             />
             {isEditModalOpen && editingAppointment && <EditAppointmentModal appointment={editingAppointment} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdated} />}
+            {isAddModalOpen && <AdminAddAppointmentModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onAppointmentCreated={handleAppointmentCreated} />}
             {appointmentToDelete && <ConfirmationModal isOpen={!!appointmentToDelete} onClose={() => setAppointmentToDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o agendamento para ${appointmentToDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={deletingAppointmentId === appointmentToDelete.id} />}
             <StatisticsDashboardModal isOpen={isStatisticsModalOpen} onClose={() => setIsStatisticsModalOpen(false)} />
             {isCloseDayModalOpen && (
@@ -4734,7 +4657,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                         </div>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-center">
-                        <button onClick={handleOpenAddModalInternal} title="Adicionar Agendamento" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
+                        <button onClick={handleOpenAddModal} title="Adicionar Agendamento" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
                             <SafeImage alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" loading="eager" />
                         </button>
                         <button onClick={() => setIsStatisticsModalOpen(true)} title="Estatísticas" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
@@ -10589,9 +10512,9 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             console.log('[AllowedDays Effect] isStoreBathGroom:', isStoreBathGroom);
 
             if (isStoreBathGroom) {
-                // Regular Bath & Grooming is only on Mondays (1) and Tuesdays (2)
-                console.log('[AllowedDays Effect] Setting allowedDays to [1, 2]');
-                setAllowedDays([1, 2]);
+                // Banho & Tosa disponível: Terça (2), Quarta (3), Quinta (4), Sexta (5)
+                console.log('[AllowedDays Effect] Setting allowedDays to [2, 3, 4, 5]');
+                setAllowedDays([2, 3, 4, 5]);
             } else if (serviceStepView === 'pet_movel') {
                 // Pet Móvel is now available on all days - no restrictions
                 console.log('[AllowedDays Effect] Pet Movel detected. Setting allowedDays to undefined (all days)');
@@ -10898,7 +10821,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-28 w-28 object-contain transform group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl" loading="eager" />
                         </div>
                         <div>
-                            <h1 className="font-brand text-5xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1 whitespace-nowrap">Sandy's <span className="text-pink-600">Pet Shop</span></h1>
+                            <h1 className="font-brand text-5xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1">Sandy's<br className="hidden md:block"/><span className="text-pink-600 md:ml-0 ml-2">Pet Shop</span></h1>
                             <p className="text-pink-800/70 text-lg md:text-xl font-medium tracking-wide uppercase mt-2">Agendamento Online</p>
                         </div>
                     </div>
@@ -11331,7 +11254,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                             appointments={appointments}
                                             onTimeSelect={setSelectedTime}
                                             selectedTime={selectedTime}
-                                            workingHours={isVisitService ? VISIT_WORKING_HOURS : WORKING_HOURS}
+                                            workingHours={isVisitService ? VISIT_WORKING_HOURS : (serviceStepView === 'bath_groom' || (selectedService && [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService)) ? BATH_GROOMING_HOURS : WORKING_HOURS)}
                                             isPetMovel={!!selectedCondo}
                                             allowedDays={(() => {
                                                 if ([ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService)) {
@@ -13713,17 +13636,17 @@ const AdminDashboard: React.FC<{
         { id: 'monthlyClients', label: 'Mensalistas', icon: <MonthlyIcon /> },
     ];
 
+    // Renderiza a view ativa baseada no estado activeView
     const renderActiveView = () => {
         switch (activeView) {
-            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenAddModal={() => setActiveView('addAppointment')} />;
+            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} />;
             case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} setShowDaycareStatistics={setShowDaycareStatistics} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} />;
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
-            case 'addAppointment': return <AdminAddAppointmentModal isOpen={true} onClose={() => setActiveView('appointments')} onAppointmentCreated={() => { handleDataChanged(); setActiveView('appointments'); }} />;
-            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenAddModal={() => setActiveView('addAppointment')} />;
+            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} />;
         }
     };
 

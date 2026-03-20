@@ -106,6 +106,7 @@ export const HOTEL_EXTRA_SERVICES_PRICES: Record<string, number> = {
 };
 
 export const WORKING_HOURS: number[] = [9, 10, 11, 12, 14, 15, 16, 17];
+export const BATH_GROOMING_HOURS: number[] = [10, 11, 12, 14, 15, 16, 17]; // Banho & Tosa: Ter-Sex, 10h–17h (sem 13h)
 export const VISIT_WORKING_HOURS: number[] = [9, 10, 11, 12, 14, 15, 16, 17, 18, 19];
 export const LUNCH_HOUR = 13;
 export const MAX_CAPACITY_PER_SLOT = 1; // Single groomer/slot
