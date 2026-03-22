@@ -812,8 +812,11 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ onB
                 <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
                 
                 <button 
-                    onClick={(e) => { e.stopPropagation(); handleClose(); }}
-                    className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    onClick={handleClose}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    type="button"
+                    className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer"
                     title="Fechar"
                 >
                     <XMarkIcon className="w-5 h-5 font-bold" />

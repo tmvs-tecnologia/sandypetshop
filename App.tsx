@@ -13655,12 +13655,12 @@ const AdminDashboard: React.FC<{
     const openMobileMenu = () => {
         setShowMobileMenu(true);
         setIsDrawerVisible(true);
-        requestAnimationFrame(() => setIsDrawerOpen(true));
+        requestAnimationFrame(() => requestAnimationFrame(() => setIsDrawerOpen(true)));
     };
     const closeMobileMenu = () => {
         setIsDrawerOpen(false);
-        setIsDrawerVisible(false);
         setShowMobileMenu(false);
+        setTimeout(() => setIsDrawerVisible(false), 500);
     };
     const [showDaycareStatistics, setShowDaycareStatistics] = useState(false);
     const [showHotelStatistics, setShowHotelStatistics] = useState(false);
@@ -13909,23 +13909,23 @@ const AdminDashboard: React.FC<{
 
             {isDrawerVisible && (
                 <div
-                    className={`fixed inset-0 z-[9998] md:hidden bg-gray-800/50 transition-opacity duration-300 ${isDrawerOpen ? 'opacity-100' : 'opacity-0'}`}
+                    className={`fixed inset-0 z-[9998] md:hidden bg-slate-900/40 backdrop-blur-sm transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100' : 'opacity-0'}`}
                     onClick={closeMobileMenu}
                 ></div>
             )}
 
             {isDrawerVisible && (
-                <div className={`fixed left-0 top-0 h-full w-[72vw] max-w-[18rem] sm:max-w-[20rem] bg-white shadow-2xl z-[9999] md:hidden p-4 rounded-r-2xl transform transition-transform duration-300 ease-out ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col overflow-y-hidden`}>
-                    <div className="flex items-center justify-between mb-3">
+                <div className={`fixed left-0 top-0 h-full w-[75vw] max-w-[20rem] bg-white shadow-[20px_0_40px_rgba(0,0,0,0.1)] z-[9999] md:hidden p-5 rounded-r-3xl transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-pink-100 ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col overflow-y-hidden`}>
+                    <div className={`flex items-center justify-between mb-6 transition-all duration-500 delay-100 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
                         <h3 className="text-2xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Menu</h3>
-                        <button onClick={closeMobileMenu} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Fechar menu">
+                        <button onClick={closeMobileMenu} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Fechar menu">
                             <CloseIcon className="w-5 h-5 text-gray-600" />
                         </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto">
+                    <div className={`flex-1 overflow-y-auto custom-scrollbar-hide transition-all duration-500 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
                         <NavMenu />
                     </div>
-                    <div className="mt-3 space-y-3 pt-3 border-t border-gray-100 shrink-0">
+                    <div className={`mt-3 space-y-3 pt-4 border-t border-pink-100/50 shrink-0 transition-all duration-500 delay-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                         <div className="px-3 pb-2">
                             <h3 className="text-2xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
                         </div>
