@@ -1088,6 +1088,79 @@ const AdminLogin: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }
 
 
 
+const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+    useEffect(() => {
+        const timer = setTimeout(onComplete, 2800);
+        return () => clearTimeout(timer);
+    }, [onComplete]);
+
+    return (
+        <div className="fixed inset-0 z-[99999] bg-white flex flex-col items-center justify-center overflow-hidden">
+            <style>
+                {`
+                @keyframes splash-ping {
+                    0% { transform: scale(1); opacity: 0.5; }
+                    70%, 100% { transform: scale(2); opacity: 0; }
+                }
+                @keyframes splash-bounce {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-20px); }
+                }
+                @keyframes splash-slide-up {
+                    from { transform: translateY(30px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes splash-progress {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+                .animate-splash-ping { animation: splash-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+                .animate-splash-bounce { animation: splash-bounce 3s ease-in-out infinite; }
+                .animate-splash-slide-up { animation: splash-slide-up 1s ease-out forwards; }
+                .animate-splash-progress { animation: splash-progress 2s ease-in-out infinite; }
+                `}
+            </style>
+            
+            {/* Background Decorations */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-pink-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 animate-pulse"></div>
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-rose-100/30 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 animate-pulse" style={{ animationDelay: '1s' }}></div>
+
+            <div className="relative flex flex-col items-center">
+                {/* Logo with scaling and floating animation */}
+                <div className="relative mb-12 animate-splash-bounce">
+                    <div className="absolute inset-0 bg-pink-200/40 rounded-full blur-2xl animate-splash-ping"></div>
+                    <div className="relative z-10 w-40 h-40 bg-white rounded-full p-4 shadow-2xl border border-pink-50 flex items-center justify-center group">
+                         <SafeImage 
+                            src="https://i.imgur.com/M3Gt3OA.png" 
+                            alt="Sandy's Pet Shop Logo" 
+                            className="w-32 h-32 object-contain group-hover:scale-110 transition-transform duration-700" 
+                            loading="eager" 
+                        />
+                    </div>
+                </div>
+
+                {/* Text with fade and slide up */}
+                <div className="text-center space-y-3 opacity-0 animate-splash-slide-up" style={{ animationDelay: '0.5s' }}>
+                    <h1 className="font-brand text-7xl text-pink-800 tracking-tight drop-shadow-sm">Sandy's Pet Shop</h1>
+                    <div className="flex items-center justify-center gap-4">
+                        <div className="h-[2px] w-12 bg-pink-100 rounded-full"></div>
+                        <p className="text-pink-400 font-bold tracking-[0.3em] uppercase text-xs sm:text-sm">Área Administrativa</p>
+                        <div className="h-[2px] w-12 bg-pink-100 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom loader */}
+            <div className="absolute bottom-20 w-64 h-1.5 bg-gray-50 rounded-full overflow-hidden border border-gray-100 shadow-inner">
+                <div className="h-full bg-gradient-to-r from-pink-400 via-rose-500 to-pink-600 rounded-full w-1/2 animate-splash-progress"></div>
+            </div>
+            
+            <p className="absolute bottom-12 text-gray-300 font-medium text-sm animate-pulse">Iniciando sistema...</p>
+        </div>
+    );
+};
+
+
 const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void; }> = ({ onBack, onSuccess }) => {
     const { getPricesForWeight } = useServicePrices();
     const [isAnimating, setIsAnimating] = useState(false);
@@ -14403,11 +14476,11 @@ const App: React.FC = () => {
             handleCloseObservationModal();
         }
     };
-    const [view, setView] = useState<'scheduler' | 'login' | 'admin' | 'daycareRegistration' | 'hotelRegistration' | 'visitSelector' | 'visitAppointment'>('scheduler');
+    const [view, setView] = useState<'scheduler' | 'login' | 'admin' | 'daycareRegistration' | 'hotelRegistration' | 'visitSelector' | 'visitAppointment' | 'splash'>('scheduler');
     const [visitServiceType, setVisitServiceType] = useState<'Creche Pet' | 'Hotel Pet' | null>(null);
 
     // Debug: Log mudanças de view
-    const setViewWithLog = (newView: 'scheduler' | 'login' | 'admin' | 'daycareRegistration' | 'hotelRegistration' | 'visitSelector' | 'visitAppointment') => {
+    const setViewWithLog = (newView: 'scheduler' | 'login' | 'admin' | 'daycareRegistration' | 'hotelRegistration' | 'visitSelector' | 'visitAppointment' | 'splash') => {
         console.log('Mudando view de', view, 'para', newView);
         setView(newView);
     };
@@ -14652,6 +14725,10 @@ const App: React.FC = () => {
         setViewWithLog('scheduler');
     };
 
+    if (view === 'splash') {
+        return <SplashScreen onComplete={() => setViewWithLog('admin')} />;
+    }
+
     if (isAuthenticated) {
         return (
             <>
@@ -14721,7 +14798,7 @@ const App: React.FC = () => {
     }
 
     if (view === 'login') {
-        return <AdminLogin onLoginSuccess={() => { setIsAuthenticated(true); setViewWithLog('admin'); }} />;
+        return <AdminLogin onLoginSuccess={() => { setIsAuthenticated(true); setViewWithLog('splash'); }} />;
     }
 
     if (view === 'daycareRegistration') {
