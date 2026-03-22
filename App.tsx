@@ -6755,6 +6755,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     const [filterDueDate, setFilterDueDate] = useState('');
     const [filterRecurrence, setFilterRecurrence] = useState(''); // 'weekly', 'biweekly'
     const [filterDayOfWeek, setFilterDayOfWeek] = useState(''); // '1' to '5'
+    const [filterTime, setFilterTime] = useState(''); // '9' to '17'
     const [sortBy, setSortBy] = useState(''); // 'pet-az', 'owner-az'
 
     // Estados para modal de serviços extras
@@ -7068,6 +7069,11 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
             );
         }
 
+        // Filtro por Horário (9h às 17h)
+        if (filterTime) {
+            filtered = filtered.filter(client => String(client.recurrence_time) === filterTime);
+        }
+
         // Filtro por status de pagamento (Pendente/Pago)
         if (filterPaymentStatus) {
             filtered = filtered.filter(client => client.payment_status === filterPaymentStatus);
@@ -7084,7 +7090,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         }
 
         return filtered;
-    }, [monthlyClients, searchTerm, filterCondominium, filterDueDate, filterRecurrence, filterDayOfWeek, sortBy, filterPaymentStatus]);
+    }, [monthlyClients, searchTerm, filterCondominium, filterDueDate, filterRecurrence, filterDayOfWeek, filterTime, sortBy, filterPaymentStatus]);
 
     const handleTogglePaymentStatus = async (client: MonthlyClient, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent the card's onClick from firing
@@ -7258,143 +7264,179 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
 
             {/* Painel de Filtros */}
             <div 
-                className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                className={`transition-all duration-500 ease-in-out relative z-20 ${
                     showFilterPanel 
                         ? 'max-h-[500px] opacity-100 mb-6 transform translate-y-0' 
-                        : 'max-h-0 opacity-0 mb-0 transform -translate-y-4'
+                        : 'max-h-0 opacity-0 mb-0 transform -translate-y-4 overflow-hidden'
                 }`}
             >
-                <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-5 md:p-6 relative overflow-hidden">
+                <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-4 relative overflow-visible">
                     {/* Elemento de decoração de fundo */}
                     <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-pink-50 to-purple-50 rounded-full blur-xl opacity-70 pointer-events-none"></div>
                     
-                    <h3 className="text-lg font-outfit font-bold text-gray-800 mb-5 flex items-center gap-2">
-                        <div className="p-1.5 bg-pink-50 rounded-lg">
-                            <svg className="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    <div className="flex items-center justify-between mb-3 relative z-10">
+                        <h3 className="text-sm font-outfit font-bold text-gray-800 flex items-center gap-2">
+                            <div className="p-1.5 bg-pink-50 rounded-lg">
+                                <svg className="w-4 h-4 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                </svg>
+                            </div>
+                            Filtros e Ordenação
+                        </h3>
+                        <button
+                            onClick={() => {
+                                setFilterCondominium('');
+                                setFilterDueDate('');
+                                setFilterRecurrence('');
+                                setFilterDayOfWeek('');
+                                setFilterTime('');
+                                setFilterPaymentStatus('');
+                                setSortBy('');
+                            }}
+                            className="text-xs px-3 py-1.5 bg-gray-50 text-gray-600 font-semibold rounded-lg hover:bg-pink-50 hover:text-pink-700 transition-colors flex items-center gap-1.5 border border-gray-200 hover:border-pink-200 shadow-sm"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                        </div>
-                        Filtros e Ordenação
-                    </h3>
+                            Limpar
+                        </button>
+                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+                    <div className="flex flex-wrap gap-3 relative z-10">
                         {/* Filtro por Condomínio */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-medium text-gray-700 ml-1">Condomínio</label>
-                            <div className="relative">
+                        <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Condomínio</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-pink-400 group-focus-within:text-pink-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                </div>
                                 <select
                                     value={filterCondominium}
                                     onChange={(e) => setFilterCondominium(e.target.value)}
-                                    className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium"
+                                    className="w-full pl-8 pr-8 py-2 bg-gray-50/50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-400 focus:bg-white transition-all text-gray-700 text-sm font-medium hover:border-pink-300"
                                 >
-                                    <option value="">Todos os condomínios</option>
+                                    <option value="">Todos</option>
                                     {Array.from(new Set(monthlyClients.map(client => client.condominium))).sort().map(condo => (
                                         <option key={condo} value={condo}>{condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : condo}</option>
                                     ))}
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                                <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 </div>
                             </div>
                         </div>
 
                         {/* Filtro por Recorrência */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-medium text-gray-700 ml-1">Recorrência</label>
-                            <div className="relative">
+                        <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Recorrência</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-pink-400 group-focus-within:text-pink-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                </div>
                                 <select
                                     value={filterRecurrence}
                                     onChange={(e) => setFilterRecurrence(e.target.value)}
-                                    className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium"
+                                    className="w-full pl-8 pr-8 py-2 bg-gray-50/50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-400 focus:bg-white transition-all text-gray-700 text-sm font-medium hover:border-pink-300"
                                 >
                                     <option value="">Todas</option>
                                     <option value="weekly">Semanal</option>
                                     <option value="biweekly">Quinzenal</option>
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                                <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 </div>
                             </div>
                         </div>
 
                         {/* Filtro por Dia da Semana */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-medium text-gray-700 ml-1">Dia da Semana</label>
-                            <div className="relative">
+                        <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Dia da Semana</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-pink-400 group-focus-within:text-pink-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                </div>
                                 <select
                                     value={filterDayOfWeek}
                                     onChange={(e) => setFilterDayOfWeek(e.target.value)}
-                                    className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium"
+                                    className="w-full pl-8 pr-8 py-2 bg-gray-50/50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-400 focus:bg-white transition-all text-gray-700 text-sm font-medium hover:border-pink-300"
                                 >
-                                    <option value="">Todos os dias</option>
+                                    <option value="">Todos</option>
                                     <option value="1">Segunda-feira</option>
                                     <option value="2">Terça-feira</option>
                                     <option value="3">Quarta-feira</option>
                                     <option value="4">Quinta-feira</option>
                                     <option value="5">Sexta-feira</option>
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                                <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Filtro por Status de Pagamento */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-medium text-gray-700 ml-1">Status de Pagamento</label>
-                            <div className="relative">
+                        {/* Filtro por Horário */}
+                        <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Horário</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-pink-400 group-focus-within:text-pink-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
                                 <select
-                                    value={filterPaymentStatus}
-                                    onChange={(e) => setFilterPaymentStatus(e.target.value as '' | 'Pendente' | 'Pago')}
-                                    className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium"
+                                    value={filterTime}
+                                    onChange={(e) => setFilterTime(e.target.value)}
+                                    className="w-full pl-8 pr-8 py-2 bg-gray-50/50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-400 focus:bg-white transition-all text-gray-700 text-sm font-medium hover:border-pink-300"
                                 >
                                     <option value="">Todos</option>
-                                    <option value="Pendente">Pendente</option>
-                                    <option value="Pago">Pago</option>
+                                    {Array.from({ length: 9 }, (_, i) => i + 9).map(hour => (
+                                        <option key={hour} value={hour}>{hour}:00</option>
+                                    ))}
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                                <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 </div>
                             </div>
                         </div>
 
                         {/* Ordenação */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-medium text-gray-700 ml-1">Ordenar por</label>
-                            <div className="relative">
+                        <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Ordenar por</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-pink-400 group-focus-within:text-pink-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>
+                                </div>
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
-                                    className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium"
+                                    className="w-full pl-8 pr-8 py-2 bg-gray-50/50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-400 focus:bg-white transition-all text-gray-700 text-sm font-medium hover:border-pink-300"
                                 >
-                                    <option value="">Padrão (Tutor A-Z)</option>
+                                    <option value="">Tutor A-Z</option>
                                     <option value="pet-az">Pet A-Z</option>
-                                    <option value="owner-az">Tutor A-Z</option>
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                                <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Botão Limpar Filtros */}
-                        <div className="flex items-end lg:col-span-5 mt-2">
-                            <button
-                                onClick={() => {
-                                    setFilterCondominium('');
-                                    setFilterDueDate(''); // Mantido caso o estado ainda exista e seja usado em outro lugar, se não, não faz mal limpar
-                                    setFilterRecurrence('');
-                                    setFilterDayOfWeek('');
-                                    setFilterPaymentStatus('');
-                                    setSortBy('');
-                                }}
-                                className="ml-auto px-6 py-2.5 bg-pink-50 text-pink-700 font-semibold rounded-xl hover:bg-pink-100 hover:text-pink-800 transition-colors flex items-center justify-center gap-2 border border-pink-100"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                                Limpar Filtros
-                            </button>
+                        {/* Filtro por Status de Pagamento */}
+                        <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Pagamento</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-pink-400 group-focus-within:text-pink-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
+                                <select
+                                    value={filterPaymentStatus}
+                                    onChange={(e) => setFilterPaymentStatus(e.target.value as '' | 'Pendente' | 'Pago')}
+                                    className="w-full pl-8 pr-8 py-2 bg-gray-50/50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-400 focus:bg-white transition-all text-gray-700 text-sm font-medium hover:border-pink-300"
+                                >
+                                    <option value="">Todos</option>
+                                    <option value="Pendente">Pendente</option>
+                                    <option value="Pago">Pago</option>
+                                </select>
+                                <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
