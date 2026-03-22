@@ -6909,13 +6909,25 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     const ensureCurrentMonthDueDate = useCallback(async () => {
         const due = getCurrentMonthPaymentDueDate();
         const monthKey = due.slice(0, 7);
-        const last = localStorage.getItem('last_payment_due_update_month') || '';
+        const last = localStorage.getItem('last_payment_due_update_month') || (window as any)._lastPaymentDueUpdateMonth || '';
         if (last === monthKey) return;
-        const { error } = await supabase.from('monthly_clients').update({ payment_due_date: due });
+        
+        // Marca em memória imediatamente para evitar loops caso o localStorage falhe
+        (window as any)._lastPaymentDueUpdateMonth = monthKey;
+
+        // Limita a atualização apenas para os clientes que AINDA NÃO possuem a data correta
+        // Isso evita broadcast Realtime desnecessário de linhas que já estão corretas
+        const { error } = await supabase
+            .from('monthly_clients')
+            .update({ payment_due_date: due })
+            .neq('payment_due_date', due); // <- FIX CRÍTICO: Só atualiza quem precisa!
+
         if (!error) {
             try { localStorage.setItem('last_payment_due_update_month', monthKey); } catch { }
             setMonthlyClients(prev => prev.map(c => ({ ...c, payment_due_date: due })));
-            onDataChanged();
+            if (onDataChanged) onDataChanged();
+        } else {
+            (window as any)._lastPaymentDueUpdateMonth = '';
         }
     }, [onDataChanged]);
 
@@ -13588,7 +13600,7 @@ const AdminDashboard: React.FC<{
         return () => clearInterval(timer);
     }, []);
 
-    const handleDataChanged = () => setDataKey(Date.now());
+    const handleDataChanged = useCallback(() => setDataKey(Date.now()), []);
     const handleAddMonthlyClient = () => setActiveView('addMonthlyClient');
 
     // Reload combined appointments when dataKey changes (e.g., after creating mensalista)
