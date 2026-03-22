@@ -864,38 +864,39 @@ const ConfirmationModal: React.FC<{
     if (!isOpen) return null;
 
     const confirmButtonClasses = {
-        primary: 'bg-gradient-to-r from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800',
-        danger: 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800',
+        primary: 'bg-pink-600 hover:bg-pink-700 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5',
+        danger: 'bg-[#d32f2f] hover:bg-[#b71c1c] text-white shadow-md hover:shadow-lg hover:-translate-y-0.5',
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10001] p-4 animate-fadeIn">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-full sm:max-w-md animate-scaleIn border-2 border-gray-200">
-                <div className="p-8">
-                    <h2 className="text-4xl font-bold text-gray-800">{title}</h2>
-                    <p className="mt-4 text-gray-600 text-lg leading-relaxed">{message}</p>
-                </div>
-                <div className="p-6 bg-gradient-to-t from-gray-50 to-white flex justify-end gap-4 rounded-b-3xl">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={isLoading}
-                        className="bg-white border-2 border-gray-300 text-gray-700 font-bold py-4 px-6 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 shadow-sm hover:shadow"
-                    >
-                        {cancelText}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onConfirm}
-                        disabled={isLoading}
-                        className={`text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 shadow-lg hover:shadow-xl ${confirmButtonClasses[variant]}`}
-                    >
-                        {isLoading ? (
-                            <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-white mx-auto"></div>
-                        ) : (
-                            confirmText
-                        )}
-                    </button>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[10001] p-4 animate-fadeIn">
+            <div className="bg-white rounded-[28px] shadow-2xl w-full max-w-md animate-scaleIn overflow-hidden font-jakarta">
+                <div className="p-8 sm:p-10">
+                    <h2 className="text-3xl sm:text-[32px] font-extrabold text-slate-800 leading-tight mb-4 tracking-tight">{title}</h2>
+                    <p className="text-slate-500 text-[17px] leading-relaxed mb-10">{message}</p>
+                    
+                    <div className="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={isLoading}
+                            className="bg-white border border-slate-300 text-slate-800 font-bold py-3 px-6 rounded-2xl hover:bg-slate-50 transition-all disabled:opacity-50 min-w-[110px]"
+                        >
+                            {cancelText}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onConfirm}
+                            disabled={isLoading}
+                            className={`font-bold py-3 px-8 rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center min-w-[120px] ${confirmButtonClasses[variant]}`}
+                        >
+                            {isLoading ? (
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            ) : (
+                                confirmText
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
