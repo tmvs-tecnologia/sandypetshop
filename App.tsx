@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon as XMarkOutlineIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
 import { SERVICES, WORKING_HOURS, BATH_GROOMING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
@@ -4316,7 +4316,265 @@ const ResponsibleModal: React.FC<{
     );
 };
 
-// --- ADMIN DASHBOARD VIEWS ---
+// ─── CloseDayView ────────────────────────────────────────────────────────────
+const CloseDayView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const today = new Date();
+    const [closeDaysMonth, setCloseDaysMonth] = useState<string>(() => {
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}-01`;
+    });
+    const [selectedCloseDays, setSelectedCloseDays] = useState<Set<string>>(new Set());
+    const [applyBathGroom, setApplyBathGroom] = useState(true);
+    const [applyPetMovel, setApplyPetMovel] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    // --- DRAG TO CLOSE (Igual Dashboard) ---
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [dragY, setDragY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const startY = useRef(0);
+    const currentY = useRef(0);
+
+    const handleDragStart = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        setIsDragging(true);
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        startY.current = y;
+        currentY.current = y;
+    };
+
+    const handleDragMove = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        currentY.current = y;
+        const diff = y - startY.current;
+        if (diff > 0) {
+            setDragY(diff);
+        }
+    };
+
+    const handleDragEnd = () => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        if (dragY > 150) {
+            setDragY(0);
+            handleClose();
+        } else {
+            setDragY(0);
+        }
+    };
+
+    const handleClose = () => {
+        setIsAnimating(true);
+        setTimeout(() => {
+            onBack();
+        }, 500);
+    };
+    // ----------------------------------------
+
+    const handleSave = async () => {
+        const rows: any[] = [];
+        selectedCloseDays.forEach((d) => {
+            if (applyBathGroom) rows.push({ date: d, service: 'BATH_GROOM' });
+            if (applyPetMovel) rows.push({ date: d, service: 'PET_MOVEL' });
+        });
+        if (rows.length === 0) { handleClose(); return; }
+        setSaving(true);
+        setErrorMsg(null);
+        try {
+            const { error } = await supabase.from('disabled_dates').upsert(rows, { onConflict: 'date,service' });
+            if (!error) {
+                setSuccess(true);
+                setTimeout(handleClose, 1800);
+            } else {
+                setErrorMsg('Falha ao salvar os dias. Tente novamente.');
+            }
+        } catch (_e) {
+            setErrorMsg('Falha ao salvar os dias. Verifique sua conexão.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const [yStr, mStr] = closeDaysMonth.split('-');
+    const y = Number(yStr);
+    const m = Number(mStr) - 1;
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+    return (
+        <main
+            className={`w-full max-w-5xl md:max-w-7xl mx-auto bg-white rounded-[2rem] shadow-xl border border-pink-100 mb-8 transition-all ease-out transform origin-top flex flex-col overflow-hidden ${isAnimating ? 'translate-y-full opacity-0 duration-500' : 'animate-fadeIn opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
+            style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
+        >
+            {/* Header Elegante (Cópia Dashboard) */}
+            <div
+                className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
+                onTouchStart={handleDragStart}
+                onTouchMove={handleDragMove}
+                onTouchEnd={handleDragEnd}
+                onMouseDown={handleDragStart}
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+            >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+
+                <button
+                    onClick={handleClose}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    type="button"
+                    className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer"
+                    title="Fechar"
+                >
+                    <XMarkOutlineIcon className="w-6 h-6" strokeWidth={2.5} />
+                </button>
+
+                <div className="relative z-10 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-3xl sm:text-4xl font-extrabold text-pink-950 tracking-tight mb-2 flex items-center gap-3">
+                            <LockClosedOutlineIcon className="w-8 h-8 sm:w-10 sm:h-10 text-pink-600" />
+                            Fechar Agenda
+                        </h2>
+                        <p className="text-pink-500 text-sm sm:text-base font-medium">Bloqueie datas específicas para evitar novos agendamentos</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 sm:p-10 space-y-8 flex-1 overflow-y-auto max-h-[70vh]">
+                <div className="max-w-2xl mx-auto space-y-8">
+                    {/* Seletor de mês */}
+                    <div className="bg-white rounded-2xl p-2">
+                        <MonthPicker value={closeDaysMonth} onChange={(v) => { setCloseDaysMonth(v); setSelectedCloseDays(new Set()); }} label="Mês" />
+                    </div>
+
+                    {/* Feedback */}
+                    {success && (
+                        <div className="bg-green-50 border border-green-200 rounded-2xl px-6 py-4 flex items-center gap-3 text-green-700 font-semibold animate-scaleIn">
+                            <CheckCircleOutlineIcon className="w-6 h-6 shrink-0" />
+                            Dias bloqueados com sucesso! Retornando...
+                        </div>
+                    )}
+                    {errorMsg && (
+                        <div className="bg-red-50 border border-red-100 rounded-2xl px-6 py-4 text-red-700 font-medium">
+                            {errorMsg}
+                        </div>
+                    )}
+
+                    {/* Calendário */}
+                    <div className="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 shadow-inner">
+                        <div className="grid grid-cols-7 mb-4">
+                            {weekDays.map((d, i) => (
+                                <div key={i} className="text-center text-xs font-bold text-gray-400 py-2 uppercase tracking-widest">{d}</div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-2">
+                            {Array.from({ length: firstDay }, (_, i) => (
+                                <div key={`e-${i}`} />
+                            ))}
+                            {Array.from({ length: daysInMonth }, (_, i) => {
+                                const d = i + 1;
+                                const dateStr = `${yStr}-${mStr}-${String(d).padStart(2, '0')}`;
+                                const isSelected = selectedCloseDays.has(dateStr);
+                                const isToday = today.getFullYear() === y && today.getMonth() === m && today.getDate() === d;
+                                return (
+                                    <button
+                                        key={dateStr}
+                                        type="button"
+                                        onClick={() => {
+                                            const next = new Set(selectedCloseDays);
+                                            if (next.has(dateStr)) next.delete(dateStr); else next.add(dateStr);
+                                            setSelectedCloseDays(next);
+                                        }}
+                                        className={`
+                                            mx-auto w-11 h-11 rounded-2xl text-base font-bold transition-all flex items-center justify-center
+                                            ${isSelected
+                                                ? 'bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-200 scale-105'
+                                                : isToday
+                                                    ? 'border-2 border-pink-400 text-pink-700 bg-pink-50 hover:bg-pink-100'
+                                                    : 'text-gray-700 hover:bg-pink-100/50 hover:text-pink-700'
+                                            }
+                                        `}
+                                    >
+                                        {d}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Contagem */}
+                    {selectedCloseDays.size > 0 && (
+                        <div className="flex justify-center">
+                            <Badge className="bg-pink-100 text-pink-700 px-4 py-1.5 rounded-full text-sm font-bold border-pink-200">
+                                {selectedCloseDays.size} {selectedCloseDays.size === 1 ? 'dia marcado' : 'dias marcados'}
+                            </Badge>
+                        </div>
+                    )}
+
+                    {/* Filtros de Serviço */}
+                    <div className="space-y-4">
+                        <p className="text-sm font-bold text-pink-900/50 uppercase tracking-[0.2em] text-center">Bloquear serviços em campo</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setApplyBathGroom(v => !v)}
+                                className={`flex items-center justify-between px-6 py-5 rounded-2xl border-2 transition-all group ${applyBathGroom ? 'border-pink-500 bg-pink-50 shadow-md translate-y-[-2px]' : 'border-gray-100 bg-white hover:border-pink-200'}`}
+                            >
+                                <span className={`font-bold transition-colors ${applyBathGroom ? 'text-pink-700' : 'text-gray-500 group-hover:text-pink-400'}`}>Banho & Tosa</span>
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${applyBathGroom ? 'bg-pink-500 border-pink-500' : 'border-gray-200'}`}>
+                                    {applyBathGroom && <CheckCircleOutlineIcon className="w-5 h-5 text-white" />}
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setApplyPetMovel(v => !v)}
+                                className={`flex items-center justify-between px-6 py-5 rounded-2xl border-2 transition-all group ${applyPetMovel ? 'border-pink-500 bg-pink-50 shadow-md translate-y-[-2px]' : 'border-gray-100 bg-white hover:border-pink-200'}`}
+                            >
+                                <span className={`font-bold transition-colors ${applyPetMovel ? 'text-pink-700' : 'text-gray-500 group-hover:text-pink-400'}`}>Pet Móvel</span>
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${applyPetMovel ? 'bg-pink-500 border-pink-500' : 'border-gray-200'}`}>
+                                    {applyPetMovel && <CheckCircleOutlineIcon className="w-5 h-5 text-white" />}
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer — Padrão Premium */}
+            <div className="p-6 sm:p-10 bg-gray-50/80 border-t border-pink-100 flex gap-4">
+                <button
+                    type="button"
+                    onClick={handleClose}
+                    disabled={saving}
+                    className="flex-1 py-4 rounded-2xl text-base font-bold text-gray-500 bg-white border border-gray-200 hover:bg-gray-100 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                    Descartar
+                </button>
+                <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving || selectedCloseDays.size === 0}
+                    className="flex-[2] py-4 rounded-2xl text-base font-extrabold text-white bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 shadow-lg shadow-pink-200 transition-all active:scale-[0.98] disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                >
+                    {saving ? (
+                        <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        `Salvar Bloqueio ${selectedCloseDays.size > 0 ? `(${selectedCloseDays.size})` : ''}`
+                    )}
+                </button>
+            </div>
+        </main>
+    );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface AppointmentsViewProps {
     refreshKey?: number;
@@ -4328,9 +4586,10 @@ interface AppointmentsViewProps {
     monthlyClients?: MonthlyClient[];
     onDataChanged?: () => void;
     onOpenDashboard: () => void;
+    onOpenCloseDay: () => void;
 }
 
-const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged, onOpenDashboard }) => {
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged, onOpenDashboard, onOpenCloseDay }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
@@ -4341,17 +4600,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
     const [appointmentToDelete, setAppointmentToDelete] = useState<AdminAppointment | null>(null);
     const [deletingAppointmentId, setDeletingAppointmentId] = useState<string | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState(false);
-    const [isCloseDayModalOpen, setIsCloseDayModalOpen] = useState(false);
-    const [closeDaysMonth, setCloseDaysMonth] = useState<string>(() => {
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        return `${y}-${m}-01`;
-    });
-    const [selectedCloseDays, setSelectedCloseDays] = useState<Set<string>>(new Set());
-    const [applyBathGroom, setApplyBathGroom] = useState(true);
-    const [applyPetMovel, setApplyPetMovel] = useState(true);
     const [confirmingCompletionId, setConfirmingCompletionId] = useState<string | null>(null);
     const [confirmingCompletionPrice, setConfirmingCompletionPrice] = useState<number | null>(null);
     const [selectedTab, setSelectedTab] = useState<'scheduled' | 'completed'>('scheduled');
@@ -4644,80 +4892,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             />
             {isEditModalOpen && editingAppointment && <EditAppointmentModal appointment={editingAppointment} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdated} />}
             {appointmentToDelete && <ConfirmationModal isOpen={!!appointmentToDelete} onClose={() => setAppointmentToDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o agendamento para ${appointmentToDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={deletingAppointmentId === appointmentToDelete.id} />}
-            {isCloseDayModalOpen && (
-                <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 animate-fadeIn">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scaleIn">
-                        <div className="p-6 border-b">
-                            <h2 className="text-2xl font-bold text-gray-800">Fechar Agenda do Dia</h2>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <MonthPicker value={closeDaysMonth} onChange={setCloseDaysMonth} label="Mês" />
-                            <div className="grid grid-cols-7 gap-3 place-items-center">
-                                {(() => {
-                                    const [yStr, mStr] = closeDaysMonth.split('-');
-                                    const y = Number(yStr);
-                                    const m = Number(mStr) - 1;
-                                    const firstDay = new Date(y, m, 1).getDay();
-                                    const daysInMonth = new Date(y, m + 1, 0).getDate();
-                                    const cells: React.ReactNode[] = [];
-                                    for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`} className="p-2 w-10 h-10" />);
-                                    for (let d = 1; d <= daysInMonth; d++) {
-                                        const dateStr = `${yStr}-${mStr}-${String(d).padStart(2, '0')}`;
-                                        const isSelected = selectedCloseDays.has(dateStr);
-                                        cells.push(
-                                            <button
-                                                key={dateStr}
-                                                type="button"
-                                                onClick={() => {
-                                                    const next = new Set(selectedCloseDays);
-                                                    if (next.has(dateStr)) next.delete(dateStr); else next.add(dateStr);
-                                                    setSelectedCloseDays(next);
-                                                }}
-                                                className={`p-2 w-10 h-10 rounded-full text-center transition-colors flex items-center justify-center ${isSelected ? 'bg-pink-300 text-black font-bold border border-pink-600' : 'hover:bg-pink-100 text-gray-700'}`}
-                                            >
-                                                {d}
-                                            </button>
-                                        );
-                                    }
-                                    return cells;
-                                })()}
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <label className="flex items-center gap-2"><input type="checkbox" checked={applyBathGroom} onChange={(e) => setApplyBathGroom(e.target.checked)} className="h-4 w-4" /> <span>Banho & Tosa</span></label>
-                                <label className="flex items-center gap-2"><input type="checkbox" checked={applyPetMovel} onChange={(e) => setApplyPetMovel(e.target.checked)} className="h-4 w-4" /> <span>Pet Móvel</span></label>
-                            </div>
-                        </div>
-                        <div className="p-6 bg-gray-50 flex justify-end items-center gap-2">
-                            <button type="button" onClick={() => setIsCloseDayModalOpen(false)} className="inline-flex items-center justify-center h-10 w-1/2 sm:min-w-[140px] sm:w-auto rounded-lg text-sm font-bold whitespace-nowrap bg-gray-200 text-gray-800 hover:bg-gray-300">Cancelar</button>
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    const rows: any[] = [];
-                                    selectedCloseDays.forEach((d) => {
-                                        if (applyBathGroom) rows.push({ date: d, service: 'BATH_GROOM' });
-                                        if (applyPetMovel) rows.push({ date: d, service: 'PET_MOVEL' });
-                                    });
-                                    if (rows.length === 0) { setIsCloseDayModalOpen(false); return; }
-                                    try {
-                                        const { error } = await supabase.from('disabled_dates').upsert(rows, { onConflict: 'date,service' });
-                                        if (!error) {
-                                            setIsCloseDayModalOpen(false);
-                                            setSelectedCloseDays(new Set());
-                                        } else {
-                                            alert('Falha ao salvar dias fechados.');
-                                        }
-                                    } catch (_e) {
-                                        alert('Falha ao salvar dias fechados.');
-                                    }
-                                }}
-                                className="inline-flex items-center justify-center h-10 w-1/2 sm:min-w-[140px] sm:w-auto rounded-lg text-sm font-bold whitespace-nowrap bg-pink-600 text-white hover:bg-pink-700"
-                            >
-                                Salvar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
                 <div className="space-y-3">
@@ -4736,7 +4911,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                         </button>
-                        <button onClick={() => setIsCloseDayModalOpen(true)} title="Bloquear Dias" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
+                        <button onClick={onOpenCloseDay} title="Bloquear Dias" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
                             <SafeImage
                                 alt="Bloquear Dias"
                                 className="h-6 w-6"
@@ -4745,7 +4920,15 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                             />
                         </button>
                         <button onClick={handleToggleAdminView} title={adminView === 'daily' ? 'Ver Todos' : 'Ver Calendário'} className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
-                            <SafeImage alt="Ver Todos" className="h-6 w-6" src="https://i.imgur.com/y2cVM07.png" loading="eager" />
+                            {adminView === 'daily' ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                                </svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+                                </svg>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -13828,9 +14011,14 @@ const AdminDashboard: React.FC<{
         setActiveView('dashboard');
     };
 
+    const handleOpenCloseDay = () => {
+        setPreviousView(activeView);
+        setActiveView('closeDay');
+    };
+
     const renderActiveView = () => {
         switch (activeView) {
-            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} />;
+            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} onOpenCloseDay={handleOpenCloseDay} />;
             case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} setShowDaycareStatistics={setShowDaycareStatistics} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
@@ -13838,7 +14026,8 @@ const AdminDashboard: React.FC<{
             case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('monthlyClients')} />;
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
             case 'dashboard': return <StatisticsDashboardModal onBack={() => setActiveView(previousView)} />;
-            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} />;
+            case 'closeDay': return <CloseDayView onBack={() => setActiveView(previousView)} />;
+            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} onOpenCloseDay={handleOpenCloseDay} />;
         }
     };
 
