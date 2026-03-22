@@ -3179,34 +3179,6 @@ const AdminAddAppointmentModal: React.FC<{
     const [foundPets, setFoundPets] = useState<any[]>([]);
     const [isFetchingClient, setIsFetchingClient] = useState(false);
 
-    // --- DRAG TO CLOSE STATES & REFS ---
-    const [dragY, setDragY] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
-    const startYRef = useRef(0);
-
-    const handleDragStart = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
-        setIsDragging(true);
-        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
-        startYRef.current = y;
-    };
-
-    const handleDragMove = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
-        if (!isDragging) return;
-        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
-        const diff = y - startYRef.current;
-        if (diff > 0) setDragY(diff);
-    };
-
-    const handleDragEnd = () => {
-        if (!isDragging) return;
-        setIsDragging(false);
-        if (dragY > 150) {
-            setDragY(0);
-            onClose();
-        } else {
-            setDragY(0);
-        }
-    };
     // ------------------------------------
 
     const isVisitService = useMemo(() =>
@@ -3623,43 +3595,37 @@ const AdminAddAppointmentModal: React.FC<{
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[10001] p-0 sm:p-6 animate-fadeIn">
-            <main
-                className="bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl shadow-pink-500/10 w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto custom-scrollbar relative transition-transform"
-                style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
-            >
-                <form onSubmit={handleSubmit} className="relative z-10">
-                    {/* Header estilo Mensalista */}
-                    <div
-                        className="relative p-6 sm:p-8 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
-                        onTouchStart={handleDragStart}
-                        onTouchMove={handleDragMove}
-                        onTouchEnd={handleDragEnd}
-                        onMouseDown={handleDragStart}
-                        onMouseMove={handleDragMove}
-                        onMouseUp={handleDragEnd}
-                        onMouseLeave={handleDragEnd}
+        <main 
+            className="w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-xl border border-pink-100 mb-8 transition-all ease-out transform origin-top animate-fadeIn opacity-100 scale-100"
+        >
+            <form onSubmit={handleSubmit} className="relative z-10">
+                {/* Header estilo Mensalista */}
+                <div
+                    className="relative p-6 sm:p-8 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 select-none"
+                >
+                    {/* Background blob */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+                    {/* Close button */}
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onClose(); }}
+                        className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        title="Fechar"
                     >
-                        {/* Drag handle */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
-                        {/* Background blob */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-                        {/* Close button */}
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); onClose(); }}
-                            className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
-                            title="Fechar"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                        <div className="relative z-10">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    <div className="relative z-10 flex items-center justify-between">
+                        <div>
                             <h2 className="text-3xl sm:text-4xl font-extrabold text-pink-950 tracking-tight mb-2">Novo Agendamento</h2>
                             <p className="text-pink-800/80 font-medium text-sm sm:text-base">Preencha os detalhes para um novo agendamento</p>
                         </div>
+                        <div className="hidden sm:flex h-20 w-20 bg-white rounded-3xl shadow-sm items-center justify-center text-4xl transform rotate-3">
+                            📅
+                        </div>
                     </div>
+                </div>
 
-                    <div className="p-6 sm:p-8 space-y-8">
+                <div className="p-6 sm:p-8 space-y-8">
                         {/* Seção 1: Identificação */}
                         <section>
                             <div className="flex items-center gap-3 border-b border-gray-100 pb-3 mb-6">
@@ -3864,8 +3830,7 @@ const AdminAddAppointmentModal: React.FC<{
                         </button>
                     </div>
                 </form>
-            </main>
-        </div>
+        </main>
     );
 };
 
@@ -4618,6 +4583,10 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
 
     const renderAppointments = (apps: AdminAppointment[]) => apps.map(app => <AppointmentCard key={app.id} appointment={app} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />);
 
+    if (isAddModalOpen) {
+        return <AdminAddAppointmentModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onAppointmentCreated={handleAppointmentCreated} />;
+    }
+
     return (
         <>
             <ResponsibleModal
@@ -4627,7 +4596,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 isSubmitting={!!updatingStatusId}
             />
             {isEditModalOpen && editingAppointment && <EditAppointmentModal appointment={editingAppointment} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdated} />}
-            {isAddModalOpen && <AdminAddAppointmentModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onAppointmentCreated={handleAppointmentCreated} />}
             {appointmentToDelete && <ConfirmationModal isOpen={!!appointmentToDelete} onClose={() => setAppointmentToDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o agendamento para ${appointmentToDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={deletingAppointmentId === appointmentToDelete.id} />}
             <StatisticsDashboardModal isOpen={isStatisticsModalOpen} onClose={() => setIsStatisticsModalOpen(false)} />
             {isCloseDayModalOpen && (
