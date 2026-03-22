@@ -4327,9 +4327,10 @@ interface AppointmentsViewProps {
     onDeleteObservation: (appointment: AdminAppointment) => void;
     monthlyClients?: MonthlyClient[];
     onDataChanged?: () => void;
+    onOpenDashboard: () => void;
 }
 
-const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged }) => {
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged, onOpenDashboard }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
@@ -4643,7 +4644,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             />
             {isEditModalOpen && editingAppointment && <EditAppointmentModal appointment={editingAppointment} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdated} />}
             {appointmentToDelete && <ConfirmationModal isOpen={!!appointmentToDelete} onClose={() => setAppointmentToDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o agendamento para ${appointmentToDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={deletingAppointmentId === appointmentToDelete.id} />}
-            <StatisticsDashboardModal isOpen={isStatisticsModalOpen} onClose={() => setIsStatisticsModalOpen(false)} />
             {isCloseDayModalOpen && (
                 <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 animate-fadeIn">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scaleIn">
@@ -4731,7 +4731,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                         <button onClick={handleOpenAddModal} title="Adicionar Agendamento" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
                             <SafeImage alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" loading="eager" />
                         </button>
-                        <button onClick={() => setIsStatisticsModalOpen(true)} title="Estatísticas" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
+                        <button onClick={onOpenDashboard} title="Estatísticas" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
@@ -6730,7 +6730,7 @@ const MonthlyClientDetailsModal: React.FC<{ client: MonthlyClient | null; onClos
 
 
 
-const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () => void; }> = ({ onAddClient, onDataChanged }) => {
+const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () => void; onOpenDashboard: () => void; }> = ({ onAddClient, onDataChanged, onOpenDashboard }) => {
     const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingClient, setEditingClient] = useState<MonthlyClient | null>(null);
@@ -6754,6 +6754,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     const [filterCondominium, setFilterCondominium] = useState('');
     const [filterDueDate, setFilterDueDate] = useState('');
     const [filterRecurrence, setFilterRecurrence] = useState(''); // 'weekly', 'biweekly'
+    const [filterDayOfWeek, setFilterDayOfWeek] = useState(''); // '1' to '5'
     const [sortBy, setSortBy] = useState(''); // 'pet-az', 'owner-az'
 
     // Estados para modal de serviços extras
@@ -6779,9 +6780,6 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
 
         checkReminder();
     }, []);
-
-    // Estado para modal de estatísticas
-    const [showStatisticsModal, setShowStatisticsModal] = useState(false);
 
     // Estado para dados de creche
     const [daycareEnrollments, setDaycareEnrollments] = useState<DaycareRegistration[]>([]);
@@ -7059,7 +7057,15 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
 
         // Filtro por Recorrência (Semanal/Quinzenal)
         if (filterRecurrence) {
-            filtered = filtered.filter(client => client.recurrence_type === filterRecurrence);
+            filtered = filtered.filter(client => client.recurrence_type === filterRecurrence || (filterRecurrence === 'biweekly' && client.recurrence_type === 'bi-weekly'));
+        }
+
+        // Filtro por Dia da Semana (Segunda a Sexta)
+        if (filterDayOfWeek) {
+            filtered = filtered.filter(client => 
+                (client.recurrence_type === 'weekly' || client.recurrence_type === 'bi-weekly' || client.recurrence_type === 'biweekly') && 
+                String(client.recurrence_day) === filterDayOfWeek
+            );
         }
 
         // Filtro por status de pagamento (Pendente/Pago)
@@ -7078,7 +7084,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         }
 
         return filtered;
-    }, [monthlyClients, searchTerm, filterCondominium, filterDueDate, filterRecurrence, sortBy, filterPaymentStatus]);
+    }, [monthlyClients, searchTerm, filterCondominium, filterDueDate, filterRecurrence, filterDayOfWeek, sortBy, filterPaymentStatus]);
 
     const handleTogglePaymentStatus = async (client: MonthlyClient, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent the card's onClick from firing
@@ -7223,7 +7229,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                             </div>
                         </button>
                         <button
-                            onClick={() => setShowStatisticsModal(true)}
+                            onClick={onOpenDashboard}
                             title="Estatísticas"
                             className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
                         >
@@ -7271,7 +7277,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                         Filtros e Ordenação
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
                         {/* Filtro por Condomínio */}
                         <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-medium text-gray-700 ml-1">Condomínio</label>
@@ -7304,6 +7310,28 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                     <option value="">Todas</option>
                                     <option value="weekly">Semanal</option>
                                     <option value="biweekly">Quinzenal</option>
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Filtro por Dia da Semana */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-medium text-gray-700 ml-1">Dia da Semana</label>
+                            <div className="relative">
+                                <select
+                                    value={filterDayOfWeek}
+                                    onChange={(e) => setFilterDayOfWeek(e.target.value)}
+                                    className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium"
+                                >
+                                    <option value="">Todos os dias</option>
+                                    <option value="1">Segunda-feira</option>
+                                    <option value="2">Terça-feira</option>
+                                    <option value="3">Quarta-feira</option>
+                                    <option value="4">Quinta-feira</option>
+                                    <option value="5">Sexta-feira</option>
                                 </select>
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
@@ -7350,12 +7378,13 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                         </div>
 
                         {/* Botão Limpar Filtros */}
-                        <div className="flex items-end lg:col-span-4 mt-2">
+                        <div className="flex items-end lg:col-span-5 mt-2">
                             <button
                                 onClick={() => {
                                     setFilterCondominium('');
                                     setFilterDueDate(''); // Mantido caso o estado ainda exista e seja usado em outro lugar, se não, não faz mal limpar
                                     setFilterRecurrence('');
+                                    setFilterDayOfWeek('');
                                     setFilterPaymentStatus('');
                                     setSortBy('');
                                 }}
@@ -7511,12 +7540,6 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                 />
             )}
 
-
-            {/* Modal de Estatísticas de Mensalistas */}
-            <StatisticsDashboardModal
-                isOpen={showStatisticsModal}
-                onClose={() => setShowStatisticsModal(false)}
-            />
 
             {viewingClient && (
                 <MonthlyClientDetailsModal client={viewingClient} onClose={() => setViewingClient(null)} />
@@ -13581,6 +13604,7 @@ const AdminDashboard: React.FC<{
     monthlyClients?: MonthlyClient[];
 }> = ({ onLogout, isScheduleOpen, setIsScheduleOpen, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, handleOpenExtraServicesModal, monthlyClients = [] }) => {
     const [activeView, setActiveView] = useState('appointments');
+    const [previousView, setPreviousView] = useState('appointments');
     const [dataKey, setDataKey] = useState(Date.now()); // Used to force re-fetches
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
@@ -13757,17 +13781,22 @@ const AdminDashboard: React.FC<{
         { id: 'monthlyClients', label: 'Mensalistas', icon: <MonthlyIcon /> },
     ];
 
-    // Renderiza a view ativa baseada no estado activeView
+    const handleOpenDashboard = (fromView: string) => {
+        setPreviousView(fromView);
+        setActiveView('dashboard');
+    };
+
     const renderActiveView = () => {
         switch (activeView) {
-            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} />;
+            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} />;
             case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} setShowDaycareStatistics={setShowDaycareStatistics} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
-            case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} />;
+            case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('monthlyClients')} />;
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
-            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} />;
+            case 'dashboard': return <StatisticsDashboardModal onBack={() => setActiveView(previousView)} />;
+            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} />;
         }
     };
 

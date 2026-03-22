@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { 
     XMarkIcon, 
@@ -19,8 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 interface StatisticsDashboardModalProps {
-    isOpen: boolean;
-    onClose: () => void;
+    onBack: () => void;
 }
 
 // --- Interfaces ---
@@ -327,7 +326,7 @@ const HorizontalBarChart: React.FC<{
 
 // --- Main Component ---
 
-const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isOpen, onClose }) => {
+const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ onBack }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'financial' | 'operational' | 'monthly'>('overview');
     const [isLoading, setIsLoading] = useState(true);
     const [rawData, setRawData] = useState<{
@@ -340,12 +339,53 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
     const [selectedYearTotal, setSelectedYearTotal] = useState(new Date().getFullYear());
 
+    // --- DRAG TO CLOSE STATES & REFS ---
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [dragY, setDragY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const startY = useRef(0);
+    const currentY = useRef(0);
+
+    const handleDragStart = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        setIsDragging(true);
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        startY.current = y;
+        currentY.current = y;
+    };
+
+    const handleDragMove = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        currentY.current = y;
+        const diff = y - startY.current;
+        if (diff > 0) {
+            setDragY(diff);
+        }
+    };
+
+    const handleDragEnd = () => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        if (dragY > 150) {
+            setDragY(0);
+            handleClose();
+        } else {
+            setDragY(0);
+        }
+    };
+
+    const handleClose = () => {
+        setIsAnimating(true);
+        setTimeout(() => {
+            onBack();
+        }, 500);
+    };
+    // -----------------------------------
+
     // Fetch Data
     useEffect(() => {
-        if (isOpen) {
-            fetchData();
-        }
-    }, [isOpen]);
+        fetchData();
+    }, []);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -622,8 +662,6 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
         };
     }, [rawData, selectedMonth, selectedYearTotal]);
 
-    if (!isOpen) return null;
-
     const months = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -755,24 +793,42 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
     );
 
     return (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[10002] p-2 md:p-4 animate-fadeIn">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
+        <main 
+            className={`w-full max-w-5xl md:max-w-7xl mx-auto bg-white rounded-[2rem] shadow-xl border border-pink-100 mb-8 transition-all ease-out transform origin-top flex flex-col overflow-hidden ${isAnimating ? 'translate-y-full opacity-0 duration-500' : 'animate-fadeIn opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
+            style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
+        >
+            {/* Header Elegante */}
+            <div 
+                className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
+                onTouchStart={handleDragStart}
+                onTouchMove={handleDragMove}
+                onTouchEnd={handleDragEnd}
+                onMouseDown={handleDragStart}
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+            >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
                 
-                {/* Header */}
-                <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gradient-to-r from-pink-50 to-white shrink-0">
+                <button 
+                    onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                    className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    title="Fechar"
+                >
+                    <XMarkIcon className="w-5 h-5 font-bold" />
+                </button>
+                
+                <div className="relative z-10 flex items-center justify-between">
                     <div>
-                        <h2 className="text-2xl font-bold font-outfit text-gray-800 flex items-center gap-2">
-                            <ChartBarIcon className="w-8 h-8 text-pink-600" />
+                        <h2 className="text-3xl sm:text-4xl font-extrabold text-pink-950 tracking-tight mb-2 flex items-center gap-3">
+                            <ChartBarIcon className="w-8 h-8 sm:w-10 sm:h-10 text-pink-600" />
                             Dashboard
                         </h2>
-                        <p className="text-sm text-gray-500 font-jakarta mt-1 hidden sm:block">Visão completa do desempenho do Pet Shop</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button onClick={onClose} className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50 text-gray-400 hover:text-gray-600 transition-all">
-                            <XMarkIcon className="h-6 w-6" />
-                        </button>
+                        <p className="text-pink-800/80 font-medium text-sm sm:text-base">Visão completa do desempenho do Pet Shop</p>
                     </div>
                 </div>
+            </div>
 
                 {/* Navigation Tabs (Desktop Only) */}
                 <div className="hidden md:flex border-b border-gray-100 px-6 bg-white sticky top-0 z-10 shrink-0">
@@ -985,8 +1041,7 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ isO
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
+        </main>
     );
 };
 
