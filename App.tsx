@@ -3179,6 +3179,43 @@ const AdminAddAppointmentModal: React.FC<{
     const [foundPets, setFoundPets] = useState<any[]>([]);
     const [isFetchingClient, setIsFetchingClient] = useState(false);
 
+    // Drag-to-close state
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragY, setDragY] = useState(0);
+    const [startY, setStartY] = useState(0);
+    const [isAnimating, setIsAnimating] = useState(false);
+
+    const handleDragStart = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        setIsDragging(true);
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        setStartY(clientY - dragY);
+    };
+
+    const handleDragMove = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const newY = Math.max(0, clientY - startY); // Only allow dragging downwards
+        setDragY(newY);
+    };
+
+    const handleDragEnd = () => {
+        setIsDragging(false);
+        if (dragY > 100) {
+            handleClose();
+        } else {
+            setDragY(0); // Snap back if not dragged far enough
+        }
+    };
+
+    const handleClose = () => {
+        setIsAnimating(true);
+        setTimeout(() => {
+            onClose();
+            setIsAnimating(false);
+            setDragY(0);
+        }, 400);
+    };
+
     // ------------------------------------
 
     const isVisitService = useMemo(() =>
@@ -3596,19 +3633,27 @@ const AdminAddAppointmentModal: React.FC<{
 
     return (
         <main 
-            className="w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-xl border border-pink-100 mb-8 transition-all ease-out transform origin-top animate-fadeIn opacity-100 scale-100"
+            className={`w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-xl border border-pink-100 mb-8 transition-all ease-out transform origin-top ${isAnimating ? 'translate-y-full opacity-0 duration-500' : 'animate-fadeIn opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
+            style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
         >
             <form onSubmit={handleSubmit} className="relative z-10">
                 {/* Header estilo Mensalista */}
                 <div
-                    className="relative p-6 sm:p-8 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 select-none"
+                    className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
+                    onTouchStart={handleDragStart}
+                    onTouchMove={handleDragMove}
+                    onTouchEnd={handleDragEnd}
+                    onMouseDown={handleDragStart}
+                    onMouseMove={handleDragMove}
+                    onMouseUp={handleDragEnd}
+                    onMouseLeave={handleDragEnd}
                 >
-                    {/* Background blob */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
                     <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
                     {/* Close button */}
                     <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); onClose(); }}
+                        onClick={(e) => { e.stopPropagation(); handleClose(); }}
                         className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
                         title="Fechar"
                     >
