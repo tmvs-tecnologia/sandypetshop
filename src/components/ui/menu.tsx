@@ -2,16 +2,15 @@ import React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { twMerge } from "tailwind-merge";
 
-const menuRootStyles = "flex flex-col gap-3";
+const menuRootStyles = "flex flex-col gap-1.5";
 
 const menuItemStyles = cva(
-  "w-full flex items-center gap-4 px-5 py-3 rounded-xl text-base font-semibold transition-all shadow-sm",
+  "w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base transition-colors",
   {
     variants: {
       active: {
-        true: "bg-gradient-to-r from-pink-600 to-pink-700 text-white shadow-lg scale-[1.02]",
-        false:
-          "text-gray-700 hover:bg-white hover:shadow-md bg-white/60 hover:scale-[1.01]",
+        true: "bg-pink-50 text-pink-700 font-bold",
+        false: "text-gray-600 hover:bg-gray-50/80 hover:text-gray-900 font-medium",
       },
       tone: {
         default: "",

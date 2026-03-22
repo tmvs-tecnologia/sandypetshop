@@ -13922,34 +13922,34 @@ const AdminDashboard: React.FC<{
                             <CloseIcon className="w-5 h-5 text-gray-600" />
                         </button>
                     </div>
-                    <div className={`flex-1 overflow-y-auto custom-scrollbar-hide transition-all duration-500 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+                    <div className={`flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] transition-all duration-500 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
                         <NavMenu />
                     </div>
-                    <div className={`mt-3 space-y-3 pt-4 border-t border-pink-100/50 shrink-0 transition-all duration-500 delay-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                        <div className="px-3 pb-2">
-                            <h3 className="text-2xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
+                    <div className={`mt-3 space-y-1.5 pt-4 border-t border-pink-100/50 shrink-0 transition-all duration-500 delay-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                        <div className="px-4 pb-2">
+                            <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
                         </div>
                         <button
                             onClick={() => { setIsPriceManagementOpen(true); closeMobileMenu(); }}
-                            className="w-full mb-4 flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all text-pink-700 bg-pink-50 hover:bg-pink-100"
+                            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors text-pink-700 hover:bg-pink-50"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500">
                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                             </svg>
                             Definir Preços
                         </button>
                         <button
                             onClick={() => { setIsScheduleOpen(!isScheduleOpen); closeMobileMenu(); }}
-                            className={`w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all ${isScheduleOpen
-                                ? 'text-green-700 bg-green-50 hover:bg-green-100'
-                                : 'text-red-700 bg-red-50 hover:bg-red-100'
+                            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${isScheduleOpen
+                                ? 'text-green-700 hover:bg-green-50'
+                                : 'text-red-700 hover:bg-red-50'
                                 }`}
                         >
                             {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
                             {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                         </button>
-                        <div className="pt-6 mt-4 border-t border-gray-100">
-                            <button onClick={() => { onLogout(); closeMobileMenu(); }} className="w-full flex items-center gap-4 text-base font-semibold text-pink-600 hover:text-pink-700 transition-colors p-2 rounded-lg hover:bg-gray-100">
+                        <div className="pt-2 mt-2 border-t border-gray-100">
+                            <button onClick={() => { onLogout(); closeMobileMenu(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-gray-900 transition-colors hover:bg-gray-50">
                                 <LogoutIcon /> Sair
                             </button>
                         </div>
@@ -13965,31 +13965,31 @@ const AdminDashboard: React.FC<{
                         hidden md:block shadow-sm rounded-xl
                     `}>
                         <NavMenu />
-                        <div className="mt-6 md:hidden space-y-3">
-                            <div className="px-3 pb-2">
-                                <h3 className="text-2xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
+                        <div className="mt-6 md:hidden space-y-1.5 pt-4 border-t border-pink-100/50">
+                            <div className="px-4 pb-2">
+                                <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
                             </div>
                             <button
                                 onClick={() => setIsPriceManagementOpen(true)}
-                                className="w-full mb-4 flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all text-pink-700 bg-pink-50 hover:bg-pink-100"
+                                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors text-pink-700 hover:bg-pink-50"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500">
                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                 </svg>
                                 Definir Preços
                             </button>
                             <button
                                 onClick={() => setIsScheduleOpen(!isScheduleOpen)}
-                                className={`w-full flex items-center gap-3 text-sm font-semibold px-3 py-2 rounded-lg transition-all ${isScheduleOpen
-                                    ? 'text-green-700 bg-green-50 hover:bg-green-100'
-                                    : 'text-red-700 bg-red-50 hover:bg-red-100'
+                                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${isScheduleOpen
+                                    ? 'text-green-700 hover:bg-green-50'
+                                    : 'text-red-700 hover:bg-red-50'
                                     }`}
                             >
                                 {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
                                 {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                             </button>
-                            <div className="pt-6 mt-4 border-t border-gray-100">
-                                <button onClick={onLogout} className="w-full flex items-center gap-4 text-base font-semibold text-pink-600 hover:text-pink-700 transition-colors p-2 rounded-lg hover:bg-gray-100">
+                            <div className="pt-2 mt-2 border-t border-gray-100">
+                                <button onClick={onLogout} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-gray-900 transition-colors hover:bg-gray-50">
                                     <LogoutIcon /> Sair
                                 </button>
                             </div>
