@@ -7091,7 +7091,8 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     const [isDeleting, setIsDeleting] = useState(false);
     const [alertInfo, setAlertInfo] = useState<{ title: string; message: string; variant: 'success' | 'error' } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [viewMode, setViewMode] = useState<'cards' | 'stack'>('cards');
+    const [viewMode, setViewMode] = useState<'cards' | 'stack' | 'folders'>('cards');
+    const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
     // Filtro de status de pagamento: '' (Todos), 'Pendente' ou 'Pago'
     const [filterPaymentStatus, setFilterPaymentStatus] = useState<'' | 'Pendente' | 'Pago'>('');
     const [monthlyMobileSearchOpen, setMonthlyMobileSearchOpen] = useState(false);
@@ -7444,6 +7445,17 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         return filtered;
     }, [monthlyClients, searchTerm, filterCondominium, filterDueDate, filterRecurrence, filterDayOfWeek, filterTime, sortBy, filterPaymentStatus]);
 
+    const folderClients = useMemo(() => {
+        const groups = new Map<string, MonthlyClient[]>();
+        filteredClients.forEach(client => {
+            const phone = client.whatsapp ? client.whatsapp.replace(/\D/g, '') : '';
+            const key = `${client.owner_name.trim().toLowerCase()}|${phone}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key)!.push(client);
+        });
+        return Array.from(groups.values());
+    }, [filteredClients]);
+
     const handleTogglePaymentStatus = async (client: MonthlyClient, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent the card's onClick from firing
         const newStatus = client.payment_status === 'Pendente' ? 'Pago' : 'Pendente';
@@ -7564,8 +7576,8 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                             </svg>
                         </button>
                         <button
-                            onClick={() => setViewMode(prev => prev === 'cards' ? 'stack' : 'cards')}
-                            title={viewMode === 'cards' ? 'Modo Cartões' : 'Modo Pilha'}
+                            onClick={() => setViewMode(prev => prev === 'cards' ? 'stack' : prev === 'stack' ? 'folders' : 'cards')}
+                            title={viewMode === 'cards' ? 'Modo Cartões' : viewMode === 'stack' ? 'Modo Pilha' : 'Modo Pastas'}
                             className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none group"
                         >
                             <div className="relative w-6 h-6">
@@ -7583,6 +7595,14 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                 >
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
+                                </svg>
+
+                                {/* Modo Pastas */}
+                                <svg 
+                                    className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${viewMode === 'folders' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} 
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                                 </svg>
                             </div>
                         </button>
@@ -7847,7 +7867,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                 );
                             })}
                         </div>
-                    ) : (
+                    ) : viewMode === 'stack' ? (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                             {filteredClients.map(client => {
                                 const normalizeStr = (str: string | undefined | null) => str ? str.toLowerCase().trim() : '';
@@ -7892,6 +7912,105 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                             onChangePhoto={(mc) => { setUploadTargetMonthlyClient(mc); setIsUploadMonthlyPhotoModalOpen(true); }}
                                             onView={(mc) => setViewingClient(mc)}
                                         />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-4 max-w-5xl mx-auto w-full">
+                            {folderClients.map((group, index) => {
+                                const mainClient = group[0];
+                                const isExpanded = expandedFolder === mainClient.id;
+                                return (
+                                    <div key={index} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md">
+                                        <div 
+                                            className="p-5 sm:p-6 flex items-center justify-between cursor-pointer bg-white hover:bg-pink-50/30 transition-colors"
+                                            onClick={() => setExpandedFolder(isExpanded ? null : mainClient.id)}
+                                        >
+                                            <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+                                                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-pink-100 to-pink-200 text-pink-600 rounded-2xl flex items-center justify-center shadow-inner flex-shrink-0">
+                                                    <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h3 className="font-outfit font-bold text-lg sm:text-xl text-gray-900 truncate">{mainClient.owner_name}</h3>
+                                                    <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">{mainClient.whatsapp || 'Sem telefone'}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] sm:text-xs font-bold text-pink-600 bg-pink-100 px-2 py-1 sm:px-2.5 rounded-lg whitespace-nowrap">{group.length} {group.length === 1 ? 'Pet' : 'Pets'}</span>
+                                                    <div className="hidden sm:flex -space-x-3 ml-2">
+                                                        {group.map((client, i) => (
+                                                            <div key={i} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white overflow-hidden bg-gray-100 shadow-sm transition-transform hover:scale-110" style={{ zIndex: group.length - i }} title={client.pet_name}>
+                                                                {client.pet_photo_url ? (
+                                                                    <SafeImage src={client.pet_photo_url} alt={client.pet_name} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center bg-white text-lg sm:text-xl">🐶</div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isExpanded ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                    <svg className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div 
+                                            className={`grid transition-all duration-500 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                                        >
+                                            <div className="overflow-hidden">
+                                                <div className="p-5 sm:p-6 bg-gray-50/80 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                                                    {group.map(client => {
+                                                        const normalizeStr = (str: string | undefined | null) => str ? str.toLowerCase().trim() : '';
+                                                        const normalizePhone = (phone: string | undefined | null) => phone ? phone.replace(/\D/g, '') : '';
+                                                        const checkPhoneMatch = (p1: string, p2: string) => {
+                                                            if (!p1 || !p2) return false;
+                                                            if (p1 === p2) return true;
+                                                            if (p1.length >= 8 && p2.length >= 8) {
+                                                                return p1.endsWith(p2) || p2.endsWith(p1);
+                                                            }
+                                                            return false;
+                                                        };
+                                                        const clientPet = normalizeStr(client.pet_name);
+                                                        const clientOwner = normalizeStr(client.owner_name);
+                                                        const clientPhone = normalizePhone(client.whatsapp);
+                                                        const hasActiveHotel = activeHotelRegistrations.some(reg => {
+                                                            const regPet = normalizeStr(reg.pet_name);
+                                                            const regOwner = normalizeStr(reg.tutor_name || (reg as any).owner_name);
+                                                            const regPhone = normalizePhone(reg.tutor_phone);
+                                                            const nameMatch = regPet === clientPet && regOwner === clientOwner;
+                                                            const phoneMatch = regPet === clientPet && checkPhoneMatch(clientPhone, regPhone);
+                                                            return phoneMatch || (!clientPhone && nameMatch);
+                                                        });
+                                                        const hasActiveDaycare = activeDaycareEnrollments.some(enroll => {
+                                                            const enrollPet = normalizeStr(enroll.pet_name);
+                                                            const enrollOwner = normalizeStr(enroll.tutor_name);
+                                                            const enrollPhone = normalizePhone(enroll.contact_phone);
+                                                            const nameMatch = enrollPet === clientPet && enrollOwner === clientOwner;
+                                                            const phoneMatch = enrollPet === clientPet && checkPhoneMatch(clientPhone, enrollPhone);
+                                                            return phoneMatch || (!clientPhone && nameMatch);
+                                                        });
+                                                        return (
+                                                            <div key={client.id} className="transform transition-all hover:-translate-y-1">
+                                                                <MonthlyClientCard
+                                                                    client={client}
+                                                                    onEdit={() => setEditingClient(client)}
+                                                                    onDelete={() => setDeletingClient(client)}
+                                                                    onAddExtraServices={() => handleAddExtraServices(client)}
+                                                                    onTogglePaymentStatus={(clientArg, e) => handleTogglePaymentStatus(clientArg, e)}
+                                                                    hasActiveHotel={hasActiveHotel}
+                                                                    hasActiveDaycare={hasActiveDaycare}
+                                                                    onChangePhoto={(mc) => { setUploadTargetMonthlyClient(mc); setIsUploadMonthlyPhotoModalOpen(true); }}
+                                                                    onView={(mc) => setViewingClient(mc)}
+                                                                />
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 );
                             })}
