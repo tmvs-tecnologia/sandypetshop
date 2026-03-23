@@ -25,6 +25,7 @@ import MonthlyClientCard from './src/components/MonthlyClientCard';
 import AppointmentCard from './src/components/AppointmentCard';
 import StatisticsDashboardModal from './src/components/StatisticsDashboardModal';
 import MonthlyReminderModal from './src/components/MonthlyReminderModal';
+import InsightsDashboard from './src/components/InsightsDashboard';
 
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" fill=\"%23f3f4f6\"/><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-size=\"28\">🐾</text></svg>';
 
@@ -14464,6 +14465,7 @@ const AdminDashboard: React.FC<{
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
             case 'dashboard': return <StatisticsDashboardModal onBack={() => setActiveView(previousView)} />;
             case 'closeDay': return <CloseDayView onBack={() => setActiveView(previousView)} />;
+            case 'insights': return <InsightsDashboard key={dataKey} />;
             default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} onOpenCloseDay={handleOpenCloseDay} />;
         }
     };
@@ -14556,6 +14558,13 @@ const AdminDashboard: React.FC<{
                             <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
                         </div>
                         <button
+                            onClick={() => { setActiveView('insights'); closeMobileMenu(); }}
+                            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'insights' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                        >
+                            <SparklesIcon className="w-6 h-6" />
+                            Insights
+                        </button>
+                        <button
                             onClick={() => { setIsPriceManagementOpen(true); closeMobileMenu(); }}
                             className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors text-pink-700 hover:bg-pink-50"
                         >
@@ -14591,12 +14600,20 @@ const AdminDashboard: React.FC<{
                         hidden md:block shadow-sm rounded-xl
                     `}>
                         <NavMenu />
-                        <div className="mt-6 md:hidden space-y-1.5 pt-4 border-t border-pink-100/50">
+                        <div className="mt-6 space-y-1.5 pt-4 border-t border-pink-100/50">
                             <div className="px-4 pb-2">
                                 <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
                             </div>
                             <button
-                                onClick={() => setIsPriceManagementOpen(true)}
+                                onClick={() => setActiveView('insights')}
+                                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'insights' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                <SparklesIcon className="w-6 h-6" />
+                                Insights
+                            </button>
+                            <div className="md:hidden space-y-1.5">
+                                <button
+                                    onClick={() => setIsPriceManagementOpen(true)}
                                 className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors text-pink-700 hover:bg-pink-50"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500">
@@ -14618,6 +14635,7 @@ const AdminDashboard: React.FC<{
                                 <button onClick={onLogout} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-gray-900 transition-colors hover:bg-gray-50">
                                     <LogoutIcon /> Sair
                                 </button>
+                            </div>
                             </div>
                         </div>
                     </aside>
