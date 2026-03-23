@@ -69,39 +69,40 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ systemData }) => {
         setIsResponding(true);
 
         try {
-            const apiKey = 'AIzaSyCd3FJBh3wz7VkLI9VqcPi3O_H_hG5bs2I';
-            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const apiKey = import.meta.env.VITE_GROQ_API_KEY || 'N/A';
+            const groqUrl = `https://api.groq.com/openai/v1/chat/completions`;
 
-            const contents = messages.slice(1).map(m => ({ // Skip the initial hardcoded welcome message from context
-                role: m.role,
-                parts: [{ text: m.text }]
-            }));
-            
-            const systemInstruction = {
-                parts: [
-                    {
-                        text: `Você é o assistente inteligente da administradora do Sandy's PetShop. 
+            const systemInstructionText = `Você é o assistente inteligente da administradora do Sandy's PetShop. 
 Responda às perguntas dela usando de forma precisa os dados do sistema fornecidos e o histórico da conversa.
 Seja conciso, profissional, objetivo e claro. Sempre use formatação amigável (como listas ou negrito) para números.
 
 [CACHED SYSTEM DATA - HOJE É ${new Date().toLocaleDateString('pt-BR')}]
-${JSON.stringify(systemData)}`
-                    }
-                ]
-            };
+${JSON.stringify(systemData)}`;
 
-            const response = await fetch(geminiUrl, {
+            const formattedMessages = [
+                { role: 'system', content: systemInstructionText },
+                ...messages.slice(1).map(m => ({
+                    role: m.role === 'model' ? 'assistant' : 'user',
+                    content: m.text
+                })),
+                { role: 'user', content: newMsg.text }
+            ];
+
+            const response = await fetch(groqUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json' 
+                },
                 body: JSON.stringify({
-                    systemInstruction,
-                    contents: [...contents, { role: 'user', parts: [{ text: newMsg.text }] }],
-                    generationConfig: { temperature: 0.2 }
+                    model: 'llama-3.3-70b-versatile',
+                    messages: formattedMessages,
+                    temperature: 0.2
                 })
             });
 
             const resData = await response.json();
-            const textResponse = resData?.candidates?.[0]?.content?.parts?.[0]?.text;
+            const textResponse = resData?.choices?.[0]?.message?.content;
             
             if (textResponse) {
                 setMessages(prev => [...prev, { role: 'model', text: textResponse }]);
@@ -178,25 +179,23 @@ ${JSON.stringify(systemData)}`
                 </div>
 
                 {/* Suggestions Area */}
-                {messages.length <= 1 && (
-                    <div className="bg-gray-50 px-4 pb-2 pt-1 border-b border-gray-100/50 overflow-x-auto custom-scrollbar-white flex gap-2 snap-x">
-                        {[
-                            "Qual foi o faturamento deste mês?",
-                            "Quais pets estão sumidos?",
-                            "Quem são meus melhores clientes?",
-                            "Quantos agendamentos temos para hoje?",
-                            "Qual o serviço mais popular?"
-                        ].map((suggestion, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => { setInput(suggestion); }}
-                                className="snap-start shrink-0 bg-white border border-pink-100 text-pink-600 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-pink-50 transition-colors shadow-sm whitespace-nowrap"
-                            >
-                                {suggestion}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                <div className="bg-gray-50 px-4 pb-2 pt-1 border-b border-gray-100/50 overflow-x-auto custom-scrollbar-white flex gap-2 snap-x">
+                    {[
+                        "Qual foi o faturamento deste mês?",
+                        "Quais pets estão sumidos?",
+                        "Quem são meus melhores clientes?",
+                        "Quantos agendamentos temos para hoje?",
+                        "Qual o serviço mais popular?"
+                    ].map((suggestion, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => { setInput(suggestion); }}
+                            className="snap-start shrink-0 bg-white border border-pink-100 text-pink-600 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-pink-50 transition-colors shadow-sm whitespace-nowrap"
+                        >
+                            {suggestion}
+                        </button>
+                    ))}
+                </div>
 
                 {/* Input Area */}
                 <div className="p-4 bg-white border-t shrink-0">

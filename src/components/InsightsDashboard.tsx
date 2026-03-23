@@ -88,13 +88,13 @@ const InsightsDashboard: React.FC = () => {
             const topPets = Object.entries(petsGrouped)
                 .map(([name, data]) => ({ name, count: data.count }))
                 .sort((a, b) => b.count - a.count)
-                .slice(0, 5);
+                .slice(0, 10);
 
             // 3.5 Pets que menos fazem serviço (mais antigos)
             const bottomPets = Object.entries(petsGrouped)
                 .map(([name, data]) => ({ name, count: data.count, lastVisit: data.lastVisit }))
                 .sort((a, b) => a.lastVisit.getTime() - b.lastVisit.getTime())
-                .slice(0, 5)
+                .slice(0, 10)
                 .map(p => ({ ...p, lastVisit: p.lastVisit.toLocaleDateString('pt-BR') }));
 
             // 4. Pets sumidos (Missing Pets para dicas de IA)
@@ -177,8 +177,11 @@ const InsightsDashboard: React.FC = () => {
 
             allAppts.forEach(a => {
                 try {
-                    const date = new Date(a.appointment_time);
-                    if (date >= new Date(now.getFullYear(), now.getMonth() - 5, 1)) {
+                    const dateStr = a.appointment_time || a.appointmentTime;
+                    if (!dateStr) return;
+                    
+                    const date = new Date(dateStr);
+                    if (a.status === 'CONCLUÍDO' && date >= new Date(now.getFullYear(), now.getMonth() - 5, 1)) {
                         const mStr = date.toLocaleString('pt-BR', { month: 'short' });
                         if (earningsByMonth[mStr] !== undefined) {
                             earningsByMonth[mStr] += Number(a.price) || 0;
@@ -192,14 +195,23 @@ const InsightsDashboard: React.FC = () => {
             const parsedData = { topAvulsoLojas, topAvulsoPetMovel, topPets, bottomPets, missingPets, missingPetsRaw, weeklyAppts, monthlyAppts, monthlyEarnings };
             setData(parsedData);
             
-            const simplifyAppt = (a: any) => ({
-                data: a.appointment_time?.split('T')[0] || a.date,
-                pet: a.pet_name,
-                tutor: a.owner_name || a.client_name,
-                servico: a.service,
-                preco: a.price,
-                mensalista: !!a.monthly_client_id
-            });
+            const simplifyAppt = (a: any) => {
+                let dataHoraStr = a.appointment_time || a.date;
+                try {
+                    if (dataHoraStr) {
+                        const dObj = new Date(dataHoraStr);
+                        dataHoraStr = dObj.toLocaleString('pt-BR');
+                    }
+                } catch (e) {}
+                return {
+                    data_hora: dataHoraStr,
+                    pet: a.pet_name,
+                    tutor: a.owner_name || a.client_name,
+                    servico: a.service,
+                    preco: a.price,
+                    mensalista: !!a.monthly_client_id
+                };
+            };
             const simplifyMonthly = (m: any) => ({
                 pet: m.pet_name, tutor: m.owner_name, servico: m.service, preco: m.price, ativo: m.is_active
             });
@@ -207,28 +219,28 @@ const InsightsDashboard: React.FC = () => {
                 nome: c.name
             });
             
-            // Limit appts for AI context to prevent "Too Many Requests" (Token limit)
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            const sixtyDaysFuture = new Date();
-            sixtyDaysFuture.setDate(sixtyDaysFuture.getDate() + 60);
+            // Limit appts for AI context to prevent "Too Many Requests" (Token limit & 413 Payload Too Large)
+            const fifteenDaysAgo = new Date();
+            fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+            const thirtyDaysFuture = new Date();
+            thirtyDaysFuture.setDate(thirtyDaysFuture.getDate() + 30);
 
             const filterRecent = (a: any) => {
                 const d = new Date(a.appointment_time);
-                return d >= thirtyDaysAgo && d <= sixtyDaysFuture;
+                return d >= fifteenDaysAgo && d <= thirtyDaysFuture;
             };
             
             setGlobalChatContext({
                 dataAtual: new Date().toLocaleDateString('pt-BR'),
                 agendamentos_loja: appts.filter(filterRecent).map(simplifyAppt),
                 agendamentos_petmovel: petMovelAppts.filter(filterRecent).map(simplifyAppt),
-                mensalistas: (monthlyRes.data || []).map(simplifyMonthly),
-                clientes_avulsos: (clientsRes.data || []).map(simplifyClient),
-                // Relatórios pré-processados p/ IA (Poupando Milhares de Tokens):
-                top_clientes_banho_tosa_recente: topAvulsoLojas,
-                top_clientes_pet_movel_recente: topAvulsoPetMovel,
-                frequencia_top_pets: topPets,
-                pets_sumidos_ha_mais_de_2_meses: missingPets,
+                mensalistas: (monthlyRes.data || []).filter((m: any) => m.is_active).map(simplifyMonthly), // Only active monthlies
+                // Removed full client list as it triggers HTTP 413 Payload Too Large on Groq. The names are already inside appointments
+                // Relatórios pré-processados p/ IA:
+                top_clientes_banho_tosa_recente: topAvulsoLojas.slice(0, 5),
+                top_clientes_pet_movel_recente: topAvulsoPetMovel.slice(0, 5),
+                frequencia_top_pets: topPets.slice(0, 5),
+                pets_sumidos_ha_mais_de_2_meses: missingPets.slice(0, 5),
                 receita_mensal_ultimos_6_meses: monthlyEarnings
             });
 
@@ -253,59 +265,73 @@ const InsightsDashboard: React.FC = () => {
                 return;
             }
 
-            const apiKey = 'AIzaSyCd3FJBh3wz7VkLI9VqcPi3O_H_hG5bs2I';
-            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const apiKey = import.meta.env.VITE_GROQ_API_KEY || 'N/A';
+            const groqUrl = `https://api.groq.com/openai/v1/chat/completions`;
             
             // Comment about earnings
             if (!cachedComment) {
-                const earningsPrompt = `Você é um consultor inteligente do Sandy's PetShop. Forneça uma análise financeira curtíssima (no máximo 2 frases curtas) sobre a evolução dos ganhos listados abaixo. Seja animador e elegante. Dê dicas curtas. Não use * ou aspas.\nReceita: ${JSON.stringify(d.monthlyEarnings)}`;
+                const earningsPrompt = `Você é um consultor inteligente do Sandy's PetShop. Forneça uma análise financeira curtíssima (máximo absoluto de 140 caracteres) sobre a evolução dos ganhos listados abaixo. Seja animador e dê uma dica rápida de negócio. Não use asteriscos.\nReceita: ${JSON.stringify(d.monthlyEarnings)}`;
 
-                fetch(geminiUrl, {
+                fetch(groqUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json' 
+                    },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: earningsPrompt }] }],
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 100 }
+                        model: 'llama-3.3-70b-versatile',
+                        messages: [{ role: 'user', content: earningsPrompt }],
+                        temperature: 0.7,
+                        max_tokens: 50
                     }),
                 }).then(r => r.json()).then(res => {
-                    const text = res?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const text = res?.choices?.[0]?.message?.content;
                     if (text) {
-                        const cleanText = text.replace(/["_*]/g, '').trim();
+                        let cleanText = text.replace(/["_*]/g, '').trim();
+                        if (cleanText.length > 140) cleanText = cleanText.substring(0, 137) + '...';
                         setAiComment(cleanText);
                         sessionStorage.setItem('aiCommentCache', cleanText);
                     } else {
-                        setAiComment("O movimento está ótimo nas últimas semanas! Foque em converter clientes avulsos em mensalistas para crescer a receita.");
+                        setAiComment("Ótimo movimento! Foque em converter clientes avulsos em mensalistas para crescer mais.");
                     }
-                }).catch(err => { console.error("Network error API Gemini:", err); setAiComment("O movimento está ótimo nas últimas semanas! Mantenha o excelente trabalho."); });
+                }).catch(err => { console.error("Network error API Groq:", err); setAiComment("O movimento está ótimo nas últimas semanas! Mantenha o excelente trabalho."); });
             }
 
             // Tips about missing pets
             if (!cachedTips) {
                 if (d.missingPets.length > 0) {
-                    const tipsPrompt = `Você é o especialista em marketing do Sandy's PetShop. Crie uma mensagem curta (1 frase) sugerindo uma campanha de resgate para o WhatsApp dos seguintes pets que estão sumidos. Seja criativo e chamativo. Não use asteriscos.\nPets: ${d.missingPets.map(p => p.name).join(', ')}`;
+                    const tipsPrompt = `Você é o especialista em marketing do Sandy's PetShop. Escreva um conselho curto (máximo 140 caracteres) voltado para a administradora do pet shop, sugerindo uma ação prática para ela reconquistar esses clientes sumidos (ex: oferecer cupom, mandar mensagem, etc). Não escreva uma mensagem para o cliente, escreva uma sugestão para a administradora. Não use asteriscos.\nPets: ${d.missingPets.map(p => p.name).join(', ')}`;
 
-                    fetch(geminiUrl, {
+                    fetch(groqUrl, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json' 
+                        },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: tipsPrompt }] }],
-                            generationConfig: { temperature: 0.8, maxOutputTokens: 100 }
+                            model: 'llama-3.3-70b-versatile',
+                            messages: [{ role: 'user', content: tipsPrompt }],
+                            temperature: 0.8,
+                            max_tokens: 60
                         }),
                     }).then(r => r.json()).then(res => {
-                        const text = res?.candidates?.[0]?.content?.parts?.[0]?.text;
+                        const text = res?.choices?.[0]?.message?.content;
                         if (text) {
-                            const cleanText = text.replace(/["_*]/g, '').trim();
+                            let cleanText = text.replace(/["_*]/g, '').trim();
+                            if (cleanText.length > 140) cleanText = cleanText.substring(0, 137) + '...';
                             setAiTips(cleanText);
                             sessionStorage.setItem('aiTipsCache', cleanText);
                         } else {
                             setAiTips("Envie um cupom 'Saudades' com 15% OFF pelo WhatsApp para eles!");
                         }
-                    }).catch(err => { console.error("Network error API Gemini Tips:", err); setAiTips("Recomendamos criar uma campanha de 'Welcome Back' oferecendo um serviço extra gratuito na volta!"); });
+                    }).catch(err => { console.error("Network error API Groq Tips:", err); setAiTips("Crie uma campanha de 'Welcome Back' oferecendo um extra gratuito!"); });
                 } else {
-                    const defaultMsg = "Ótimo trabalho! A retenção dos seus pets está incrível, não temos sumidos recentes.";
+                    const defaultMsg = "Retenção incrível! Não temos pets inativos na lista.";
                     setAiTips(defaultMsg);
                     sessionStorage.setItem('aiTipsCache', defaultMsg);
                 }
+            } else {
+                setAiTips(cachedTips);
             }
         } catch(e) {
             console.error(e);
@@ -382,7 +408,7 @@ const InsightsDashboard: React.FC = () => {
 
                     <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl flex gap-3 border border-white/20 hover:bg-white/20 transition-colors duration-300">
                         <SparklesIcon className="w-6 h-6 text-pink-200 flex-shrink-0 mt-0.5 animate-pulse" />
-                        <p className="text-sm font-medium text-white italic leading-relaxed">"{aiComment}"</p>
+                        <p className="text-sm font-medium text-white italic leading-relaxed text-justify">"{aiComment}"</p>
                     </div>
                 </div>
 
@@ -423,7 +449,7 @@ const InsightsDashboard: React.FC = () => {
 
                     <div className="bg-white/10 hover:bg-white/20 transition-colors duration-300 rounded-2xl p-4 backdrop-blur-md border border-white/20 flex gap-3 mt-auto relative z-10">
                         <StarIcon className="w-6 h-6 text-yellow-300 flex-shrink-0 mt-0.5 drop-shadow-[0_0_8px_rgba(253,224,71,0.5)]" />
-                        <p className="text-sm font-medium text-white italic leading-relaxed">"{aiTips}"</p>
+                        <p className="text-sm font-medium text-white italic leading-relaxed text-justify">"{aiTips}"</p>
                     </div>
                 </div>
 
@@ -486,7 +512,7 @@ const InsightsDashboard: React.FC = () => {
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-fuchsia-800">
                         <StarIcon className="w-6 h-6 text-fuchsia-500" /> Pets +Frequentes
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-4 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '350px' }}>
                         {topPets.map((p, i) => (
                              <div key={i} className="flex items-center gap-3 bg-white/60 hover:bg-white p-3 rounded-2xl border border-fuchsia-100/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
                                 <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center shadow-inner border rotate-3 ${i === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 border-yellow-200' : i === 1 ? 'bg-gradient-to-br from-gray-200 to-gray-400 border-gray-300' : i === 2 ? 'bg-gradient-to-br from-orange-300 to-orange-500 border-orange-300' : 'bg-gradient-to-br from-fuchsia-200 to-pink-300 border-fuchsia-200'}`}>
@@ -506,7 +532,7 @@ const InsightsDashboard: React.FC = () => {
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-indigo-800">
                         <StarIcon className="w-6 h-6 text-indigo-500 opacity-50" /> Pets -Frequentes
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-4 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '350px' }}>
                         {bottomPets.map((p, i) => (
                              <div key={i} className="flex items-center gap-3 bg-white/60 hover:bg-white p-3 rounded-2xl border border-indigo-100/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
                                 <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-2xl flex flex-col items-center justify-center shadow-inner border border-indigo-200 -rotate-3">
