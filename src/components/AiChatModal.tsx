@@ -54,7 +54,45 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ systemData }) => {
     const [input, setInput] = useState('');
     const [isResponding, setIsResponding] = useState(false);
     
+    // Drag-to-close states
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragY, setDragY] = useState(0);
+    const startY = useRef(0);
+    const currentY = useRef(0);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const handleDragStart = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        setIsDragging(true);
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        startY.current = y;
+        currentY.current = y;
+    };
+
+    const handleDragMove = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        currentY.current = y;
+        const diff = y - startY.current;
+        if (diff > 0) {
+            setDragY(diff);
+        }
+    };
+
+    const handleDragEnd = () => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        if (dragY > 150) {
+            handleClose();
+        } else {
+            setDragY(0);
+        }
+    };
+
+    const handleClose = () => {
+        setIsOpen(false);
+        setTimeout(() => setDragY(0), 300);
+    };
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -130,23 +168,43 @@ ${JSON.stringify(systemData)}`;
             </button>
 
             {/* Janela do Chat */}
-            <div className={`fixed inset-x-0 bottom-0 top-20 bg-white flex flex-col z-[10005] transition-all duration-300 transform overflow-hidden ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
-                {/* Header */}
-                <div className="bg-gradient-to-r from-pink-600 to-rose-500 p-4 flex items-center justify-between text-white shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-white/20 p-2 rounded-full">
-                            <SparklesIcon className="w-6 h-6" />
-                        </div>
+            <div 
+                className={`fixed inset-x-0 bottom-0 top-10 sm:top-20 bg-white flex flex-col z-[10005] transition-all transform overflow-hidden rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] ${isDragging ? 'duration-0' : 'duration-300'} ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}
+                style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
+            >
+                {/* Header idêntico ao "Novo Agendamento" */}
+                <div
+                    className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
+                    onTouchStart={handleDragStart}
+                    onTouchMove={handleDragMove}
+                    onTouchEnd={handleDragEnd}
+                    onMouseDown={handleDragStart}
+                    onMouseMove={handleDragMove}
+                    onMouseUp={handleDragEnd}
+                    onMouseLeave={handleDragEnd}
+                >
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+                    {/* Close button */}
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                        className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        title="Fechar"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    <div className="relative z-10 flex items-center justify-between">
                         <div>
-                            <h3 className="font-bold text-lg leading-tight">Sandy's Assistente</h3>
-                            <p className="text-xs text-pink-100">
-                                {!systemData ? 'Aguarde, carregando...' : 'Online e conectada aos seus dados'}
+                            <h2 className="text-3xl sm:text-4xl font-extrabold text-pink-950 tracking-tight mb-2">Sandy's Assistente</h2>
+                            <p className="text-pink-800/80 font-medium text-sm sm:text-base">
+                                {!systemData ? 'Aguarde, carregando dados...' : 'Online e conectada aos seus dados'}
                             </p>
                         </div>
+                        <div className="hidden sm:flex h-20 w-20 bg-white rounded-3xl shadow-sm items-center justify-center text-4xl transform -rotate-3">
+                            ✨
+                        </div>
                     </div>
-                    <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
-                        <XMarkIcon className="w-6 h-6" />
-                    </button>
                 </div>
 
                 {/* Messages List */}
