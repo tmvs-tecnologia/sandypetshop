@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon as XMarkOutlineIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon as XMarkOutlineIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
 import { SERVICES, WORKING_HOURS, BATH_GROOMING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
@@ -1155,7 +1155,7 @@ const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
                 <div className="h-full bg-gradient-to-r from-pink-400 via-rose-500 to-pink-600 rounded-full w-1/2 animate-splash-progress"></div>
             </div>
             
-            <p className="absolute bottom-12 text-gray-300 font-medium text-sm animate-pulse">Iniciando sistema...</p>
+            <p className="absolute bottom-12 text-pink-500 font-bold text-sm animate-pulse">Iniciando sistema...</p>
         </div>
     );
 };
@@ -2395,6 +2395,47 @@ const DaycareStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }
         }
     }, []);
 
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [dragY, setDragY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const startY = useRef(0);
+    const currentY = useRef(0);
+
+    const handleClose = useCallback(() => {
+        setIsAnimating(true);
+        setTimeout(() => {
+            setIsAnimating(false);
+            setDragY(0);
+            onClose();
+        }, 400); // Matches the animation duration
+    }, [onClose]);
+
+    // Drag to close logic
+    const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+        setIsDragging(true);
+        startY.current = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+        currentY.current = startY.current;
+    };
+
+    const handleDragMove = (e: React.TouchEvent | React.MouseEvent) => {
+        if (!isDragging) return;
+        currentY.current = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+        const diff = currentY.current - startY.current;
+        if (diff > 0) {
+            setDragY(diff);
+        }
+    };
+
+    const handleDragEnd = () => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        if (dragY > 150) {
+            handleClose();
+        } else {
+            setDragY(0);
+        }
+    };
+
     useEffect(() => {
         if (isOpen) {
             fetchDaycareStatistics();
@@ -2415,29 +2456,29 @@ const DaycareStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }
     };
 
     const DaycareStatCard: React.FC<{ title: string; data: { count: number; revenue: number; plans: { [key: string]: number }; items?: { pet_name: string; plan: string }[] } }> = ({ title, data }) => (
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 border-b pb-2">{title}</h3>
-            <div className="space-y-3 sm:space-y-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 transition-all hover:shadow-md hover:border-pink-100 group">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 pb-3 border-b border-gray-100 group-hover:border-pink-100 transition-colors">{title}</h3>
+            <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div className="bg-purple-50 p-3 sm:p-4 rounded-lg">
-                        <p className="text-xs sm:text-sm text-gray-600">Total de Matrículas</p>
-                        <p className="text-xl sm:text-2xl font-bold text-purple-600">{data.count}</p>
+                    <div className="bg-purple-50/80 p-3 sm:p-4 rounded-xl border border-purple-100/50">
+                        <p className="text-[10px] sm:text-xs font-bold text-purple-700 uppercase tracking-wider mb-1">Matrículas</p>
+                        <p className="text-2xl sm:text-3xl font-black text-purple-900 font-outfit">{data.count}</p>
                     </div>
-                    <div className="bg-green-50 p-3 sm:p-4 rounded-lg">
-                        <p className="text-xs sm:text-sm text-gray-600">Receita Total</p>
-                        <p className="text-lg sm:text-2xl font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis">
+                    <div className="bg-green-50/80 p-3 sm:p-4 rounded-xl border border-green-100/50">
+                        <p className="text-[10px] sm:text-xs font-bold text-green-700 uppercase tracking-wider mb-1">Receita</p>
+                        <p className="text-xl sm:text-2xl font-black text-green-900 font-outfit whitespace-nowrap overflow-hidden text-ellipsis">
                             R$ {data.revenue.toFixed(2).replace('.', ',')}
                         </p>
                     </div>
                 </div>
                 {data.items && data.items.length > 0 && (
-                    <div>
-                        <h4 className="font-semibold text-gray-700 mb-2">Planos Contratados:</h4>
+                    <div className="mt-4 pt-4 border-t border-gray-50">
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Planos Contratados</h4>
                         <div className="space-y-2">
                             {data.items.map((item, idx) => (
-                                <div key={`${item.pet_name}-${idx}`} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                                    <span className="text-gray-700">{item.pet_name}</span>
-                                    <span className="font-semibold text-gray-900">{translatePlan(item.plan)}</span>
+                                <div key={`${item.pet_name}-${idx}`} className="flex justify-between items-center bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                    <span className="text-sm font-medium text-gray-700">{item.pet_name}</span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 bg-white border border-gray-200 rounded-md text-gray-600">{translatePlan(item.plan)}</span>
                                 </div>
                             ))}
                         </div>
@@ -2447,17 +2488,51 @@ const DaycareStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }
         </div>
     );
 
+    if (!isOpen) return null;
+
     return (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-[10001] p-2 sm:p-4 animate-fadeIn">
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-6 rounded-t-xl sm:rounded-t-2xl">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">🏫 Estatísticas da Creche Pet</h2>
-                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl sm:text-2xl font-bold min-w-[44px] min-h-[44px] flex items-center justify-center">×</button>
+        <div 
+            className={`w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-xl border border-pink-100 mb-8 transition-all ease-out transform origin-top flex flex-col overflow-hidden ${isAnimating ? 'translate-y-full opacity-0 duration-400' : 'translate-y-0 opacity-100'} ${!isDragging && !isAnimating ? 'duration-400' : 'duration-0'}`}
+            style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
+        >
+            {/* Header arrastável */}
+            <div
+                className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
+                onTouchStart={handleDragStart}
+                onTouchMove={handleDragMove}
+                onTouchEnd={handleDragEnd}
+                onMouseDown={handleDragStart}
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+            >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+                
+                {/* Botão de Fechar */}
+                <button 
+                    onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    type="button"
+                    className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer"
+                    title="Fechar"
+                >
+                    <svg className="w-5 h-5 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                
+                <div className="relative z-10 flex items-center justify-between">
+                    <div className="pr-12">
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-pink-950 tracking-tight mb-1 sm:mb-2">Estatísticas da Creche</h2>
+                        <p className="text-pink-800/80 font-medium text-sm sm:text-base">Resumo de matrículas e faturamento</p>
+                    </div>
+                    <div className="hidden sm:flex h-20 w-20 bg-white rounded-3xl shadow-sm items-center justify-center text-4xl transform rotate-3">
+                        🏫
                     </div>
                 </div>
+            </div>
 
-                <div className="p-4 sm:p-6">
+                <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
                     {loading ? (
                         <div className="flex justify-center py-12 sm:py-16">
                             <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-purple-500"></div>
@@ -2465,42 +2540,56 @@ const DaycareStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }
                     ) : statistics ? (
                         <div className="space-y-6 sm:space-y-8">
                             {/* Estatísticas Gerais */}
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 sm:p-6">
-                                <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">📊 Resumo Geral</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="text-center">
-                                        <p className="text-2xl font-bold text-green-600">{statistics.total.approved}</p>
-                                        <p className="text-sm text-gray-600">Aprovadas</p>
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 relative overflow-hidden">
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <ChartPieIcon className="w-6 h-6 text-pink-500" />
+                                    Resumo Geral
+                                </h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
+                                    <div className="bg-green-50/50 rounded-xl p-4 border border-green-100 text-center transition-transform hover:scale-[1.02]">
+                                        <p className="text-3xl font-black text-green-600 font-outfit mb-1">{statistics.total.approved}</p>
+                                        <p className="text-xs font-bold text-green-700 uppercase tracking-wider">Aprovadas</p>
                                     </div>
-                                    <div className="text-center">
-                                        <p className="text-2xl font-bold text-yellow-600">{statistics.total.pending}</p>
-                                        <p className="text-sm text-gray-600">Pendentes</p>
+                                    <div className="bg-yellow-50/50 rounded-xl p-4 border border-yellow-100 text-center transition-transform hover:scale-[1.02]">
+                                        <p className="text-3xl font-black text-yellow-600 font-outfit mb-1">{statistics.total.pending}</p>
+                                        <p className="text-xs font-bold text-yellow-700 uppercase tracking-wider">Pendentes</p>
                                     </div>
-                                    <div className="text-center">
-                                        <p className="text-2xl font-bold text-red-600">{statistics.total.rejected}</p>
-                                        <p className="text-sm text-gray-600">Rejeitadas</p>
+                                    <div className="bg-red-50/50 rounded-xl p-4 border border-red-100 text-center transition-transform hover:scale-[1.02]">
+                                        <p className="text-3xl font-black text-red-600 font-outfit mb-1">{statistics.total.rejected}</p>
+                                        <p className="text-xs font-bold text-red-700 uppercase tracking-wider">Rejeitadas</p>
                                     </div>
-                                    <div className="text-center">
-                                        <p className="text-lg sm:text-xl font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis">
+                                    <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-4 border border-pink-100 text-center transition-transform hover:scale-[1.02] flex flex-col justify-center overflow-hidden">
+                                        <p className="text-lg sm:text-2xl font-black text-pink-600 font-outfit mb-1 break-words leading-tight">
                                             R$ {statistics.total.totalRevenue.toFixed(2).replace('.', ',')}
                                         </p>
-                                        <p className="text-sm text-gray-600">Receita Total</p>
+                                        <p className="text-xs font-bold text-pink-700 uppercase tracking-wider mt-auto">Receita Total</p>
                                     </div>
                                 </div>
                                 {statistics.total.items && statistics.total.items.length > 0 && (
-                                    <div className="mt-4">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h4 className="font-semibold text-gray-700">Reservas Aprovadas</h4>
-                                            <button type="button" onClick={() => setShowApproved(s => !s)} className="p-1 rounded hover:bg-gray-100 text-gray-600" aria-expanded={showApproved} aria-controls="approved_reservations_list">
-                                                {showApproved ? <ChevronDownIcon className="w-4 h-4" /> : <ChevronRightIcon className="w-4 h-4" />}
-                                            </button>
-                                        </div>
+                                    <div className="mt-6 border-t border-gray-100 pt-4">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowApproved(s => !s)} 
+                                            className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-gray-50 transition-colors group"
+                                            aria-expanded={showApproved} 
+                                            aria-controls="approved_reservations_list"
+                                        >
+                                            <h4 className="font-semibold text-gray-700 group-hover:text-pink-600 transition-colors">Reservas Aprovadas ({statistics.total.items.length})</h4>
+                                            <div className="p-1 rounded-full bg-gray-100 group-hover:bg-pink-100 text-gray-500 group-hover:text-pink-600 transition-colors">
+                                                {showApproved ? <ChevronUpIcon className="w-4 h-4" /> : <HeroChevronDownIcon className="w-4 h-4" />}
+                                            </div>
+                                        </button>
                                         {showApproved && (
-                                            <div id="approved_reservations_list" className="space-y-2">
+                                            <div id="approved_reservations_list" className="mt-3 space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                                                 {statistics.total.items.map((item: { pet_name: string; plan: string }, idx: number) => (
-                                                    <div key={`${item.pet_name}-${idx}`} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                                                        <span className="text-gray-700">{item.pet_name}</span>
-                                                        <span className="font-semibold text-gray-900">{translatePlan(item.plan)}</span>
+                                                    <div key={`${item.pet_name}-${idx}`} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100 hover:border-pink-200 transition-colors">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-sm">
+                                                                {item.pet_name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span className="text-gray-700 font-medium">{item.pet_name}</span>
+                                                        </div>
+                                                        <span className="text-xs font-bold px-2.5 py-1 bg-white border border-gray-200 rounded-full text-gray-600 shadow-sm">{translatePlan(item.plan)}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -2509,26 +2598,33 @@ const DaycareStatisticsModal: React.FC<{ isOpen: boolean; onClose: () => void; }
                                 )}
                             </div>
 
-                            <h3 className="text-lg sm:text-xl font-bold text-gray-800">Novas Matrículas</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                                <DaycareStatCard title="📅 Hoje" data={statistics.daily} />
-                                <DaycareStatCard title="📊 Esta Semana" data={statistics.weekly} />
-                                <DaycareStatCard title="📈 Este Mês" data={statistics.monthly} />
+                            <div>
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <ArrowTrendingUpIcon className="w-6 h-6 text-pink-500" />
+                                    Desempenho de Matrículas
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                                    <DaycareStatCard title="Hoje" data={statistics.daily} />
+                                    <DaycareStatCard title="Esta Semana" data={statistics.weekly} />
+                                    <DaycareStatCard title="Este Mês" data={statistics.monthly} />
+                                </div>
                             </div>
 
                             {(statistics.daily.count === 0 && statistics.weekly.count === 0 && statistics.monthly.count === 0) && (
-                                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                                    <p className="text-gray-500 text-lg">Nenhuma matrícula encontrada para exibir estatísticas.</p>
+                                <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <ChartBarIcon className="w-8 h-8 text-gray-400" />
+                                    </div>
+                                    <p className="text-gray-500 font-medium">Nenhuma nova matrícula encontrada neste período.</p>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className="text-center py-12">
-                            <p className="text-gray-500 text-lg">Erro ao carregar estatísticas.</p>
+                            <p className="text-red-500 font-medium bg-red-50 p-4 rounded-xl inline-block border border-red-100">Erro ao carregar estatísticas.</p>
                         </div>
                     )}
                 </div>
-            </div>
         </div>
     );
 };
@@ -7892,7 +7988,9 @@ const DaycareEnrollmentCard: React.FC<{
     onApprove?: (enrollment: DaycareRegistration) => void;
     onTogglePaymentStatus?: (enrollment: DaycareRegistration) => void;
     paymentUpdatingId?: string | null;
-}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId }) => {
+    onTogglePresence?: (enrollment: DaycareRegistration) => void;
+    isInDaycare?: boolean;
+}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare }) => {
     const { created_at, pet_name, tutor_name, contracted_plan, status } = enrollment;
     const formatTimeText = (time: string | null | undefined): string => {
         if (!time) return 'Não definido';
@@ -7935,167 +8033,226 @@ const DaycareEnrollmentCard: React.FC<{
             draggable={isDraggable}
             onDragStart={isDraggable ? onDragStart : undefined}
             onClick={onClick}
-            className={`bg-white rounded-2xl shadow-md overflow-hidden transition-transform transform hover:scale-[1.02] flex flex-col min-h-[360px] ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
+            className={`group relative bg-white rounded-3xl shadow-sm hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 overflow-hidden flex flex-col h-full font-jakarta ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
         >
-            <div className="p-5 flex-grow">
-                <div className="rounded-xl mb-3 p-5 bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <SafeImage src={enrollment.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'} alt={enrollment.pet_name} className="w-10 h-10 rounded-full object-cover cursor-pointer" loading="eager" onClick={(e) => { e.stopPropagation(); onChangePhoto(enrollment); }} />
-                        <div>
-                            <p className="text-2xl font-bold leading-none">{pet_name}</p>
-                            <p className="text-xs opacity-90">{tutor_name}</p>
-                            {(() => {
-                                const raw = String(enrollment.last_vaccine || '');
-                                if (!raw) return null;
-                                const datePart = raw.split('T')[0];
-                                const parts = datePart.split('-').map(Number);
-                                if (parts.length !== 3 || parts.some(isNaN)) return null;
-                                const last = new Date(parts[0], parts[1] - 1, parts[2]);
-                                const now = new Date();
-                                const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
-                                if (diffDays > 365) {
-                                    return (
-                                        <div className="mt-1 flex flex-wrap items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md max-w-full">
-                                            <img src="https://cdn-icons-png.flaticon.com/512/564/564619.png" alt="Alerta" className="h-4 w-4" />
-                                            <span className="block max-w-full break-words leading-tight text-[10px] sm:text-[11px] font-semibold">Última vacina há mais de um ano</span>
-                                        </div>
-                                    );
-                                }
-                                return null;
-                            })()}
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-xs opacity-90">Valor Total</p>
-                        <p className="text-lg font-extrabold">R$ {invoiceTotal.toFixed(2).replace('.', ',')}</p>
-                    </div>
-                </div>
-                <div className="mb-3">
-                    <div className="flex items-center justify-between">
-                        <div className={`px-3 py-1 text-[11px] font-bold rounded-full whitespace-nowrap truncate ${statusStyles[status] || 'bg-gray-100 text-gray-800'}`}>{status}</div>
-                        <div className="flex flex-col items-end gap-1">
-                            <span className="text-[10px] text-gray-500">Status do pagamento</span>
-                            {(() => {
-                                const current = (enrollment.payment_status === 'Pago') ? 'Pago' : 'Pendente';
-                                const cls = current === 'Pago'
-                                    ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                                    : 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200';
-                                return (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onTogglePaymentStatus && onTogglePaymentStatus(enrollment); }}
-                                        disabled={paymentUpdatingId === enrollment.id}
-                                        className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap truncate border ${cls}`}
-                                        title={current === 'Pago' ? 'Marcar como pendente' : 'Marcar como pago'}
-                                    >
-                                        {paymentUpdatingId === enrollment.id ? 'Atualizando...' : current}
-                                    </button>
-                                );
-                            })()}
-                        </div>
-                    </div>
-                    <div className="mt-2 flex items-center text-sm text-gray-700">
-                        <TagIcon />
-                        <span className="font-semibold mr-2">Plano</span> {contracted_plan ? planLabels[contracted_plan] : 'Não informado'}
-                    </div>
-                </div>
+            {/* --- Status Bar --- */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-400 to-purple-500" />
 
-                <div className="mt-4 border-t border-gray-200 pt-4">
-                    <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <WhatsAppIcon />
-                            {enrollment.contact_phone ? (
-                                <a href={buildWhatsAppLink(enrollment.contact_phone)} target="_blank" rel="noopener noreferrer" className="text-green-700 hover:underline">
-                                    {enrollment.contact_phone}
-                                </a>
-                            ) : (
-                                <span>Sem telefone</span>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <CalendarIcon className="h-5 w-5" />
-                            <span>Início:</span>
-                            <span className="font-semibold">{formatDateToBR(enrollment.check_in_date || null)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <img src="https://cdn-icons-png.flaticon.com/512/9576/9576046.png" alt="Entrada Icon" className="h-5 w-5" />
-                            <span>Entrada:</span>
-                            <span className="font-semibold">{checkInTimeText}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600 mt-1">
-                            <img src="https://cdn-icons-png.flaticon.com/512/9576/9576053.png" alt="Saída Icon" className="h-5 w-5" />
-                            <span>Saída:</span>
-                            <span className="font-semibold">{checkOutTimeText}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <CalendarIcon className="h-5 w-5" />
-                            <span>
-                                Dias da semana: {(enrollment.attendance_days && enrollment.attendance_days.length > 0)
-                                    ? (enrollment.attendance_days as any[]).map((idx: number) => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][idx]).join(', ')
-                                    : 'Não informado'}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Serviços Extras */}
-                    {enrollment.extra_services && (
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                            <div className="text-sm text-gray-600 font-semibold mb-2">Serviços Extras:</div>
-                            <div className="flex flex-wrap gap-1">
-                                {((enrollment as any).extra_services?.pernoite?.enabled || (enrollment as any).extra_services?.pernoite === true) && (
-                                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Pernoite</span>
-                                )}
-                                {((enrollment as any).extra_services?.banho_tosa?.enabled || (enrollment as any).extra_services?.banho_tosa === true) && (
-                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Banho & Tosa</span>
-                                )}
-                                {((enrollment as any).extra_services?.so_banho?.enabled || (enrollment as any).extra_services?.so_banho === true) && (
-                                    <span className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded-full">Só banho</span>
-                                )}
-                                {((enrollment as any).extra_services?.adestrador?.enabled || (enrollment as any).extra_services?.adestrador === true) && (
-                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Adestrador</span>
-                                )}
-                                {((enrollment as any).extra_services?.despesa_medica?.enabled || (enrollment as any).extra_services?.despesa_medica === true) && (
-                                    <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Despesa médica</span>
-                                )}
-                                {(((enrollment as any).extra_services?.dias_extras?.enabled !== false) && ((enrollment as any).extra_services?.dias_extras?.quantity ?? 0) > 0) && (
-                                    <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
-                                        {(enrollment as any).extra_services.dias_extras.quantity} dia{(enrollment as any).extra_services.dias_extras.quantity > 1 ? 's' : ''} extra{(enrollment as any).extra_services.dias_extras.quantity > 1 ? 's' : ''}
-                                    </span>
-                                )}
-                                {(!((enrollment as any).extra_services?.pernoite?.enabled || (enrollment as any).extra_services?.banho_tosa?.enabled || (enrollment as any).extra_services?.so_banho?.enabled || (enrollment as any).extra_services?.adestrador?.enabled || (enrollment as any).extra_services?.despesa_medica?.enabled || ((enrollment as any).extra_services?.dias_extras?.enabled !== false && ((enrollment as any).extra_services?.dias_extras?.quantity ?? 0) > 0) || (enrollment as any).extra_services?.pernoite === true || (enrollment as any).extra_services?.banho_tosa === true || (enrollment as any).extra_services?.so_banho === true || (enrollment as any).extra_services?.adestrador === true || (enrollment as any).extra_services?.despesa_medica === true)) && (
-                                    <span className="text-xs text-gray-500">Nenhum serviço extra</span>
-                                )}
+            <div className="p-4 sm:p-5 flex flex-col h-full flex-grow">
+                {/* Header Section */}
+                        <div className="flex items-center justify-between mb-4 gap-2">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="relative flex-shrink-0">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
+                                    <SafeImage 
+                                        src={enrollment.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'} 
+                                        alt={enrollment.pet_name} 
+                                        className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform" 
+                                        loading="eager" 
+                                        onClick={(e) => { e.stopPropagation(); onChangePhoto(enrollment); }} 
+                                    />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="font-outfit font-bold text-lg sm:text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors truncate">
+                                        {pet_name}
+                                    </h3>
+                                    <div className="flex items-center gap-1.5 mt-1 flex-nowrap overflow-x-auto custom-scrollbar-hide">
+                                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border uppercase tracking-wide flex-shrink-0 ${
+                                            status === 'Aprovado' ? 'bg-green-50 text-green-600 border-green-100' :
+                                            status === 'Rejeitado' ? 'bg-red-50 text-red-600 border-red-100' :
+                                            'bg-yellow-50 text-yellow-600 border-yellow-100'
+                                        }`}>
+                                            {status}
+                                        </span>
+                                        {(() => {
+                                            const raw = String(enrollment.last_vaccine || '');
+                                            if (!raw) return null;
+                                            const datePart = raw.split('T')[0];
+                                            const parts = datePart.split('-').map(Number);
+                                            if (parts.length !== 3 || parts.some(isNaN)) return null;
+                                            const last = new Date(parts[0], parts[1] - 1, parts[2]);
+                                            const now = new Date();
+                                            const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+                                            if (diffDays > 365) {
+                                                return (
+                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 flex items-center gap-1 flex-shrink-0" title="Vacina Vencida">
+                                                        ⚠️ Vacina
+                                                    </span>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+        
+                            {/* Price & Payment Tag */}
+                            <div className="text-right flex flex-col items-end flex-shrink-0 pl-2">
+                                <div className="font-outfit font-bold text-lg sm:text-xl text-gray-900 whitespace-nowrap">
+                                    R$ {invoiceTotal.toFixed(2).replace('.', ',')}
+                                </div>
+                                <div className="mt-1 flex flex-col items-end gap-1">
+                                    {(() => {
+                                        const current = (enrollment.payment_status === 'Pago') ? 'Pago' : 'Pendente';
+                                        const cls = current === 'Pago'
+                                            ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                                            : 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200';
+                                        return (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onTogglePaymentStatus && onTogglePaymentStatus(enrollment); }}
+                                                disabled={paymentUpdatingId === enrollment.id}
+                                                className={`px-2 py-0.5 rounded-md text-[10px] font-semibold whitespace-nowrap truncate border ${cls} transition-colors`}
+                                                title={current === 'Pago' ? 'Marcar como pendente' : 'Marcar como pago'}
+                                            >
+                                                {paymentUpdatingId === enrollment.id ? '...' : current}
+                                            </button>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                         </div>
-                    )}
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-2 gap-y-3 gap-x-2 mb-4 bg-gray-50/50 p-2.5 sm:p-3 rounded-xl border border-gray-100">
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <UserIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Tutor</span>
+                            <span className="text-xs font-medium text-gray-700 truncate">{tutor_name}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <PhoneIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">WhatsApp</span>
+                            {enrollment.contact_phone ? (
+                                <a href={buildWhatsAppLink(enrollment.contact_phone)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-green-600 hover:underline truncate" onClick={e => e.stopPropagation()}>
+                                    {enrollment.contact_phone.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
+                                </a>
+                            ) : (
+                                <span className="text-xs font-medium text-gray-700 truncate">-</span>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <TagIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Plano</span>
+                            <span className="text-xs font-medium text-gray-700 truncate">{contracted_plan ? planLabels[contracted_plan] : 'Não info.'}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <CalendarIcon className="w-4 h-4 text-pink-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Início</span>
+                            <span className="text-xs font-bold text-pink-600 truncate">{formatDateToBR(enrollment.check_in_date || null)}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <ClockIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Entrada</span>
+                            <span className="text-xs font-medium text-gray-700 truncate">{checkInTimeText}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <ClockIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Saída</span>
+                            <span className="text-xs font-medium text-gray-700 truncate">{checkOutTimeText}</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div className="p-3 bg-gray-50 border-t border-gray-100">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+
+                {/* Dias da semana */}
+                <div className="mb-4">
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Dias da semana</span>
+                    <div className="flex flex-wrap gap-1">
+                        {(enrollment.attendance_days && enrollment.attendance_days.length > 0)
+                            ? (enrollment.attendance_days as any[]).map((idx: number) => (
+                                <span key={idx} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-medium">
+                                    {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][idx]}
+                                </span>
+                            ))
+                            : <span className="text-xs text-gray-500">Não informado</span>}
+                    </div>
+                </div>
+
+                {/* Serviços Extras (Chips) */}
+                {enrollment.extra_services && Object.keys(enrollment.extra_services).length > 0 && (
+                    <div className="mb-4 flex flex-wrap gap-1.5">
+                        {((enrollment as any).extra_services?.pernoite?.enabled || (enrollment as any).extra_services?.pernoite === true) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">Pernoite</span>
+                        )}
+                        {((enrollment as any).extra_services?.banho_tosa?.enabled || (enrollment as any).extra_services?.banho_tosa === true) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">Banho & Tosa</span>
+                        )}
+                        {((enrollment as any).extra_services?.so_banho?.enabled || (enrollment as any).extra_services?.so_banho === true) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-cyan-50 text-cyan-700 border border-cyan-100">Só banho</span>
+                        )}
+                        {((enrollment as any).extra_services?.adestrador?.enabled || (enrollment as any).extra_services?.adestrador === true) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-700 border border-green-100">Adestrador</span>
+                        )}
+                        {((enrollment as any).extra_services?.despesa_medica?.enabled || (enrollment as any).extra_services?.despesa_medica === true) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 border border-red-100">Desp. médica</span>
+                        )}
+                        {(((enrollment as any).extra_services?.dias_extras?.enabled !== false) && ((enrollment as any).extra_services?.dias_extras?.quantity ?? 0) > 0) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                                {(enrollment as any).extra_services.dias_extras.quantity} dia{(enrollment as any).extra_services.dias_extras.quantity > 1 ? 's' : ''} extra
+                            </span>
+                        )}
+                    </div>
+                )}
+                
+                <div className="flex-grow"></div>
+
+                {/* Ações (Action Bar) */}
+                <div className="pt-3 border-t border-gray-100 flex flex-wrap sm:grid sm:grid-cols-4 gap-1.5">
+                    {status === 'Aprovado' && onTogglePresence && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onTogglePresence(enrollment); }}
+                            className={`w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none ${
+                                isInDaycare 
+                                    ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            }`}
+                            title={isInDaycare ? "Fazer Check-out" : "Fazer Check-in"}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {isInDaycare ? (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                ) : (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                                )}
+                            </svg>
+                            <span className="hidden sm:inline">{isInDaycare ? 'Check-out' : 'Check-in'}</span>
+                        </button>
+                    )}
                     {status === 'Pendente' && onApprove && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onApprove(enrollment); }}
-                            className="w-full bg-green-100 text-green-700 py-1.5 px-2 rounded-md hover:bg-green-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                            className="w-full bg-green-100 text-green-700 py-1.5 px-2 rounded-md hover:bg-green-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" className="w-4 h-4">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                             </svg>
-                            <span>Aprovar</span>
+                            <span className="hidden sm:inline">Aprovar</span>
                         </button>
                     )}
                     <button
                         onClick={(e) => { e.stopPropagation(); onAddExtraServices(enrollment); }}
-                        className="w-full bg-green-100 text-green-700 py-1.5 px-2 rounded-md hover:bg-green-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                        className="w-full bg-indigo-50 text-indigo-700 py-1.5 px-2 rounded-md hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none"
                         title="Adicionar Serviços Extras"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                        <span>Extras</span>
+                        <SparklesIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Extras</span>
                     </button>
                     {(sectionId === 'approved' || sectionId === 'inDaycare') && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onOpenDiary && onOpenDiary(enrollment); }}
-                            className="w-full bg-purple-200 text-black py-1.5 px-2 rounded-md hover:bg-purple-300 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                            className="w-full bg-purple-100 text-purple-700 py-1.5 px-2 rounded-md hover:bg-purple-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none"
                             title="Diário"
                         >
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -8104,24 +8261,26 @@ const DaycareEnrollmentCard: React.FC<{
                                 <circle cx="15" cy="10" r="1" fill="currentColor" />
                                 <path d="M8 14c1.5 1 3 1.5 4 1.5s2.5-.5 4-1.5" strokeWidth="1.5" strokeLinecap="round" />
                             </svg>
-                            <span>Diário</span>
+                            <span className="hidden sm:inline">Diário</span>
                         </button>
                     )}
                     <button
                         onClick={(e) => { e.stopPropagation(); onEdit(enrollment); }}
-                        className="w-full bg-blue-100 text-blue-700 py-1.5 px-2 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                        className="w-full bg-blue-50 text-blue-700 py-1.5 px-2 rounded-md hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none"
                         aria-label="Editar matrícula"
+                        title="Editar"
                     >
                         <EditIcon className="w-4 h-4" />
-                        <span>Editar</span>
+                        <span className="hidden sm:inline">Editar</span>
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(enrollment); }}
-                        className="w-full bg-red-50 text-red-600 py-1.5 px-2 rounded-md hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                        className="w-full bg-red-50 text-red-600 py-1.5 px-2 rounded-md hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none"
                         aria-label="Excluir matrícula"
+                        title="Excluir"
                     >
                         <DeleteIcon className="w-4 h-4" />
-                        <span>Excluir</span>
+                        <span className="hidden sm:inline">Excluir</span>
                     </button>
                 </div>
             </div>
@@ -9910,7 +10069,22 @@ const DaycareRegistrationForm: React.FC<{
 
     const formContent = (
         <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto space-y-6 pb-10">
-            {isAdmin && <div className="flex justify-end mb-4"><Badge variant="secondary">Admin Mode</Badge></div>}
+            {isAdmin && (
+                <div className="flex justify-between items-center mb-4">
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        onClick={onBack}
+                        className="text-pink-600 hover:text-pink-700 hover:bg-pink-50 font-semibold flex items-center gap-2"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                        </svg>
+                        Voltar para Creche
+                    </Button>
+                    <Badge variant="secondary">Admin Mode</Badge>
+                </div>
+            )}
 
             <div className="space-y-6">
                 {/* Dados do Tutor */}
@@ -10556,6 +10730,7 @@ const DaycareRegistrationForm: React.FC<{
                     variant="secondary"
                     size="lg"
                     onClick={onBack || (() => setView && setView('scheduler'))}
+                    className="font-bold text-gray-600"
                 >
                     {isAdmin ? 'Cancelar' : 'Voltar'}
                 </Button>
@@ -13401,7 +13576,7 @@ const EditHotelRegistrationModal: React.FC<{
 };
 
 // FIX: Add the missing DaycareView component to manage daycare enrollments.
-const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (show: boolean) => void }> = ({ refreshKey, setShowDaycareStatistics }) => {
+const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     const [enrollments, setEnrollments] = useState<DaycareRegistration[]>([]);
     const [petsInDaycareNow, setPetsInDaycareNow] = useState<DaycareRegistration[]>([]);
     const [loading, setLoading] = useState(true);
@@ -13413,7 +13588,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
     const [isDeleting, setIsDeleting] = useState(false);
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [draggingOver, setDraggingOver] = useState<string | null>(null);
-    const [expandedSections, setExpandedSections] = useState<string[]>(['inDaycare', 'approved', 'pending']);
+    const [activeTab, setActiveTab] = useState<'inDaycare' | 'approved' | 'pending'>('inDaycare');
     const [isExtraServicesModalOpen, setIsExtraServicesModalOpen] = useState(false);
     const [enrollmentForExtraServices, setEnrollmentForExtraServices] = useState<DaycareRegistration | null>(null);
     const [isUploadDaycarePhotoModalOpen, setIsUploadDaycarePhotoModalOpen] = useState(false);
@@ -13424,6 +13599,7 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
     const [diaryFor, setDiaryFor] = useState<DaycareRegistration | null>(null);
     const [diaryDate, setDiaryDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
     const [daycarePaymentUpdatingId, setDaycarePaymentUpdatingId] = useState<string | null>(null);
+    const [showLocalStats, setShowLocalStats] = useState(false);
 
     useEffect(() => {
         if (isUploadDaycarePhotoModalOpen) {
@@ -13672,12 +13848,13 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
         }
     };
 
-    const toggleSection = (sectionId: string) => {
-        setExpandedSections(prev =>
-            prev.includes(sectionId)
-                ? prev.filter(id => id !== sectionId)
-                : [...prev, sectionId]
-        );
+    const handleToggleDaycarePresence = (enrollment: DaycareRegistration) => {
+        const isInDaycare = petsInDaycareNow.some(p => p.id === enrollment.id);
+        if (isInDaycare) {
+            setPetsInDaycareNow(prev => prev.filter(p => p.id !== enrollment.id));
+        } else {
+            setPetsInDaycareNow(prev => [...prev, enrollment]);
+        }
     };
 
     const categorizedEnrollments = useMemo(() => {
@@ -13712,76 +13889,54 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
         return () => window.removeEventListener('popstate', handlePop);
     }, [enrollments, petsInDaycareNow]);
 
-    const AccordionSection: React.FC<{
-        title: string;
-        enrollments: DaycareRegistration[];
-        sectionId: 'pending' | 'approved' | 'inDaycare';
-        variant?: 'default' | 'online';
-    }> = ({ title, enrollments, sectionId, variant = 'default' }) => {
-        const isExpanded = expandedSections.includes(sectionId);
-        const count = enrollments.length;
+    const renderTabContent = () => {
+        let currentEnrollments: DaycareRegistration[] = [];
+        let sectionId: 'inDaycare' | 'approved' | 'pending' = activeTab;
 
-        const headerClasses = variant === 'online'
-            ? 'bg-green-50 hover:bg-green-100'
-            : 'bg-gray-50 hover:bg-gray-100';
+        if (activeTab === 'inDaycare') currentEnrollments = petsInDaycareNow;
+        else if (activeTab === 'approved') currentEnrollments = categorizedEnrollments.approved;
+        else if (activeTab === 'pending') currentEnrollments = categorizedEnrollments.pending;
 
-        const titleClasses = variant === 'online'
-            ? 'text-green-800'
-            : 'text-pink-700';
+        if (currentEnrollments.length === 0) {
+            return (
+                <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-12 border border-pink-100/50 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mb-4">
+                        <svg className="w-8 h-8 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                    </div>
+                    <p className="text-gray-500 font-medium">Nenhuma matrícula encontrada nesta categoria.</p>
+                </div>
+            );
+        }
 
         return (
-            <div className={`bg-white rounded-2xl shadow-md overflow-hidden transition-all duration-300 ${draggingOver === sectionId ? 'ring-2 ring-pink-400 ring-offset-2' : ''}`}>
-                <button
-                    onClick={() => toggleSection(sectionId)}
-                    className={`w-full text-left p-4 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-pink-300 transition-colors ${headerClasses}`}
-                >
-                    <h3 className={`text-lg font-bold flex items-center gap-4 ${titleClasses}`}>
-                        {variant === 'online' && (
-                            <span className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                            </span>
-                        )}
-                        {`${title} (${count})`}
-                    </h3>
-                    <ChevronRightIcon className={`h-8 w-8 text-gray-500 transform transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                </button>
-                {isExpanded && (
-                    <div
-                        onDragOver={(e) => handleDragOver(e, sectionId)}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, sectionId)}
-                        className="p-4 min-h-[100px] animate-fadeIn"
-                    >
-                        {count > 0 ? (
-                            <div className="overflow-x-auto -mx-4">
-                                <div className="flex gap-4 pb-2 snap-x snap-mandatory">
-                                    {enrollments.map(enrollment => (
-                                        <div key={enrollment.id} className="shrink-0 w-screen sm:w-[420px] lg:w-[460px] snap-center">
-                                            <DaycareEnrollmentCard
-                                                enrollment={enrollment}
-                                                sectionId={sectionId}
-                                                isDraggable={true}
-                                                onDragStart={(e) => handleDragStart(e, enrollment, sectionId)}
-                                                onClick={() => { setSelectedEnrollment(enrollment); setIsDetailsModalOpen(true); }}
-                                                onEdit={() => { setSelectedEnrollment(enrollment); setIsEditModalOpen(true); }}
-                                                onDelete={() => setEnrollmentToDelete(enrollment)}
-                                                onAddExtraServices={handleAddExtraServices}
-                                                onChangePhoto={(enr) => { setUploadTargetDaycareEnrollment(enr); setIsUploadDaycarePhotoModalOpen(true); }}
-                                                onOpenDiary={openDiary}
-                                                onApprove={(enr) => handleUpdateStatus(enr.id!, 'Aprovado')}
-                                                onTogglePaymentStatus={handleToggleDaycarePaymentStatus}
-                                                paymentUpdatingId={daycarePaymentUpdatingId}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center text-gray-500 py-6 sm:py-8"><p>Nenhuma matrícula aqui.</p></div>
-                        )}
-                    </div>
-                )}
+            <div 
+                className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fadeIn ${draggingOver === sectionId ? 'ring-2 ring-pink-400 ring-offset-4 rounded-xl' : ''}`}
+                onDragOver={(e) => handleDragOver(e, sectionId)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, sectionId)}
+            >
+                {currentEnrollments.map(enrollment => (
+                    <DaycareEnrollmentCard
+                        key={enrollment.id}
+                        enrollment={enrollment}
+                        sectionId={sectionId}
+                        isDraggable={true}
+                        onDragStart={(e) => handleDragStart(e, enrollment, sectionId)}
+                        onClick={() => { setSelectedEnrollment(enrollment); setIsDetailsModalOpen(true); }}
+                        onEdit={() => { setSelectedEnrollment(enrollment); setIsEditModalOpen(true); }}
+                        onDelete={() => setEnrollmentToDelete(enrollment)}
+                        onAddExtraServices={handleAddExtraServices}
+                        onChangePhoto={(enr) => { setUploadTargetDaycareEnrollment(enr); setIsUploadDaycarePhotoModalOpen(true); }}
+                        onOpenDiary={openDiary}
+                        onApprove={(enr) => handleUpdateStatus(enr.id!, 'Aprovado')}
+                        onTogglePaymentStatus={handleToggleDaycarePaymentStatus}
+                        paymentUpdatingId={daycarePaymentUpdatingId}
+                        onTogglePresence={handleToggleDaycarePresence}
+                        isInDaycare={petsInDaycareNow.some(p => p.id === enrollment.id)}
+                    />
+                ))}
             </div>
         );
     };
@@ -13791,6 +13946,9 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
     }
     if (isAddFormOpen) {
         return <DaycareRegistrationForm isAdmin onBack={() => setIsAddFormOpen(false)} onSuccess={handleEnrollmentAdded} />
+    }
+    if (showLocalStats) {
+        return <DaycareStatisticsModal isOpen={true} onClose={() => setShowLocalStats(false)} />
     }
 
     return (
@@ -13857,31 +14015,119 @@ const DaycareView: React.FC<{ refreshKey?: number; setShowDaycareStatistics?: (s
                 />
             )}
 
-            <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
-                <div className="space-y-3">
-                    <div className="space-y-1">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Creche Pet</h2>
-                        <p className="text-sm text-gray-600 text-center">Clientes Creche Pet</p>
+            <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-6 mb-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-gradient-to-br from-pink-50 to-purple-50 rounded-full blur-2xl opacity-70 pointer-events-none"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4 text-center md:text-left mx-auto md:mx-0">
+                        <div>
+                            <h2 className="text-4xl font-bold text-pink-600" style={{ fontFamily: '"Lobster Two", cursive' }}>Creche Pet</h2>
+                            <p className="text-[11px] sm:text-sm text-gray-600 font-medium">Gestão de matrículas e pets ativos</p>
+                        </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap justify-center">
-                        <Button size="lg" title="Nova Matrícula" aria-label="Nova Matrícula" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center" onClick={() => setIsAddFormOpen(true)}>
-                            <UserPlusIcon />
-                        </Button>
+                    
+                    <div className="flex gap-3">
                         <button
-                            onClick={() => setShowDaycareStatistics?.(true)}
-                            title="Estatísticas"
-                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
+                            onClick={() => setIsAddFormOpen(true)}
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold h-11 px-6 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-md hover:shadow-lg focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
                         >
-                            <ChartBarIcon className="w-6 h-6" />
+                            <UserPlusIcon className="w-5 h-5" />
+                            <span>Nova Matrícula</span>
+                        </button>
+                        <button
+                            onClick={() => setShowLocalStats(true)}
+                            className="inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                            title="Estatísticas"
+                        >
+                            <ChartBarIcon className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
+
+                {/* Resumo Rápido */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6 sm:mt-8 relative z-10">
+                    <div className="bg-green-50 rounded-xl p-2 sm:p-4 border border-green-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-200 rounded-full flex items-center justify-center shrink-0">
+                            <span className="relative flex h-2 w-2 sm:h-3 sm:w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-3 sm:w-3 bg-green-600"></span>
+                            </span>
+                        </div>
+                        <div className="min-w-0 flex-1 w-full">
+                            <p className="text-[9px] sm:text-xs font-bold text-green-700 uppercase tracking-wider truncate">Na Creche</p>
+                            <p className="text-lg sm:text-2xl font-black text-green-900 truncate">{petsInDaycareNow.length}</p>
+                        </div>
+                    </div>
+                    <div className="bg-blue-50 rounded-xl p-2 sm:p-4 border border-blue-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-200 text-blue-700 rounded-full flex items-center justify-center shrink-0 font-bold">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <div className="min-w-0 flex-1 w-full">
+                            <p className="text-[9px] sm:text-xs font-bold text-blue-700 uppercase tracking-wider truncate">Aprovados</p>
+                            <p className="text-lg sm:text-2xl font-black text-blue-900 truncate">{categorizedEnrollments.approved.length}</p>
+                        </div>
+                    </div>
+                    <div className="bg-yellow-50 rounded-xl p-2 sm:p-4 border border-yellow-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-200 text-yellow-700 rounded-full flex items-center justify-center shrink-0 font-bold">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <div className="min-w-0 flex-1 w-full">
+                            <p className="text-[9px] sm:text-xs font-bold text-yellow-700 uppercase tracking-wider truncate">Pendentes</p>
+                            <p className="text-lg sm:text-2xl font-black text-yellow-900 truncate">{categorizedEnrollments.pending.length}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
+
             {loading ? <div className="flex justify-center py-16"><LoadingSpinner /></div> : (
                 <div className="space-y-6">
-                    <AccordionSection title="Pets na Creche agora" enrollments={petsInDaycareNow} sectionId="inDaycare" variant="online" />
-                    <AccordionSection title="Matrículas aprovadas" enrollments={categorizedEnrollments.approved} sectionId="approved" />
-                    <AccordionSection title="Matrículas para aprovação" enrollments={categorizedEnrollments.pending} sectionId="pending" />
+                    {/* Tabs Navigation */}
+                    <div className="flex items-center gap-2 p-1.5 bg-gray-100/80 backdrop-blur-sm rounded-2xl w-full sm:w-auto overflow-x-auto custom-scrollbar-hide">
+                        <button
+                            onClick={() => setActiveTab('inDaycare')}
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-300 ${
+                                activeTab === 'inDaycare' 
+                                    ? 'bg-white text-pink-600 shadow-sm ring-1 ring-black/5' 
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                            }`}
+                        >
+                            <div className="flex items-center justify-center gap-2">
+                                <span className="relative flex h-2 w-2">
+                                    <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${activeTab === 'inDaycare' ? 'bg-pink-400 animate-ping' : 'bg-gray-400'}`}></span>
+                                    <span className={`relative inline-flex rounded-full h-2 w-2 ${activeTab === 'inDaycare' ? 'bg-pink-500' : 'bg-gray-500'}`}></span>
+                                </span>
+                                Na Creche Hoje
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('approved')}
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-300 ${
+                                activeTab === 'approved' 
+                                    ? 'bg-white text-pink-600 shadow-sm ring-1 ring-black/5' 
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                            }`}
+                        >
+                            Matrículas Ativas
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('pending')}
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-300 flex items-center justify-center gap-2 ${
+                                activeTab === 'pending' 
+                                    ? 'bg-white text-pink-600 shadow-sm ring-1 ring-black/5' 
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                            }`}
+                        >
+                            Aprovação Pendente
+                            {categorizedEnrollments.pending.length > 0 && (
+                                <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">
+                                    {categorizedEnrollments.pending.length}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Tab Content */}
+                    {renderTabContent()}
                 </div>
             )}
         </div>
@@ -13918,7 +14164,6 @@ const AdminDashboard: React.FC<{
         setShowMobileMenu(false);
         setTimeout(() => setIsDrawerVisible(false), 500);
     };
-    const [showDaycareStatistics, setShowDaycareStatistics] = useState(false);
     const [showHotelStatistics, setShowHotelStatistics] = useState(false);
     const [isPriceManagementOpen, setIsPriceManagementOpen] = useState(false);
 
@@ -14093,7 +14338,7 @@ const AdminDashboard: React.FC<{
         switch (activeView) {
             case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} onOpenCloseDay={handleOpenCloseDay} />;
             case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} />;
-            case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} setShowDaycareStatistics={setShowDaycareStatistics} />;
+            case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('monthlyClients')} />;
@@ -14262,12 +14507,6 @@ const AdminDashboard: React.FC<{
                     </main>
                 </div>
             </div>
-            {showDaycareStatistics && (
-                <DaycareStatisticsModal
-                    isOpen={showDaycareStatistics}
-                    onClose={() => setShowDaycareStatistics(false)}
-                />
-            )}
             {showHotelStatistics && (
                 <HotelStatisticsModal
                     isOpen={showHotelStatistics}
