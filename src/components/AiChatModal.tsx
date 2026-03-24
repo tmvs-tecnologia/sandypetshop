@@ -111,13 +111,36 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ systemData }) => {
             const groqUrl = `https://api.groq.com/openai/v1/chat/completions`;
 
             const systemInstructionText = `Você é o assistente inteligente da administradora do Sandy's PetShop. 
-Responda às perguntas dela usando de forma precisa os dados do sistema fornecidos e o histórico da conversa.
-Seja conciso, profissional, objetivo e claro. Sempre use formatação amigável (como listas ou negrito) para números.
+Responda às perguntas dela usando os dados fornecidos.
+Seja conciso, profissional, objetivo e claro.
+Se o usuário perguntar detalhes da agenda, use a ferramenta 'consultar_agendamentos'.
 
-[CACHED SYSTEM DATA - HOJE É ${new Date().toLocaleDateString('pt-BR')}]
-${JSON.stringify(systemData)}`;
+[CONTEXTO ATUAL - HOJE É ${new Date().toLocaleDateString('pt-BR')}]
+${JSON.stringify({ 
+    dataAtual: systemData?.dataAtual, 
+    agendamentos_hoje_e_amanha: systemData?.agendamentos_loja?.slice(0, 10), // Resumo curto inicial
+    receita_mensal_ultimos_6_meses: systemData?.receita_mensal_ultimos_6_meses 
+})}`;
 
-            const formattedMessages = [
+            const tools = [
+                {
+                    type: "function",
+                    function: {
+                        name: "consultar_agendamentos",
+                        description: "Busca no banco de dados os agendamentos da loja e do Pet Móvel para uma data ou período específico.",
+                        parameters: {
+                            type: "object",
+                            properties: {
+                                data_inicio: { type: "string", description: "Data inicial no formato YYYY-MM-DD" },
+                                data_fim: { type: "string", description: "Data final no formato YYYY-MM-DD" }
+                            },
+                            required: ["data_inicio", "data_fim"]
+                        }
+                    }
+                }
+            ];
+
+            let msgsForApi: any[] = [
                 { role: 'system', content: systemInstructionText },
                 ...messages.slice(1).map(m => ({
                     role: m.role === 'model' ? 'assistant' : 'user',
@@ -126,21 +149,70 @@ ${JSON.stringify(systemData)}`;
                 { role: 'user', content: newMsg.text }
             ];
 
-            const response = await fetch(groqUrl, {
-                method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json' 
-                },
-                body: JSON.stringify({
-                    model: 'llama-3.3-70b-versatile',
-                    messages: formattedMessages,
-                    temperature: 0.2
-                })
-            });
+            const executeGroq = async (currentMsgs: any[]) => {
+                const response = await fetch(groqUrl, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        messages: currentMsgs,
+                        tools: tools,
+                        tool_choice: "auto",
+                        temperature: 0.2
+                    })
+                });
+                return await response.json();
+            };
 
-            const resData = await response.json();
-            const textResponse = resData?.choices?.[0]?.message?.content;
+            let resData = await executeGroq(msgsForApi);
+            let responseMessage = resData?.choices?.[0]?.message;
+
+            if (responseMessage?.tool_calls) {
+                // Adiciona o chamado da ferramenta no histórico da requisição
+                msgsForApi.push(responseMessage);
+                
+                for (const toolCall of responseMessage.tool_calls) {
+                    if (toolCall.function.name === 'consultar_agendamentos') {
+                        try {
+                            const args = JSON.parse(toolCall.function.arguments);
+                            const startStr = `${args.data_inicio}T00:00:00`;
+                            const endStr = `${args.data_fim}T23:59:59`;
+                            
+                            const [lojaRes, movelRes] = await Promise.all([
+                                supabase.from('appointments').select('*').gte('appointment_time', startStr).lte('appointment_time', endStr).order('appointment_time', { ascending: true }),
+                                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', startStr).lte('appointment_time', endStr).order('appointment_time', { ascending: true })
+                            ]);
+
+                            const formatAppt = (a: any) => `${new Date(a.appointment_time || a.date).toLocaleString('pt-BR')} - Pet: ${a.pet_name} - Tutor: ${a.owner_name || a.client_name || ''} - Serviço: ${a.service} - Status: ${a.status || ''}`;
+                            const allResults = [
+                                ...(lojaRes.data || []).map(a => `[Loja] ` + formatAppt(a)),
+                                ...(movelRes.data || []).map(a => `[Pet Móvel] ` + formatAppt(a))
+                            ];
+                            
+                            const contentStr = allResults.length > 0 ? allResults.join('\n') : `Nenhum agendamento encontrado entre ${args.data_inicio} e ${args.data_fim}.`;
+                            
+                            msgsForApi.push({
+                                role: 'tool',
+                                tool_call_id: toolCall.id,
+                                name: toolCall.function.name,
+                                content: contentStr
+                            });
+                        } catch (err) {
+                            console.error("Tool execution error:", err);
+                            msgsForApi.push({ role: 'tool', tool_call_id: toolCall.id, name: toolCall.function.name, content: "Erro ao consultar o banco de dados." });
+                        }
+                    }
+                }
+                
+                // Dispara nova chamada para processar o resultado da tool e gerar texto:
+                resData = await executeGroq(msgsForApi);
+                responseMessage = resData?.choices?.[0]?.message;
+            }
+
+            const textResponse = responseMessage?.content;
             
             if (textResponse) {
                 setMessages(prev => [...prev, { role: 'model', text: textResponse }]);
