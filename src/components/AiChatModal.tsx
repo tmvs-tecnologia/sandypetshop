@@ -110,7 +110,19 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ systemData }) => {
             const apiKey = import.meta.env.VITE_GROQ_API_KEY || 'N/A';
             const groqUrl = `https://api.groq.com/openai/v1/chat/completions`;
 
-            // Compact system prompt (~400 tokens max) to avoid Groq 429 rate limits
+            // Daily counts summary to avoid tool calls for basic questions
+            const getCounts = (list: any[] = []) => {
+                const clouds: Record<string, number> = {};
+                list.forEach(a => {
+                    const d = a.data_hora.split(' ')[0]; // DD/MM/YYYY
+                    clouds[d] = (clouds[d] || 0) + 1;
+                });
+                return Object.entries(clouds).map(([d, c]) => `${d}: ${c} pets`).join(', ') || 'Nenhum';
+            };
+
+            const countsLoja = getCounts(systemData?.agendamentos_loja);
+            const countsMovel = getCounts(systemData?.agendamentos_petmovel);
+
             const receita = (systemData?.receita_mensal_ultimos_6_meses || [])
                 .map((r: any) => `${r.month}:R$${r.total}`).join(', ') || 'N/A';
             const topLoja = (systemData?.top_clientes_banho_tosa_recente || [])
@@ -123,13 +135,17 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ systemData }) => {
             const systemInstructionText = `Você é o assistente do Sandy's PetShop. Responda com objetividade e simpatia. Use emojis e bullets. NUNCA diga que não tem dados.
 
 HOJE: ${new Date().toLocaleString('pt-BR')}
+
+RESUMO AGENDAMENTOS (Banho & Tosa): ${countsLoja}
+RESUMO AGENDAMENTOS (Pet Móvel): ${countsMovel}
+
 MENSALISTAS ATIVOS: ${systemData?.mensalistas?.length ?? 0}
 RECEITA RECENTE: ${receita}
 TOP BANHO&TOSA: ${topLoja}
 TOP PET MÓVEL: ${topMovel}
 PETS SUMIDOS: ${sumidos}
 
-Para agendamentos (passados ou futuros), chame a ferramenta consultar_agendamentos.`;
+Para listagens detalhadas (nomes, horários, serviços específicos), você DEVE usar a ferramenta 'consultar_agendamentos'.`;
 
             const tools = [
                 {
@@ -189,20 +205,28 @@ Para agendamentos (passados ou futuros), chame a ferramenta consultar_agendament
                     if (toolCall.function.name === 'consultar_agendamentos') {
                         try {
                             const args = JSON.parse(toolCall.function.arguments);
-                            // Normalize date: convert DD-MM-YYYY -> YYYY-MM-DD if needed
+                            // Normalize date: handles YYYY-MM-DD, DD-MM-YYYY, or DD/MM/YYYY
                             const toIso = (d: string) => {
+                                if (!d) return '';
+                                d = d.replace(/\//g, '-');
                                 if (/^\d{2}-\d{2}-\d{4}$/.test(d)) {
                                     const [day, month, year] = d.split('-');
                                     return `${year}-${month}-${day}`;
                                 }
                                 return d;
                             };
-                            const startStr = `${toIso(args.data_inicio)}T00:00:00`;
-                            const endStr = `${toIso(args.data_fim)}T23:59:59`;
+                            
+                            const normalizedStart = toIso(args.data_inicio);
+                            const normalizedEnd = toIso(args.data_fim);
+                            
+                            if (!normalizedStart || !normalizedEnd) throw new Error("Datas inválidas");
+
+                            const startStr = `${normalizedStart}T00:00:00`;
+                            const endStr = `${normalizedEnd}T23:59:59`;
 
                             const [lojaRes, movelRes] = await Promise.all([
                                 supabase.from('appointments').select('*').gte('appointment_time', startStr).lte('appointment_time', endStr).order('appointment_time', { ascending: true }),
-                                supabase.from('pet_movel_appointments').select('*').gte('date', startStr).lte('date', endStr).order('date', { ascending: true })
+                                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', startStr).lte('appointment_time', endStr).order('appointment_time', { ascending: true })
                             ]);
 
                             const formatAppt = (a: any) => `${new Date(a.appointment_time || a.date).toLocaleString('pt-BR')} - Pet: ${a.pet_name} - Tutor: ${a.owner_name || a.client_name || ''} - Serviço: ${a.service} - Status: ${a.status || ''}`;
