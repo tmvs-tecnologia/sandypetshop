@@ -116,11 +116,9 @@ Seja conciso, profissional, objetivo e claro.
 Se o usuário perguntar detalhes da agenda, use a ferramenta 'consultar_agendamentos'.
 
 [CONTEXTO ATUAL - HOJE É ${new Date().toLocaleDateString('pt-BR')}]
-${JSON.stringify({ 
-    dataAtual: systemData?.dataAtual, 
-    agendamentos_hoje_e_amanha: systemData?.agendamentos_loja?.slice(0, 10), // Resumo curto inicial
-    receita_mensal_ultimos_6_meses: systemData?.receita_mensal_ultimos_6_meses 
-})}`;
+- Data e Hora Atual: ${new Date().toLocaleString('pt-BR')}
+- Total Clientes Mensalistas: ${systemData?.mensalistas?.length || 0}
+- Atenção: O usuário não enviou banco de dados de agendamentos no contexto. Para visualizar agendamentos, você DEVE SEMPRE invocar a ferramenta 'consultar_agendamentos'.`;
 
             const tools = [
                 {
@@ -157,7 +155,7 @@ ${JSON.stringify({
                         'Content-Type': 'application/json' 
                     },
                     body: JSON.stringify({
-                        model: 'llama-3.3-70b-versatile',
+                        model: 'llama-3.1-8b-instant',
                         messages: currentMsgs,
                         tools: tools,
                         tool_choice: "auto",
