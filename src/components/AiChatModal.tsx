@@ -113,7 +113,7 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ systemData }) => {
             const formatApptList = (list: any[] = []) =>
                 list.length === 0
                     ? 'Nenhum agendamento encontrado neste período.'
-                    : list.map((a: any) => `• ${a.data_hora} – Pet: ${a.pet} – Serviço: ${a.servico} – Status: ${a.status}`).join('\n');
+                    : list.slice(0, 40).map((a: any) => `• ${a.data_hora} | ${a.pet} | ${a.servico} | ${a.status}`).join('\n');
 
             const systemInstructionText = `Você é o assistente de negócios do Sandy's PetShop. Responda com base nos dados abaixo. Seja objetivo, fluido e amigável. Use emojis e bullets quando ajudar. NUNCA diga que não tem dados — use os dados abaixo.
 
@@ -199,12 +199,20 @@ Para datas fora deste período, use a ferramenta 'consultar_agendamentos'.`;
                     if (toolCall.function.name === 'consultar_agendamentos') {
                         try {
                             const args = JSON.parse(toolCall.function.arguments);
-                            const startStr = `${args.data_inicio}T00:00:00`;
-                            const endStr = `${args.data_fim}T23:59:59`;
-                            
+                            // Normalize date: convert DD-MM-YYYY -> YYYY-MM-DD if needed
+                            const toIso = (d: string) => {
+                                if (/^\d{2}-\d{2}-\d{4}$/.test(d)) {
+                                    const [day, month, year] = d.split('-');
+                                    return `${year}-${month}-${day}`;
+                                }
+                                return d;
+                            };
+                            const startStr = `${toIso(args.data_inicio)}T00:00:00`;
+                            const endStr = `${toIso(args.data_fim)}T23:59:59`;
+
                             const [lojaRes, movelRes] = await Promise.all([
                                 supabase.from('appointments').select('*').gte('appointment_time', startStr).lte('appointment_time', endStr).order('appointment_time', { ascending: true }),
-                                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', startStr).lte('appointment_time', endStr).order('appointment_time', { ascending: true })
+                                supabase.from('pet_movel_appointments').select('*').gte('date', startStr).lte('date', endStr).order('date', { ascending: true })
                             ]);
 
                             const formatAppt = (a: any) => `${new Date(a.appointment_time || a.date).toLocaleString('pt-BR')} - Pet: ${a.pet_name} - Tutor: ${a.owner_name || a.client_name || ''} - Serviço: ${a.service} - Status: ${a.status || ''}`;
