@@ -803,8 +803,8 @@ const InsightsDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Taxa de Ocupação da Agenda */}
                 <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col items-center justify-center relative overflow-hidden group">
-                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-pink-900 w-full justify-start relative z-10">
-                        <CalendarDaysIcon className="w-7 h-7 text-pink-500" /> Ocupação da Agenda (Semana)
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-900 w-full justify-start relative z-10 whitespace-nowrap">
+                        <CalendarDaysIcon className="w-6 h-6 text-pink-500 flex-shrink-0" /> Ocupação da Agenda (Seg–Sex)
                     </h3>
                     <div className="relative w-48 h-48 flex items-center justify-center mb-2 z-10">
                         <svg className="w-full h-full transform -rotate-90 drop-shadow-sm" viewBox="0 0 36 36">
