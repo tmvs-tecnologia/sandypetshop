@@ -887,7 +887,7 @@ const InsightsDashboard: React.FC = () => {
                     </h3>
                     <div className="flex flex-col gap-4 w-full relative z-10 flex-1 justify-center">
                         <div className="bg-white/60 p-4 rounded-2xl border border-pink-100/50 hover:bg-white transition-all shadow-sm">
-                            <p className="text-xs font-bold text-pink-600 mb-1 uppercase tracking-wider">Loja Física</p>
+                            <p className="text-xs font-bold text-pink-600 mb-1 uppercase tracking-wider">Banho &amp; Tosa</p>
                             <p className="text-3xl font-black text-gray-800">{formatBRL(data.lojaAvgTicket)}</p>
                         </div>
                         <div className="bg-white/60 p-4 rounded-2xl border border-pink-100/50 hover:bg-white transition-all shadow-sm">
