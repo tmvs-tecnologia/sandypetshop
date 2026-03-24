@@ -381,18 +381,18 @@ const InsightsDashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Gráfico de Ganhos */}
-                <div className="bg-gradient-to-br from-pink-500 to-rose-600 rounded-[2rem] p-6 shadow-xl shadow-pink-200 border border-pink-400 relative overflow-hidden group text-white">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700"></div>
-                    <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                        <ArrowTrendingUpIcon className="w-7 h-7 text-white" /> Evolução de Receita
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 relative overflow-hidden group text-pink-950">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700"></div>
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-pink-900">
+                        <ArrowTrendingUpIcon className="w-7 h-7 text-pink-500" /> Evolução de Receita
                     </h3>
                     
                     <div className="flex items-end gap-3 h-48 mb-6 mt-4">
                         {monthlyEarnings.map((m, i) => (
                             <div key={i} className="flex-1 flex flex-col items-center gap-2 group/bar h-full">
-                                <div className="w-full relative flex items-end justify-center h-full rounded-t-xl bg-white/10 backdrop-blur-sm">
+                                <div className="w-full relative flex items-end justify-center h-full rounded-t-xl bg-pink-100/50 border border-pink-200/50">
                                     <div 
-                                        className="w-full bg-white/60 group-hover/bar:bg-white rounded-t-xl transition-all duration-500 ease-in-out transform origin-bottom hover:scale-105 shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                                        className="w-full bg-gradient-to-t from-pink-300 to-pink-500 rounded-t-xl transition-all duration-500 ease-in-out transform origin-bottom hover:scale-105 shadow-sm"
                                         style={{ height: `${Math.max((m.total / maxEarnings) * 100, 10)}%` }}
                                     ></div>
                                     {/* Tooltip */}
@@ -401,34 +401,34 @@ const InsightsDashboard: React.FC = () => {
                                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45"></div>
                                     </div>
                                 </div>
-                                <span className="text-xs font-semibold text-pink-100 uppercase tracking-wider">{m.month}</span>
+                                <span className="text-xs font-bold text-pink-800 uppercase tracking-wider">{m.month}</span>
                             </div>
                         ))}
                     </div>
 
-                    <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl flex gap-3 border border-white/20 hover:bg-white/20 transition-colors duration-300">
-                        <SparklesIcon className="w-6 h-6 text-pink-200 flex-shrink-0 mt-0.5 animate-pulse" />
-                        <p className="text-sm font-medium text-white italic leading-relaxed text-justify">"{aiComment}"</p>
+                    <div className="bg-white/60 hover:bg-white p-4 rounded-2xl flex gap-3 border border-pink-100/50 transition-colors duration-300 shadow-sm">
+                        <SparklesIcon className="w-6 h-6 text-pink-500 flex-shrink-0 mt-0.5 animate-pulse" />
+                        <p className="text-sm font-medium text-pink-900 italic leading-relaxed text-justify">"{aiComment}"</p>
                     </div>
                 </div>
 
                 {/* Dicas de IA para Cupons */}
-                <div className="bg-gradient-to-br from-fuchsia-600 to-pink-600 rounded-[2rem] p-6 shadow-xl shadow-fuchsia-200 text-white relative overflow-hidden flex flex-col group border border-fuchsia-400">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:animate-pulse transition-all duration-700"></div>
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:animate-pulse transition-all duration-700"></div>
                     <div className="flex items-center justify-between mb-2 relative z-10">
-                        <h3 className="text-2xl font-bold flex items-center gap-2">
-                             <SparklesIcon className="w-7 h-7 text-white" /> Resgate
+                        <h3 className="text-xl font-bold flex items-center gap-2 text-pink-900">
+                             <SparklesIcon className="w-7 h-7 text-pink-500" /> Resgate
                         </h3>
                     </div>
                     
-                    <p className="text-fuchsia-100 mb-3 font-medium relative z-10 text-sm">Sem serviços há mais de:</p>
+                    <p className="text-pink-600 mb-3 font-medium relative z-10 text-sm">Sem serviços há mais de:</p>
                     
                     <div className="relative z-10 flex gap-2 mb-6 overflow-x-auto custom-scrollbar-white pb-1">
                         {[1, 2, 3, 6].map(months => (
                             <button
                                 key={months}
                                 onClick={() => setMissingPetsMonthsFilter(months)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 whitespace-nowrap ${missingPetsMonthsFilter === months ? 'bg-white text-fuchsia-700 shadow-lg scale-105 ring-2 ring-white/50' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}`}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 whitespace-nowrap ${missingPetsMonthsFilter === months ? 'bg-pink-500 text-white shadow-md scale-105 ring-2 ring-pink-200' : 'bg-white/60 text-pink-700 border border-pink-200 hover:bg-white'}`}
                             >
                                 {months} {months === 1 ? 'mês' : 'meses'}
                             </button>
@@ -436,20 +436,20 @@ const InsightsDashboard: React.FC = () => {
                     </div>
                     <div className="flex-1 overflow-y-auto pr-2 space-y-3 mb-6 relative z-10 custom-scrollbar-white max-h-[300px]">
                         {filteredMissingPets.length > 0 ? filteredMissingPets.map((p, i) => (
-                            <div key={i} className="flex items-center justify-between bg-white/10 hover:bg-white/20 transition-colors duration-300 rounded-xl p-3 backdrop-blur-md border border-white/20 cursor-default">
-                                <span className="font-bold text-lg">{p.name}</span>
-                                <span className="text-xs bg-white/20 px-3 py-1 rounded-full text-white font-medium">Último: {p.lastVisit}</span>
+                            <div key={i} className="flex items-center justify-between bg-white/60 hover:bg-white transition-colors duration-300 rounded-xl p-3 border border-pink-100/50 cursor-default shadow-sm">
+                                <span className="font-bold text-lg text-pink-900">{p.name}</span>
+                                <span className="text-[10px] bg-pink-100 px-3 py-1 rounded-full text-pink-700 font-bold uppercase tracking-widest">Último: {p.lastVisit}</span>
                             </div>
                         )) : (
-                            <div className="text-center py-8 text-fuchsia-200 font-medium bg-white/5 rounded-xl border border-white/10">
+                            <div className="text-center py-8 text-pink-400 font-medium bg-white/40 rounded-xl border border-pink-100/50">
                                 Nenhum cliente inativo encontrado nesta categoria! 🚀
                             </div>
                         )}
                     </div>
 
-                    <div className="bg-white/10 hover:bg-white/20 transition-colors duration-300 rounded-2xl p-4 backdrop-blur-md border border-white/20 flex gap-3 mt-auto relative z-10">
-                        <StarIcon className="w-6 h-6 text-yellow-300 flex-shrink-0 mt-0.5 drop-shadow-[0_0_8px_rgba(253,224,71,0.5)]" />
-                        <p className="text-sm font-medium text-white italic leading-relaxed text-justify">"{aiTips}"</p>
+                    <div className="bg-white/60 hover:bg-white transition-colors duration-300 rounded-2xl p-4 border border-pink-100/50 flex gap-3 mt-auto relative z-10 shadow-sm">
+                        <StarIcon className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm font-medium text-pink-900 italic leading-relaxed text-justify">"{aiTips}"</p>
                     </div>
                 </div>
 
@@ -458,7 +458,7 @@ const InsightsDashboard: React.FC = () => {
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 
                 {/* Ranking Loja */}
-                <div className="bg-gradient-to-b from-pink-50/80 to-pink-50/30 rounded-3xl p-6 shadow-lg shadow-pink-100/50 border border-pink-100 hover:shadow-xl transition-shadow duration-300 text-pink-950">
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950">
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
                         <TrophyIcon className="w-6 h-6 text-pink-500" /> Top Banho & Tosa
                     </h3>
@@ -483,7 +483,7 @@ const InsightsDashboard: React.FC = () => {
                 </div>
 
                 {/* Ranking Pet Móvel */}
-                <div className="bg-gradient-to-b from-pink-50/80 to-pink-50/30 rounded-3xl p-6 shadow-lg shadow-pink-100/50 border border-pink-100 hover:shadow-xl transition-shadow duration-300 text-pink-950">
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950">
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
                         <TrophyIcon className="w-6 h-6 text-pink-500" /> Top Pet Móvel
                     </h3>
@@ -508,7 +508,7 @@ const InsightsDashboard: React.FC = () => {
                 </div>
 
                 {/* Pets com Mais Serviços */}
-                <div className="bg-gradient-to-b from-pink-50/80 to-pink-50/30 rounded-3xl p-6 shadow-lg shadow-pink-100/50 border border-pink-100 hover:shadow-xl transition-shadow duration-300">
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950">
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
                         <StarIcon className="w-6 h-6 text-pink-500" /> Pets +Frequentes
                     </h3>
@@ -528,7 +528,7 @@ const InsightsDashboard: React.FC = () => {
                 </div>
 
                 {/* Pets com Menos Serviços (Antigos) */}
-                <div className="bg-gradient-to-b from-pink-50/80 to-pink-50/30 rounded-3xl p-6 shadow-lg shadow-pink-100/50 border border-pink-100 hover:shadow-xl transition-shadow duration-300">
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950">
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
                         <StarIcon className="w-6 h-6 text-pink-500 opacity-50" /> Pets -Frequentes
                     </h3>
