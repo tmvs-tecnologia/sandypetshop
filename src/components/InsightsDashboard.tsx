@@ -15,6 +15,8 @@ interface InsightData {
     weeklyAppts: { date: string; pets: string[] }[];
     monthlyAppts: { date: string; pets: string[] }[];
     monthlyEarnings: { month: string; total: number }[];
+    agendaOccupation: number;
+    monthlyConversions: number;
 }
 
 const WhatsAppIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -217,7 +219,21 @@ const InsightsDashboard: React.FC = () => {
 
             const monthlyEarnings = Object.entries(earningsByMonth).map(([month, total]) => ({ month, total }));
 
-            const parsedData = { topAvulsoLojas, topAvulsoPetMovel, topPets, bottomPets, missingPets, missingPetsRaw, weeklyAppts, monthlyAppts, monthlyEarnings };
+            // 8. Ocupação da Agenda (Semana Atual)
+            const MAX_WEEKLY_CAPA = 80;
+            const thisWeekApptsCount = Object.values(weeklyApptsMap).flat().length;
+            const agendaOccupation = Math.min(100, Math.round((thisWeekApptsCount / MAX_WEEKLY_CAPA) * 100));
+
+            // 9. Conversão Avulso -> Mensalista (Último Mês)
+            const thirtyDaysAgo = new Date(now);
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const monthlyConversions = monthlyRes.data?.filter((m: any) => {
+                if (!m.created_at) return false;
+                return new Date(m.created_at) >= thirtyDaysAgo;
+            }).length || 0;
+
+            const parsedData = { topAvulsoLojas, topAvulsoPetMovel, topPets, bottomPets, missingPets, missingPetsRaw, weeklyAppts, monthlyAppts, monthlyEarnings, agendaOccupation, monthlyConversions };
             setData(parsedData);
             
             const simplifyAppt = (a: any) => {
@@ -614,6 +630,61 @@ const InsightsDashboard: React.FC = () => {
 
                 </div>
 
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Taxa de Ocupação da Agenda */}
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col items-center justify-center relative overflow-hidden group">
+                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-pink-900 w-full justify-start relative z-10">
+                        <CalendarDaysIcon className="w-7 h-7 text-pink-500" /> Ocupação da Agenda (Semana)
+                    </h3>
+                    <div className="relative w-48 h-48 flex items-center justify-center mb-2 z-10">
+                        <svg className="w-full h-full transform -rotate-90 drop-shadow-sm" viewBox="0 0 36 36">
+                            <path
+                                className="text-white drop-shadow-sm opacity-80"
+                                strokeWidth="3"
+                                stroke="currentColor"
+                                fill="none"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                            <path
+                                className="text-pink-500 drop-shadow-md transition-all duration-1000 ease-out"
+                                strokeDasharray={`${data.agendaOccupation}, 100`}
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                stroke="currentColor"
+                                fill="none"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-pink-900 mt-2">
+                            <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-pink-500 to-pink-700">{data.agendaOccupation}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Conversão Avulso -> Mensalista */}
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col relative overflow-hidden group">
+                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white opacity-50 rounded-full blur-3xl pointer-events-none group-hover:scale-150 transition-all duration-700"></div>
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-pink-900 relative z-10">
+                        <UserGroupIcon className="w-7 h-7 text-pink-500" /> Conversão Fidelidade
+                    </h3>
+                    <div className="flex-1 flex flex-col items-center justify-center relative z-10">
+                        <div className="flex items-center justify-center gap-4 mb-2">
+                            <span className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600 tracking-tighter drop-shadow-sm">
+                                {data.monthlyConversions}
+                            </span>
+                            <div className="flex flex-col">
+                                <span className="text-2xl font-bold text-pink-800 leading-tight">Novos<br/>Mensalistas</span>
+                            </div>
+                        </div>
+                        <div className="mt-6 bg-white/60 p-4 rounded-xl border border-pink-100/50 w-full shadow-sm text-center">
+                            <p className="text-sm font-medium text-pink-700">
+                                Clientes avulsos que assinaram plano <strong className="text-pink-900 bg-pink-100 px-2 py-0.5 rounded-md">nos últimos 30 dias</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
