@@ -117,7 +117,7 @@ Se o usuário perguntar detalhes da agenda, use a ferramenta 'consultar_agendame
 
 [CONTEXTO ATUAL - HOJE É ${new Date().toLocaleDateString('pt-BR')}]
 - Data e Hora Atual: ${new Date().toLocaleString('pt-BR')}
-- Clientes Mensalistas Ativos: ${JSON.stringify(systemData?.mensalistas || [])}
+- Total Clientes Mensalistas Ativos: ${systemData?.mensalistas?.length || 0}
 - Receita Mensal Últimos 6 Meses: ${JSON.stringify(systemData?.receita_mensal_ultimos_6_meses || [])}
 - Pets Sumidos há mais de 2 meses: ${JSON.stringify(systemData?.pets_sumidos_ha_mais_de_2_meses || [])}
 - Clientes Pet Móvel Fieis: ${JSON.stringify(systemData?.top_clientes_pet_movel_recente || [])}

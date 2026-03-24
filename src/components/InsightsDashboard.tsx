@@ -483,44 +483,44 @@ const InsightsDashboard: React.FC = () => {
                 </div>
 
                 {/* Ranking Pet Móvel */}
-                <div className="bg-gradient-to-b from-rose-50/80 to-rose-50/30 rounded-3xl p-6 shadow-lg shadow-rose-100/50 border border-rose-100 hover:shadow-xl transition-shadow duration-300 text-rose-950">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-rose-800">
-                        <TrophyIcon className="w-6 h-6 text-rose-500" /> Top Pet Móvel
+                <div className="bg-gradient-to-b from-pink-50/80 to-pink-50/30 rounded-3xl p-6 shadow-lg shadow-pink-100/50 border border-pink-100 hover:shadow-xl transition-shadow duration-300 text-pink-950">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
+                        <TrophyIcon className="w-6 h-6 text-pink-500" /> Top Pet Móvel
                     </h3>
                     <div className="space-y-4 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '230px' }}>
                         {topAvulsoPetMovel.map((c, i) => (
-                             <div key={i} className="flex items-center gap-4 bg-white/60 p-3 rounded-2xl border border-rose-100/50 hover:bg-white transition-colors duration-300 relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-gradient-to-r from-rose-100/0 via-rose-100/30 to-rose-100/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm z-10 ${i === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900 border border-yellow-200' : i === 1 ? 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-700 border border-gray-100' : i === 2 ? 'bg-gradient-to-br from-orange-200 to-orange-400 text-orange-900 border border-orange-200' : 'bg-gradient-to-br from-rose-300 to-rose-500 text-white border border-rose-200'}`}>
+                             <div key={i} className="flex items-center gap-4 bg-white/60 p-3 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors duration-300 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-pink-100/0 via-pink-100/30 to-pink-100/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm z-10 ${i === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900 border border-yellow-200' : i === 1 ? 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-700 border border-gray-100' : i === 2 ? 'bg-gradient-to-br from-orange-200 to-orange-400 text-orange-900 border border-orange-200' : 'bg-gradient-to-br from-pink-300 to-pink-500 text-white border border-pink-200'}`}>
                                     #{i + 1}
                                 </div>
                                 <div className="flex-1 min-w-0 z-10">
                                     <p className="font-bold text-gray-800 truncate leading-tight">{c.name}</p>
-                                    <p className="text-xs text-rose-600/80 font-medium whitespace-nowrap truncate">{c.count} agendamentos</p>
+                                    <p className="text-xs text-pink-600/80 font-medium whitespace-nowrap truncate">{c.count} agendamentos</p>
                                 </div>
-                                <div className="font-bold text-rose-700 bg-rose-100/50 px-3 py-1.5 rounded-xl text-sm border border-rose-200/50 z-10 whitespace-nowrap flex-shrink-0">
+                                <div className="font-bold text-pink-700 bg-pink-100/50 px-3 py-1.5 rounded-xl text-sm border border-pink-200/50 z-10 whitespace-nowrap flex-shrink-0">
                                     {formatBRL(c.total)}
                                 </div>
                             </div>
                         ))}
-                         {topAvulsoPetMovel.length === 0 && <p className="text-center text-sm text-rose-400/70 p-4 font-medium">Sem dados recentes</p>}
+                         {topAvulsoPetMovel.length === 0 && <p className="text-center text-sm text-pink-400/70 p-4 font-medium">Sem dados recentes</p>}
                     </div>
                 </div>
 
                 {/* Pets com Mais Serviços */}
-                <div className="bg-gradient-to-b from-fuchsia-50/80 to-fuchsia-50/30 rounded-3xl p-6 shadow-lg shadow-fuchsia-100/50 border border-fuchsia-100 hover:shadow-xl transition-shadow duration-300">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-fuchsia-800">
-                        <StarIcon className="w-6 h-6 text-fuchsia-500" /> Pets +Frequentes
+                <div className="bg-gradient-to-b from-pink-50/80 to-pink-50/30 rounded-3xl p-6 shadow-lg shadow-pink-100/50 border border-pink-100 hover:shadow-xl transition-shadow duration-300">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
+                        <StarIcon className="w-6 h-6 text-pink-500" /> Pets +Frequentes
                     </h3>
                     <div className="space-y-4 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '350px' }}>
                         {topPets.map((p, i) => (
-                             <div key={i} className="flex items-center gap-3 bg-white/60 hover:bg-white p-3 rounded-2xl border border-fuchsia-100/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
-                                <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center shadow-inner border rotate-3 ${i === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 border-yellow-200' : i === 1 ? 'bg-gradient-to-br from-gray-200 to-gray-400 border-gray-300' : i === 2 ? 'bg-gradient-to-br from-orange-300 to-orange-500 border-orange-300' : 'bg-gradient-to-br from-fuchsia-200 to-pink-300 border-fuchsia-200'}`}>
-                                     <span className={`font-black text-sm ${i === 0 ? 'text-yellow-900' : i === 1 ? 'text-gray-800' : i === 2 ? 'text-orange-950' : 'text-fuchsia-900'}`}>{p.count}x</span>
+                             <div key={i} className="flex items-center gap-3 bg-white/60 hover:bg-white p-3 rounded-2xl border border-pink-100/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
+                                <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center shadow-inner border rotate-3 ${i === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 border-yellow-200' : i === 1 ? 'bg-gradient-to-br from-gray-200 to-gray-400 border-gray-300' : i === 2 ? 'bg-gradient-to-br from-orange-300 to-orange-500 border-orange-300' : 'bg-gradient-to-br from-pink-200 to-pink-300 border-pink-200'}`}>
+                                     <span className={`font-black text-sm ${i === 0 ? 'text-yellow-900' : i === 1 ? 'text-gray-800' : i === 2 ? 'text-orange-950' : 'text-pink-900'}`}>{p.count}x</span>
                                 </div>
                                 <div className="flex-1 overflow-hidden pl-1">
                                      <p className="font-bold text-gray-800 truncate text-lg tracking-tight">{p.name}</p>
-                                     <p className="text-[10px] text-fuchsia-500 uppercase font-bold tracking-widest mt-0.5">Cliente Vip</p>
+                                     <p className="text-[10px] text-pink-500 uppercase font-bold tracking-widest mt-0.5">Cliente Vip</p>
                                 </div>
                              </div>
                         ))}
@@ -528,44 +528,45 @@ const InsightsDashboard: React.FC = () => {
                 </div>
 
                 {/* Pets com Menos Serviços (Antigos) */}
-                <div className="bg-gradient-to-b from-indigo-50/80 to-indigo-50/30 rounded-3xl p-6 shadow-lg shadow-indigo-100/50 border border-indigo-100 hover:shadow-xl transition-shadow duration-300">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-indigo-800">
-                        <StarIcon className="w-6 h-6 text-indigo-500 opacity-50" /> Pets -Frequentes
+                <div className="bg-gradient-to-b from-pink-50/80 to-pink-50/30 rounded-3xl p-6 shadow-lg shadow-pink-100/50 border border-pink-100 hover:shadow-xl transition-shadow duration-300">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
+                        <StarIcon className="w-6 h-6 text-pink-500 opacity-50" /> Pets -Frequentes
                     </h3>
                     <div className="space-y-4 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '350px' }}>
                         {bottomPets.map((p, i) => (
-                             <div key={i} className="flex items-center gap-3 bg-white/60 hover:bg-white p-3 rounded-2xl border border-indigo-100/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
-                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-2xl flex flex-col items-center justify-center shadow-inner border border-indigo-200 -rotate-3">
-                                     <span className="text-indigo-900 font-black text-sm">{p.count}x</span>
+                             <div key={i} className="flex items-center gap-3 bg-white/60 hover:bg-white p-3 rounded-2xl border border-pink-100/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
+                                <div className="w-12 h-12 bg-gradient-to-br from-pink-100 to-pink-200 rounded-2xl flex flex-col items-center justify-center shadow-inner border border-pink-200 -rotate-3">
+                                     <span className="text-pink-900 font-black text-sm">{p.count}x</span>
                                 </div>
                                 <div className="flex-1 overflow-hidden pl-1">
                                      <p className="font-bold text-gray-800 truncate text-lg tracking-tight">{p.name}</p>
-                                     <p className="text-[10px] text-indigo-500 uppercase font-bold tracking-widest mt-0.5">Último: {p.lastVisit}</p>
+                                     <p className="text-[10px] text-pink-500 uppercase font-bold tracking-widest mt-0.5">Último: {p.lastVisit}</p>
                                 </div>
                              </div>
                         ))}
+                        {bottomPets.length === 0 && <p className="text-center text-sm text-pink-400/70 p-4 font-medium">Sem dados recentes</p>}
                     </div>
                 </div>
              </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                  {/* Agenda Semanal */}
-                <div className="bg-gradient-to-br from-pink-50/90 to-rose-50/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col h-[400px]">
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col h-[400px]">
                     <div className="flex justify-between items-center mb-6 shrink-0 border-b border-pink-100/50 pb-4">
                         <h3 className="text-xl font-bold text-pink-900 flex items-center gap-2">
-                            <CalendarDaysIcon className="w-7 h-7 text-rose-500" /> Semana Atual
+                            <CalendarDaysIcon className="w-7 h-7 text-pink-500" /> Semana Atual
                         </h3>
-                        <span className="bg-gradient-to-r from-rose-400 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+                        <span className="bg-gradient-to-r from-pink-400 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
                             {weeklyAppts.reduce((sum, day) => sum + day.pets.length, 0)} totais
                         </span>
                     </div>
                     <div className="space-y-3 pr-2 custom-scrollbar overflow-y-auto flex-1 min-h-0">
                         {weeklyAppts.map((day, i) => (
-                            <div key={i} className="border-l-4 border-rose-400 bg-white/60 rounded-r-xl p-3 hover:bg-white transition-colors duration-200 shadow-sm">
-                                <p className="text-sm font-bold text-rose-900 mb-2">{day.date}</p>
+                            <div key={i} className="border-l-4 border-pink-400 bg-white/60 rounded-r-xl p-3 hover:bg-white transition-colors duration-200 shadow-sm">
+                                <p className="text-sm font-bold text-pink-900 mb-2">{day.date}</p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {day.pets.map((p, pIdx) => (
-                                        <span key={pIdx} className="bg-rose-100/70 border border-rose-200 text-rose-800 font-medium text-xs px-2.5 py-1 rounded-lg">{p}</span>
+                                        <span key={pIdx} className="bg-pink-100/70 border border-pink-200 text-pink-800 font-medium text-xs px-2.5 py-1 rounded-lg">{p}</span>
                                     ))}
                                 </div>
                             </div>
@@ -575,27 +576,27 @@ const InsightsDashboard: React.FC = () => {
                 </div>
 
                 {/* Agenda Mensal */}
-                <div className="bg-gradient-to-br from-fuchsia-50/90 to-pink-50/90 rounded-[2rem] p-6 shadow-xl shadow-fuchsia-100/40 border border-fuchsia-200/50 flex flex-col h-[400px]">
-                    <div className="flex justify-between items-center mb-6 shrink-0 border-b border-fuchsia-100/50 pb-4">
-                        <h3 className="text-xl font-bold text-fuchsia-900 flex items-center gap-2">
-                            <CalendarDaysIcon className="w-7 h-7 text-fuchsia-500" /> Mês Atual
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col h-[400px]">
+                    <div className="flex justify-between items-center mb-6 shrink-0 border-b border-pink-100/50 pb-4">
+                        <h3 className="text-xl font-bold text-pink-900 flex items-center gap-2">
+                            <CalendarDaysIcon className="w-7 h-7 text-pink-500" /> Agenda do Mês
                         </h3>
-                        <span className="bg-gradient-to-r from-fuchsia-400 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+                        <span className="bg-gradient-to-r from-pink-400 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
                             {monthlyAppts.reduce((sum, day) => sum + day.pets.length, 0)} totais
                         </span>
                     </div>
                     <div className="space-y-3 pr-2 custom-scrollbar overflow-y-auto flex-1 min-h-0">
                         {monthlyAppts.map((day, i) => (
-                            <div key={i} className="border-l-4 border-fuchsia-400 bg-white/60 rounded-r-xl p-3 hover:bg-white transition-colors duration-200 shadow-sm">
-                                <p className="text-sm font-bold text-fuchsia-900 mb-2">{day.date}</p>
+                            <div key={i} className="border-l-4 border-pink-400 bg-white/60 rounded-r-xl p-3 hover:bg-white transition-colors duration-200 shadow-sm">
+                                <p className="text-sm font-bold text-pink-900 mb-2">{day.date}</p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {day.pets.map((p, pIdx) => (
-                                        <span key={pIdx} className="bg-fuchsia-100/70 border border-fuchsia-200 text-fuchsia-800 font-medium text-xs px-2.5 py-1 rounded-lg">{p}</span>
+                                        <span key={pIdx} className="bg-pink-100/70 border border-pink-200 text-pink-800 font-medium text-xs px-2.5 py-1 rounded-lg">{p}</span>
                                     ))}
                                 </div>
                             </div>
                         ))}
-                         {monthlyAppts.length === 0 && <p className="text-fuchsia-400 text-sm font-medium text-center py-8">Nenhum agendamento neste mês.</p>}
+                        {monthlyAppts.length === 0 && <p className="text-pink-400 text-sm font-medium text-center py-8">Nenhum agendamento neste mês.</p>}
                     </div>
                 </div>
 
