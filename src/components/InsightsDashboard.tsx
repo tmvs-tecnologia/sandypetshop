@@ -491,10 +491,10 @@ const InsightsDashboard: React.FC = () => {
                                 {/* Botão WhatsApp para virar o card */}
                                 <button 
                                     onClick={() => setIsResgateFlipped(true)}
-                                    className="p-2.5 bg-pink-500 text-white rounded-full shadow-lg hover:scale-110 hover:bg-pink-600 transition-all duration-300 ring-4 ring-pink-100/50"
+                                    className="p-1.5 bg-pink-500 text-white rounded-full shadow-lg hover:scale-110 hover:bg-pink-600 transition-all duration-300 ring-2 ring-pink-100/50"
                                     title="Criar campanha no WhatsApp"
                                 >
-                                    <WhatsAppIcon className="w-5 h-5" />
+                                    <WhatsAppIcon className="w-4 h-4" />
                                 </button>
                             </div>
                             
