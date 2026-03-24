@@ -110,49 +110,38 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ systemData }) => {
             const apiKey = import.meta.env.VITE_GROQ_API_KEY || 'N/A';
             const groqUrl = `https://api.groq.com/openai/v1/chat/completions`;
 
-            const formatApptList = (list: any[] = []) =>
-                list.length === 0
-                    ? 'Nenhum agendamento encontrado neste período.'
-                    : list.slice(0, 40).map((a: any) => `• ${a.data_hora} | ${a.pet} | ${a.servico} | ${a.status}`).join('\n');
+            // Compact system prompt (~400 tokens max) to avoid Groq 429 rate limits
+            const receita = (systemData?.receita_mensal_ultimos_6_meses || [])
+                .map((r: any) => `${r.month}:R$${r.total}`).join(', ') || 'N/A';
+            const topLoja = (systemData?.top_clientes_banho_tosa_recente || [])
+                .slice(0, 5).map((c: any) => `${c.name}(${c.count}x)`).join(', ') || 'N/A';
+            const topMovel = (systemData?.top_clientes_pet_movel_recente || [])
+                .slice(0, 5).map((c: any) => `${c.name}(${c.count}x)`).join(', ') || 'N/A';
+            const sumidos = (systemData?.pets_sumidos_ha_mais_de_2_meses || [])
+                .slice(0, 5).map((p: any) => `${p.name}(${p.lastVisit})`).join(', ') || 'Nenhum';
 
-            const systemInstructionText = `Você é o assistente de negócios do Sandy's PetShop. Responda com base nos dados abaixo. Seja objetivo, fluido e amigável. Use emojis e bullets quando ajudar. NUNCA diga que não tem dados — use os dados abaixo.
+            const systemInstructionText = `Você é o assistente do Sandy's PetShop. Responda com objetividade e simpatia. Use emojis e bullets. NUNCA diga que não tem dados.
 
-[HOJE: ${new Date().toLocaleString('pt-BR')}]
+HOJE: ${new Date().toLocaleString('pt-BR')}
+MENSALISTAS ATIVOS: ${systemData?.mensalistas?.length ?? 0}
+RECEITA RECENTE: ${receita}
+TOP BANHO&TOSA: ${topLoja}
+TOP PET MÓVEL: ${topMovel}
+PETS SUMIDOS: ${sumidos}
 
-=== AGENDAMENTOS (Banho & Tosa) ===
-${formatApptList(systemData?.agendamentos_loja)}
-
-=== AGENDAMENTOS (Pet Móvel) ===
-${formatApptList(systemData?.agendamentos_petmovel)}
-
-=== MENSALISTAS ATIVOS (${systemData?.mensalistas?.length ?? 0}) ===
-${(systemData?.mensalistas || []).slice(0, 10).map((m: any) => `• ${m.tutor} – ${m.pet} – ${m.servico}`).join('\n') || 'Nenhum'}
-
-=== RECEITA MENSAL (últimos meses) ===
-${(systemData?.receita_mensal_ultimos_6_meses || []).map((r: any) => `• ${r.month}: R$ ${r.total}`).join('\n') || 'Sem dados'}
-
-=== TOP CLIENTES BANHO & TOSA ===
-${(systemData?.top_clientes_banho_tosa_recente || []).map((c: any) => `• ${c.name}: ${c.count}x`).join('\n') || 'Sem dados'}
-
-=== TOP CLIENTES PET MÓVEL ===
-${(systemData?.top_clientes_pet_movel_recente || []).map((c: any) => `• ${c.name}: ${c.count}x`).join('\n') || 'Sem dados'}
-
-=== PETS SUMIDOS (há mais de 2 meses) ===
-${(systemData?.pets_sumidos_ha_mais_de_2_meses || []).map((p: any) => `• ${p.name} – último: ${p.lastVisit}`).join('\n') || 'Nenhum'}
-
-Para datas fora deste período, use a ferramenta 'consultar_agendamentos'.`;
+Para agendamentos (passados ou futuros), chame a ferramenta consultar_agendamentos.`;
 
             const tools = [
                 {
                     type: "function",
                     function: {
                         name: "consultar_agendamentos",
-                        description: "Busca no banco de dados os agendamentos da loja e do Pet Móvel para uma data ou período específico que não esteja no contexto acima.",
+                        description: "Busca agendamentos da Loja (Banho & Tosa) e do Pet Móvel para uma data ou período.",
                         parameters: {
                             type: "object",
                             properties: {
-                                data_inicio: { type: "string", description: "Data inicial no formato YYYY-MM-DD" },
-                                data_fim: { type: "string", description: "Data final no formato YYYY-MM-DD" }
+                                data_inicio: { type: "string", description: "Data inicial YYYY-MM-DD" },
+                                data_fim: { type: "string", description: "Data final YYYY-MM-DD" }
                             },
                             required: ["data_inicio", "data_fim"]
                         }
@@ -172,16 +161,17 @@ Para datas fora deste período, use a ferramenta 'consultar_agendamentos'.`;
             const executeGroq = async (currentMsgs: any[]) => {
                 const response = await fetch(groqUrl, {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json' 
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: 'llama-3.3-70b-versatile',
+                        model: 'llama-3.1-8b-instant', // 20,000 TPM vs 6,000 for 70b
                         messages: currentMsgs,
                         tools: tools,
                         tool_choice: "auto",
-                        temperature: 0.3
+                        temperature: 0.4,
+                        max_tokens: 600
                     })
                 });
                 return await response.json();
