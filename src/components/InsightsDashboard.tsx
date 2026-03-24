@@ -41,6 +41,13 @@ const HorizontalScrollContainer = ({ children }: { children: React.ReactNode }) 
     const [isMouseDown, setIsMouseDown] = useState(false);
     const [startX, setStartX] = useState(0);
     const [scrollLeft, setScrollLeft] = useState(0);
+    const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 1024);
+
+    useEffect(() => {
+        const check = () => setIsDesktop(window.innerWidth >= 1024);
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
     const onMouseDown = (e: React.MouseEvent) => {
         if (!sliderRef.current) return;
@@ -58,6 +65,14 @@ const HorizontalScrollContainer = ({ children }: { children: React.ReactNode }) 
         const walk = (x - startX) * 2;
         sliderRef.current.scrollLeft = scrollLeft - walk;
     };
+
+    if (isDesktop) {
+        return (
+            <div className="grid grid-cols-3 gap-6 mt-6">
+                {children}
+            </div>
+        );
+    }
 
     return (
         <div 
@@ -915,7 +930,7 @@ const InsightsDashboard: React.FC = () => {
             {data.aiAdvancedContent && (
              <HorizontalScrollContainer>
                 {/* Posts Sociais */}
-                <div className="min-w-[85vw] md:min-w-0 md:w-[400px] max-w-[400px] flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 overflow-hidden">
+                <div className="min-w-[85vw] lg:min-w-0 lg:flex-1 flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 overflow-hidden">
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
                         <SparklesIcon className="w-6 h-6 text-pink-500" /> Ideias p/ Instagram (IA)
                     </h3>
@@ -930,7 +945,7 @@ const InsightsDashboard: React.FC = () => {
                 </div>
 
                 {/* Dias Ociosos */}
-                <div className="min-w-[85vw] md:min-w-0 md:w-[400px] max-w-[400px] flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
+                <div className="min-w-[85vw] lg:min-w-0 lg:flex-1 flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
                     <div className="absolute -top-10 -right-10 w-32 h-32 bg-pink-200/30 rounded-full blur-2xl group-hover:scale-150 transition-all duration-700 pointer-events-none"></div>
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800 relative z-10">
                         <ChartBarIcon className="w-6 h-6 text-pink-500" /> Alerta de Ociosidade
@@ -941,7 +956,7 @@ const InsightsDashboard: React.FC = () => {
                 </div>
 
                 {/* Recomendação de Upsell */}
-                <div className="min-w-[85vw] md:min-w-0 md:w-[400px] max-w-[400px] flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
+                <div className="min-w-[85vw] lg:min-w-0 lg:flex-1 flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
                     <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-pink-200/30 rounded-full blur-3xl pointer-events-none group-hover:scale-150 transition-all duration-700"></div>
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800 relative z-10">
                         <ArrowTrendingUpIcon className="w-6 h-6 text-pink-500" /> Upsell Inteligente
