@@ -481,7 +481,7 @@ const InsightsDashboard: React.FC = () => {
                     >
 
                         {/* FRONT FACE */}
-                        <div className="absolute inset-0 [backface-visibility:hidden] bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col text-pink-950 overflow-hidden">
+                        <div className="absolute inset-0 backface-hidden [-webkit-backface-visibility:hidden] bg-gradient-to-br from-pink-50 to-pink-100 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col text-pink-950 overflow-hidden bg-white">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:animate-pulse transition-all duration-700 pointer-events-none"></div>
                             
                             <div className="flex items-center justify-between mb-2 relative z-10">
@@ -532,7 +532,7 @@ const InsightsDashboard: React.FC = () => {
                         </div>
 
                         {/* BACK FACE (WhatsApp Campaign) */}
-                        <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] bg-gradient-to-br from-pink-500/95 to-rose-600/95 rounded-[2rem] p-6 shadow-xl shadow-pink-200 flex flex-col text-white overflow-hidden border border-pink-400">
+                        <div className="absolute inset-0 backface-hidden [-webkit-backface-visibility:hidden] [transform:rotateY(180deg)] bg-gradient-to-br from-pink-500 to-rose-600 rounded-[2rem] p-6 shadow-xl shadow-pink-200 flex flex-col text-white overflow-hidden border border-pink-400 bg-pink-500">
                             <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-30"></div>
                             
                             <div className="flex items-center justify-between mb-4 relative z-10">
@@ -540,11 +540,15 @@ const InsightsDashboard: React.FC = () => {
                                      <WhatsAppIcon className="w-6 h-6 text-green-300 drop-shadow-md" /> Mensagem em Massa
                                 </h3>
                                 <button 
-                                    onClick={() => setIsResgateFlipped(false)}
-                                    className="p-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                                    onClick={(e) => { 
+                                        e.preventDefault(); 
+                                        e.stopPropagation(); 
+                                        setIsResgateFlipped(false); 
+                                    }}
+                                    className="p-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors z-50 cursor-pointer relative"
                                     title="Voltar"
                                 >
-                                    <XMarkIcon className="w-5 h-5" />
+                                    <XMarkIcon className="w-5 h-5 pointer-events-none" />
                                 </button>
                             </div>
                             
