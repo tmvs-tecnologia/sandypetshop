@@ -117,7 +117,11 @@ Se o usuário perguntar detalhes da agenda, use a ferramenta 'consultar_agendame
 
 [CONTEXTO ATUAL - HOJE É ${new Date().toLocaleDateString('pt-BR')}]
 - Data e Hora Atual: ${new Date().toLocaleString('pt-BR')}
-- Total Clientes Mensalistas: ${systemData?.mensalistas?.length || 0}
+- Clientes Mensalistas Ativos: ${JSON.stringify(systemData?.mensalistas || [])}
+- Receita Mensal Últimos 6 Meses: ${JSON.stringify(systemData?.receita_mensal_ultimos_6_meses || [])}
+- Pets Sumidos há mais de 2 meses: ${JSON.stringify(systemData?.pets_sumidos_ha_mais_de_2_meses || [])}
+- Clientes Pet Móvel Fieis: ${JSON.stringify(systemData?.top_clientes_pet_movel_recente || [])}
+- Clientes Loja Fieis: ${JSON.stringify(systemData?.top_clientes_banho_tosa_recente || [])}
 - Atenção: O usuário não enviou banco de dados de agendamentos no contexto. Para visualizar agendamentos, você DEVE SEMPRE invocar a ferramenta 'consultar_agendamentos'.`;
 
             const tools = [
@@ -282,9 +286,11 @@ Se o usuário perguntar detalhes da agenda, use a ferramenta 'consultar_agendame
                     {messages.map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} max-w-full`}>
                             {msg.role === 'model' && (
-                                <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center shrink-0 mr-2 border border-pink-200">
-                                    <SparklesIcon className="w-4 h-4 text-pink-500" />
-                                </div>
+                                <img 
+                                    src="https://i.imgur.com/M3Gt3OA.png" 
+                                    alt="Maga Assistente" 
+                                    className="w-8 h-8 rounded-full object-cover shrink-0 mr-2 border border-pink-200 shadow-sm"
+                                />
                             )}
                             <div className={`px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap max-w-[80%] ${msg.role === 'user' ? 'bg-pink-500 text-white rounded-tr-sm' : 'bg-white text-gray-800 rounded-tl-sm shadow-sm border border-gray-100'}`}>
                                 {msg.role === 'model' ? renderMessageText(msg.text) : msg.text}
@@ -293,9 +299,11 @@ Se o usuário perguntar detalhes da agenda, use a ferramenta 'consultar_agendame
                     ))}
                     {isResponding && (
                         <div className="flex justify-start">
-                             <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center shrink-0 mr-2 border border-pink-200">
-                                <SparklesIcon className="w-4 h-4 text-pink-500 animate-pulse" />
-                            </div>
+                             <img 
+                                src="https://i.imgur.com/M3Gt3OA.png" 
+                                alt="Maga Assistente" 
+                                className="w-8 h-8 rounded-full object-cover shrink-0 mr-2 border border-pink-200 shadow-sm animate-pulse"
+                            />
                             <div className="px-5 py-3 rounded-2xl bg-white text-gray-500 rounded-tl-sm shadow-sm border border-gray-100 flex items-center gap-1">
                                 <span className="w-2 h-2 rounded-full bg-pink-300 animate-bounce"></span>
                                 <span className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '150ms' }}></span>
