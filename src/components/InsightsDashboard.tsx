@@ -475,13 +475,18 @@ const InsightsDashboard: React.FC = () => {
 
                 {/* Dicas de IA para Cupons (Flip Wrapper) */}
                 <div className="group relative h-[450px] [perspective:1000px]">
-                    <div 
-                        className="w-full h-full transition-all duration-700 [transform-style:preserve-3d]"
-                        style={{ transform: isResgateFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
-                    >
 
                         {/* FRONT FACE */}
-                        <div className={`absolute inset-0 backface-hidden [-webkit-backface-visibility:hidden] bg-gradient-to-br from-pink-50 to-pink-100 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col text-pink-950 overflow-hidden bg-white transition-opacity duration-300 ${isResgateFlipped ? 'opacity-0 pointer-events-none delay-0' : 'opacity-100 delay-300'}`}>
+                        <div 
+                            className="absolute inset-0 bg-gradient-to-br from-pink-50 to-pink-100 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col text-pink-950 overflow-hidden bg-white transition-all duration-700"
+                            style={{ 
+                                transform: isResgateFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                                backfaceVisibility: 'hidden',
+                                WebkitBackfaceVisibility: 'hidden',
+                                zIndex: isResgateFlipped ? 0 : 10,
+                                opacity: isResgateFlipped ? 0 : 1
+                            }}
+                        >
                             <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:animate-pulse transition-all duration-700 pointer-events-none"></div>
                             
                             <div className="flex items-center justify-between mb-2 relative z-10">
@@ -532,7 +537,16 @@ const InsightsDashboard: React.FC = () => {
                         </div>
 
                         {/* BACK FACE (WhatsApp Campaign) */}
-                        <div className={`absolute inset-0 backface-hidden [-webkit-backface-visibility:hidden] [transform:rotateY(180deg)] bg-gradient-to-br from-pink-500 to-rose-600 rounded-[2rem] p-6 shadow-xl shadow-pink-200 flex flex-col text-white overflow-hidden border border-pink-400 bg-pink-500 transition-opacity duration-300 ${isResgateFlipped ? 'opacity-100 delay-300' : 'opacity-0 pointer-events-none delay-0'}`}>
+                        <div 
+                            className="absolute inset-0 bg-gradient-to-br from-pink-500 to-rose-600 rounded-[2rem] p-6 shadow-xl shadow-pink-200 flex flex-col text-white overflow-hidden border border-pink-400 bg-pink-500 transition-all duration-700"
+                            style={{ 
+                                transform: isResgateFlipped ? 'rotateY(0deg)' : 'rotateY(-180deg)',
+                                backfaceVisibility: 'hidden',
+                                WebkitBackfaceVisibility: 'hidden',
+                                zIndex: isResgateFlipped ? 10 : 0,
+                                opacity: isResgateFlipped ? 1 : 0
+                            }}
+                        >
                             <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-30"></div>
                             
                             <div className="flex items-center justify-between mb-4 relative z-10">
@@ -598,7 +612,6 @@ const InsightsDashboard: React.FC = () => {
                             </div>
                         </div>
 
-                    </div>
                 </div>
 
             </div>
