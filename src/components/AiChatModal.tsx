@@ -110,28 +110,44 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ systemData }) => {
             const apiKey = import.meta.env.VITE_GROQ_API_KEY || 'N/A';
             const groqUrl = `https://api.groq.com/openai/v1/chat/completions`;
 
-            const systemInstructionText = `Você é o assistente inteligente da administradora do Sandy's PetShop. 
-Responda às perguntas dela usando os dados fornecidos.
-Seja conciso, profissional, objetivo e claro.
-Se o usuário perguntar detalhes da agenda, use a ferramenta 'consultar_agendamentos'.
+            const formatApptList = (list: any[] = []) =>
+                list.length === 0
+                    ? 'Nenhum agendamento encontrado neste período.'
+                    : list.map((a: any) => `• ${a.data_hora} – Pet: ${a.pet} – Serviço: ${a.servico} – Status: ${a.status}`).join('\n');
 
-[CONTEXTO ATUAL - HOJE É ${new Date().toLocaleDateString('pt-BR')}]
-- Data e Hora Atual: ${new Date().toLocaleString('pt-BR')}
-- Total Clientes Mensalistas Ativos: ${systemData?.mensalistas?.length || 0}
-- Receita Mensal Últimos 6 Meses: ${(systemData?.receita_mensal_ultimos_6_meses || []).map((r: any) => `${r.month}: R$ ${r.total}`).join(', ')}
-- Pets Sumidos há mais de 2 meses: ${(systemData?.pets_sumidos_ha_mais_de_2_meses || []).map((p: any) => `${p.name} (última visita: ${p.lastVisit})`).join(', ')}
-- Clientes Pet Móvel Fieis: ${(systemData?.top_clientes_pet_movel_recente || []).map((c: any) => `${c.name} (${c.count}x)`).join(', ')}
-- Clientes Loja Fieis: ${(systemData?.top_clientes_banho_tosa_recente || []).map((c: any) => `${c.name} (${c.count}x)`).join(', ')}
+            const systemInstructionText = `Você é o assistente de negócios do Sandy's PetShop. Responda com base nos dados abaixo. Seja objetivo, fluido e amigável. Use emojis e bullets quando ajudar. NUNCA diga que não tem dados — use os dados abaixo.
 
-IMPORTANTE: Você é um ser humano virtual. NUNCA responda em formato JSON. Responda APENAS com textos naturais, fluidos e amigáveis, e formate listas com marcadores (bullets) ou emojis.
-- Atenção: O usuário não enviou banco de dados de agendamentos no contexto. Para visualizar agendamentos, você DEVE SEMPRE invocar a ferramenta 'consultar_agendamentos'.`;
+[HOJE: ${new Date().toLocaleString('pt-BR')}]
+
+=== AGENDAMENTOS (Banho & Tosa) ===
+${formatApptList(systemData?.agendamentos_loja)}
+
+=== AGENDAMENTOS (Pet Móvel) ===
+${formatApptList(systemData?.agendamentos_petmovel)}
+
+=== MENSALISTAS ATIVOS (${systemData?.mensalistas?.length ?? 0}) ===
+${(systemData?.mensalistas || []).slice(0, 10).map((m: any) => `• ${m.tutor} – ${m.pet} – ${m.servico}`).join('\n') || 'Nenhum'}
+
+=== RECEITA MENSAL (últimos meses) ===
+${(systemData?.receita_mensal_ultimos_6_meses || []).map((r: any) => `• ${r.month}: R$ ${r.total}`).join('\n') || 'Sem dados'}
+
+=== TOP CLIENTES BANHO & TOSA ===
+${(systemData?.top_clientes_banho_tosa_recente || []).map((c: any) => `• ${c.name}: ${c.count}x`).join('\n') || 'Sem dados'}
+
+=== TOP CLIENTES PET MÓVEL ===
+${(systemData?.top_clientes_pet_movel_recente || []).map((c: any) => `• ${c.name}: ${c.count}x`).join('\n') || 'Sem dados'}
+
+=== PETS SUMIDOS (há mais de 2 meses) ===
+${(systemData?.pets_sumidos_ha_mais_de_2_meses || []).map((p: any) => `• ${p.name} – último: ${p.lastVisit}`).join('\n') || 'Nenhum'}
+
+Para datas fora deste período, use a ferramenta 'consultar_agendamentos'.`;
 
             const tools = [
                 {
                     type: "function",
                     function: {
                         name: "consultar_agendamentos",
-                        description: "Busca no banco de dados os agendamentos da loja e do Pet Móvel para uma data ou período específico.",
+                        description: "Busca no banco de dados os agendamentos da loja e do Pet Móvel para uma data ou período específico que não esteja no contexto acima.",
                         parameters: {
                             type: "object",
                             properties: {
@@ -161,15 +177,16 @@ IMPORTANTE: Você é um ser humano virtual. NUNCA responda em formato JSON. Resp
                         'Content-Type': 'application/json' 
                     },
                     body: JSON.stringify({
-                        model: 'llama-3.1-8b-instant',
+                        model: 'llama-3.3-70b-versatile',
                         messages: currentMsgs,
                         tools: tools,
                         tool_choice: "auto",
-                        temperature: 0.2
+                        temperature: 0.3
                     })
                 });
                 return await response.json();
             };
+
 
             let resData = await executeGroq(msgsForApi);
             let responseMessage = resData?.choices?.[0]?.message;
