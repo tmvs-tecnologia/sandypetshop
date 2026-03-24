@@ -17,6 +17,15 @@ interface InsightData {
     monthlyEarnings: { month: string; total: number }[];
     agendaOccupation: number;
     monthlyConversions: number;
+    topBreeds: { name: string; percentage: number; count: number }[];
+    lojaAvgTicket: number;
+    petMovelAvgTicket: number;
+    averageReturnDays: number;
+    aiAdvancedContent: { 
+        social_media_posts: string[]; 
+        idle_day_alert: string; 
+        upsell_recommendation: string;
+    } | null;
 }
 
 const WhatsAppIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -233,7 +242,114 @@ const InsightsDashboard: React.FC = () => {
                 return new Date(m.created_at) >= thirtyDaysAgo;
             }).length || 0;
 
-            const parsedData = { topAvulsoLojas, topAvulsoPetMovel, topPets, bottomPets, missingPets, missingPetsRaw, weeklyAppts, monthlyAppts, monthlyEarnings, agendaOccupation, monthlyConversions };
+            // 10. Novos KPIs Avançados (Raças, Tickets e Retorno)
+            const breedCounts: Record<string, number> = {};
+            const returnControl: Record<string, Date[]> = {};
+
+            let lojaRev30d = 0, lojaCount30d = 0;
+            appts.forEach(a => {
+                const dText = a.appointment_time || (a as any).date;
+                if (!dText) return;
+                const d = new Date(dText);
+                if (d >= thirtyDaysAgo && d <= now) {
+                    lojaCount30d++;
+                    lojaRev30d += Number(a.price) || 0;
+                }
+            });
+
+            let movelRev30d = 0, movelCount30d = 0;
+            petMovelAppts.forEach(a => {
+                const dText = a.appointment_time || a.date;
+                if (!dText) return;
+                const d = new Date(dText);
+                if (d >= thirtyDaysAgo && d <= now) {
+                    movelCount30d++;
+                    movelRev30d += Number(a.price) || 0;
+                }
+            });
+
+            const lojaAvgTicket = lojaCount30d > 0 ? lojaRev30d / lojaCount30d : 0;
+            const petMovelAvgTicket = movelCount30d > 0 ? movelRev30d / movelCount30d : 0;
+
+            allAppts.forEach(a => {
+                const dText = a.appointment_time || (a as any).date;
+                if (!dText) return;
+                const d = new Date(dText);
+                
+                if (d >= thirtyDaysAgo && d <= now && a.pet_breed) {
+                    breedCounts[a.pet_breed] = (breedCounts[a.pet_breed] || 0) + 1;
+                }
+
+                if (!a.monthly_client_id && a.status === 'CONCLUÍDO') {
+                    const clientKey = `${a.owner_name || (a as any).client_name}-${a.pet_name}`.trim().toLowerCase();
+                    if (!returnControl[clientKey]) returnControl[clientKey] = [];
+                    returnControl[clientKey].push(d);
+                }
+            });
+
+            const totalBreedsPeriod = Object.values(breedCounts).reduce((s, c) => s + c, 0);
+            const topBreeds = Object.entries(breedCounts)
+                .map(([name, count]) => ({ name, count, percentage: totalBreedsPeriod > 0 ? (count / totalBreedsPeriod) * 100 : 0 }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+
+            let totalDiffs = 0;
+            let diffCounts = 0;
+            Object.values(returnControl).forEach(dates => {
+                if (dates.length > 1) {
+                    dates.sort((a,b) => b.getTime() - a.getTime());
+                    for (let i = 0; i < dates.length - 1; i++) {
+                        const diffMs = dates[i].getTime() - dates[i+1].getTime();
+                        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                        if (diffDays >= 1 && diffDays < 180) {
+                            totalDiffs += diffDays;
+                            diffCounts++;
+                        }
+                    }
+                }
+            });
+            const averageReturnDays = diffCounts > 0 ? Math.round(totalDiffs / diffCounts) : 0;
+
+            let aiAdvancedContent = null;
+            try {
+                const dayCounts = [0,0,0,0,0,0,0];
+                appts.forEach(a => {
+                    const d = a.appointment_time ? new Date(a.appointment_time) : null;
+                    if (d && d >= thirtyDaysAgo && d <= now) {
+                        dayCounts[d.getDay()]++;
+                    }
+                });
+                const days = ["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
+                let minDay = 1;
+                for(let i=2; i<=6; i++) {
+                    if (dayCounts[i] < dayCounts[minDay]) minDay = i;
+                }
+                const slowestDayName = days[minDay];
+                
+                const batchPrompt = `Você é a IA estratégica do Sandy's PetShop. Retorne APENAS um JSON estrito com as propriedades: "social_media_posts" (array com 3 strings de posts de instagram divertidos), "idle_day_alert" (1 string sugerindo o que fazer para atrair clientes), "upsell_recommendation" (1 string sugerindo upsell para a loja). Baseie-se nesses dados: Pets semana: ${thisWeekApptsCount}. Raça Pop: ${topBreeds[0]?.name || 'N/A'}. Dia ruim: ${slowestDayName}.`;
+                
+                const aiRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}` },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [{ role: "system", content: "You strictly output JSON block. No markdown." }, { role: "user", content: batchPrompt }],
+                        response_format: { type: "json_object" },
+                        temperature: 0.7
+                    })
+                });
+                
+                if (aiRes.ok) {
+                    const aiData = await aiRes.json();
+                    const textContent = aiData.choices[0].message.content.trim();
+                    const jsonContent = textContent.replace(/^```json/, '').replace(/```$/, '').trim();
+                    aiAdvancedContent = JSON.parse(jsonContent);
+                }
+            } catch (e) {
+                console.error('Groq JSON Batch call failed:', e);
+            }
+
+            const parsedData = { topAvulsoLojas, topAvulsoPetMovel, topPets, bottomPets, missingPets, missingPetsRaw, weeklyAppts, monthlyAppts, monthlyEarnings, agendaOccupation, monthlyConversions, topBreeds, lojaAvgTicket, petMovelAvgTicket, averageReturnDays, aiAdvancedContent };
             setData(parsedData);
             
             const simplifyAppt = (a: any) => {
@@ -687,7 +803,104 @@ const InsightsDashboard: React.FC = () => {
                 </div>
             </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                {/* Ranking de Raças */}
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
+                        <SparklesIcon className="w-6 h-6 text-pink-500" /> Top Raças do Mês
+                    </h3>
+                    <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '230px' }}>
+                        {data.topBreeds.length > 0 ? data.topBreeds.map((b, i) => (
+                            <div key={i} className="flex flex-col gap-1 bg-white/60 p-3 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="font-bold text-gray-800">{b.name}</span>
+                                    <span className="font-bold text-pink-600 truncate max-w-[80px] text-right">{b.count} pets</span>
+                                </div>
+                                <div className="w-full bg-pink-100 h-2 rounded-full overflow-hidden mt-1">
+                                    <div className="bg-gradient-to-r from-pink-400 to-pink-600 h-full rounded-full transition-all duration-1000" style={{ width: `${b.percentage}%` }}></div>
+                                </div>
+                            </div>
+                        )) : (
+                            <p className="text-center text-pink-600/70 py-4 text-sm font-medium">Nenhum dado este mês.</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Ticket Médio */}
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col items-center justify-center text-pink-950 text-center relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-pink-200/30 rounded-full blur-2xl group-hover:scale-150 transition-all duration-700 pointer-events-none"></div>
+                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-pink-800 relative z-10 w-full justify-start">
+                        <ChartBarIcon className="w-6 h-6 text-pink-500" /> Ticket Médio (30d)
+                    </h3>
+                    <div className="flex flex-col gap-4 w-full relative z-10 flex-1 justify-center">
+                        <div className="bg-white/60 p-4 rounded-2xl border border-pink-100/50 hover:bg-white transition-all shadow-sm">
+                            <p className="text-xs font-bold text-pink-600 mb-1 uppercase tracking-wider">Loja Física</p>
+                            <p className="text-3xl font-black text-gray-800">{formatBRL(data.lojaAvgTicket)}</p>
+                        </div>
+                        <div className="bg-white/60 p-4 rounded-2xl border border-pink-100/50 hover:bg-white transition-all shadow-sm">
+                            <p className="text-xs font-bold text-pink-600 mb-1 uppercase tracking-wider">Pet Móvel</p>
+                            <p className="text-3xl font-black text-gray-800">{formatBRL(data.petMovelAvgTicket)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Frequência Média de Retorno */}
+                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col items-center justify-center text-pink-950 text-center relative overflow-hidden group">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800 w-full justify-start relative z-10">
+                        <CalendarDaysIcon className="w-6 h-6 text-pink-500" /> Retorno (Avulsos)
+                    </h3>
+                    <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full">
+                        <span className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600 drop-shadow-sm mb-2">{data.averageReturnDays}</span>
+                        <span className="text-lg font-bold text-pink-800">Dias em Média</span>
+                        <p className="mt-6 text-sm font-medium text-pink-600 bg-white/60 p-3 rounded-xl border border-pink-100/50 shadow-sm w-full">
+                            Tempo que um cliente avulso leva para voltar.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {data.aiAdvancedContent && (
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                {/* Posts Sociais */}
+                <div className="bg-gradient-to-br from-indigo-50/90 to-indigo-100/90 rounded-[2rem] p-6 shadow-xl shadow-indigo-100/40 border border-indigo-200/50 flex flex-col group text-indigo-950">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-indigo-800">
+                        <SparklesIcon className="w-6 h-6 text-indigo-500" /> Ideias p/ Instagram (IA)
+                    </h3>
+                    <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '230px' }}>
+                        {data.aiAdvancedContent.social_media_posts.map((post, i) => (
+                            <div key={i} className="bg-white/60 p-4 rounded-2xl border border-indigo-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed italic text-indigo-900 text-justify cursor-default shadow-sm relative overflow-hidden">
+                                <span className="absolute top-2 right-2 text-indigo-300 font-black opacity-20 text-3xl">#{i+1}</span>
+                                <span className="relative z-10">"{post}"</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Dias Ociosos */}
+                <div className="bg-gradient-to-br from-amber-50/90 to-amber-100/90 rounded-[2rem] p-6 shadow-xl shadow-amber-100/40 border border-amber-200/50 flex flex-col group text-amber-950 relative overflow-hidden">
+                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl group-hover:scale-150 transition-all duration-700 pointer-events-none"></div>
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-amber-800 relative z-10">
+                        <ChartBarIcon className="w-6 h-6 text-amber-500" /> Alerta de Ociosidade
+                    </h3>
+                    <div className="flex-1 bg-white/60 p-5 rounded-2xl border border-amber-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed text-amber-900 text-justify relative z-10 shadow-sm overflow-y-auto custom-scrollbar-white">
+                        <p className="italic">"{data.aiAdvancedContent.idle_day_alert}"</p>
+                    </div>
+                </div>
+
+                {/* Recomendação de Upsell */}
+                <div className="bg-gradient-to-br from-emerald-50/90 to-emerald-100/90 rounded-[2rem] p-6 shadow-xl shadow-emerald-100/40 border border-emerald-200/50 flex flex-col group text-emerald-950 relative overflow-hidden">
+                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-200/30 rounded-full blur-3xl pointer-events-none group-hover:scale-150 transition-all duration-700"></div>
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-emerald-800 relative z-10">
+                        <ArrowTrendingUpIcon className="w-6 h-6 text-emerald-500" /> Upsell Inteligente
+                    </h3>
+                    <div className="flex-1 bg-white/60 p-5 rounded-2xl border border-emerald-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed text-emerald-900 text-justify relative z-10 shadow-sm overflow-y-auto custom-scrollbar-white">
+                        <p className="italic">"{data.aiAdvancedContent.upsell_recommendation}"</p>
+                    </div>
+                </div>
+            </div>
+            )}
+
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
                 
                 {/* Ranking Loja */}
                 <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950">
