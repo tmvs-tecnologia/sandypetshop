@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
-import { SparklesIcon, ChartBarIcon, CalendarDaysIcon, UserGroupIcon, StarIcon, TrophyIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, ChartBarIcon, CalendarDaysIcon, UserGroupIcon, StarIcon, TrophyIcon, ArrowTrendingUpIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
 import { AdminAppointment, PetMovelAppointment } from '../../types';
 import AiChatModal from './AiChatModal';
 
@@ -16,6 +17,14 @@ interface InsightData {
     monthlyEarnings: { month: string; total: number }[];
 }
 
+const WhatsAppIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className={className}>
+        <path fill="currentColor" d="M4.868,43.303l2.694-9.835C5.9,30.59,5.026,27.324,5.027,23.979C5.032,13.514,13.548,5,24.014,5c5.079,0.002,9.845,1.979,13.43,5.566c3.584,3.588,5.558,8.356,5.556,13.428c-0.004,10.465-8.522,18.98-18.986,18.98c-3.128,0-6.181-0.761-8.885-2.201l-10.282,2.7L4.868,43.303z"></path>
+        <path fill="currentColor" d="M24.014,5c5.079,0.002,9.845,1.979,13.43,5.566c3.584,3.588,5.558,8.356,5.556,13.428c-0.004,10.465-8.522,18.98-18.986,18.98c-3.128,0-6.181-0.761-8.885-2.201l-10.282,2.7l2.694-9.835C5.9,30.59,5.026,27.324,5.027,23.979C5.032,13.514,13.548,5,24.014,5 M24.014,42.974C24.014,42.974,24.014,42.974,24.014,42.974C24.014,42.974,24.014,42.974,24.014,42.974 M24.014,42.974C24.014,42.974,24.014,42.974,24.014,42.974C24.014,42.974,24.014,42.974,24.014,42.974 M24.014,4C12.996,4,4.032,12.962,4.027,23.979c-0.001,3.367,0.849,6.685,2.461,9.622l-2.885,10.531l10.771-2.825c2.822,1.488,6.012,2.27,9.227,2.27h0.006c11.018,0,19.983-8.963,19.987-19.981c0.002-5.337-2.075-10.359-5.848-14.135C33.972,5.686,28.956,3.999,24.014,4L24.014,4z"></path>
+        <path fill="currentColor" d="M35.176,28.032c-0.61-0.305-3.612-1.782-4.171-1.986c-0.559-0.203-0.966-0.305-1.373,0.305c-0.407,0.61-1.576,1.986-1.932,2.392c-0.356,0.407-0.712,0.458-1.322,0.153c-0.61-0.305-2.58-0.952-4.912-3.041c-1.815-1.625-3.04-3.633-3.396-4.243c-0.356-0.61-0.038-0.939,0.267-1.244c0.274-0.274,0.61-0.712,0.915-1.068c0.305-0.356,0.407-0.61,0.61-1.017c0.203-0.407,0.102-0.763-0.051-1.068c-0.153-0.305-1.373-3.307-1.881-4.528c-0.495-1.189-0.997-1.026-1.373-1.044c-0.356-0.017-0.763-0.021-1.17-0.021c-0.407,0-1.068,0.153-1.627,0.763c-0.559,0.61-2.136,2.086-2.136,5.087s2.186,5.898,2.492,6.305c0.305,0.407,4.293,6.556,10.395,9.186c1.451,0.625,2.585,0.999,3.468,1.279c1.458,0.463,2.784,0.398,3.834,0.241c1.173-0.174,3.612-1.475,4.121-2.899c0.508-1.424,0.508-2.645,0.356-2.899C36.244,28.489,35.786,28.337,35.176,28.032z"></path>
+    </svg>
+);
+
 const InsightsDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<InsightData | null>(null);
@@ -23,6 +32,8 @@ const InsightsDashboard: React.FC = () => {
     const [aiTips, setAiTips] = useState<string>('');
     const [globalChatContext, setGlobalChatContext] = useState<any>(null);
     const [missingPetsMonthsFilter, setMissingPetsMonthsFilter] = useState<number>(2);
+    const [isResgateFlipped, setIsResgateFlipped] = useState(false);
+    const [rescueMessage, setRescueMessage] = useState("Olá! Sentimos sua falta aqui no Sandy's PetShop. Que tal agendar um horário com 15% de desconto especial para seu pet? 🐶✂️");
 
     useEffect(() => {
         fetchInsights();
@@ -412,44 +423,106 @@ const InsightsDashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Dicas de IA para Cupons */}
-                <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:animate-pulse transition-all duration-700"></div>
-                    <div className="flex items-center justify-between mb-2 relative z-10">
-                        <h3 className="text-xl font-bold flex items-center gap-2 text-pink-900">
-                             <SparklesIcon className="w-7 h-7 text-pink-500" /> Resgate
-                        </h3>
-                    </div>
-                    
-                    <p className="text-pink-600 mb-3 font-medium relative z-10 text-sm">Sem serviços há mais de:</p>
-                    
-                    <div className="relative z-10 flex gap-2 mb-6 overflow-x-auto custom-scrollbar-white pb-1">
-                        {[1, 2, 3, 6].map(months => (
-                            <button
-                                key={months}
-                                onClick={() => setMissingPetsMonthsFilter(months)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 whitespace-nowrap ${missingPetsMonthsFilter === months ? 'bg-pink-500 text-white shadow-md scale-105 ring-2 ring-pink-200' : 'bg-white/60 text-pink-700 border border-pink-200 hover:bg-white'}`}
-                            >
-                                {months} {months === 1 ? 'mês' : 'meses'}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex-1 overflow-y-auto pr-2 space-y-3 mb-6 relative z-10 custom-scrollbar-white max-h-[300px]">
-                        {filteredMissingPets.length > 0 ? filteredMissingPets.map((p, i) => (
-                            <div key={i} className="flex items-center justify-between bg-white/60 hover:bg-white transition-colors duration-300 rounded-xl p-3 border border-pink-100/50 cursor-default shadow-sm">
-                                <span className="font-bold text-lg text-pink-900">{p.name}</span>
-                                <span className="text-[10px] bg-pink-100 px-3 py-1 rounded-full text-pink-700 font-bold uppercase tracking-widest">Último: {p.lastVisit}</span>
-                            </div>
-                        )) : (
-                            <div className="text-center py-8 text-pink-400 font-medium bg-white/40 rounded-xl border border-pink-100/50">
-                                Nenhum cliente inativo encontrado nesta categoria! 🚀
-                            </div>
-                        )}
-                    </div>
+                {/* Dicas de IA para Cupons (Flip Wrapper) */}
+                <div className="group relative h-[450px] [perspective:1000px]">
+                    <div 
+                        className="w-full h-full transition-all duration-700 [transform-style:preserve-3d]"
+                        style={{ transform: isResgateFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+                    >
 
-                    <div className="bg-white/60 hover:bg-white transition-colors duration-300 rounded-2xl p-4 border border-pink-100/50 flex gap-3 mt-auto relative z-10 shadow-sm">
-                        <StarIcon className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
-                        <p className="text-sm font-medium text-pink-900 italic leading-relaxed text-justify">"{aiTips}"</p>
+                        {/* FRONT FACE */}
+                        <div className="absolute inset-0 [backface-visibility:hidden] bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col text-pink-950 overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:animate-pulse transition-all duration-700 pointer-events-none"></div>
+                            
+                            <div className="flex items-center justify-between mb-2 relative z-10">
+                                <h3 className="text-xl font-bold flex items-center gap-2 text-pink-900">
+                                     <SparklesIcon className="w-7 h-7 text-pink-500" /> Resgate
+                                </h3>
+                                {/* Botão WhatsApp para virar o card */}
+                                <button 
+                                    onClick={() => setIsResgateFlipped(true)}
+                                    className="p-2.5 bg-pink-500 text-white rounded-full shadow-lg hover:scale-110 hover:bg-pink-600 transition-all duration-300 ring-4 ring-pink-100/50"
+                                    title="Criar campanha no WhatsApp"
+                                >
+                                    <WhatsAppIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                            
+                            <p className="text-pink-600 mb-3 font-medium relative z-10 text-sm">Sem serviços há mais de:</p>
+                            
+                            <div className="relative z-10 flex gap-2 mb-4 overflow-x-auto custom-scrollbar-white pb-1">
+                                {[1, 2, 3, 6].map(months => (
+                                    <button
+                                        key={months}
+                                        onClick={() => setMissingPetsMonthsFilter(months)}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 whitespace-nowrap ${missingPetsMonthsFilter === months ? 'bg-pink-500 text-white shadow-md scale-105 ring-2 ring-pink-200' : 'bg-white/60 text-pink-700 border border-pink-200 hover:bg-white'}`}
+                                    >
+                                        {months} {months === 1 ? 'mês' : 'meses'}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto pr-2 space-y-3 mb-4 relative z-10 custom-scrollbar-pink min-h-0">
+                                {filteredMissingPets.length > 0 ? filteredMissingPets.map((p, i) => (
+                                    <div key={i} className="flex items-center justify-between bg-white/60 hover:bg-white transition-colors duration-300 rounded-xl p-3 border border-pink-100/50 cursor-default shadow-sm">
+                                        <span className="font-bold text-lg text-pink-900">{p.name}</span>
+                                        <span className="text-[10px] bg-pink-100 px-3 py-1 rounded-full text-pink-700 font-bold uppercase tracking-widest">Último: {p.lastVisit}</span>
+                                    </div>
+                                )) : (
+                                    <div className="text-center py-8 text-pink-400 font-medium bg-white/40 rounded-xl border border-pink-100/50">
+                                        Nenhum cliente inativo encontrado nesta categoria! 🚀
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="bg-white/60 hover:bg-white transition-colors duration-300 rounded-2xl p-4 border border-pink-100/50 flex gap-3 mt-auto relative z-10 shadow-sm">
+                                <StarIcon className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+                                <p className="text-sm font-medium text-pink-900 italic leading-relaxed text-justify line-clamp-2">"{aiTips}"</p>
+                            </div>
+                        </div>
+
+                        {/* BACK FACE (WhatsApp Campaign) */}
+                        <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] bg-gradient-to-br from-pink-500/95 to-rose-600/95 rounded-[2rem] p-6 shadow-xl shadow-pink-200 flex flex-col text-white overflow-hidden border border-pink-400">
+                            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-30"></div>
+                            
+                            <div className="flex items-center justify-between mb-4 relative z-10">
+                                <h3 className="text-xl font-bold flex items-center gap-2">
+                                     <WhatsAppIcon className="w-6 h-6 text-green-300 drop-shadow-md" /> Mensagem em Massa
+                                </h3>
+                                <button 
+                                    onClick={() => setIsResgateFlipped(false)}
+                                    className="p-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                                    title="Voltar"
+                                >
+                                    <XMarkIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                            
+                            <div className="relative z-10 flex flex-col flex-1 h-full min-h-0">
+                                <p className="text-pink-100 text-sm mb-2 font-medium">
+                                    Enviando para <span className="text-white font-bold">{filteredMissingPets.length} pets</span> inativos há {missingPetsMonthsFilter} meses:
+                                </p>
+                                
+                                <textarea
+                                    className="w-full flex-1 min-h-0 bg-white/10 border border-white/20 rounded-xl p-4 text-white placeholder-pink-200/60 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none mb-4 custom-scrollbar-white shadow-inner"
+                                    value={rescueMessage}
+                                    onChange={(e) => setRescueMessage(e.target.value)}
+                                    placeholder="Escreva a mensagem (ex: Olá, estamos com saudades...)"
+                                />
+
+                                <button 
+                                    onClick={() => {
+                                        alert(`🚀 Funcionalidade em desenvolvimento: O envio integrará com a API de WhatsApp em breve!\nMensagem "${rescueMessage}"\nDirecionada para: ${filteredMissingPets.map(p => p.name).join(', ')}`);
+                                        setIsResgateFlipped(false);
+                                    }}
+                                    className="w-full bg-white text-pink-600 hover:bg-pink-50 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-lg mt-auto hover:shadow-pink-300/50"
+                                >
+                                    <PaperAirplaneIcon className="w-5 h-5 -rotate-45" />
+                                    Disparar Campanha
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
