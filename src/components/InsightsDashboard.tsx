@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { SparklesIcon, ChartBarIcon, CalendarDaysIcon, UserGroupIcon, StarIcon, TrophyIcon, ArrowTrendingUpIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
@@ -35,6 +35,47 @@ const WhatsAppIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
         <path fill="currentColor" d="M35.176,28.032c-0.61-0.305-3.612-1.782-4.171-1.986c-0.559-0.203-0.966-0.305-1.373,0.305c-0.407,0.61-1.576,1.986-1.932,2.392c-0.356,0.407-0.712,0.458-1.322,0.153c-0.61-0.305-2.58-0.952-4.912-3.041c-1.815-1.625-3.04-3.633-3.396-4.243c-0.356-0.61-0.038-0.939,0.267-1.244c0.274-0.274,0.61-0.712,0.915-1.068c0.305-0.356,0.407-0.61,0.61-1.017c0.203-0.407,0.102-0.763-0.051-1.068c-0.153-0.305-1.373-3.307-1.881-4.528c-0.495-1.189-0.997-1.026-1.373-1.044c-0.356-0.017-0.763-0.021-1.17-0.021c-0.407,0-1.068,0.153-1.627,0.763c-0.559,0.61-2.136,2.086-2.136,5.087s2.186,5.898,2.492,6.305c0.305,0.407,4.293,6.556,10.395,9.186c1.451,0.625,2.585,0.999,3.468,1.279c1.458,0.463,2.784,0.398,3.834,0.241c1.173-0.174,3.612-1.475,4.121-2.899c0.508-1.424,0.508-2.645,0.356-2.899C36.244,28.489,35.786,28.337,35.176,28.032z"></path>
     </svg>
 );
+
+const HorizontalScrollContainer = ({ children }: { children: React.ReactNode }) => {
+    const sliderRef = useRef<HTMLDivElement>(null);
+    const [isMouseDown, setIsMouseDown] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
+
+    const onMouseDown = (e: React.MouseEvent) => {
+        if (!sliderRef.current) return;
+        setIsMouseDown(true);
+        setStartX(e.pageX - sliderRef.current.offsetLeft);
+        setScrollLeft(sliderRef.current.scrollLeft);
+    };
+
+    const onMouseLeaveOrUp = () => setIsMouseDown(false);
+
+    const onMouseMove = (e: React.MouseEvent) => {
+        if (!isMouseDown || !sliderRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - sliderRef.current.offsetLeft;
+        const walk = (x - startX) * 2;
+        sliderRef.current.scrollLeft = scrollLeft - walk;
+    };
+
+    return (
+        <div 
+            ref={sliderRef}
+            onMouseDown={onMouseDown}
+            onMouseLeave={onMouseLeaveOrUp}
+            onMouseUp={onMouseLeaveOrUp}
+            onMouseMove={onMouseMove}
+            style={{ 
+                scrollBehavior: isMouseDown ? 'auto' : 'smooth', 
+                WebkitOverflowScrolling: 'touch' 
+            }}
+            className={`flex flex-row overflow-x-auto gap-6 mt-6 pb-2 snap-x snap-mandatory custom-scrollbar-white transition-all ${isMouseDown ? 'cursor-grabbing' : 'cursor-grab'}`}
+        >
+            {children}
+        </div>
+    );
+};
 
 const InsightsDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -231,7 +272,18 @@ const InsightsDashboard: React.FC = () => {
             // 8. Ocupação da Agenda (Semana Atual)
             const MAX_WEEKLY_CAPA = 80;
             const thisWeekApptsCount = Object.values(weeklyApptsMap).flat().length;
-            const agendaOccupation = Math.min(100, Math.round((thisWeekApptsCount / MAX_WEEKLY_CAPA) * 100));
+            
+            let businessWeekCount = 0;
+            Object.keys(weeklyApptsMap).forEach(iso => {
+                // Parse correctly avoiding timezone shifts
+                const dateObj = new Date(`${iso}T12:00:00Z`);
+                const day = dateObj.getUTCDay();
+                if (day >= 1 && day <= 5) { // Segunda a Sexta
+                    businessWeekCount += weeklyApptsMap[iso].length;
+                }
+            });
+            
+            const agendaOccupation = Math.min(100, Math.round((businessWeekCount / MAX_WEEKLY_CAPA) * 100));
 
             // 9. Conversão Avulso -> Mensalista (Último Mês)
             const thirtyDaysAgo = new Date(now);
@@ -860,16 +912,16 @@ const InsightsDashboard: React.FC = () => {
             </div>
 
             {data.aiAdvancedContent && (
-             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+             <HorizontalScrollContainer>
                 {/* Posts Sociais */}
-                <div className="bg-gradient-to-br from-indigo-50/90 to-indigo-100/90 rounded-[2rem] p-6 shadow-xl shadow-indigo-100/40 border border-indigo-200/50 flex flex-col group text-indigo-950">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-indigo-800">
-                        <SparklesIcon className="w-6 h-6 text-indigo-500" /> Ideias p/ Instagram (IA)
+                <div className="min-w-[85vw] md:min-w-[400px] flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
+                        <SparklesIcon className="w-6 h-6 text-pink-500" /> Ideias p/ Instagram (IA)
                     </h3>
                     <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '230px' }}>
                         {data.aiAdvancedContent.social_media_posts.map((post, i) => (
-                            <div key={i} className="bg-white/60 p-4 rounded-2xl border border-indigo-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed italic text-indigo-900 text-justify cursor-default shadow-sm relative overflow-hidden">
-                                <span className="absolute top-2 right-2 text-indigo-300 font-black opacity-20 text-3xl">#{i+1}</span>
+                            <div key={i} className="bg-white/60 p-4 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed italic text-pink-900 text-justify cursor-default shadow-sm relative overflow-hidden">
+                                <span className="absolute top-2 right-2 text-pink-300 font-black opacity-30 text-3xl">#{i+1}</span>
                                 <span className="relative z-10">"{post}"</span>
                             </div>
                         ))}
@@ -877,27 +929,27 @@ const InsightsDashboard: React.FC = () => {
                 </div>
 
                 {/* Dias Ociosos */}
-                <div className="bg-gradient-to-br from-amber-50/90 to-amber-100/90 rounded-[2rem] p-6 shadow-xl shadow-amber-100/40 border border-amber-200/50 flex flex-col group text-amber-950 relative overflow-hidden">
-                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl group-hover:scale-150 transition-all duration-700 pointer-events-none"></div>
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-amber-800 relative z-10">
-                        <ChartBarIcon className="w-6 h-6 text-amber-500" /> Alerta de Ociosidade
+                <div className="min-w-[85vw] md:min-w-[400px] flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
+                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-pink-200/30 rounded-full blur-2xl group-hover:scale-150 transition-all duration-700 pointer-events-none"></div>
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800 relative z-10">
+                        <ChartBarIcon className="w-6 h-6 text-pink-500" /> Alerta de Ociosidade
                     </h3>
-                    <div className="flex-1 bg-white/60 p-5 rounded-2xl border border-amber-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed text-amber-900 text-justify relative z-10 shadow-sm overflow-y-auto custom-scrollbar-white">
+                    <div className="flex-1 bg-white/60 p-5 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed text-pink-900 text-justify relative z-10 shadow-sm overflow-y-auto custom-scrollbar-white">
                         <p className="italic">"{data.aiAdvancedContent.idle_day_alert}"</p>
                     </div>
                 </div>
 
                 {/* Recomendação de Upsell */}
-                <div className="bg-gradient-to-br from-emerald-50/90 to-emerald-100/90 rounded-[2rem] p-6 shadow-xl shadow-emerald-100/40 border border-emerald-200/50 flex flex-col group text-emerald-950 relative overflow-hidden">
-                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-200/30 rounded-full blur-3xl pointer-events-none group-hover:scale-150 transition-all duration-700"></div>
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-emerald-800 relative z-10">
-                        <ArrowTrendingUpIcon className="w-6 h-6 text-emerald-500" /> Upsell Inteligente
+                <div className="min-w-[85vw] md:min-w-[400px] flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
+                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-pink-200/30 rounded-full blur-3xl pointer-events-none group-hover:scale-150 transition-all duration-700"></div>
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800 relative z-10">
+                        <ArrowTrendingUpIcon className="w-6 h-6 text-pink-500" /> Upsell Inteligente
                     </h3>
-                    <div className="flex-1 bg-white/60 p-5 rounded-2xl border border-emerald-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed text-emerald-900 text-justify relative z-10 shadow-sm overflow-y-auto custom-scrollbar-white">
+                    <div className="flex-1 bg-white/60 p-5 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed text-pink-900 text-justify relative z-10 shadow-sm overflow-y-auto custom-scrollbar-white">
                         <p className="italic">"{data.aiAdvancedContent.upsell_recommendation}"</p>
                     </div>
                 </div>
-            </div>
+             </HorizontalScrollContainer>
             )}
 
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
