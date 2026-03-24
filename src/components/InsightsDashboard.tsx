@@ -21,9 +21,9 @@ interface InsightData {
     lojaAvgTicket: number;
     petMovelAvgTicket: number;
     averageReturnDays: number;
-    aiAdvancedContent: { 
-        social_media_posts: string[]; 
-        idle_day_alert: string; 
+    aiAdvancedContent: {
+        social_media_posts: string[];
+        idle_day_alert: string;
         upsell_recommendation: string;
     } | null;
 }
@@ -75,15 +75,15 @@ const HorizontalScrollContainer = ({ children }: { children: React.ReactNode }) 
     }
 
     return (
-        <div 
+        <div
             ref={sliderRef}
             onMouseDown={onMouseDown}
             onMouseLeave={onMouseLeaveOrUp}
             onMouseUp={onMouseLeaveOrUp}
             onMouseMove={onMouseMove}
-            style={{ 
-                scrollBehavior: isMouseDown ? 'auto' : 'smooth', 
-                WebkitOverflowScrolling: 'touch' 
+            style={{
+                scrollBehavior: isMouseDown ? 'auto' : 'smooth',
+                WebkitOverflowScrolling: 'touch'
             }}
             className={`flex flex-row overflow-x-auto gap-6 mt-6 pb-2 snap-x snap-mandatory custom-scrollbar-white transition-all ${isMouseDown ? 'cursor-grabbing' : 'cursor-grab'}`}
         >
@@ -112,9 +112,9 @@ const InsightsDashboard: React.FC = () => {
         setLoading(true);
         try {
             const [
-                apptsRes, 
-                petMovelRes, 
-                monthlyRes, 
+                apptsRes,
+                petMovelRes,
+                monthlyRes,
                 clientsRes
             ] = await Promise.all([
                 supabase.from('appointments').select('*').order('appointment_time', { ascending: false }).limit(2000),
@@ -164,7 +164,7 @@ const InsightsDashboard: React.FC = () => {
                 if (date > acc[name].lastVisit) acc[name].lastVisit = date;
                 return acc;
             }, {} as Record<string, { count: number, lastVisit: Date }>);
-            
+
             const topPets = Object.entries(petsGrouped)
                 .map(([name, data]) => ({ name, count: data.count }))
                 .sort((a, b) => b.count - a.count)
@@ -203,8 +203,8 @@ const InsightsDashboard: React.FC = () => {
 
             // 4. Pets sumidos (Missing Pets para dicas de IA) - Agora salvamos as datas cruas para o filtro
             const missingPetsRaw = Object.entries(lastVisits)
-                .map(([name, info]) => ({ 
-                    name, 
+                .map(([name, info]) => ({
+                    name,
                     lastVisitDate: info.date,
                     tutor: info.tutor,
                     phone: info.phone
@@ -254,7 +254,7 @@ const InsightsDashboard: React.FC = () => {
             const weeklyAppts = Object.entries(weeklyApptsMap)
                 .sort(([isoA], [isoB]) => isoA.localeCompare(isoB)) // Standard string sort natively handles YYYY-MM-DD
                 .map(([iso, pets]) => ({ date: formatIsoBR(iso), pets }));
-                
+
             const monthlyAppts = Object.entries(monthlyApptsMap)
                 .sort(([isoA], [isoB]) => isoA.localeCompare(isoB))
                 .map(([iso, pets]) => ({ date: formatIsoBR(iso), pets }));
@@ -271,7 +271,7 @@ const InsightsDashboard: React.FC = () => {
                 try {
                     const dateStr = a.appointment_time || (a as any).appointmentTime;
                     if (!dateStr) return;
-                    
+
                     const date = new Date(dateStr);
                     if (a.status === 'CONCLUÍDO' && date >= new Date(now.getFullYear(), now.getMonth() - 5, 1)) {
                         const mStr = date.toLocaleString('pt-BR', { month: 'short' });
@@ -287,7 +287,7 @@ const InsightsDashboard: React.FC = () => {
             // 8. Ocupação da Agenda (Semana Atual)
             const MAX_WEEKLY_CAPA = 80;
             const thisWeekApptsCount = Object.values(weeklyApptsMap).flat().length;
-            
+
             let businessWeekCount = 0;
             Object.keys(weeklyApptsMap).forEach(iso => {
                 // Parse correctly avoiding timezone shifts
@@ -297,13 +297,13 @@ const InsightsDashboard: React.FC = () => {
                     businessWeekCount += weeklyApptsMap[iso].length;
                 }
             });
-            
+
             const agendaOccupation = Math.min(100, Math.round((businessWeekCount / MAX_WEEKLY_CAPA) * 100));
 
             // 9. Conversão Avulso -> Mensalista (Último Mês)
             const thirtyDaysAgo = new Date(now);
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            
+
             const monthlyConversions = monthlyRes.data?.filter((m: any) => {
                 if (!m.created_at) return false;
                 return new Date(m.created_at) >= thirtyDaysAgo;
@@ -342,7 +342,7 @@ const InsightsDashboard: React.FC = () => {
                 const dText = a.appointment_time || (a as any).date;
                 if (!dText) return;
                 const d = new Date(dText);
-                
+
                 if (d >= thirtyDaysAgo && d <= now && a.pet_breed) {
                     breedCounts[a.pet_breed] = (breedCounts[a.pet_breed] || 0) + 1;
                 }
@@ -364,9 +364,9 @@ const InsightsDashboard: React.FC = () => {
             let diffCounts = 0;
             Object.values(returnControl).forEach(dates => {
                 if (dates.length > 1) {
-                    dates.sort((a,b) => b.getTime() - a.getTime());
+                    dates.sort((a, b) => b.getTime() - a.getTime());
                     for (let i = 0; i < dates.length - 1; i++) {
-                        const diffMs = dates[i].getTime() - dates[i+1].getTime();
+                        const diffMs = dates[i].getTime() - dates[i + 1].getTime();
                         const diffDays = diffMs / (1000 * 60 * 60 * 24);
                         if (diffDays >= 1 && diffDays < 180) {
                             totalDiffs += diffDays;
@@ -379,23 +379,23 @@ const InsightsDashboard: React.FC = () => {
 
             let aiAdvancedContent = null;
             try {
-                const dayCounts = [0,0,0,0,0,0,0];
+                const dayCounts = [0, 0, 0, 0, 0, 0, 0];
                 appts.forEach(a => {
                     const d = a.appointment_time ? new Date(a.appointment_time) : null;
                     if (d && d >= thirtyDaysAgo && d <= now) {
                         dayCounts[d.getDay()]++;
                     }
                 });
-                const days = ["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
+                const days = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
                 // Only consider Monday (1) to Friday (5) - petshop doesn't operate on weekends
                 let minDay = 1;
-                for(let i=2; i<=5; i++) {
+                for (let i = 2; i <= 5; i++) {
                     if (dayCounts[i] < dayCounts[minDay]) minDay = i;
                 }
                 const slowestDayName = days[minDay];
-                
+
                 const batchPrompt = `Você é a IA estratégica do Sandy's PetShop. IMPORTANTE: o petshop funciona APENAS de Segunda a Sexta-feira. NÃO mencione sábado, domingo ou finais de semana em nenhuma sugestão. Retorne APENAS um JSON estrito com as propriedades: "social_media_posts" (array com 3 strings de posts de instagram divertidos para dias úteis), "idle_day_alert" (1 string sugerindo o que fazer para atrair clientes num dia útil), "upsell_recommendation" (1 string sugerindo upsell para a loja). Dados: Pets semana: ${thisWeekApptsCount}. Raça Pop: ${topBreeds[0]?.name || 'N/A'}. Dia mais fraco (seg-sex): ${slowestDayName}.`;
-                
+
                 const aiRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}` },
@@ -406,7 +406,7 @@ const InsightsDashboard: React.FC = () => {
                         temperature: 0.7
                     })
                 });
-                
+
                 if (aiRes.ok) {
                     const aiData = await aiRes.json();
                     const textContent = aiData.choices[0].message.content.trim();
@@ -419,7 +419,7 @@ const InsightsDashboard: React.FC = () => {
 
             const parsedData = { topAvulsoLojas, topAvulsoPetMovel, topPets, bottomPets, missingPets, missingPetsRaw, weeklyAppts, monthlyAppts, monthlyEarnings, agendaOccupation, monthlyConversions, topBreeds, lojaAvgTicket, petMovelAvgTicket, averageReturnDays, aiAdvancedContent };
             setData(parsedData);
-            
+
             const simplifyAppt = (a: any) => {
                 let dataHoraStr = a.appointment_time || a.date;
                 try {
@@ -427,7 +427,7 @@ const InsightsDashboard: React.FC = () => {
                         const dObj = new Date(dataHoraStr);
                         dataHoraStr = dObj.toLocaleString('pt-BR');
                     }
-                } catch (e) {}
+                } catch (e) { }
                 return {
                     data_hora: dataHoraStr,
                     pet: a.pet_name,
@@ -443,7 +443,7 @@ const InsightsDashboard: React.FC = () => {
             const simplifyClient = (c: any) => ({
                 nome: c.name
             });
-            
+
             // Limit appts for AI context to prevent "Too Many Requests" (Token limit & 413 Payload Too Large)
             const fifteenDaysAgo = new Date();
             fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
@@ -454,7 +454,7 @@ const InsightsDashboard: React.FC = () => {
                 const d = new Date(a.appointment_time);
                 return d >= fifteenDaysAgo && d <= thirtyDaysFuture;
             };
-            
+
             setGlobalChatContext({
                 dataAtual: new Date().toLocaleDateString('pt-BR'),
                 agendamentos_loja: appts.filter(filterRecent).map(simplifyAppt),
@@ -483,7 +483,7 @@ const InsightsDashboard: React.FC = () => {
             // Check cache to avoid hitting 15 RPM Limit
             const cachedComment = sessionStorage.getItem('aiCommentCache');
             const cachedTips = sessionStorage.getItem('aiTipsCache');
-            
+
             if (cachedComment && cachedTips) {
                 setAiComment(cachedComment);
                 setAiTips(cachedTips);
@@ -492,16 +492,16 @@ const InsightsDashboard: React.FC = () => {
 
             const apiKey = import.meta.env.VITE_GROQ_API_KEY || 'N/A';
             const groqUrl = `https://api.groq.com/openai/v1/chat/completions`;
-            
+
             // Comment about earnings
             if (!cachedComment) {
                 const earningsPrompt = `Você é um consultor inteligente do Sandy's PetShop. Forneça uma análise financeira curtíssima (máximo absoluto de 140 caracteres) sobre a evolução dos ganhos listados abaixo. Seja animador e dê uma dica rápida de negócio. Não use asteriscos.\nReceita: ${JSON.stringify(d.monthlyEarnings)}`;
 
                 fetch(groqUrl, {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json' 
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         model: 'llama-3.3-70b-versatile',
@@ -529,9 +529,9 @@ const InsightsDashboard: React.FC = () => {
 
                     fetch(groqUrl, {
                         method: 'POST',
-                        headers: { 
+                        headers: {
                             'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json' 
+                            'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
                             model: 'llama-3.3-70b-versatile',
@@ -558,7 +558,7 @@ const InsightsDashboard: React.FC = () => {
             } else {
                 setAiTips(cachedTips);
             }
-        } catch(e) {
+        } catch (e) {
             console.error(e);
         }
     };
@@ -568,7 +568,7 @@ const InsightsDashboard: React.FC = () => {
         if (!data?.missingPetsRaw) return [];
         const thresholdDate = new Date();
         thresholdDate.setMonth(thresholdDate.getMonth() - missingPetsMonthsFilter);
-        
+
         return data.missingPetsRaw
             .filter(p => p.lastVisitDate < thresholdDate)
             .map(p => ({ name: p.name, tutor: p.tutor, phone: p.phone, lastVisit: p.lastVisitDate.toLocaleDateString('pt-BR') }))
@@ -577,7 +577,7 @@ const InsightsDashboard: React.FC = () => {
 
     const handleSendCampaign = async () => {
         if (!rescueMessage.trim() || filteredMissingPets.length === 0) return;
-        
+
         setIsSendingCampaign(true);
         try {
             const payload = {
@@ -589,15 +589,15 @@ const InsightsDashboard: React.FC = () => {
                     meses_inativo: missingPetsMonthsFilter
                 }))
             };
-            
+
             const res = await fetch('https://n8n.intelektus.tech/webhook/campanhamarketing', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            
+
             if (!res.ok) throw new Error('Erro na resposta do webhook');
-            
+
             setShowCampaignSuccess(true);
             setTimeout(() => {
                 setShowCampaignSuccess(false);
@@ -632,7 +632,7 @@ const InsightsDashboard: React.FC = () => {
         <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 animate-fadeIn">
             <header className="mb-10 text-center flex flex-col items-center justify-center gap-4">
                 <div className="flex flex-col items-center">
-                     <h1 className="text-4xl font-bold text-pink-600 tracking-tight flex items-center justify-center gap-3" style={{ fontFamily: '"Lobster Two", cursive' }}>
+                    <h1 className="text-4xl font-bold text-pink-600 tracking-tight flex items-center justify-center gap-3" style={{ fontFamily: '"Lobster Two", cursive' }}>
                         Insights de <span className="font-rubik font-bold">IA</span> <SparklesIcon className="w-10 h-10 text-pink-500" />
                     </h1>
                     <p className="text-gray-600 mt-2 text-lg">Seu negócio mais inteligente. Veja dados valiosos sobre seus clientes.</p>
@@ -647,12 +647,12 @@ const InsightsDashboard: React.FC = () => {
                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-pink-900">
                         <ArrowTrendingUpIcon className="w-7 h-7 text-pink-500" /> Evolução de Receita
                     </h3>
-                    
+
                     <div className="flex items-end gap-3 h-48 mb-6 mt-4">
                         {monthlyEarnings.map((m, i) => (
                             <div key={i} className="flex-1 flex flex-col items-center gap-2 group/bar h-full">
                                 <div className="w-full relative flex items-end justify-center h-full rounded-t-xl bg-pink-100/50 border border-pink-200/50">
-                                    <div 
+                                    <div
                                         className="w-full bg-gradient-to-t from-pink-300 to-pink-500 rounded-t-xl transition-all duration-500 ease-in-out transform origin-bottom hover:scale-105 shadow-sm"
                                         style={{ height: `${Math.max((m.total / maxEarnings) * 100, 10)}%` }}
                                     ></div>
@@ -676,141 +676,141 @@ const InsightsDashboard: React.FC = () => {
                 {/* Dicas de IA para Cupons (Flip Wrapper) */}
                 <div className="group relative h-[450px] [perspective:1000px]">
 
-                        {/* FRONT FACE */}
-                        <div 
-                            className="absolute inset-0 bg-gradient-to-br from-pink-50 to-pink-100 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col text-pink-950 overflow-hidden bg-white transition-all duration-700"
-                            style={{ 
-                                transform: isResgateFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                                backfaceVisibility: 'hidden',
-                                WebkitBackfaceVisibility: 'hidden',
-                                zIndex: isResgateFlipped ? 0 : 10,
-                                opacity: isResgateFlipped ? 0 : 1
-                            }}
-                        >
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:animate-pulse transition-all duration-700 pointer-events-none"></div>
-                            
-                            <div className="flex items-center justify-between mb-2 relative z-10">
-                                <h3 className="text-xl font-bold flex items-center gap-2 text-pink-900">
-                                     <SparklesIcon className="w-7 h-7 text-pink-500" /> Resgate
-                                </h3>
-                                {/* Botão WhatsApp para virar o card */}
-                                <button 
-                                    onClick={() => setIsResgateFlipped(true)}
-                                    className="p-1.5 bg-pink-500 text-white rounded-full shadow-lg hover:scale-110 hover:bg-pink-600 transition-all duration-300 ring-2 ring-pink-100/50"
-                                    title="Criar campanha no WhatsApp"
+                    {/* FRONT FACE */}
+                    <div
+                        className="absolute inset-0 bg-gradient-to-br from-pink-50 to-pink-100 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col text-pink-950 overflow-hidden bg-white transition-all duration-700"
+                        style={{
+                            transform: isResgateFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                            backfaceVisibility: 'hidden',
+                            WebkitBackfaceVisibility: 'hidden',
+                            zIndex: isResgateFlipped ? 0 : 10,
+                            opacity: isResgateFlipped ? 0 : 1
+                        }}
+                    >
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:animate-pulse transition-all duration-700 pointer-events-none"></div>
+
+                        <div className="flex items-center justify-between mb-2 relative z-10">
+                            <h3 className="text-xl font-bold flex items-center gap-2 text-pink-900">
+                                <SparklesIcon className="w-7 h-7 text-pink-500" /> Resgate
+                            </h3>
+                            {/* Botão WhatsApp para virar o card */}
+                            <button
+                                onClick={() => setIsResgateFlipped(true)}
+                                className="p-1.5 bg-pink-500 text-white rounded-full shadow-lg hover:scale-110 hover:bg-pink-600 transition-all duration-300 ring-2 ring-pink-100/50"
+                                title="Criar campanha no WhatsApp"
+                            >
+                                <WhatsAppIcon className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <p className="text-pink-600 mb-3 font-medium relative z-10 text-sm">Sem serviços há mais de:</p>
+
+                        <div className="relative z-10 flex gap-2 mb-4 overflow-x-auto custom-scrollbar-white pb-1">
+                            {[1, 2, 3, 6].map(months => (
+                                <button
+                                    key={months}
+                                    onClick={() => setMissingPetsMonthsFilter(months)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 whitespace-nowrap ${missingPetsMonthsFilter === months ? 'bg-pink-500 text-white shadow-md scale-105 ring-2 ring-pink-200' : 'bg-white/60 text-pink-700 border border-pink-200 hover:bg-white'}`}
                                 >
-                                    <WhatsAppIcon className="w-4 h-4" />
+                                    {months} {months === 1 ? 'mês' : 'meses'}
                                 </button>
-                            </div>
-                            
-                            <p className="text-pink-600 mb-3 font-medium relative z-10 text-sm">Sem serviços há mais de:</p>
-                            
-                            <div className="relative z-10 flex gap-2 mb-4 overflow-x-auto custom-scrollbar-white pb-1">
-                                {[1, 2, 3, 6].map(months => (
+                            ))}
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto pr-2 space-y-3 mb-4 relative z-10 custom-scrollbar-pink min-h-0">
+                            {filteredMissingPets.length > 0 ? filteredMissingPets.map((p, i) => (
+                                <div key={i} className="flex items-center justify-between bg-white/60 hover:bg-white transition-colors duration-300 rounded-xl p-3 border border-pink-100/50 cursor-default shadow-sm">
+                                    <span className="font-bold text-lg text-pink-900">{p.name}</span>
+                                    <span className="text-[10px] bg-pink-100 px-3 py-1 rounded-full text-pink-700 font-bold uppercase tracking-widest">Último: {p.lastVisit}</span>
+                                </div>
+                            )) : (
+                                <div className="text-center py-8 text-pink-400 font-medium bg-white/40 rounded-xl border border-pink-100/50">
+                                    Nenhum cliente inativo encontrado nesta categoria! 🚀
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="bg-white/60 hover:bg-white transition-colors duration-300 rounded-2xl p-4 border border-pink-100/50 flex gap-3 mt-auto relative z-10 shadow-sm">
+                            <StarIcon className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+                            <p className="text-sm font-medium text-pink-900 italic leading-relaxed text-justify line-clamp-2">"{aiTips}"</p>
+                        </div>
+                    </div>
+
+                    {/* BACK FACE (WhatsApp Campaign) */}
+                    <div
+                        className="absolute inset-0 bg-gradient-to-br from-pink-500 to-rose-600 rounded-[2rem] p-6 shadow-xl shadow-pink-200 flex flex-col text-white overflow-hidden border border-pink-400 bg-pink-500 transition-all duration-700"
+                        style={{
+                            transform: isResgateFlipped ? 'rotateY(0deg)' : 'rotateY(-180deg)',
+                            backfaceVisibility: 'hidden',
+                            WebkitBackfaceVisibility: 'hidden',
+                            zIndex: isResgateFlipped ? 10 : 0,
+                            opacity: isResgateFlipped ? 1 : 0
+                        }}
+                    >
+                        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-30"></div>
+
+                        <div className="flex items-center justify-between mb-4 relative z-10">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <WhatsAppIcon className="w-6 h-6 text-green-300 drop-shadow-md" /> Mensagem em Massa
+                            </h3>
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setIsResgateFlipped(false);
+                                }}
+                                className="p-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors z-50 cursor-pointer relative"
+                                title="Voltar"
+                            >
+                                <XMarkIcon className="w-5 h-5 pointer-events-none" />
+                            </button>
+                        </div>
+
+                        <div className="relative z-10 flex flex-col flex-1 h-full min-h-0">
+                            {showCampaignSuccess ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center z-50">
+                                    <div className="w-20 h-20 bg-green-400 rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(74,222,128,0.5)] animate-bounce">
+                                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <h4 className="text-2xl font-bold text-white mb-2">Sucesso!</h4>
+                                    <p className="text-pink-100 font-medium text-lg leading-snug">
+                                        A campanha foi enviada para o WhatsApp de <span className="font-bold text-white">{filteredMissingPets.length} pets</span>.
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-pink-100 text-sm mb-2 font-medium">
+                                        Enviando para <span className="text-white font-bold">{filteredMissingPets.length} pets</span> inativos há {missingPetsMonthsFilter} meses:
+                                    </p>
+
+                                    <textarea
+                                        className="w-full flex-1 min-h-0 bg-white/10 border border-white/20 rounded-xl p-4 text-white placeholder-pink-200/60 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none mb-4 custom-scrollbar-white shadow-inner"
+                                        value={rescueMessage}
+                                        onChange={(e) => setRescueMessage(e.target.value)}
+                                        placeholder="Escreva a mensagem (ex: Olá, estamos com saudades...)"
+                                        disabled={isSendingCampaign}
+                                    />
+
                                     <button
-                                        key={months}
-                                        onClick={() => setMissingPetsMonthsFilter(months)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 whitespace-nowrap ${missingPetsMonthsFilter === months ? 'bg-pink-500 text-white shadow-md scale-105 ring-2 ring-pink-200' : 'bg-white/60 text-pink-700 border border-pink-200 hover:bg-white'}`}
+                                        onClick={handleSendCampaign}
+                                        disabled={isSendingCampaign || filteredMissingPets.length === 0}
+                                        className="w-full bg-white text-pink-600 hover:bg-pink-50 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-lg mt-auto hover:shadow-pink-300/50 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {months} {months === 1 ? 'mês' : 'meses'}
+                                        {isSendingCampaign ? (
+                                            <div className="w-6 h-6 border-2 border-pink-600 border-t-transparent rounded-full animate-spin"></div>
+                                        ) : (
+                                            <>
+                                                <PaperAirplaneIcon className="w-5 h-5 -rotate-45" />
+                                                Disparar Campanha
+                                            </>
+                                        )}
                                     </button>
-                                ))}
-                            </div>
-                            
-                            <div className="flex-1 overflow-y-auto pr-2 space-y-3 mb-4 relative z-10 custom-scrollbar-pink min-h-0">
-                                {filteredMissingPets.length > 0 ? filteredMissingPets.map((p, i) => (
-                                    <div key={i} className="flex items-center justify-between bg-white/60 hover:bg-white transition-colors duration-300 rounded-xl p-3 border border-pink-100/50 cursor-default shadow-sm">
-                                        <span className="font-bold text-lg text-pink-900">{p.name}</span>
-                                        <span className="text-[10px] bg-pink-100 px-3 py-1 rounded-full text-pink-700 font-bold uppercase tracking-widest">Último: {p.lastVisit}</span>
-                                    </div>
-                                )) : (
-                                    <div className="text-center py-8 text-pink-400 font-medium bg-white/40 rounded-xl border border-pink-100/50">
-                                        Nenhum cliente inativo encontrado nesta categoria! 🚀
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="bg-white/60 hover:bg-white transition-colors duration-300 rounded-2xl p-4 border border-pink-100/50 flex gap-3 mt-auto relative z-10 shadow-sm">
-                                <StarIcon className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
-                                <p className="text-sm font-medium text-pink-900 italic leading-relaxed text-justify line-clamp-2">"{aiTips}"</p>
-                            </div>
+                                </>
+                            )}
                         </div>
-
-                        {/* BACK FACE (WhatsApp Campaign) */}
-                        <div 
-                            className="absolute inset-0 bg-gradient-to-br from-pink-500 to-rose-600 rounded-[2rem] p-6 shadow-xl shadow-pink-200 flex flex-col text-white overflow-hidden border border-pink-400 bg-pink-500 transition-all duration-700"
-                            style={{ 
-                                transform: isResgateFlipped ? 'rotateY(0deg)' : 'rotateY(-180deg)',
-                                backfaceVisibility: 'hidden',
-                                WebkitBackfaceVisibility: 'hidden',
-                                zIndex: isResgateFlipped ? 10 : 0,
-                                opacity: isResgateFlipped ? 1 : 0
-                            }}
-                        >
-                            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-30"></div>
-                            
-                            <div className="flex items-center justify-between mb-4 relative z-10">
-                                <h3 className="text-xl font-bold flex items-center gap-2">
-                                     <WhatsAppIcon className="w-6 h-6 text-green-300 drop-shadow-md" /> Mensagem em Massa
-                                </h3>
-                                <button 
-                                    onClick={(e) => { 
-                                        e.preventDefault(); 
-                                        e.stopPropagation(); 
-                                        setIsResgateFlipped(false); 
-                                    }}
-                                    className="p-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors z-50 cursor-pointer relative"
-                                    title="Voltar"
-                                >
-                                    <XMarkIcon className="w-5 h-5 pointer-events-none" />
-                                </button>
-                            </div>
-                            
-                            <div className="relative z-10 flex flex-col flex-1 h-full min-h-0">
-                                {showCampaignSuccess ? (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center z-50">
-                                        <div className="w-20 h-20 bg-green-400 rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(74,222,128,0.5)] animate-bounce">
-                                            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </div>
-                                        <h4 className="text-2xl font-bold text-white mb-2">Sucesso!</h4>
-                                        <p className="text-pink-100 font-medium text-lg leading-snug">
-                                            A campanha foi enviada para o WhatsApp de <span className="font-bold text-white">{filteredMissingPets.length} pets</span>.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <p className="text-pink-100 text-sm mb-2 font-medium">
-                                            Enviando para <span className="text-white font-bold">{filteredMissingPets.length} pets</span> inativos há {missingPetsMonthsFilter} meses:
-                                        </p>
-                                        
-                                        <textarea
-                                            className="w-full flex-1 min-h-0 bg-white/10 border border-white/20 rounded-xl p-4 text-white placeholder-pink-200/60 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none mb-4 custom-scrollbar-white shadow-inner"
-                                            value={rescueMessage}
-                                            onChange={(e) => setRescueMessage(e.target.value)}
-                                            placeholder="Escreva a mensagem (ex: Olá, estamos com saudades...)"
-                                            disabled={isSendingCampaign}
-                                        />
-
-                                        <button 
-                                            onClick={handleSendCampaign}
-                                            disabled={isSendingCampaign || filteredMissingPets.length === 0}
-                                            className="w-full bg-white text-pink-600 hover:bg-pink-50 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-lg mt-auto hover:shadow-pink-300/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isSendingCampaign ? (
-                                                <div className="w-6 h-6 border-2 border-pink-600 border-t-transparent rounded-full animate-spin"></div>
-                                            ) : (
-                                                <>
-                                                    <PaperAirplaneIcon className="w-5 h-5 -rotate-45" />
-                                                    Disparar Campanha
-                                                </>
-                                            )}
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
+                    </div>
 
                 </div>
 
@@ -859,7 +859,7 @@ const InsightsDashboard: React.FC = () => {
                                 {data.monthlyConversions}
                             </span>
                             <div className="flex flex-col">
-                                <span className="text-2xl font-bold text-pink-800 leading-tight">Novos<br/>Mensalistas</span>
+                                <span className="text-2xl font-bold text-pink-800 leading-tight">Novos<br />Mensalistas</span>
                             </div>
                         </div>
                         <div className="mt-6 bg-white/60 p-4 rounded-xl border border-pink-100/50 w-full shadow-sm text-center">
@@ -928,48 +928,48 @@ const InsightsDashboard: React.FC = () => {
             </div>
 
             {data.aiAdvancedContent && (
-             <HorizontalScrollContainer>
-                {/* Posts Sociais */}
-                <div className="min-w-[85vw] lg:min-w-0 lg:flex-1 flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 overflow-hidden">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
-                        <SparklesIcon className="w-6 h-6 text-pink-500" /> Ideias p/ Instagram (IA)
-                    </h3>
-                    <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '230px' }}>
-                        {data.aiAdvancedContent.social_media_posts.map((post, i) => (
-                            <div key={i} className="bg-white/60 p-4 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed italic text-pink-900 text-justify cursor-default shadow-sm relative overflow-hidden">
-                                <span className="absolute top-2 right-2 text-pink-300 font-black opacity-30 text-3xl">#{i+1}</span>
-                                <span className="relative z-10 break-words whitespace-normal">"{post}"</span>
-                            </div>
-                        ))}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                    {/* Posts Sociais */}
+                    <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 overflow-hidden">
+                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
+                            <SparklesIcon className="w-6 h-6 text-pink-500 flex-shrink-0" /> Ideias p/ Instagram (IA)
+                        </h3>
+                        <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar-white pr-1" style={{ maxHeight: '230px' }}>
+                            {data.aiAdvancedContent.social_media_posts.map((post, i) => (
+                                <div key={i} className="bg-white/60 p-3 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors text-xs font-medium leading-relaxed italic text-pink-900 text-justify cursor-default shadow-sm relative overflow-hidden break-words">
+                                    <span className="absolute top-1 right-2 text-pink-300 font-black opacity-20 text-2xl">#{i + 1}</span>
+                                    <span className="relative z-10">"{post}"</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
 
-                {/* Dias Ociosos */}
-                <div className="min-w-[85vw] lg:min-w-0 lg:flex-1 flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
-                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-pink-200/30 rounded-full blur-2xl group-hover:scale-150 transition-all duration-700 pointer-events-none"></div>
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800 relative z-10">
-                        <ChartBarIcon className="w-6 h-6 text-pink-500" /> Alerta de Ociosidade
-                    </h3>
-                    <div className="flex-1 bg-white/60 p-5 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed text-pink-900 text-justify relative z-10 shadow-sm overflow-y-auto custom-scrollbar-white">
-                        <p className="italic">"{data.aiAdvancedContent.idle_day_alert}"</p>
+                    {/* Dias Ociosos */}
+                    <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
+                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-pink-200/30 rounded-full blur-2xl group-hover:scale-150 transition-all duration-700 pointer-events-none"></div>
+                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800 relative z-10">
+                            <ChartBarIcon className="w-6 h-6 text-pink-500 flex-shrink-0" /> Alerta de Ociosidade
+                        </h3>
+                        <div className="flex-1 bg-white/60 p-4 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors text-xs font-medium leading-relaxed text-pink-900 text-justify relative z-10 shadow-sm overflow-y-auto custom-scrollbar-white break-words" style={{ maxHeight: '230px' }}>
+                            <p className="italic">"{data.aiAdvancedContent.idle_day_alert}"</p>
+                        </div>
                     </div>
-                </div>
 
-                {/* Recomendação de Upsell */}
-                <div className="min-w-[85vw] lg:min-w-0 lg:flex-1 flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
-                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-pink-200/30 rounded-full blur-3xl pointer-events-none group-hover:scale-150 transition-all duration-700"></div>
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800 relative z-10">
-                        <ArrowTrendingUpIcon className="w-6 h-6 text-pink-500" /> Upsell Inteligente
-                    </h3>
-                    <div className="flex-1 bg-white/60 p-5 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed text-pink-900 text-justify relative z-10 shadow-sm overflow-y-auto custom-scrollbar-white">
-                        <p className="italic">"{data.aiAdvancedContent.upsell_recommendation}"</p>
+                    {/* Recomendacao de Upsell */}
+                    <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 relative overflow-hidden">
+                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-pink-200/30 rounded-full blur-3xl pointer-events-none group-hover:scale-150 transition-all duration-700"></div>
+                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800 relative z-10">
+                            <ArrowTrendingUpIcon className="w-6 h-6 text-pink-500 flex-shrink-0" /> Upsell Inteligente
+                        </h3>
+                        <div className="flex-1 bg-white/60 p-4 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors text-xs font-medium leading-relaxed text-pink-900 text-justify relative z-10 shadow-sm overflow-y-auto custom-scrollbar-white break-words" style={{ maxHeight: '230px' }}>
+                            <p className="italic">"{data.aiAdvancedContent.upsell_recommendation}"</p>
+                        </div>
                     </div>
                 </div>
-             </HorizontalScrollContainer>
             )}
 
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-                
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+
                 {/* Ranking Loja */}
                 <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950">
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
@@ -977,7 +977,7 @@ const InsightsDashboard: React.FC = () => {
                     </h3>
                     <div className="space-y-4 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '230px' }}>
                         {topAvulsoLojas.map((c, i) => (
-                             <div key={i} className="flex items-center gap-4 bg-white/60 p-3 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors duration-300 relative overflow-hidden group">
+                            <div key={i} className="flex items-center gap-4 bg-white/60 p-3 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors duration-300 relative overflow-hidden group">
                                 <div className="absolute inset-0 bg-gradient-to-r from-pink-100/0 via-pink-100/30 to-pink-100/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm z-10 ${i === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900 border border-yellow-200' : i === 1 ? 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-700 border border-gray-100' : i === 2 ? 'bg-gradient-to-br from-orange-200 to-orange-400 text-orange-900 border border-orange-200' : 'bg-gradient-to-br from-pink-200 to-pink-300 text-pink-900 border border-pink-100'}`}>
                                     #{i + 1}
@@ -1002,7 +1002,7 @@ const InsightsDashboard: React.FC = () => {
                     </h3>
                     <div className="space-y-4 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '230px' }}>
                         {topAvulsoPetMovel.map((c, i) => (
-                             <div key={i} className="flex items-center gap-4 bg-white/60 p-3 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors duration-300 relative overflow-hidden group">
+                            <div key={i} className="flex items-center gap-4 bg-white/60 p-3 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors duration-300 relative overflow-hidden group">
                                 <div className="absolute inset-0 bg-gradient-to-r from-pink-100/0 via-pink-100/30 to-pink-100/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm z-10 ${i === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900 border border-yellow-200' : i === 1 ? 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-700 border border-gray-100' : i === 2 ? 'bg-gradient-to-br from-orange-200 to-orange-400 text-orange-900 border border-orange-200' : 'bg-gradient-to-br from-pink-300 to-pink-500 text-white border border-pink-200'}`}>
                                     #{i + 1}
@@ -1016,7 +1016,7 @@ const InsightsDashboard: React.FC = () => {
                                 </div>
                             </div>
                         ))}
-                         {topAvulsoPetMovel.length === 0 && <p className="text-center text-sm text-pink-400/70 p-4 font-medium">Sem dados recentes</p>}
+                        {topAvulsoPetMovel.length === 0 && <p className="text-center text-sm text-pink-400/70 p-4 font-medium">Sem dados recentes</p>}
                     </div>
                 </div>
 
@@ -1027,15 +1027,15 @@ const InsightsDashboard: React.FC = () => {
                     </h3>
                     <div className="space-y-4 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '350px' }}>
                         {topPets.map((p, i) => (
-                             <div key={i} className="flex items-center gap-3 bg-white/60 hover:bg-white p-3 rounded-2xl border border-pink-100/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
+                            <div key={i} className="flex items-center gap-3 bg-white/60 hover:bg-white p-3 rounded-2xl border border-pink-100/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
                                 <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center shadow-inner border rotate-3 ${i === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 border-yellow-200' : i === 1 ? 'bg-gradient-to-br from-gray-200 to-gray-400 border-gray-300' : i === 2 ? 'bg-gradient-to-br from-orange-300 to-orange-500 border-orange-300' : 'bg-gradient-to-br from-pink-200 to-pink-300 border-pink-200'}`}>
-                                     <span className={`font-black text-sm ${i === 0 ? 'text-yellow-900' : i === 1 ? 'text-gray-800' : i === 2 ? 'text-orange-950' : 'text-pink-900'}`}>{p.count}x</span>
+                                    <span className={`font-black text-sm ${i === 0 ? 'text-yellow-900' : i === 1 ? 'text-gray-800' : i === 2 ? 'text-orange-950' : 'text-pink-900'}`}>{p.count}x</span>
                                 </div>
                                 <div className="flex-1 overflow-hidden pl-1">
-                                     <p className="font-bold text-gray-800 truncate text-lg tracking-tight">{p.name}</p>
-                                     <p className="text-[10px] text-pink-500 uppercase font-bold tracking-widest mt-0.5">Cliente Vip</p>
+                                    <p className="font-bold text-gray-800 truncate text-lg tracking-tight">{p.name}</p>
+                                    <p className="text-[10px] text-pink-500 uppercase font-bold tracking-widest mt-0.5">Cliente Vip</p>
                                 </div>
-                             </div>
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -1047,23 +1047,23 @@ const InsightsDashboard: React.FC = () => {
                     </h3>
                     <div className="space-y-4 overflow-y-auto custom-scrollbar-white pr-2" style={{ maxHeight: '350px' }}>
                         {bottomPets.map((p, i) => (
-                             <div key={i} className="flex items-center gap-3 bg-white/60 hover:bg-white p-3 rounded-2xl border border-pink-100/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
+                            <div key={i} className="flex items-center gap-3 bg-white/60 hover:bg-white p-3 rounded-2xl border border-pink-100/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
                                 <div className="w-12 h-12 bg-gradient-to-br from-pink-100 to-pink-200 rounded-2xl flex flex-col items-center justify-center shadow-inner border border-pink-200 -rotate-3">
-                                     <span className="text-pink-900 font-black text-sm">{p.count}x</span>
+                                    <span className="text-pink-900 font-black text-sm">{p.count}x</span>
                                 </div>
                                 <div className="flex-1 overflow-hidden pl-1">
-                                     <p className="font-bold text-gray-800 truncate text-lg tracking-tight">{p.name}</p>
-                                     <p className="text-[10px] text-pink-500 uppercase font-bold tracking-widest mt-0.5">Último: {p.lastVisit}</p>
+                                    <p className="font-bold text-gray-800 truncate text-lg tracking-tight">{p.name}</p>
+                                    <p className="text-[10px] text-pink-500 uppercase font-bold tracking-widest mt-0.5">Último: {p.lastVisit}</p>
                                 </div>
-                             </div>
+                            </div>
                         ))}
                         {bottomPets.length === 0 && <p className="text-center text-sm text-pink-400/70 p-4 font-medium">Sem dados recentes</p>}
                     </div>
                 </div>
-             </div>
+            </div>
 
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                 {/* Agenda Semanal */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {/* Agenda Semanal */}
                 <div className="bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col h-[400px]">
                     <div className="flex justify-between items-center mb-6 shrink-0 border-b border-pink-100/50 pb-4">
                         <h3 className="text-xl font-bold text-pink-900 flex items-center gap-2">
@@ -1113,9 +1113,9 @@ const InsightsDashboard: React.FC = () => {
                     </div>
                 </div>
 
-             </div>
+            </div>
 
-             <style>{`
+            <style>{`
                 .custom-scrollbar-white::-webkit-scrollbar {
                     width: 6px;
                 }
@@ -1140,7 +1140,7 @@ const InsightsDashboard: React.FC = () => {
                     border-radius: 20px;
                 }
              `}</style>
-             <AiChatModal systemData={globalChatContext} />
+            <AiChatModal systemData={globalChatContext} />
         </div>
     );
 };
