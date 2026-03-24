@@ -372,13 +372,14 @@ const InsightsDashboard: React.FC = () => {
                     }
                 });
                 const days = ["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
+                // Only consider Monday (1) to Friday (5) - petshop doesn't operate on weekends
                 let minDay = 1;
-                for(let i=2; i<=6; i++) {
+                for(let i=2; i<=5; i++) {
                     if (dayCounts[i] < dayCounts[minDay]) minDay = i;
                 }
                 const slowestDayName = days[minDay];
                 
-                const batchPrompt = `Você é a IA estratégica do Sandy's PetShop. Retorne APENAS um JSON estrito com as propriedades: "social_media_posts" (array com 3 strings de posts de instagram divertidos), "idle_day_alert" (1 string sugerindo o que fazer para atrair clientes), "upsell_recommendation" (1 string sugerindo upsell para a loja). Baseie-se nesses dados: Pets semana: ${thisWeekApptsCount}. Raça Pop: ${topBreeds[0]?.name || 'N/A'}. Dia ruim: ${slowestDayName}.`;
+                const batchPrompt = `Você é a IA estratégica do Sandy's PetShop. IMPORTANTE: o petshop funciona APENAS de Segunda a Sexta-feira. NÃO mencione sábado, domingo ou finais de semana em nenhuma sugestão. Retorne APENAS um JSON estrito com as propriedades: "social_media_posts" (array com 3 strings de posts de instagram divertidos para dias úteis), "idle_day_alert" (1 string sugerindo o que fazer para atrair clientes num dia útil), "upsell_recommendation" (1 string sugerindo upsell para a loja). Dados: Pets semana: ${thisWeekApptsCount}. Raça Pop: ${topBreeds[0]?.name || 'N/A'}. Dia mais fraco (seg-sex): ${slowestDayName}.`;
                 
                 const aiRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                     method: 'POST',
@@ -914,7 +915,7 @@ const InsightsDashboard: React.FC = () => {
             {data.aiAdvancedContent && (
              <HorizontalScrollContainer>
                 {/* Posts Sociais */}
-                <div className="min-w-[85vw] md:min-w-[400px] flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950">
+                <div className="min-w-[85vw] md:min-w-0 md:w-[400px] max-w-[400px] flex-shrink-0 snap-center bg-gradient-to-br from-pink-50/90 to-pink-100/90 rounded-[2rem] p-6 shadow-xl shadow-pink-100/40 border border-pink-200/50 flex flex-col group text-pink-950 overflow-hidden">
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-pink-800">
                         <SparklesIcon className="w-6 h-6 text-pink-500" /> Ideias p/ Instagram (IA)
                     </h3>
@@ -922,7 +923,7 @@ const InsightsDashboard: React.FC = () => {
                         {data.aiAdvancedContent.social_media_posts.map((post, i) => (
                             <div key={i} className="bg-white/60 p-4 rounded-2xl border border-pink-100/50 hover:bg-white transition-colors text-sm font-medium leading-relaxed italic text-pink-900 text-justify cursor-default shadow-sm relative overflow-hidden">
                                 <span className="absolute top-2 right-2 text-pink-300 font-black opacity-30 text-3xl">#{i+1}</span>
-                                <span className="relative z-10">"{post}"</span>
+                                <span className="relative z-10 break-words whitespace-normal">"{post}"</span>
                             </div>
                         ))}
                     </div>
