@@ -11,7 +11,7 @@ interface InsightData {
     topPets: { name: string; count: number }[];
     bottomPets: { name: string; count: number; lastVisit: string }[];
     missingPets: { name: string; lastVisit: string }[];
-    missingPetsRaw: { name: string; lastVisitDate: Date }[];
+    missingPetsRaw: { name: string; lastVisitDate: Date; tutor: string; phone: string }[];
     weeklyAppts: { date: string; pets: string[] }[];
     monthlyAppts: { date: string; pets: string[] }[];
     monthlyEarnings: { month: string; total: number }[];
@@ -33,6 +33,8 @@ const InsightsDashboard: React.FC = () => {
     const [globalChatContext, setGlobalChatContext] = useState<any>(null);
     const [missingPetsMonthsFilter, setMissingPetsMonthsFilter] = useState<number>(2);
     const [isResgateFlipped, setIsResgateFlipped] = useState(false);
+    const [isSendingCampaign, setIsSendingCampaign] = useState(false);
+    const [showCampaignSuccess, setShowCampaignSuccess] = useState(false);
     const [rescueMessage, setRescueMessage] = useState("Olá! Sentimos sua falta aqui no Sandy's PetShop. Que tal agendar um horário com 15% de desconto especial para seu pet? 🐶✂️");
 
     useEffect(() => {
@@ -115,19 +117,31 @@ const InsightsDashboard: React.FC = () => {
 
             const lastVisits = allAppts.reduce((acc, a) => {
                 const name = a.pet_name;
-                const date = new Date(a.appointment_time);
-                if (!acc[name] || date > acc[name]) acc[name] = date;
+                const dStr = a.appointment_time || (a as any).appointmentTime || (a as any).date;
+                if (!dStr) return acc;
+                const date = new Date(dStr);
+                const tutor = a.owner_name || (a as any).client_name || '';
+                const phone = a.whatsapp || (a as any).contact_phone || (a as any).tutor_phone || '';
+
+                if (!acc[name] || date > acc[name].date) {
+                    acc[name] = { date, tutor, phone };
+                }
                 return acc;
-            }, {} as Record<string, Date>);
+            }, {} as Record<string, { date: Date; tutor: string; phone: string }>);
 
             const missingPets = Object.entries(lastVisits)
-                .filter(([_, lastVisit]) => lastVisit < twoMonthsAgo)
-                .map(([name, lastVisit]) => ({ name, lastVisit: lastVisit.toLocaleDateString('pt-BR') }))
+                .filter(([_, info]) => info.date < twoMonthsAgo)
+                .map(([name, info]) => ({ name, lastVisit: info.date.toLocaleDateString('pt-BR') }))
                 .slice(0, 10);
 
             // 4. Pets sumidos (Missing Pets para dicas de IA) - Agora salvamos as datas cruas para o filtro
             const missingPetsRaw = Object.entries(lastVisits)
-                .map(([name, lastVisitDate]) => ({ name, lastVisitDate }));
+                .map(([name, info]) => ({ 
+                    name, 
+                    lastVisitDate: info.date,
+                    tutor: info.tutor,
+                    phone: info.phone
+                }));
 
             // 5 & 6. Agendamentos Admin Semana/Mês
             const startOfWeek = new Date(now);
@@ -188,7 +202,7 @@ const InsightsDashboard: React.FC = () => {
 
             allAppts.forEach(a => {
                 try {
-                    const dateStr = a.appointment_time || a.appointmentTime;
+                    const dateStr = a.appointment_time || (a as any).appointmentTime;
                     if (!dateStr) return;
                     
                     const date = new Date(dateStr);
@@ -357,9 +371,45 @@ const InsightsDashboard: React.FC = () => {
         
         return data.missingPetsRaw
             .filter(p => p.lastVisitDate < thresholdDate)
-            .map(p => ({ name: p.name, lastVisit: p.lastVisitDate.toLocaleDateString('pt-BR') }))
+            .map(p => ({ name: p.name, tutor: p.tutor, phone: p.phone, lastVisit: p.lastVisitDate.toLocaleDateString('pt-BR') }))
             .slice(0, 10);
     }, [data?.missingPetsRaw, missingPetsMonthsFilter]);
+
+    const handleSendCampaign = async () => {
+        if (!rescueMessage.trim() || filteredMissingPets.length === 0) return;
+        
+        setIsSendingCampaign(true);
+        try {
+            const payload = {
+                mensagem: rescueMessage,
+                pets: filteredMissingPets.map(p => ({
+                    pet: p.name,
+                    tutor: p.tutor,
+                    telefone: p.phone,
+                    meses_inativo: missingPetsMonthsFilter
+                }))
+            };
+            
+            const res = await fetch('https://n8n.intelektus.tech/webhook/campanhamarketing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!res.ok) throw new Error('Erro na resposta do webhook');
+            
+            setShowCampaignSuccess(true);
+            setTimeout(() => {
+                setShowCampaignSuccess(false);
+                setIsResgateFlipped(false);
+            }, 4500);
+        } catch (e) {
+            console.error('Webhook error:', e);
+            alert('Não foi possível enviar a campanha. Tente novamente mais tarde.');
+        } finally {
+            setIsSendingCampaign(false);
+        }
+    };
 
     if (loading || !data) {
         return (
@@ -499,27 +549,48 @@ const InsightsDashboard: React.FC = () => {
                             </div>
                             
                             <div className="relative z-10 flex flex-col flex-1 h-full min-h-0">
-                                <p className="text-pink-100 text-sm mb-2 font-medium">
-                                    Enviando para <span className="text-white font-bold">{filteredMissingPets.length} pets</span> inativos há {missingPetsMonthsFilter} meses:
-                                </p>
-                                
-                                <textarea
-                                    className="w-full flex-1 min-h-0 bg-white/10 border border-white/20 rounded-xl p-4 text-white placeholder-pink-200/60 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none mb-4 custom-scrollbar-white shadow-inner"
-                                    value={rescueMessage}
-                                    onChange={(e) => setRescueMessage(e.target.value)}
-                                    placeholder="Escreva a mensagem (ex: Olá, estamos com saudades...)"
-                                />
+                                {showCampaignSuccess ? (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center z-50">
+                                        <div className="w-20 h-20 bg-green-400 rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(74,222,128,0.5)] animate-bounce">
+                                            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                        <h4 className="text-2xl font-bold text-white mb-2">Sucesso!</h4>
+                                        <p className="text-pink-100 font-medium text-lg leading-snug">
+                                            A campanha foi enviada para o WhatsApp de <span className="font-bold text-white">{filteredMissingPets.length} pets</span>.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <p className="text-pink-100 text-sm mb-2 font-medium">
+                                            Enviando para <span className="text-white font-bold">{filteredMissingPets.length} pets</span> inativos há {missingPetsMonthsFilter} meses:
+                                        </p>
+                                        
+                                        <textarea
+                                            className="w-full flex-1 min-h-0 bg-white/10 border border-white/20 rounded-xl p-4 text-white placeholder-pink-200/60 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none mb-4 custom-scrollbar-white shadow-inner"
+                                            value={rescueMessage}
+                                            onChange={(e) => setRescueMessage(e.target.value)}
+                                            placeholder="Escreva a mensagem (ex: Olá, estamos com saudades...)"
+                                            disabled={isSendingCampaign}
+                                        />
 
-                                <button 
-                                    onClick={() => {
-                                        alert(`🚀 Funcionalidade em desenvolvimento: O envio integrará com a API de WhatsApp em breve!\nMensagem "${rescueMessage}"\nDirecionada para: ${filteredMissingPets.map(p => p.name).join(', ')}`);
-                                        setIsResgateFlipped(false);
-                                    }}
-                                    className="w-full bg-white text-pink-600 hover:bg-pink-50 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-lg mt-auto hover:shadow-pink-300/50"
-                                >
-                                    <PaperAirplaneIcon className="w-5 h-5 -rotate-45" />
-                                    Disparar Campanha
-                                </button>
+                                        <button 
+                                            onClick={handleSendCampaign}
+                                            disabled={isSendingCampaign || filteredMissingPets.length === 0}
+                                            className="w-full bg-white text-pink-600 hover:bg-pink-50 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-lg mt-auto hover:shadow-pink-300/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isSendingCampaign ? (
+                                                <div className="w-6 h-6 border-2 border-pink-600 border-t-transparent rounded-full animate-spin"></div>
+                                            ) : (
+                                                <>
+                                                    <PaperAirplaneIcon className="w-5 h-5 -rotate-45" />
+                                                    Disparar Campanha
+                                                </>
+                                            )}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
 
