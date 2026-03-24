@@ -118,10 +118,12 @@ Se o usuário perguntar detalhes da agenda, use a ferramenta 'consultar_agendame
 [CONTEXTO ATUAL - HOJE É ${new Date().toLocaleDateString('pt-BR')}]
 - Data e Hora Atual: ${new Date().toLocaleString('pt-BR')}
 - Total Clientes Mensalistas Ativos: ${systemData?.mensalistas?.length || 0}
-- Receita Mensal Últimos 6 Meses: ${JSON.stringify(systemData?.receita_mensal_ultimos_6_meses || [])}
-- Pets Sumidos há mais de 2 meses: ${JSON.stringify(systemData?.pets_sumidos_ha_mais_de_2_meses || [])}
-- Clientes Pet Móvel Fieis: ${JSON.stringify(systemData?.top_clientes_pet_movel_recente || [])}
-- Clientes Loja Fieis: ${JSON.stringify(systemData?.top_clientes_banho_tosa_recente || [])}
+- Receita Mensal Últimos 6 Meses: ${(systemData?.receita_mensal_ultimos_6_meses || []).map((r: any) => `${r.month}: R$ ${r.total}`).join(', ')}
+- Pets Sumidos há mais de 2 meses: ${(systemData?.pets_sumidos_ha_mais_de_2_meses || []).map((p: any) => `${p.name} (última visita: ${p.lastVisit})`).join(', ')}
+- Clientes Pet Móvel Fieis: ${(systemData?.top_clientes_pet_movel_recente || []).map((c: any) => `${c.name} (${c.count}x)`).join(', ')}
+- Clientes Loja Fieis: ${(systemData?.top_clientes_banho_tosa_recente || []).map((c: any) => `${c.name} (${c.count}x)`).join(', ')}
+
+IMPORTANTE: Você é um ser humano virtual. NUNCA responda em formato JSON. Responda APENAS com textos naturais, fluidos e amigáveis, e formate listas com marcadores (bullets) ou emojis.
 - Atenção: O usuário não enviou banco de dados de agendamentos no contexto. Para visualizar agendamentos, você DEVE SEMPRE invocar a ferramenta 'consultar_agendamentos'.`;
 
             const tools = [
