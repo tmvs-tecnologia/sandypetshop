@@ -1165,7 +1165,7 @@ const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
 const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void; }> = ({ onBack, onSuccess }) => {
     const { getPricesForWeight } = useServicePrices();
     const [isAnimating, setIsAnimating] = useState(false);
-    const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', condominium: '' });
+    const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', condominium: '', observation: '' });
     const [serviceQuantities, setServiceQuantities] = useState<Record<string, number>>({});
     const [selectedWeight, setSelectedWeight] = useState<PetWeight | null>(null);
     const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>({});
@@ -1473,7 +1473,8 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                 recurrence_time: recurrenceTime,
                 is_active: true,
                 payment_status: 'Pendente',
-                condominium: formData.condominium
+                condominium: formData.condominium,
+                observation: formData.observation || null
             }).select().single();
 
             if (clientError || !newClient) throw new Error(clientError?.message || "Falha ao criar o cadastro do mensalista.");
@@ -1520,7 +1521,8 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                     owner_address: formData.ownerAddress,
                     weight: PET_WEIGHT_OPTIONS[selectedWeight!],
                     condominium: formData.condominium,
-                    monthly_client_id: newClient.id
+                    monthly_client_id: newClient.id,
+                    observation: formData.observation || null
                 }));
 
             // Check if any of the selected services is a Pet Móvel service
@@ -1546,7 +1548,8 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                             owner_address: formData.ownerAddress,
                             weight: PET_WEIGHT_OPTIONS[selectedWeight!],
                             condominium: formData.condominium,
-                            monthly_client_id: newClient.id
+                            monthly_client_id: newClient.id,
+                            observation: formData.observation || null
                         }));
 
                     // Insert into BOTH tables with appropriate payloads
@@ -1677,6 +1680,20 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                                 <div className="relative">
                                     <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><AddressIcon /></span>
                                     <input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" placeholder="Rua, Número, Bairro" />
+                                </div>
+                            </div>
+                            <div className="md:col-span-2">
+                                <label htmlFor="monthly-observation" className="block text-sm font-semibold text-gray-700 mb-1.5">Observações sobre o Pet</label>
+                                <div className="relative">
+                                    <textarea 
+                                        id="monthly-observation" 
+                                        name="observation" 
+                                        value={formData.observation} 
+                                        onChange={handleInputChange} 
+                                        rows={2} 
+                                        placeholder="Ex: Cão Bravo, Não colocar laço, Não passar perfume" 
+                                        className="block w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -3032,7 +3049,7 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
         const [year, month, day] = datePart.split('-').map(Number);
         const newAppointmentTime = toSaoPauloUTC(year, month - 1, day, timePart);
 
-        const { pet_name, owner_name, whatsapp, service, weight, price, status } = formData;
+        const { pet_name, owner_name, whatsapp, service, weight, price, status, owner_address, observation } = formData;
         const normalizedService = service === 'Creche Pet' ? visitDaycareLabel : (service === 'Hotel Pet' ? visitHotelLabel : service);
 
         // Ao salvar, subtraímos os extras novamente para manter a consistência com o AppointmentCard que soma na visualização.
@@ -3049,9 +3066,10 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
             price: priceToSave,
             status,
             appointment_time: newAppointmentTime.toISOString(),
+            owner_address: owner_address || null,
+            observation: observation || null,
             // Preservar campos opcionais importantes se existirem
             ...(appointment.monthly_client_id && { monthly_client_id: appointment.monthly_client_id }),
-            ...(appointment.owner_address && { owner_address: appointment.owner_address }),
             ...(appointment.pet_breed && { pet_breed: appointment.pet_breed }),
             ...(appointment.condominium && { condominium: appointment.condominium }),
             ...(appointment.extra_services && { extra_services: appointment.extra_services }),
@@ -3199,6 +3217,21 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
                                     <label className="text-sm font-medium text-gray-700 ml-1">WhatsApp</label>
                                     <input type="text" name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
                                 </div>
+                                <div className="flex flex-col gap-1.5 md:col-span-2">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Endereço</label>
+                                    <input type="text" name="owner_address" value={formData.owner_address || ''} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                </div>
+                                <div className="flex flex-col gap-1.5 md:col-span-2">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Observações sobre o Pet</label>
+                                    <textarea 
+                                        name="observation" 
+                                        value={formData.observation || ''} 
+                                        onChange={handleInputChange} 
+                                        rows={2} 
+                                        placeholder="Ex: Cão Bravo, Não colocar laço, Não passar perfume" 
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400 resize-none"
+                                    />
+                                </div>
                             </div>
                         </section>
 
@@ -3320,7 +3353,8 @@ const AdminAddAppointmentModal: React.FC<{
         ownerName: '',
         whatsapp: '',
         petBreed: '',
-        ownerAddress: ''
+        ownerAddress: '',
+        observation: ''
     });
     const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
     const [serviceStepView, setServiceStepView] = useState<'main' | 'bath_groom' | 'pet_movel' | 'pet_movel_condo' | 'hotel_pet' | 'daycare_options' | 'hotel_options'>('main');
@@ -3399,7 +3433,7 @@ const AdminAddAppointmentModal: React.FC<{
     // Reset form when modal opens/closes
     useEffect(() => {
         if (isOpen) {
-            setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
+            setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', observation: '' });
             setSelectedService(null);
             setServiceStepView('main');
             setSelectedCondo(null);
@@ -3720,7 +3754,8 @@ const AdminAddAppointmentModal: React.FC<{
         const supabasePayload = {
             ...basePayload,
             owner_address: formData.ownerAddress || null,
-            condominium: selectedCondo || null
+            condominium: selectedCondo || null,
+            observation: formData.observation || null
         };
 
         try {
@@ -3892,6 +3927,20 @@ const AdminAddAppointmentModal: React.FC<{
                                     <div className="relative">
                                         <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><AddressIcon /></span>
                                         <input id="addAppt-ownerAddress" type="text" name="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required placeholder="Rua, número, bairro" className={`block w-full pl-11 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all ${clientFound ? 'border-green-300 bg-green-50/50' : 'bg-gray-50/50 border-gray-200 focus:bg-white'}`} />
+                                    </div>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label htmlFor="addAppt-observation" className="block text-sm font-semibold text-gray-700 mb-1.5">Observações sobre o Pet</label>
+                                    <div className="relative">
+                                        <textarea 
+                                            id="addAppt-observation" 
+                                            name="observation" 
+                                            value={formData.observation} 
+                                            onChange={handleInputChange} 
+                                            rows={2} 
+                                            placeholder="Ex: Cão Bravo, Não colocar laço, Não passar perfume" 
+                                            className="block w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -6360,6 +6409,7 @@ const EditClientModal: React.FC<{ client: Client; onClose: () => void; onClientU
 
 const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     const [clients, setClients] = useState<Client[]>([]);
+    const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>([]);
     const [loading, setLoading] = useState(true);
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
@@ -6368,17 +6418,28 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isAddClientOpenMobile, setIsAddClientOpenMobile] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
-    const fetchClients = useCallback(async () => {
+    const normalizePhone = (p: string) => (p || '').replace(/\D/g, '');
+
+    const fetchAllData = useCallback(async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase.from('clients').select('*').order('name');
-            if (error) {
+            const [clientsRes, monthlyRes] = await Promise.all([
+                supabase.from('clients').select('*').order('name'),
+                supabase.from('monthly_clients').select('*').eq('is_active', true)
+            ]);
+
+            if (clientsRes.error) {
                 const cached = localStorage.getItem('cached_clients');
                 if (cached) setClients(JSON.parse(cached));
             } else {
-                setClients(data as Client[]);
-                try { localStorage.setItem('cached_clients', JSON.stringify(data || [])); } catch { }
+                setClients(clientsRes.data as Client[]);
+                try { localStorage.setItem('cached_clients', JSON.stringify(clientsRes.data || [])); } catch { }
+            }
+
+            if (!monthlyRes.error) {
+                setMonthlyClients(monthlyRes.data as MonthlyClient[]);
             }
         } catch (_) {
             const cached = localStorage.getItem('cached_clients');
@@ -6389,18 +6450,19 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     }, []);
 
     useEffect(() => {
-        fetchClients();
-    }, [fetchClients, refreshKey]);
+        fetchAllData();
+    }, [fetchAllData, refreshKey]);
 
     const handleAddClient = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         const { data, error } = await supabase.from('clients').insert([{ name, phone: phone }]).select().single();
         if (error) {
-            alert("Erro ao adicionar cliente. Verifique se a tabela 'clients' existe e tem as políticas de segurança corretas.");
+            alert("Erro ao adicionar cliente. Verifique as configurações do banco de dados.");
         } else {
             setClients(prev => [...prev, data as Client].sort((a, b) => a.name.localeCompare(b.name)));
             setName(''); setPhone('');
+            setIsAddClientOpenMobile(false);
         }
         setIsSubmitting(false);
     };
@@ -6423,68 +6485,244 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
         setEditingClient(null);
     };
 
+    // Cruzamento de dados
+    const monthlyByPhone = useMemo(() => {
+        const map: Record<string, MonthlyClient[]> = {};
+        monthlyClients.forEach(mc => {
+            const norm = normalizePhone(mc.whatsapp);
+            if (!map[norm]) map[norm] = [];
+            map[norm].push(mc);
+        });
+        return map;
+    }, [monthlyClients]);
+
+    const filteredClients = clients.filter(c => 
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        normalizePhone(c.phone).includes(normalizePhone(searchTerm))
+    );
+
+    const activeClientsList = clients.filter(c => {
+        const norm = normalizePhone(c.phone);
+        return monthlyByPhone[norm] && monthlyByPhone[norm].length > 0;
+    });
+
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-10 animate-fadeIn">
             {editingClient && <EditClientModal client={editingClient} onClose={() => setEditingClient(null)} onClientUpdated={handleClientUpdated} />}
             {clientToDelete && <ConfirmationModal isOpen={!!clientToDelete} onClose={() => setClientToDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o cliente ${clientToDelete.name}?`} confirmText="Excluir" variant="danger" isLoading={isDeleting} />}
 
+            {/* Header com Design Premium (Igual ao de Mensalistas) */}
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <div className="space-y-1">
                         <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Meus Clientes</h2>
-                        <p className="text-sm text-gray-600 text-center">Agenda de Clientes</p>
+                        <p className="text-sm text-gray-600 text-center font-medium">Agenda de contatos e clientes ativos</p>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-center">
                         <button
                             onClick={() => setIsAddClientOpenMobile(prev => !prev)}
-                            title="Adicionar Cliente"
-                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
+                            title="Novo Cliente"
+                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none shadow-sm"
                         >
-                            <SafeImage alt="Adicionar Cliente" className="h-6 w-6" src="https://i.imgur.com/19QrZ6g.png" loading="eager" />
+                            <SafeImage alt="Novo Cliente" className="h-6 w-6" src="https://i.imgur.com/19QrZ6g.png" />
                         </button>
+                    </div>
+
+                    <div className="relative pt-2">
+                        <input
+                            type="text"
+                            placeholder="Buscar..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all"
+                        />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none pt-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            {/* Formulário de Adição (Colapsável) */}
+            {isAddClientOpenMobile && (
+                <div className="bg-white rounded-3xl shadow-lg border border-pink-100 p-8 animate-scaleIn">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-2xl font-bold text-gray-800">Novo Registro</h3>
+                        <button onClick={() => setIsAddClientOpenMobile(false)} className="text-gray-400 hover:text-gray-600">
+                            <CloseIcon />
+                        </button>
+                    </div>
+                    <form onSubmit={handleAddClient} className="grid grid-cols-1 sm:grid-cols-12 gap-6">
+                        <div className="sm:col-span-6">
+                            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Nome Completo</label>
+                            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Maria Silva" required className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-pink-500 transition-all outline-none" />
+                        </div>
+                        <div className="sm:col-span-4">
+                            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Telefone / WhatsApp</label>
+                            <input type="text" value={phone} onChange={e => setPhone(formatWhatsapp(e.target.value))} placeholder="(00) 00000-0000" required className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-pink-500 transition-all outline-none" />
+                        </div>
+                        <div className="sm:col-span-2 flex items-end">
+                            <button type="submit" disabled={isSubmitting} className="w-full bg-pink-600 text-white font-bold py-4 rounded-2xl hover:bg-pink-700 shadow-lg shadow-pink-200 transition-all disabled:opacity-50">
+                                {isSubmitting ? '...' : 'Salvar'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
-            {/* Formulário: oculto no mobile até clicar no botão; visível sempre em sm+ */}
-            <div className={`p-6 bg-white rounded-2xl shadow-sm ${isAddClientOpenMobile ? 'block' : 'hidden sm:block'}`}>
-                <h2 className="text-2xl font-bold text-gray-700 mb-4">Adicionar Novo Cliente</h2>
-                <form onSubmit={handleAddClient} className="flex flex-col sm:flex-row gap-4">
-                    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nome do Cliente" required className="flex-grow w-full px-4 py-3.5 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" />
-                    <input type="text" value={phone} onChange={e => setPhone(formatWhatsapp(e.target.value))} placeholder="Telefone / WhatsApp" required className="w-full sm:w-52 px-4 py-3.5 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" />
-                    <button type="submit" disabled={isSubmitting} className="bg-pink-600 text-white font-semibold py-3.5 px-6 rounded-lg hover:bg-pink-700 transition-colors disabled:bg-gray-400">
-                        {isSubmitting ? 'Salvando...' : 'Salvar'}
-                    </button>
-                </form>
+
+
+            {/* Seção 1: Agenda Telefônica */}
+            <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600">
+                             <PhoneIcon className="w-5 h-5" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Inter, sans-serif' }}>Agenda</h3>
+                    </div>
+                </div>
+
+                {loading ? <div className="flex justify-center py-10"><LoadingSpinner /></div> : (
+                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="max-h-[460px] overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
+                            {filteredClients.length > 0 ? filteredClients.map(client => (
+                                <div key={client.id} className="group flex items-center gap-4 p-3 rounded-2xl hover:bg-pink-50/50 border border-transparent transition-all duration-200">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0 group-hover:scale-105 transition-transform">
+                                        👤
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h4 className="font-bold text-gray-900 truncate text-sm">{client.name}</h4>
+                                        <p className="text-gray-500 text-xs font-medium">{client.phone}</p>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-1">
+                                        <a 
+                                            href={`https://wa.me/${normalizePhone(client.phone)}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="p-2 rounded-lg text-green-600 hover:bg-green-100 transition-colors"
+                                            title="WhatsApp"
+                                        >
+                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 0 5.414 0 12.05c0 2.123.55 4.197 1.594 6.012L0 24l6.135-1.61a11.782 11.782 0 005.91 1.588h.005c6.636 0 12.05-5.415 12.05-12.05a11.77 11.77 0 00-3.41-8.513" /></svg>
+                                        </a>
+                                        <button 
+                                            onClick={() => setEditingClient(client)} 
+                                            className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                                            title="Editar"
+                                        >
+                                            <EditIcon className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            onClick={() => setClientToDelete(client)} 
+                                            className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                                            title="Excluir"
+                                        >
+                                            <DeleteIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="py-12 text-center bg-gray-50 rounded-2xl">
+                                    <div className="text-3xl mb-2">🔍</div>
+                                    <p className="text-gray-500 text-sm font-medium">Nenhum contato encontrado.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
 
-            <div className="p-6 bg-white rounded-2xl shadow-sm">
-                <h2 className="text-3xl font-bold text-gray-800 mb-4 text-center" style={{ fontFamily: 'Inter, sans-serif' }}>Lista de Clientes</h2>
-                {loading ? <div className="flex justify-center py-6 sm:py-8"><LoadingSpinner /></div> : (
-                    <div className="divide-y divide-gray-200">
-                        {clients.length > 0 ? clients.map(client => (
-                            <div key={client.id} className="py-3 flex justify-between items-center">
-                                <div>
-                                    <p className="font-semibold text-gray-800">{client.name}</p>
-                                    <p className="text-base text-gray-500">{client.phone}</p>
+            {/* Seção 2: Clientes Ativos (Mensalistas) */}
+            <div className="space-y-6">
+                <div className="flex items-center gap-3 px-4">
+                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
+                         <SparklesIcon className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Inter, sans-serif' }}>Clientes Ativos</h3>
+                    <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-100 uppercase tracking-wider">Mensalistas</span>
+                </div>
+
+                {loading ? <div className="flex justify-center py-20"><LoadingSpinner /></div> : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {activeClientsList.length > 0 ? activeClientsList.map(client => {
+                            const norm = normalizePhone(client.phone);
+                            const pets = monthlyByPhone[norm] || [];
+                            return (
+                                <div key={client.id} className="relative group bg-white rounded-[3rem] shadow-sm hover:shadow-2xl hover:shadow-green-500/10 border border-gray-100 overflow-hidden transition-all duration-500">
+                                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-emerald-500" />
+                                    
+                                    <div className="p-8">
+                                        <div className="flex items-start justify-between mb-8">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-16 h-16 bg-emerald-50 rounded-3xl flex items-center justify-center text-3xl shadow-inner group-hover:rotate-12 transition-transform duration-500">
+                                                    🏠
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-2xl font-bold text-gray-900 leading-tight">{client.name}</h4>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
+                                                            <PhoneIcon className="w-3.5 h-3.5" />
+                                                            {client.phone}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-2xl text-xs font-bold border border-emerald-100">
+                                                {pets.length} {pets.length === 1 ? 'Pet' : 'Pets'}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">Pets Vinculados</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {pets.map(pet => (
+                                                    <div key={pet.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group/pet hover:bg-white hover:border-emerald-200 transition-all cursor-default">
+                                                        {pet.pet_photo_url ? (
+                                                            <SafeImage src={pet.pet_photo_url} alt={pet.pet_name} className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover/pet:scale-105 transition-transform" />
+                                                        ) : (
+                                                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">
+                                                                🐾
+                                                            </div>
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <p className="font-bold text-gray-800 text-sm truncate">{pet.pet_name}</p>
+                                                            <p className="text-[10px] text-gray-500 font-medium truncate">{pet.pet_breed || 'Raça não inf.'}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-gray-50/50 p-6 flex justify-end gap-3 border-t border-gray-100">
+                                         <a 
+                                            href={`https://wa.me/${normalizePhone(client.phone)}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="px-6 py-2.5 bg-white text-green-600 font-bold rounded-2xl border border-green-200 hover:bg-green-600 hover:text-white transition-all text-xs shadow-sm shadow-green-100"
+                                        >
+                                            Enviar Mensagem
+                                        </a>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-3 flex-shrink-0">
-                                    <button onClick={() => setEditingClient(client)} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-blue-700 transition-colors" aria-label="Editar cliente">
-                                        <EditIcon />
-                                    </button>
-                                    <button onClick={() => setClientToDelete(client)} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-red-700 transition-colors" aria-label="Excluir cliente">
-                                        <DeleteIcon />
-                                    </button>
-                                </div>
+                            );
+                        }) : (
+                            <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border border-dashed border-gray-200">
+                                <div className="text-4xl mb-4">🏡</div>
+                                <h4 className="text-lg font-bold text-gray-800 mb-1">Nenhum mensalista vinculado</h4>
+                                <p className="text-sm text-gray-500 max-w-xs mx-auto">Vincule números de telefone da agenda ao cadastrar novos mensalistas para vê-los aqui.</p>
                             </div>
-                        )) : <p className="text-center text-gray-500 py-6 sm:py-8">Nenhum cliente cadastrado.</p>}
+                        )}
                     </div>
                 )}
             </div>
         </div>
     );
 };
+
 
 const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => void; onMonthlyClientUpdated: () => void; }> = ({ client, onClose, onMonthlyClientUpdated }) => {
     const { getPricesForWeight } = useServicePrices();
@@ -11035,7 +11273,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const { getPricesForWeight } = useServicePrices();
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
+    const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', observation: '' });
     const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
     const [serviceStepView, setServiceStepView] = useState<'main' | 'bath_groom' | 'pet_movel' | 'pet_movel_condo' | 'hotel_pet'>('main');
     const [selectedCondo, setSelectedCondo] = useState<string | null>(null);
@@ -11465,8 +11703,8 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         };
 
         const supabasePayload = isPetMovelSubmit
-            ? { ...basePayload, owner_address: formData.ownerAddress, condominium: selectedCondo }
-            : { ...basePayload, owner_address: formData.ownerAddress };
+            ? { ...basePayload, owner_address: formData.ownerAddress, condominium: selectedCondo, observation: formData.observation || null }
+            : { ...basePayload, owner_address: formData.ownerAddress, observation: formData.observation || null };
 
         try {
             // No conflict checking - all appointments are allowed
@@ -11528,7 +11766,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             setIsModalOpen(true);
             setTimeout(() => {
                 setIsModalOpen(false);
-                setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' });
+                setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', observation: '' });
                 setSelectedService(null); setSelectedWeight(null); setSelectedAddons({}); setSelectedTime(null); setTotalPrice(0); setIsSubmitting(false);
                 setSelectedCondo(null);
                 setServiceStepView('main');
@@ -11718,6 +11956,20 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             <div>
                                 <label htmlFor="ownerAddress" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">Seu Endereço</label>
                                 <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-4"><AddressIcon /></span><input type="text" name="ownerAddress" id="ownerAddress" value={formData.ownerAddress} onChange={handleInputChange} required className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all" /></div>
+                            </div>
+                            <div>
+                                <label htmlFor="observation" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">Observações sobre o Pet</label>
+                                <div className="relative mt-1">
+                                    <textarea
+                                        name="observation"
+                                        id="observation"
+                                        value={formData.observation}
+                                        onChange={handleInputChange}
+                                        rows={3}
+                                        placeholder="Ex: Cão Bravo, Não colocar laço, Não passar perfume"
+                                        className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all resize-none"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -15275,6 +15527,7 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
     const [ownerName, setOwnerName] = useState('');
     const [whatsapp, setWhatsapp] = useState('');
     const [ownerAddress, setOwnerAddress] = useState('');
+    const [observation, setObservation] = useState('');
     const [date, setDate] = useState('');
     const [time, setTime] = useState<number | ''>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -15297,6 +15550,7 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
             price: 0,
             status: 'AGENDADO',
             owner_address: ownerAddress || null,
+            observation: observation || null,
         };
         const { error } = await supabase.from('appointments').insert([payload]);
         setIsSubmitting(false);
@@ -15383,6 +15637,20 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
                                     <SafeImage alt="Address Icon" className="h-7 w-7 opacity-60" src="https://static.thenounproject.com/png/location-icon-7979305-512.png" />
                                 </span>
                                 <input id="ownerAddress" value={ownerAddress} onChange={e => setOwnerAddress(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Endereço completo (opcional)" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="visit-observation" className="block text-base font-semibold text-gray-700">Observações sobre o Pet</label>
+                            <div className="relative mt-1">
+                                <textarea 
+                                    id="visit-observation" 
+                                    value={observation} 
+                                    onChange={e => setObservation(e.target.value)} 
+                                    rows={2} 
+                                    placeholder="Ex: Cão Bravo, Não colocar laço, Não passar perfume" 
+                                    className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 resize-none"
+                                />
                             </div>
                         </div>
                     </div>
