@@ -180,6 +180,8 @@ export interface DaycareRegistration {
     payment_date: string;
     payment_status?: 'Pendente' | 'Pago';
     status: 'Pendente' | 'Aprovado' | 'Rejeitado';
+    agreed_to_checklist?: boolean;
+    agreed_to_contract?: boolean;
 }
 
 export interface HotelRegistration {

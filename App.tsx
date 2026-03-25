@@ -10422,6 +10422,7 @@ const DaycareRegistrationForm: React.FC<{
         delivered_items: { items: [], other: '' }, contracted_plan: null, total_price: undefined, payment_date: '',
         status: 'Pendente',
         check_in_date: '', check_in_time: '', check_out_date: '', check_out_time: '', attendance_days: [],
+        agreed_to_checklist: false, agreed_to_contract: false,
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -10469,11 +10470,55 @@ const DaycareRegistrationForm: React.FC<{
         setFormData(prev => (prev.total_price === discounted ? prev : { ...prev, total_price: discounted }));
     }, [formData.contracted_plan, formData.has_sibling_discount]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setShowSubmissionWarning(false);
+    const validateForm = () => {
+        try {
+            const requiredFields: Array<{ field: keyof DaycareRegistration; label: string }> = [
+                { field: 'pet_name', label: 'Nome do Pet' },
+                { field: 'pet_breed', label: 'Raça do Pet' },
+                { field: 'pet_sex', label: 'Sexo do Pet' },
+                { field: 'tutor_name', label: 'Nome do Tutor' },
+                { field: 'address', label: 'Endereço Completo' },
+                { field: 'contact_phone', label: 'Telefone de Contato' },
+                { field: 'check_in_date', label: 'Data de Entrada' },
+                { field: 'check_in_time', label: 'Horário de Entrada' },
+                { field: 'check_out_date', label: 'Data de Saída' },
+                { field: 'check_out_time', label: 'Horário de Saída' },
+                { field: 'contracted_plan', label: 'Plano Contratado' },
+            ];
+
+            for (const { field, label } of requiredFields) {
+                if (!formData[field]) {
+                    alert(`O campo "${label}" é obrigatório.`);
+                    return false;
+                }
+            }
+
+            if (!formData.attendance_days || formData.attendance_days.length === 0) {
+                alert('Você deve selecionar pelo menos um dia da semana.');
+                return false;
+            }
+
+            if (!formData.agreed_to_checklist || !formData.agreed_to_contract) {
+                alert('Você deve ler e concordar com o Check List e o Contrato de Hospedagem para continuar.');
+                return false;
+            }
+
+            return true;
+        } catch (err: any) {
+            alert('CRASH na validateForm: ' + err.message);
+            return false;
+        }
+    };
+
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        
+        if (!validateForm()) return;
+
         setIsSubmitting(true);
         try {
+            setShowSubmissionWarning(false);
+
             const payload = {
                 ...formData,
                 last_vaccine: formData.last_vaccine || null,
@@ -10484,17 +10529,36 @@ const DaycareRegistrationForm: React.FC<{
                 enrollment_date: formData.enrollment_date || new Date().toISOString().split('T')[0],
             };
 
+            console.log('Iniciando insert no Supabase', payload);
+            const { data, error } = await supabase.from('daycare_enrollments').insert(payload).select();
+            
+            if (error) {
+                alert(`Erro Supabase: ${JSON.stringify(error)}`);
+                throw error;
+            }
+            
+            const insertedData = data?.[0];
 
-            const { data, error } = await supabase.from('daycare_enrollments').insert(payload).select().single();
-            if (error) throw error;
+            // Envio não bloqueante para o Webhook
+            const webhookUrl = 'https://n8n.intelektus.tech/webhook/envioDocumentosCreche';
+            const formattedPhone = '55' + (formData.contact_phone || '').replace(/\D/g, '');
+            fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tutor_name: formData.tutor_name,
+                    contact_phone: formattedPhone
+                }),
+            }).catch(err => console.error('Webhook error:', err));
 
             if (isAdmin && onSuccess) {
-                onSuccess(data as DaycareRegistration);
+                onSuccess(insertedData as DaycareRegistration);
             } else {
                 setIsSuccess(true);
             }
 
         } catch (error: any) {
+            console.error('Erro na submissão:', error);
             alert(`Erro ao criar matrícula: ${error.message}`);
             setIsSubmitting(false);
         }
@@ -10502,7 +10566,7 @@ const DaycareRegistrationForm: React.FC<{
 
     if (isSuccess) {
         return (
-            <div className="fixed inset-0 bg-pink-600 bg-opacity-90 flex items-center justify-center z-50 animate-fadeIn p-4">
+            <div className="fixed inset-0 bg-pink-600 bg-opacity-90 flex items-center justify-center z-[1000] animate-fadeIn p-4">
                 <div className="text-center bg-white p-8 rounded-2xl shadow-2xl max-w-full sm:max-w-sm mx-auto">
                     <SuccessIcon />
                     <h2 className="text-3xl font-bold text-gray-800 mt-2">Solicitação Enviada!</h2>
@@ -10534,7 +10598,7 @@ const DaycareRegistrationForm: React.FC<{
 
             <div className="space-y-6">
                 {/* Dados do Tutor */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[80]">
                     <CardHeader>
                         <CardTitle>Dados do Tutor</CardTitle>
                     </CardHeader>
@@ -10546,17 +10610,16 @@ const DaycareRegistrationForm: React.FC<{
                                 name="contact_phone"
                                 value={formData.contact_phone}
                                 onChange={handleInputChange}
-                                required
                             />
                         </div>
 
-                        <Input label="Tutor" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} required />
-                        <Input label="RG" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} required />
+                        <Input label="Tutor" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} />
+                        <Input label="RG" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} />
                         <div className="md:col-span-2">
-                            <Input label="Endereço" name="address" value={formData.address} onChange={handleInputChange} required />
+                            <Input label="Endereço" name="address" value={formData.address} onChange={handleInputChange} />
                         </div>
 
-                        <Input label="Telefone e nome (emergencial)" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} required />
+                        <Input label="Telefone e nome (emergencial)" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} />
                         <div className="md:col-span-2">
                             <Input label="Telefone do veterinário(a)" name="vet_phone" value={formData.vet_phone} onChange={handleInputChange} />
                         </div>
@@ -10564,14 +10627,14 @@ const DaycareRegistrationForm: React.FC<{
                 </Card>
 
                 {/* Dados do Pet */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[70]">
                     <CardHeader>
                         <CardTitle>Dados do Pet</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Input label="Nome do pet" name="pet_name" value={formData.pet_name} onChange={handleInputChange} required />
-                        <Input label="Raça" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} required />
-                        <Input label="Idade" name="pet_age" value={formData.pet_age} onChange={handleInputChange} required />
+                        <Input label="Nome do pet" name="pet_name" value={formData.pet_name} onChange={handleInputChange} />
+                        <Input label="Raça" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} />
+                        <Input label="Idade" name="pet_age" value={formData.pet_age} onChange={handleInputChange} />
 
                         <div className="space-y-3">
                             <Label>Sexo</Label>
@@ -10604,7 +10667,7 @@ const DaycareRegistrationForm: React.FC<{
                 </Card>
 
                 {/* Saúde e Comportamento */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[60]">
                     <CardHeader>
                         <CardTitle>Saúde e Comportamento</CardTitle>
                     </CardHeader>
@@ -10666,7 +10729,7 @@ const DaycareRegistrationForm: React.FC<{
                 </Card>
 
                 {/* Objetos entregues */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[50]">
                     <CardHeader>
                         <CardTitle>Objetos entregues sempre</CardTitle>
                     </CardHeader>
@@ -10689,7 +10752,7 @@ const DaycareRegistrationForm: React.FC<{
                 </Card>
 
                 {/* Plano */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[40]">
                     <CardHeader>
                         <CardTitle>Plano contratado</CardTitle>
                     </CardHeader>
@@ -10714,7 +10777,7 @@ const DaycareRegistrationForm: React.FC<{
                     </CardContent>
                 </Card>
                 {/* Horários e Dias */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[30]">
                     <CardHeader>
                         <CardTitle>Horários e Dias</CardTitle>
                     </CardHeader>
@@ -10781,7 +10844,7 @@ const DaycareRegistrationForm: React.FC<{
 
                 {/* Extra Services */}
                 {/* Extra Services */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[20]">
                     <CardHeader>
                         <CardTitle>Serviços Extras</CardTitle>
                     </CardHeader>
@@ -11111,7 +11174,7 @@ const DaycareRegistrationForm: React.FC<{
                 </div> */}
 
                 {/* Resumo & Detalhes Financeiros */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm overflow-hidden">
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[10]">
                     <CardHeader>
                         <CardTitle>Resumo & Detalhes Financeiros</CardTitle>
                     </CardHeader>
@@ -11169,6 +11232,34 @@ const DaycareRegistrationForm: React.FC<{
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Consentimento */}
+                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[0]">
+                    <CardContent className="p-6 space-y-4">
+                        <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-pink-50/30 transition-colors">
+                            <Checkbox
+                                id="agreed_to_checklist"
+                                checked={formData.agreed_to_checklist}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreed_to_checklist: checked }))}
+                                className="mt-1"
+                            />
+                            <Label htmlFor="agreed_to_checklist" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
+                                Li e concordo em enviar o <a href="https://docs.google.com/document/d/1BE4UrgsUzXljtNkzLf-WmLyQn2lFOFde2DHkW2urXLQ/edit?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-pink-600 font-bold hover:underline">Check List</a> através do canal do whatsapp
+                            </Label>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-pink-50/30 transition-colors">
+                            <Checkbox
+                                id="agreed_to_contract"
+                                checked={formData.agreed_to_contract}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreed_to_contract: checked }))}
+                                className="mt-1"
+                            />
+                            <Label htmlFor="agreed_to_contract" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
+                                Li e concordo com o <a href="https://docs.google.com/document/d/1YxMDR9dFdpdKv73dTiuFnktmcJ-cdV6CVIJIEdrpXyE/edit?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-pink-600 font-bold hover:underline">Contrato de Hospedagem</a> da Sandy's Pet Shop
+                            </Label>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
             <div className="p-6 bg-white/90 backdrop-blur-sm flex justify-between items-center mt-auto rounded-b-[2rem] border-t border-pink-100">
                 <Button
@@ -11185,8 +11276,9 @@ const DaycareRegistrationForm: React.FC<{
                     size="lg"
                     disabled={isSubmitting}
                     onClick={(e) => {
+                        if (!validateForm()) return;
                         if (isAdmin) {
-                            (e.currentTarget.closest('form') as HTMLFormElement | null)?.requestSubmit();
+                            handleSubmit();
                         } else {
                             setShowSubmissionWarning(true);
                         }
@@ -11196,42 +11288,65 @@ const DaycareRegistrationForm: React.FC<{
                     {isSubmitting ? 'Enviando...' : (isAdmin ? 'Adicionar Matrícula' : 'Solicitar Matrícula')}
                 </Button>
             </div>
-            {showSubmissionWarning && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
-                        <h3 className="text-xl font-bold text-gray-800">Antes de solicitar a matrícula</h3>
-                        <p className="text-gray-700 mt-2">No dia do check-in, o tutor deve levar:</p>
-                        <ul className="mt-3 list-disc list-inside text-gray-700 space-y-1 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                            <li>RG do tutor</li>
-                            <li>Comprovante de residência</li>
-                            <li>Carteira de vacinação</li>
-                            <li>Atestado de saúde do veterinário responsável</li>
-                        </ul>
-                        <div className="mt-6 flex gap-3 justify-end">
-                            <Button variant="secondary" onClick={() => setShowSubmissionWarning(false)}>
-                                Voltar
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="bg-pink-600 hover:bg-pink-700 text-white"
-                            >
-                                Solicitar Matrícula
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </form>
     );
 
+    const submissionWarningModal = showSubmissionWarning && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm mx-auto p-8 border border-pink-100 animate-fadeInFast">
+                <div className="text-center mb-6">
+                    <div className="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-pink-600">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-800">Atenção!</h3>
+                    <p className="text-gray-600 mt-2 text-sm">No dia do check-in, não esqueça de trazer:</p>
+                </div>
+                
+                <ul className="space-y-3 mb-8">
+                    {['RG do tutor', 'Comprovante de residência', 'Carteira de vacinação', 'Atestado de saúde'].map((item, i) => (
+                        <li key={i} className="flex items-center gap-3 text-gray-700 bg-pink-50/50 p-2 rounded-lg text-sm">
+                            <CheckCircleOutlineIcon className="w-4 h-4 text-pink-500 whitespace-nowrap" />
+                            {item}
+                        </li>
+                    ))}
+                </ul>
+
+                <div className="flex flex-col gap-3">
+                    <Button
+                        type="button"
+                        onClick={handleSubmit}
+                        className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-2xl py-6 text-lg font-bold shadow-lg shadow-pink-200"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? 'Enviando...' : 'Entendi, Solicitar Agora'}
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        onClick={() => setShowSubmissionWarning(false)}
+                        className="w-full text-gray-500 hover:text-gray-700 font-semibold"
+                    >
+                        Voltar e Revisar
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+
     if (isAdmin) {
-        return formContent;
+        return (
+            <>
+                {formContent}
+                {submissionWarningModal}
+            </>
+        );
     }
 
     return (
         <div className="min-h-screen p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
             <div className="w-full max-w-5xl mx-auto animate-fadeIn">
+                {/* ... header e main ... */}
                 <header className="w-full flex flex-col md:flex-row items-center justify-between mb-8 animate-fadeInUp gap-6">
                     <div className="flex items-center gap-5 text-center md:text-left">
                         <div className="relative">
@@ -11246,6 +11361,7 @@ const DaycareRegistrationForm: React.FC<{
                 </header>
 
                 <main className="w-full max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/50 backdrop-blur-sm relative">
+                    {/* ... botões e conteúdo ... */}
                     <button
                         type="button"
                         onClick={onBack || (() => setView && setView('scheduler'))}
@@ -11261,6 +11377,7 @@ const DaycareRegistrationForm: React.FC<{
                     </div>
                 </main>
             </div>
+            {submissionWarningModal}
         </div>
     );
 };
