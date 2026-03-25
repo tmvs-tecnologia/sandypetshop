@@ -866,14 +866,17 @@ const ConfirmationModal: React.FC<{
 
     const confirmButtonClasses = {
         primary: 'bg-pink-600 hover:bg-pink-700 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5',
-        danger: 'bg-[#d32f2f] hover:bg-[#b71c1c] text-white shadow-md hover:shadow-lg hover:-translate-y-0.5',
+        danger: 'bg-rose-500 hover:bg-rose-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5',
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[10001] p-4 animate-fadeIn">
-            <div className="bg-white rounded-[28px] shadow-2xl w-full max-w-md animate-scaleIn overflow-hidden font-jakarta">
-                <div className="p-8 sm:p-10">
-                    <h2 className="text-3xl sm:text-[32px] font-extrabold text-slate-800 leading-tight mb-4 tracking-tight">{title}</h2>
+        <div className="fixed inset-0 bg-pink-900/20 backdrop-blur-sm flex items-center justify-center z-[10001] p-4 animate-fadeIn">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md animate-scaleIn overflow-hidden font-jakarta">
+                <div className="p-8 sm:p-10 text-center">
+                    <div className="w-20 h-20 bg-pink-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
+                        {variant === 'danger' ? '⚠️' : '❓'}
+                    </div>
+                    <h2 className="text-3xl font-extrabold text-gray-800 leading-tight mb-4 tracking-tight">{title}</h2>
                     <p className="text-slate-500 text-[17px] leading-relaxed mb-10">{message}</p>
                     
                     <div className="flex justify-end gap-3">
@@ -6386,17 +6389,56 @@ const EditClientModal: React.FC<{ client: Client; onClose: () => void; onClientU
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 animate-fadeIn">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg animate-scaleIn">
+        <div className="fixed inset-0 bg-pink-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg animate-scaleIn overflow-hidden">
                 <form onSubmit={handleSubmit}>
-                    <div className="p-6 border-b"><h2 className="text-3xl font-bold text-gray-800">Editar Cliente</h2></div>
-                    <div className="p-6 space-y-6">
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nome do Cliente" required className="w-full px-4 py-3.5 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" />
-                        <input type="text" value={phone} onChange={e => setPhone(formatWhatsapp(e.target.value))} placeholder="Telefone / WhatsApp" required className="w-full px-4 py-3.5 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" />
+                    <div className="bg-gradient-to-r from-pink-500 to-rose-600 p-8 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+                        <h2 className="text-3xl font-bold flex items-center gap-3 relative z-10">
+                            <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">✏️</span>
+                            Editar Cliente
+                        </h2>
                     </div>
-                    <div className="p-6 bg-gray-50 flex justify-end gap-4">
-                        <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 font-bold py-3.5 px-4 rounded-lg">Cancelar</button>
-                        <button type="submit" disabled={isSubmitting} className="bg-pink-600 text-white font-bold py-3.5 px-4 rounded-lg disabled:bg-gray-400">
+                    
+                    <div className="p-8 space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-gray-500 uppercase tracking-wider ml-1">Nome Completo</label>
+                            <input 
+                                type="text" 
+                                value={name} 
+                                onChange={e => setName(e.target.value)} 
+                                placeholder="Nome do Cliente" 
+                                required 
+                                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-500/10 focus:border-pink-500 transition-all text-gray-800 font-medium" 
+                            />
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-gray-500 uppercase tracking-wider ml-1">WhatsApp / Telefone</label>
+                            <input 
+                                type="text" 
+                                value={phone} 
+                                onChange={e => setPhone(formatWhatsapp(e.target.value))} 
+                                placeholder="Telefone / WhatsApp" 
+                                required 
+                                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-500/10 focus:border-pink-500 transition-all text-gray-800 font-medium" 
+                            />
+                        </div>
+                    </div>
+
+                    <div className="p-8 bg-gray-50/50 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-gray-100">
+                        <button 
+                            type="button" 
+                            onClick={onClose} 
+                            className="bg-white text-gray-600 font-bold py-4 px-8 rounded-2xl hover:bg-gray-100 transition-all border border-gray-200"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="submit" 
+                            disabled={isSubmitting} 
+                            className="bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold py-4 px-10 rounded-2xl hover:shadow-lg hover:shadow-pink-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
                             {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
                         </button>
                     </div>
@@ -6420,6 +6462,7 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     const [isAddClientOpenMobile, setIsAddClientOpenMobile] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedClientId, setExpandedClientId] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'agenda' | 'ativos'>('agenda');
 
     const normalizePhone = (p: string) => (p || '').replace(/\D/g, '');
 
@@ -6573,175 +6616,192 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                 </div>
             )}
 
-
-
-            {/* Seção 1: Agenda Telefônica */}
-            <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600">
-                             <PhoneIcon className="w-5 h-5" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-800 whitespace-nowrap" style={{ fontFamily: 'Inter, sans-serif' }}>Agenda</h3>
-                    </div>
-                </div>
-
-                {loading ? <div className="flex justify-center py-10"><LoadingSpinner /></div> : (
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="max-h-[460px] overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
-                            {filteredClients.length > 0 ? filteredClients.map(client => (
-                                <div key={client.id} className="group flex items-center gap-4 p-3 rounded-2xl hover:bg-pink-50/50 border border-transparent transition-all duration-200">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0 group-hover:scale-105 transition-transform">
-                                        👤
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <h4 className="font-bold text-gray-900 truncate text-sm">{client.name}</h4>
-                                        <p className="text-gray-500 text-xs font-medium">{client.phone}</p>
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-1">
-                                        <a 
-                                            href={`https://wa.me/${normalizePhone(client.phone)}`} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="p-2 rounded-lg text-green-600 hover:bg-green-100 transition-colors"
-                                            title="WhatsApp"
-                                        >
-                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 0 5.414 0 12.05c0 2.123.55 4.197 1.594 6.012L0 24l6.135-1.61a11.782 11.782 0 005.91 1.588h.005c6.636 0 12.05-5.415 12.05-12.05a11.77 11.77 0 00-3.41-8.513" /></svg>
-                                        </a>
-                                        <button 
-                                            onClick={() => setEditingClient(client)} 
-                                            className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                                            title="Editar"
-                                        >
-                                            <EditIcon className="w-4 h-4" />
-                                        </button>
-                                        <button 
-                                            onClick={() => setClientToDelete(client)} 
-                                            className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                                            title="Excluir"
-                                        >
-                                            <DeleteIcon className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="py-12 text-center bg-gray-50 rounded-2xl">
-                                    <div className="text-3xl mb-2">🔍</div>
-                                    <p className="text-gray-500 text-sm font-medium">Nenhum contato encontrado.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+            {/* Tab Switcher - Design Pill */}
+            <div className="flex p-1 bg-gray-100/50 rounded-[1.2rem] border border-gray-100 mb-2 gap-1 backdrop-blur-sm mx-1">
+                <button 
+                    onClick={() => setActiveTab('agenda')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold transition-all duration-300 ${activeTab === 'agenda' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500 hover:text-pink-400'}`}
+                >
+                    <PhoneIcon className="w-5 h-5" />
+                    <span className="text-sm uppercase tracking-wider">Agenda</span>
+                </button>
+                <button 
+                    onClick={() => setActiveTab('ativos')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold transition-all duration-300 ${activeTab === 'ativos' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500 hover:text-pink-400'}`}
+                >
+                    <SparklesIcon className="w-5 h-5" />
+                    <span className="text-sm uppercase tracking-wider">Clientes Ativos</span>
+                </button>
             </div>
 
-            {/* Seção 2: Clientes Ativos (Mensalistas) */}
-            <div className="space-y-6">
-                <div className="flex items-center gap-3 px-4">
-                    <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600">
-                         <SparklesIcon className="w-5 h-5" />
-                    </div>
-                    <div className="flex flex-col -space-y-0.5">
-                        <span className="text-[10px] font-bold text-pink-600 uppercase tracking-[0.2em] ml-0.5">Mensalistas</span>
-                        <h3 className="text-2xl font-bold text-gray-800 whitespace-nowrap leading-none" style={{ fontFamily: 'Inter, sans-serif' }}>Clientes Ativos</h3>
-                    </div>
-                </div>
+            {/* Conteúdo das Abas */}
+            <div className="px-1">
+                {activeTab === 'agenda' ? (
+                    <div className="space-y-4 animate-fadeIn">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600">
+                                 <PhoneIcon className="w-5 h-5" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Inter, sans-serif' }}>Agenda Telefônica</h3>
+                        </div>
 
-                {loading ? <div className="flex justify-center py-20"><LoadingSpinner /></div> : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {activeClientsList.length > 0 ? activeClientsList.map(client => {
-                            const norm = normalizePhone(client.phone);
-                            const pets = monthlyByPhone[norm] || [];
-                            const isExpanded = expandedClientId === client.id;
-
-                            return (
-                                <div 
-                                    key={client.id} 
-                                    className={`relative group bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden transition-all duration-500 ease-in-out cursor-pointer ${isExpanded ? 'shadow-2xl shadow-pink-500/10 ring-2 ring-pink-100' : 'hover:bg-gray-50/50'}`}
-                                    onClick={() => setExpandedClientId(isExpanded ? null : client.id)}
-                                >
-                                    <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-pink-400 to-rose-500 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`} />
-                                    
-                                    <div className={`p-6 transition-all duration-500 ${isExpanded ? 'p-8' : 'p-5'}`}>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`bg-pink-50 rounded-2xl flex items-center justify-center transition-all duration-500 ${isExpanded ? 'w-16 h-16 text-2xl rotate-12 scale-110 shadow-inner' : 'w-10 h-10 text-lg group-hover:scale-110'}`}>
-                                                    <SafeImage alt="Client Icon" className={isExpanded ? "h-8 w-8" : "h-5 w-5"} src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" />
+                        {loading ? <div className="flex justify-center py-10"><LoadingSpinner /></div> : (
+                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                                <div className="max-h-[500px] overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-pink-200">
+                                    {filteredClients.length > 0 ? filteredClients.map(client => (
+                                            <div key={client.id} className="group flex items-center gap-2 p-2 rounded-xl hover:bg-pink-50/50 border border-transparent transition-all duration-200 overflow-hidden">
+                                                <div className="w-9 h-9 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-inner">
+                                                    👤
                                                 </div>
-                                                <div>
-                                                    <h4 className={`font-bold text-gray-900 transition-all duration-500 ${isExpanded ? 'text-2xl leading-tight' : 'text-base group-hover:text-pink-600'}`}>{client.name}</h4>
-                                                    {isExpanded && (
-                                                        <div className="flex items-center gap-2 mt-1 animate-fadeIn">
-                                                            <span className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
-                                                                <PhoneIcon className="w-3.5 h-3.5" />
-                                                                {client.phone}
-                                                            </span>
-                                                        </div>
-                                                    )}
+                                                <div className="min-w-0 flex-1 flex flex-col gap-0.5 overflow-hidden">
+                                                    <span className="font-bold text-gray-900 truncate text-sm whitespace-nowrap leading-tight">{client.name}</span>
+                                                    <span className="text-gray-500 text-[11px] font-medium whitespace-nowrap truncate leading-tight">{client.phone}</span>
+                                                </div>
+                                                
+                                                <div className="flex items-center gap-0.5 flex-shrink-0">
+                                                    <a 
+                                                        href={`https://wa.me/${normalizePhone(client.phone)}`} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="p-1.5 rounded-lg text-green-600 hover:bg-green-100 transition-colors"
+                                                        title="WhatsApp"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.397-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 0 5.414 0 12.05c0 2.123.55 4.197 1.594 6.012L0 24l6.135-1.61a11.782 11.782 0 005.91 1.588h.005c6.636 0 12.05-5.415 12.05-12.05a11.77 11.77 0 00-3.41-8.513" /></svg>
+                                                    </a>
+                                                    <button 
+                                                        onClick={() => setEditingClient(client)} 
+                                                        className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                                                        title="Editar"
+                                                    >
+                                                        <EditIcon className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setClientToDelete(client)} 
+                                                        className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                                                        title="Excluir"
+                                                    >
+                                                        <DeleteIcon className="w-3.5 h-3.5" />
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                {!isExpanded && (
-                                                    <div className="bg-pink-50 text-pink-700 px-3 py-1 rounded-full text-[10px] font-bold border border-pink-100 animate-fadeIn">
-                                                        {pets.length} {pets.length === 1 ? 'Pet' : 'Pets'}
-                                                    </div>
-                                                )}
-                                                <div className={`text-gray-400 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-pink-500' : 'group-hover:translate-x-1'}`}>
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
-                                                </div>
-                                            </div>
+                                    )) : (
+                                        <div className="py-20 text-center bg-gray-50 rounded-3xl mx-2 my-2 border-2 border-dashed border-gray-100">
+                                            <div className="text-4xl mb-3">🔍</div>
+                                            <p className="text-gray-500 font-bold">Nenhum contato encontrado.</p>
                                         </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-6 animate-fadeIn">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600">
+                                 <SparklesIcon className="w-5 h-5" />
+                            </div>
+                            <div className="flex flex-col -space-y-1">
+                                <span className="text-[10px] font-bold text-pink-600 uppercase tracking-[0.2em] ml-0.5">Mensalistas</span>
+                                <h3 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Inter, sans-serif' }}>Clientes Ativos</h3>
+                            </div>
+                        </div>
 
-                                        <div className={`grid transition-all duration-500 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-8' : 'grid-rows-[0fr] opacity-0'}`}>
-                                            <div className="overflow-hidden">
-                                                <div className="space-y-6 pt-2">
-                                                    <div>
-                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">Pets Vinculados</p>
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                            {pets.map(pet => (
-                                                                <div key={pet.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group/pet hover:bg-white hover:border-pink-200 transition-all cursor-default">
-                                                                    {pet.pet_photo_url ? (
-                                                                        <SafeImage src={pet.pet_photo_url} alt={pet.pet_name} className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover/pet:scale-105 transition-transform" />
-                                                                    ) : (
-                                                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">
-                                                                            🐾
-                                                                        </div>
-                                                                    )}
-                                                                    <div className="min-w-0">
-                                                                        <p className="font-bold text-gray-800 text-sm truncate">{pet.pet_name}</p>
-                                                                        <p className="text-[10px] text-gray-500 font-medium truncate">{pet.pet_breed || 'Raça não inf.'}</p>
-                                                                    </div>
+                        {loading ? <div className="flex justify-center py-20"><LoadingSpinner /></div> : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {activeClientsList.length > 0 ? activeClientsList.map(client => {
+                                    const norm = normalizePhone(client.phone);
+                                    const pets = monthlyByPhone[norm] || [];
+                                    const isExpanded = expandedClientId === client.id;
+
+                                    return (
+                                        <div 
+                                            key={client.id} 
+                                            className={`relative group bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden transition-all duration-500 ease-in-out cursor-pointer ${isExpanded ? 'shadow-2xl shadow-pink-500/10 ring-2 ring-pink-100' : 'hover:bg-gray-50/50'}`}
+                                            onClick={() => setExpandedClientId(isExpanded ? null : client.id)}
+                                        >
+                                            <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-pink-400 to-rose-500 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`} />
+                                            
+                                            <div className={`p-6 transition-all duration-500 ${isExpanded ? 'p-8' : 'p-5'}`}>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`bg-pink-50 rounded-2xl flex items-center justify-center transition-all duration-500 ${isExpanded ? 'w-16 h-16 text-2xl rotate-12 scale-110 shadow-inner' : 'w-11 h-11 text-lg group-hover:scale-110'}`}>
+                                                            <SafeImage alt="Client Icon" className={isExpanded ? "h-8 w-8" : "h-6 w-6"} src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className={`font-bold text-gray-900 transition-all duration-500 ${isExpanded ? 'text-2xl leading-tight' : 'text-base group-hover:text-pink-600'}`}>{client.name}</h4>
+                                                            {isExpanded && (
+                                                                <div className="flex items-center gap-2 mt-1 animate-fadeIn">
+                                                                    <span className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
+                                                                        <PhoneIcon className="w-3.5 h-3.5" />
+                                                                        {client.phone}
+                                                                    </span>
                                                                 </div>
-                                                            ))}
+                                                            )}
                                                         </div>
                                                     </div>
-                                                    
-                                                    <div className="pt-6 border-t border-gray-100 flex justify-end">
-                                                         <a 
-                                                            href={`https://wa.me/${normalizePhone(client.phone)}`} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="px-8 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold rounded-2xl hover:shadow-lg hover:shadow-pink-200/50 transform hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.397-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 0 5.414 0 12.05c0 2.123.55 4.197 1.594 6.012L0 24l6.135-1.61a11.782 11.782 0 005.91 1.588h.005c6.636 0 12.05-5.415 12.05-12.05a11.77 11.77 0 00-3.41-8.513" /></svg>
-                                                            Enviar Mensagem
-                                                        </a>
+                                                    <div className="flex items-center gap-3">
+                                                        {!isExpanded && (
+                                                            <div className="bg-pink-50 text-pink-700 px-3 py-1 rounded-full text-[10px] font-bold border border-pink-100 animate-fadeIn">
+                                                                {pets.length} {pets.length === 1 ? 'Pet' : 'Pets'}
+                                                            </div>
+                                                        )}
+                                                        <div className={`text-gray-400 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-pink-500' : 'group-hover:translate-x-1'}`}>
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className={`grid transition-all duration-500 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-8' : 'grid-rows-[0fr] opacity-0'}`}>
+                                                    <div className="overflow-hidden">
+                                                        <div className="space-y-6 pt-2">
+                                                            <div>
+                                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">Pets Vinculados</p>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                                    {pets.map(pet => (
+                                                                        <div key={pet.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group/pet hover:bg-white hover:border-pink-200 transition-all cursor-default">
+                                                                            {pet.pet_photo_url ? (
+                                                                                <SafeImage src={pet.pet_photo_url} alt={pet.pet_name} className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover/pet:scale-105 transition-transform" />
+                                                                            ) : (
+                                                                                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">
+                                                                                    🐾
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="min-w-0">
+                                                                                <p className="font-bold text-gray-800 text-sm truncate">{pet.pet_name}</p>
+                                                                                <p className="text-[10px] text-gray-500 font-medium truncate">{pet.pet_breed || 'Raça não inf.'}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div className="pt-6 border-t border-gray-100 flex justify-end">
+                                                                 <a 
+                                                                    href={`https://wa.me/${normalizePhone(client.phone)}`} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="px-8 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold rounded-2xl hover:shadow-lg hover:shadow-pink-200/50 transform hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.397-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 0 5.414 0 12.05c0 2.123.55 4.197 1.594 6.012L0 24l6.135-1.61a11.782 11.782 0 005.91 1.588h.005c6.636 0 12.05-5.415 12.05-12.05a11.77 11.77 0 00-3.41-8.513" /></svg>
+                                                                    Enviar Mensagem
+                                                                </a>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
+                                    );
+                                }) : (
+                                    <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border border-dashed border-gray-200">
+                                        <div className="flex justify-center mb-4">
+                                            <SafeImage alt="Mensalistas Icon" className="h-12 w-12" src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" />
+                                        </div>
+                                        <h4 className="text-lg font-bold text-gray-800 mb-1">Nenhum mensalista vinculado</h4>
+                                        <p className="text-sm text-gray-500 max-w-xs mx-auto">Vincule números de telefone da agenda ao cadastrar novos mensalistas para vê-los aqui.</p>
                                     </div>
-                                </div>
-                            );
-                        }) : (
-                            <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border border-dashed border-gray-200">
-                                <div className="flex justify-center mb-4">
-                                    <SafeImage alt="Mensalistas Icon" className="h-12 w-12" src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" />
-                                </div>
-                                <h4 className="text-lg font-bold text-gray-800 mb-1">Nenhum mensalista vinculado</h4>
-                                <p className="text-sm text-gray-500 max-w-xs mx-auto">Vincule números de telefone da agenda ao cadastrar novos mensalistas para vê-los aqui.</p>
+                                )}
                             </div>
                         )}
                     </div>
