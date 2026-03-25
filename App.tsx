@@ -6419,6 +6419,7 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isAddClientOpenMobile, setIsAddClientOpenMobile] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [expandedClientId, setExpandedClientId] = useState<string | null>(null);
 
     const normalizePhone = (p: string) => (p || '').replace(/\D/g, '');
 
@@ -6652,68 +6653,93 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                         {activeClientsList.length > 0 ? activeClientsList.map(client => {
                             const norm = normalizePhone(client.phone);
                             const pets = monthlyByPhone[norm] || [];
+                            const isExpanded = expandedClientId === client.id;
+
                             return (
-                                <div key={client.id} className="relative group bg-white rounded-[3rem] shadow-sm hover:shadow-2xl hover:shadow-green-500/10 border border-gray-100 overflow-hidden transition-all duration-500">
-                                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-emerald-500" />
+                                <div 
+                                    key={client.id} 
+                                    className={`relative group bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden transition-all duration-500 ease-in-out cursor-pointer ${isExpanded ? 'shadow-2xl shadow-green-500/10 ring-2 ring-green-100' : 'hover:bg-gray-50/50'}`}
+                                    onClick={() => setExpandedClientId(isExpanded ? null : client.id)}
+                                >
+                                    <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-green-400 to-emerald-500 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`} />
                                     
-                                    <div className="p-8">
-                                        <div className="flex items-start justify-between mb-8">
+                                    <div className={`p-6 transition-all duration-500 ${isExpanded ? 'p-8' : 'p-5'}`}>
+                                        <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-16 h-16 bg-emerald-50 rounded-3xl flex items-center justify-center text-3xl shadow-inner group-hover:rotate-12 transition-transform duration-500">
-                                                    🏠
+                                                <div className={`bg-emerald-50 rounded-2xl flex items-center justify-center transition-all duration-500 ${isExpanded ? 'w-16 h-16 text-2xl rotate-12 scale-110 shadow-inner' : 'w-10 h-10 text-lg group-hover:scale-110'}`}>
+                                                    <SafeImage alt="Client Icon" className={isExpanded ? "h-8 w-8" : "h-5 w-5"} src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-2xl font-bold text-gray-900 leading-tight">{client.name}</h4>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
-                                                            <PhoneIcon className="w-3.5 h-3.5" />
-                                                            {client.phone}
-                                                        </span>
-                                                    </div>
+                                                    <h4 className={`font-bold text-gray-900 transition-all duration-500 ${isExpanded ? 'text-2xl leading-tight' : 'text-base group-hover:text-green-600'}`}>{client.name}</h4>
+                                                    {isExpanded && (
+                                                        <div className="flex items-center gap-2 mt-1 animate-fadeIn">
+                                                            <span className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
+                                                                <PhoneIcon className="w-3.5 h-3.5" />
+                                                                {client.phone}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-2xl text-xs font-bold border border-emerald-100">
-                                                {pets.length} {pets.length === 1 ? 'Pet' : 'Pets'}
+                                            <div className="flex items-center gap-3">
+                                                {!isExpanded && (
+                                                    <div className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-bold border border-emerald-100 animate-fadeIn">
+                                                        {pets.length} {pets.length === 1 ? 'Pet' : 'Pets'}
+                                                    </div>
+                                                )}
+                                                <div className={`text-gray-400 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-green-500' : 'group-hover:translate-x-1'}`}>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">Pets Vinculados</p>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {pets.map(pet => (
-                                                    <div key={pet.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group/pet hover:bg-white hover:border-emerald-200 transition-all cursor-default">
-                                                        {pet.pet_photo_url ? (
-                                                            <SafeImage src={pet.pet_photo_url} alt={pet.pet_name} className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover/pet:scale-105 transition-transform" />
-                                                        ) : (
-                                                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">
-                                                                🐾
-                                                            </div>
-                                                        )}
-                                                        <div className="min-w-0">
-                                                            <p className="font-bold text-gray-800 text-sm truncate">{pet.pet_name}</p>
-                                                            <p className="text-[10px] text-gray-500 font-medium truncate">{pet.pet_breed || 'Raça não inf.'}</p>
+                                        <div className={`grid transition-all duration-500 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-8' : 'grid-rows-[0fr] opacity-0'}`}>
+                                            <div className="overflow-hidden">
+                                                <div className="space-y-6 pt-2">
+                                                    <div>
+                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">Pets Vinculados</p>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {pets.map(pet => (
+                                                                <div key={pet.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group/pet hover:bg-white hover:border-emerald-200 transition-all cursor-default">
+                                                                    {pet.pet_photo_url ? (
+                                                                        <SafeImage src={pet.pet_photo_url} alt={pet.pet_name} className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover/pet:scale-105 transition-transform" />
+                                                                    ) : (
+                                                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">
+                                                                            🐾
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="min-w-0">
+                                                                        <p className="font-bold text-gray-800 text-sm truncate">{pet.pet_name}</p>
+                                                                        <p className="text-[10px] text-gray-500 font-medium truncate">{pet.pet_breed || 'Raça não inf.'}</p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     </div>
-                                                ))}
+                                                    
+                                                    <div className="pt-6 border-t border-gray-100 flex justify-end">
+                                                         <a 
+                                                            href={`https://wa.me/${normalizePhone(client.phone)}`} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-2xl hover:shadow-lg hover:shadow-green-200/50 transform hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 0 5.414 0 12.05c0 2.123.55 4.197 1.594 6.012L0 24l6.135-1.61a11.782 11.782 0 005.91 1.588h.005c6.636 0 12.05-5.415 12.05-12.05a11.77 11.77 0 00-3.41-8.513" /></svg>
+                                                            Enviar Mensagem
+                                                        </a>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    
-                                    <div className="bg-gray-50/50 p-6 flex justify-end gap-3 border-t border-gray-100">
-                                         <a 
-                                            href={`https://wa.me/${normalizePhone(client.phone)}`} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="px-6 py-2.5 bg-white text-green-600 font-bold rounded-2xl border border-green-200 hover:bg-green-600 hover:text-white transition-all text-xs shadow-sm shadow-green-100"
-                                        >
-                                            Enviar Mensagem
-                                        </a>
                                     </div>
                                 </div>
                             );
                         }) : (
                             <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border border-dashed border-gray-200">
-                                <div className="text-4xl mb-4">🏡</div>
+                                <div className="flex justify-center mb-4">
+                                    <SafeImage alt="Mensalistas Icon" className="h-12 w-12" src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" />
+                                </div>
                                 <h4 className="text-lg font-bold text-gray-800 mb-1">Nenhum mensalista vinculado</h4>
                                 <p className="text-sm text-gray-500 max-w-xs mx-auto">Vincule números de telefone da agenda ao cadastrar novos mensalistas para vê-los aqui.</p>
                             </div>
@@ -12263,38 +12289,6 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         />
                                     </div>
                                 </div>
-                                {selectedService && !isVisitService && selectedWeight && totalPrice > 0 && (
-                                    <div className="mt-8 p-6 bg-gradient-to-r from-pink-100 to-rose-100 border-2 border-pink-200 rounded-[2rem] animate-fadeIn shadow-lg shadow-pink-200/50">
-                                        <div className="flex justify-between items-center gap-3 whitespace-nowrap">
-                                            <span className="text-lg font-bold text-pink-900 uppercase tracking-wider whitespace-nowrap">Preço Total:</span>
-                                            <span className="text-2xl sm:text-3xl font-extrabold text-pink-700 drop-shadow-sm whitespace-nowrap">R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</span>
-                                        </div>
-                                        {Object.keys(selectedAddons).some(key => selectedAddons[key]) && (
-                                            <div className="mt-4 pt-4 border-t border-pink-200/50 text-sm font-medium text-pink-800 flex flex-col gap-1">
-                                                <div className="flex justify-between">
-                                                    <span>Serviço base:</span>
-                                                    <span>R$ {(totalPrice - Object.keys(selectedAddons).reduce((sum, addonId) => {
-                                                        if (selectedAddons[addonId]) {
-                                                            const addon = ADDON_SERVICES.find(a => a.id === addonId);
-                                                            return sum + (addon?.price || 0);
-                                                        }
-                                                        return sum;
-                                                    }, 0)).toFixed(2).replace('.', ',')}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Adicionais:</span>
-                                                    <span>R$ {Object.keys(selectedAddons).reduce((sum, addonId) => {
-                                                        if (selectedAddons[addonId]) {
-                                                            const addon = ADDON_SERVICES.find(a => a.id === addonId);
-                                                            return sum + (addon?.price || 0);
-                                                        }
-                                                        return sum;
-                                                    }, 0).toFixed(2).replace('.', ',')}</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
                             </div>
                         )}
 
@@ -12312,12 +12306,39 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         <p><strong>Adicionais:</strong> {ADDON_SERVICES.filter(a => selectedAddons[a.id]).map(a => a.label).join(', ')}</p>
                                     )}
                                     <p><strong>Data:</strong> {selectedDate.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })} às {selectedTime}:00</p>
-                                    <div className="mt-6 p-6 bg-gradient-to-r from-pink-100 to-rose-100 border-2 border-pink-200 rounded-[2rem] animate-fadeIn shadow-lg shadow-pink-200/50">
-                                        <div className="flex justify-between items-center gap-3 whitespace-nowrap">
-                                            <span className="text-lg font-bold text-pink-900 uppercase tracking-wider whitespace-nowrap">Preço Total:</span>
-                                            <span className="text-2xl sm:text-3xl font-extrabold text-pink-700 drop-shadow-sm whitespace-nowrap">R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</span>
+                                    
+                                    {selectedService && !isVisitService && selectedWeight && totalPrice > 0 && (
+                                        <div className="mt-6 p-4 sm:p-6 bg-gradient-to-r from-pink-100 to-rose-100 border-2 border-pink-200 rounded-[1.5rem] sm:rounded-[2rem] animate-fadeIn shadow-lg shadow-pink-200/50 w-full overflow-hidden">
+                                            <div className="flex justify-between items-center gap-2 whitespace-nowrap overflow-hidden">
+                                                <span className="text-sm sm:text-lg font-bold text-pink-900 uppercase tracking-wider whitespace-nowrap">Preço Total:</span>
+                                                <span className="text-xl sm:text-3xl font-extrabold text-pink-700 drop-shadow-sm whitespace-nowrap">R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</span>
+                                            </div>
+                                            {Object.keys(selectedAddons).some(key => selectedAddons[key]) && (
+                                                <div className="mt-4 pt-4 border-t border-pink-200/50 text-[10px] sm:text-sm font-medium text-pink-800 flex flex-col gap-1">
+                                                    <div className="flex justify-between items-center gap-2 whitespace-nowrap">
+                                                        <span className="whitespace-nowrap">Serviço base:</span>
+                                                        <span className="whitespace-nowrap font-bold">R$ {(totalPrice - Object.keys(selectedAddons).reduce((sum, addonId) => {
+                                                            if (selectedAddons[addonId]) {
+                                                                const addon = ADDON_SERVICES.find(a => a.id === addonId);
+                                                                return sum + (addon?.price || 0);
+                                                            }
+                                                            return sum;
+                                                        }, 0)).toFixed(2).replace('.', ',')}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center gap-2 whitespace-nowrap">
+                                                        <span className="whitespace-nowrap">Adicionais:</span>
+                                                        <span className="whitespace-nowrap font-bold">R$ {Object.keys(selectedAddons).reduce((sum, addonId) => {
+                                                            if (selectedAddons[addonId]) {
+                                                                const addon = ADDON_SERVICES.find(a => a.id === addonId);
+                                                                return sum + (addon?.price || 0);
+                                                            }
+                                                            return sum;
+                                                        }, 0).toFixed(2).replace('.', ',')}</span>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                                 <div className="mt-8">
                                     <button type="submit" disabled={isSubmitting || !isStep1Valid || !isStep2Valid || !isStep3Valid} className="group relative overflow-hidden w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-extrabold py-2.5 px-8 rounded-2xl transition-all duration-300 shadow-[0_8px_30px_rgb(244,114,182,0.3)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.5)] transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-lg tracking-wide uppercase">
