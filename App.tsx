@@ -4234,6 +4234,8 @@ const DatePicker: React.FC<{
     disabledDates
 }) => {
         const [isOpen, setIsOpen] = useState(false);
+        const inputRef = useRef<HTMLDivElement>(null);
+        const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
         const [selectedDate, setSelectedDate] = useState<Date>(() => {
             if (value) {
                 const [year, month, day] = value.split('-').map(Number);
@@ -4249,6 +4251,49 @@ const DatePicker: React.FC<{
                 setSelectedDate(new Date(year, month - 1, day));
             }
         }, [value]);
+
+        useEffect(() => {
+            const updatePosition = () => {
+                if (!inputRef.current) return;
+                const rect = inputRef.current.getBoundingClientRect();
+                
+                // Calculate safe position to prevent overflow
+                let top = rect.bottom + 8;
+                let left = rect.left + rect.width / 2;
+                
+                // If it goes below the screen, show it above the input
+                if (top + 400 > window.innerHeight) {
+                    top = rect.top - 400 - 8; // approximate calendar height
+                }
+                
+                // Ensure it doesn't go off screen horizontally
+                // Assuming calendar is about 320px wide (max 24rem)
+                const halfWidth = 160; 
+                
+                // Forcing the calendar to be centered horizontally on mobile screens
+                if (window.innerWidth < 640) {
+                    left = window.innerWidth / 2;
+                } else {
+                    if (left - halfWidth < 10) {
+                        left = halfWidth + 10;
+                    } else if (left + halfWidth > window.innerWidth - 10) {
+                        left = window.innerWidth - halfWidth - 10;
+                    }
+                }
+
+                setDropdownPos({ top, left });
+            };
+            if (isOpen) {
+                updatePosition();
+                const handler = () => updatePosition();
+                window.addEventListener('resize', handler);
+                window.addEventListener('scroll', handler, true);
+                return () => {
+                    window.removeEventListener('resize', handler);
+                    window.removeEventListener('scroll', handler, true);
+                };
+            }
+        }, [isOpen]);
 
         const handleDateChange = (date: Date) => {
             const year = date.getFullYear();
@@ -4271,7 +4316,7 @@ const DatePicker: React.FC<{
                         {required && <span className="text-red-500 ml-1">*</span>}
                     </label>
                 )}
-                <div className="relative">
+                <div className="relative" ref={inputRef}>
                     <input
                         type="text"
                         value={displayValue}
@@ -4288,8 +4333,11 @@ const DatePicker: React.FC<{
                     </div>
                 </div>
 
-                {isOpen && (
-                    <div className="absolute z-[10001] top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 w-[min(24rem,calc(100vw-1rem))] max-w-[90vw] left-1/2 -translate-x-1/2">
+                {isOpen && createPortal(
+                    <div 
+                        className="bg-white border border-gray-200 rounded-lg shadow-xl p-4 w-[min(24rem,calc(100vw-1rem))] max-w-[90vw]"
+                        style={{ position: 'fixed', top: dropdownPos.top, left: dropdownPos.left, transform: 'translateX(-50%)', zIndex: 10001 }}
+                    >
                         <Calendar
                             selectedDate={selectedDate}
                             onDateChange={handleDateChange}
@@ -4317,14 +4365,16 @@ const DatePicker: React.FC<{
                                 Hoje
                             </button>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
 
-                {isOpen && (
+                {isOpen && createPortal(
                     <div
                         className="fixed inset-0 z-[9998] bg-black bg-opacity-10"
                         onClick={() => setIsOpen(false)}
-                    />
+                    />,
+                    document.body
                 )}
             </div>
         );
@@ -10577,10 +10627,11 @@ const DaycareRegistrationForm: React.FC<{
         );
     }
 
+    
     const formContent = (
-        <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto space-y-6 pb-10">
+        <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto pb-10">
             {isAdmin && (
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-6">
                     <Button 
                         type="button" 
                         variant="ghost" 
@@ -10596,788 +10647,371 @@ const DaycareRegistrationForm: React.FC<{
                 </div>
             )}
 
-            <div className="space-y-6">
-                {/* Dados do Tutor */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[80]">
-                    <CardHeader>
-                        <CardTitle>Dados do Tutor</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="relative md:col-span-2">
-                            <Input
-                                label="Telefone contato"
-                                type="tel"
-                                name="contact_phone"
-                                value={formData.contact_phone}
-                                onChange={handleInputChange}
-                            />
+            <div className="bg-white/95 backdrop-blur-md shadow-xl border border-pink-100/50 rounded-3xl overflow-hidden relative animate-fadeIn">
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-pink-300 via-pink-400 to-pink-500"></div>
+                
+                <div className="p-6 sm:p-8 space-y-8">
+                    
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-extrabold text-gray-800 tracking-tight mb-2">Matrícula na Creche</h2>
+                        <p className="text-gray-500 text-sm">Preencha os dados abaixo para matricular o pet na creche.</p>
+                    </div>
+
+                    {/* Dados do Tutor */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 flex items-center gap-2">
+                            <UserIcon className="w-5 h-5 text-pink-500" />
+                            Dados do Tutor
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Input label="Tutor" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} />
+                            <Input label="Telefone contato" type="tel" name="contact_phone" value={formData.contact_phone} onChange={handleInputChange} />
+                            <Input label="RG" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} />
+                            <Input label="Telefone e nome (emergencial)" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} />
+                            <div className="md:col-span-2">
+                                <Input label="Endereço Completo" name="address" value={formData.address} onChange={handleInputChange} />
+                            </div>
                         </div>
+                    </div>
 
-                        <Input label="Tutor" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} />
-                        <Input label="RG" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} />
-                        <div className="md:col-span-2">
-                            <Input label="Endereço" name="address" value={formData.address} onChange={handleInputChange} />
-                        </div>
+                    {/* Dados do Pet */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 flex items-center gap-2 mt-6">
+                            🐾 Dados do Pet
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <Input label="Nome do pet" name="pet_name" value={formData.pet_name} onChange={handleInputChange} />
+                            <Input label="Raça" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} />
+                            <Input label="Idade" name="pet_age" value={formData.pet_age} onChange={handleInputChange} />
+                            
+                            <div className="space-y-2">
+                                <Label className="text-xs text-gray-500 font-bold uppercase">Sexo</Label>
+                                <div className="flex gap-2">
+                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.pet_sex === 'M' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        <input type="radio" name="pet_sex" value="M" checked={formData.pet_sex === 'M'} onChange={(e) => handleRadioChange('pet_sex', e.target.value)} className="sr-only" />
+                                        Macho
+                                    </label>
+                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.pet_sex === 'F' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        <input type="radio" name="pet_sex" value="F" checked={formData.pet_sex === 'F'} onChange={(e) => handleRadioChange('pet_sex', e.target.value)} className="sr-only" />
+                                        Fêmea
+                                    </label>
+                                </div>
+                            </div>
 
-                        <Input label="Telefone e nome (emergencial)" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} />
-                        <div className="md:col-span-2">
-                            <Input label="Telefone do veterinário(a)" name="vet_phone" value={formData.vet_phone} onChange={handleInputChange} />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Dados do Pet */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[70]">
-                    <CardHeader>
-                        <CardTitle>Dados do Pet</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Input label="Nome do pet" name="pet_name" value={formData.pet_name} onChange={handleInputChange} />
-                        <Input label="Raça" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} />
-                        <Input label="Idade" name="pet_age" value={formData.pet_age} onChange={handleInputChange} />
-
-                        <div className="space-y-3">
-                            <Label>Sexo</Label>
-                            <RadioGroup value={formData.pet_sex} onValueChange={(v) => handleRadioChange('pet_sex', v)}>
-                                <RadioGroupItem value="M">Macho</RadioGroupItem>
-                                <RadioGroupItem value="F">Fêmea</RadioGroupItem>
-                            </RadioGroup>
-                        </div>
-
-                        <div className="space-y-3">
-                            <Label>Castrado(a)</Label>
-                            <RadioGroup value={formData.is_neutered === null ? '' : String(formData.is_neutered)} onValueChange={(v) => handleRadioChange('is_neutered', v === 'true')}>
-                                <RadioGroupItem value="true">Sim</RadioGroupItem>
-                                <RadioGroupItem value="false">Não</RadioGroupItem>
-                            </RadioGroup>
+                            <div className="space-y-2">
+                                <Label className="text-xs text-gray-500 font-bold uppercase">Castrado(a)</Label>
+                                <div className="flex gap-2">
+                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.is_neutered === true ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        <input type="radio" name="is_neutered" value="true" checked={formData.is_neutered === true} onChange={() => handleRadioChange('is_neutered', true)} className="sr-only" />
+                                        Sim
+                                    </label>
+                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.is_neutered === false ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        <input type="radio" name="is_neutered" value="false" checked={formData.is_neutered === false} onChange={() => handleRadioChange('is_neutered', false)} className="sr-only" />
+                                        Não
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div className="sm:col-span-2 md:col-span-1">
+                                <Input label="Tel. Veterinário" name="vet_phone" value={formData.vet_phone} onChange={handleInputChange} />
+                            </div>
                         </div>
 
                         {isAdmin && (
-                            <div className="flex items-center space-x-2 md:col-span-2 mt-2">
+                            <div className="flex items-center space-x-2 mt-2 p-3 bg-pink-50/50 rounded-lg border border-pink-100">
                                 <Checkbox
                                     id="sibling_discount"
                                     name="has_sibling_discount"
                                     checked={formData.has_sibling_discount}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, has_sibling_discount: e.target.checked }))}
+                                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, has_sibling_discount: checked === true }))}
                                 />
-                                <Label htmlFor="sibling_discount">Desconto irmão (10%)</Label>
+                                <Label htmlFor="sibling_discount" className="text-sm font-semibold text-pink-800 cursor-pointer">Aplicar Desconto Irmão (10%)</Label>
                             </div>
                         )}
-                    </CardContent>
-                </Card>
+                    </div>
 
-                {/* Saúde e Comportamento */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[60]">
-                    <CardHeader>
-                        <CardTitle>Saúde e Comportamento</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-3">
-                            <Label>Se dá bem com outros animais?</Label>
-                            <RadioGroup value={formData.gets_along_with_others === null ? '' : String(formData.gets_along_with_others)} onValueChange={(v) => handleRadioChange('gets_along_with_others', v === 'true')}>
-                                <RadioGroupItem value="true">Sim</RadioGroupItem>
-                                <RadioGroupItem value="false">Não</RadioGroupItem>
-                            </RadioGroup>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <DatePicker value={formData.last_vaccine} onChange={(value) => setFormData(prev => ({ ...prev, last_vaccine: value }))} label="Última vacina" />
-                            <DatePicker value={formData.last_deworming} onChange={(value) => setFormData(prev => ({ ...prev, last_deworming: value }))} label="Último vermífugo" />
-                            <DatePicker value={formData.last_flea_remedy} onChange={(value) => setFormData(prev => ({ ...prev, last_flea_remedy: value }))} label="Último remédio de pulgas" />
-                        </div>
-
-                        <div className="space-y-3">
-                            <Label>Alergia?</Label>
-                            <RadioGroup value={formData.has_allergies === null ? '' : String(formData.has_allergies)} onValueChange={(v) => handleRadioChange('has_allergies', v === 'true')}>
-                                <RadioGroupItem value="true">Sim</RadioGroupItem>
-                                <RadioGroupItem value="false">Não</RadioGroupItem>
-                            </RadioGroup>
-                        </div>
-                        {formData.has_allergies && (
+                    {/* Saúde e Comportamento */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 flex items-center gap-2 mt-6">
+                            ❤️ Saúde e Comportamento
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="allergies_description">Descreva a alergia</Label>
-                                <Textarea
-                                    id="allergies_description"
-                                    name="allergies_description"
-                                    value={formData.allergies_description}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                />
-                            </div>
-                        )}
-
-                        <div className="space-y-3">
-                            <Label>Cuidados especiais?</Label>
-                            <RadioGroup value={formData.needs_special_care === null ? '' : String(formData.needs_special_care)} onValueChange={(v) => handleRadioChange('needs_special_care', v === 'true')}>
-                                <RadioGroupItem value="true">Sim</RadioGroupItem>
-                                <RadioGroupItem value="false">Não</RadioGroupItem>
-                            </RadioGroup>
-                        </div>
-                        {formData.needs_special_care && (
-                            <div className="space-y-2">
-                                <Label htmlFor="special_care_description">Descreva o cuidado especial</Label>
-                                <Textarea
-                                    id="special_care_description"
-                                    name="special_care_description"
-                                    value={formData.special_care_description}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                />
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Objetos entregues */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[50]">
-                    <CardHeader>
-                        <CardTitle>Objetos entregues sempre</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                            {['Bolinha', 'Pelucia', 'Cama', 'Coleira', 'Comedouro'].map(item => (
-                                <div key={item} className="flex items-center space-x-2 p-3 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                                    <Checkbox
-                                        id={`item-${item}`}
-                                        value={item}
-                                        checked={formData.delivered_items.items.includes(item)}
-                                        onChange={handleBelongingsChange}
-                                    />
-                                    <Label htmlFor={`item-${item}`} className="cursor-pointer flex-1">{item}</Label>
+                                <Label className="text-xs text-gray-500 font-bold uppercase">Se dá bem com outros pets?</Label>
+                                <div className="flex gap-2">
+                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.gets_along_with_others === true ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        <input type="radio" name="gets_along_with_others" checked={formData.gets_along_with_others === true} onChange={() => handleRadioChange('gets_along_with_others', true)} className="sr-only" />
+                                        Sim
+                                    </label>
+                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.gets_along_with_others === false ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        <input type="radio" name="gets_along_with_others" checked={formData.gets_along_with_others === false} onChange={() => handleRadioChange('gets_along_with_others', false)} className="sr-only" />
+                                        Não
+                                    </label>
                                 </div>
-                            ))}
-                        </div>
-                        <Input label="Outros" name="other_belongings" value={formData.delivered_items.other} onChange={handleOtherBelongingsChange} />
-                    </CardContent>
-                </Card>
-
-                {/* Plano */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[40]">
-                    <CardHeader>
-                        <CardTitle>Plano contratado</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <RadioGroup value={formData.contracted_plan || ''} onValueChange={(v) => handleRadioChange('contracted_plan', v)} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {[
-                                { label: '4 X MÊS', value: '4x_month' },
-                                { label: '8 X MÊS', value: '8x_month' },
-                                { label: '12 X MÊS', value: '12x_month' },
-                                { label: '16 X MÊS', value: '16x_month' },
-                                { label: '20 X MÊS', value: '20x_month' },
-                                { label: '2 X SEMANA', value: '2x_week' },
-                                { label: '3 X SEMANA', value: '3x_week' },
-                                { label: '4 X SEMANA', value: '4x_week' },
-                                { label: '5 X SEMANA', value: '5x_week' },
-                            ].map(opt => (
-                                <RadioGroupItem key={opt.value} value={opt.value} className="justify-center">
-                                    {opt.label}
-                                </RadioGroupItem>
-                            ))}
-                        </RadioGroup>
-                    </CardContent>
-                </Card>
-                {/* Horários e Dias */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[30]">
-                    <CardHeader>
-                        <CardTitle>Horários e Dias</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                                <DatePicker value={formData.check_in_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_in_date: value }))} label="Data de Entrada" />
                             </div>
-                            <Select
-                                label="Horário de entrada (mínimo 07:00)"
-                                name="check_in_time"
-                                value={formData.check_in_time || ''}
-                                onChange={handleInputChange}
-                            >
-                                <option value="">Selecione...</option>
-                                {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
-                                    const h = 7 + Math.floor(i / 2);
-                                    const m = i % 2 ? '30' : '00';
-                                    const t = `${String(h).padStart(2, '0')}:${m}`;
-                                    return (<option key={t} value={t}>{t}</option>);
-                                })}
-                            </Select>
-                            <div className="space-y-3">
-                                <DatePicker value={formData.check_out_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_out_date: value }))} label="Data de Saída" />
+                            <div className="space-y-2">
+                                <Label className="text-xs text-gray-500 font-bold uppercase">Alergias?</Label>
+                                <div className="flex gap-2">
+                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.has_allergies === true ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        <input type="radio" name="has_allergies" checked={formData.has_allergies === true} onChange={() => handleRadioChange('has_allergies', true)} className="sr-only" />
+                                        Sim
+                                    </label>
+                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.has_allergies === false ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        <input type="radio" name="has_allergies" checked={formData.has_allergies === false} onChange={() => handleRadioChange('has_allergies', false)} className="sr-only" />
+                                        Não
+                                    </label>
+                                </div>
                             </div>
-                            <Select
-                                label="Horário de saída (máximo 19:00)"
-                                name="check_out_time"
-                                value={formData.check_out_time || ''}
-                                onChange={handleInputChange}
-                            >
-                                <option value="">Selecione...</option>
-                                {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
-                                    const h = 7 + Math.floor(i / 2);
-                                    const m = i % 2 ? '30' : '00';
-                                    const t = `${String(h).padStart(2, '0')}:${m}`;
-                                    return (<option key={t} value={t}>{t}</option>);
-                                })}
-                            </Select>
+                            <div className="space-y-2">
+                                <Label className="text-xs text-gray-500 font-bold uppercase">Cuidados Especiais?</Label>
+                                <div className="flex gap-2">
+                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.needs_special_care === true ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        <input type="radio" name="needs_special_care" checked={formData.needs_special_care === true} onChange={() => handleRadioChange('needs_special_care', true)} className="sr-only" />
+                                        Sim
+                                    </label>
+                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.needs_special_care === false ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        <input type="radio" name="needs_special_care" checked={formData.needs_special_care === false} onChange={() => handleRadioChange('needs_special_care', false)} className="sr-only" />
+                                        Não
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-
-                        <div className="space-y-3">
-                            <Label className="text-base font-semibold">Dias da Semana</Label>
-                            <div className="flex flex-wrap gap-3">
-                                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((label, idx) => (
-                                    <div key={label} className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${(formData.attendance_days || []).includes(idx)
-                                        ? 'bg-pink-50 border-pink-200'
-                                        : 'bg-white border-gray-200 hover:bg-gray-50'
-                                        }`}>
-                                        <Checkbox
-                                            id={`day-${idx}`}
-                                            checked={(formData.attendance_days || []).includes(idx)}
-                                            onCheckedChange={() => toggleAttendanceDay(idx)}
-                                        />
-                                        <Label htmlFor={`day-${idx}`} className="cursor-pointer font-medium text-gray-700">
-                                            {label}
-                                        </Label>
+                        
+                        {(formData.has_allergies || formData.needs_special_care) && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                {formData.has_allergies && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="allergies_description" className="text-xs text-gray-500 font-bold uppercase">Descreva a alergia</Label>
+                                        <Textarea id="allergies_description" name="allergies_description" value={formData.allergies_description} onChange={handleInputChange} rows={2} className="resize-none bg-gray-50 focus:bg-white" />
                                     </div>
+                                )}
+                                {formData.needs_special_care && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="special_care_description" className="text-xs text-gray-500 font-bold uppercase">Descreva o cuidado</Label>
+                                        <Textarea id="special_care_description" name="special_care_description" value={formData.special_care_description} onChange={handleInputChange} rows={2} className="resize-none bg-gray-50 focus:bg-white" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                            <DatePicker value={formData.last_vaccine || ''} onChange={(value) => setFormData(prev => ({ ...prev, last_vaccine: value }))} label="Última Vacina" />
+                            <DatePicker value={formData.last_deworming || ''} onChange={(value) => setFormData(prev => ({ ...prev, last_deworming: value }))} label="Último Vermífugo" />
+                            <DatePicker value={formData.last_flea_remedy || ''} onChange={(value) => setFormData(prev => ({ ...prev, last_flea_remedy: value }))} label="Remédio de Pulgas" />
+                        </div>
+                    </div>
+
+                    {/* Plano & Rotina */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 flex items-center gap-2 mt-6">
+                            📅 Plano & Rotina
+                        </h3>
+                        
+                        <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100 space-y-4">
+                            <Label className="text-sm text-gray-700 font-bold">Selecione o Plano</Label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                                {[
+                                    { label: '4x Mês', value: '4x_month' }, { label: '8x Mês', value: '8x_month' }, { label: '12x Mês', value: '12x_month' }, { label: '16x Mês', value: '16x_month' }, { label: '20x Mês', value: '20x_month' },
+                                    { label: '2x Sem', value: '2x_week' }, { label: '3x Sem', value: '3x_week' }, { label: '4x Sem', value: '4x_week' }, { label: '5x Sem', value: '5x_week' }
+                                ].map(opt => (
+                                    <button 
+                                        type="button" 
+                                        key={opt.value}
+                                        onClick={() => handleRadioChange('contracted_plan', opt.value)}
+                                        className={`py-2 px-1 text-xs font-semibold rounded-lg border transition-all ${formData.contracted_plan === opt.value ? 'bg-pink-600 text-white border-pink-600 shadow-md transform scale-[1.02]' : 'bg-white text-gray-600 border-gray-200 hover:bg-pink-50'}`}
+                                    >
+                                        {opt.label}
+                                    </button>
                                 ))}
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
 
-                {/* Extra Services */}
-                {/* Extra Services */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[20]">
-                    <CardHeader>
-                        <CardTitle>Serviços Extras</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {/* Pernoite */}
-                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                            <div className="flex items-center gap-3 mb-3">
-                                <Checkbox
-                                    id="extra_pernoite"
-                                    checked={formData.extra_services?.pernoite || false}
-                                    onCheckedChange={(checked) => setFormData(prev => ({
-                                        ...prev,
-                                        extra_services: {
-                                            ...prev.extra_services,
-                                            pernoite: checked === true,
-                                            pernoite_quantity: checked === true ? (prev.extra_services?.pernoite_quantity || 1) : undefined,
-                                            pernoite_price: checked === true ? (prev.extra_services?.pernoite_price || 0) : undefined
-                                        }
-                                    }))}
-                                />
-                                <Label htmlFor="extra_pernoite" className="text-base font-semibold text-gray-700 cursor-pointer">Pernoite</Label>
-                            </div>
-                            {formData.extra_services?.pernoite && (
-                                <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <Input
-                                        label="Quantidade (dias)"
-                                        type="number"
-                                        min="1"
-                                        value={formData.extra_services?.pernoite_quantity || 1}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                pernoite_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                            }
-                                        }))}
-                                    />
-                                    <Input
-                                        label="Valor (R$)"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.extra_services?.pernoite_price || 0}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                pernoite_price: e.target.value
-                                            }
-                                        }))}
-                                    />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
+                                <Label className="text-sm text-gray-700 font-bold">Dias de Frequência</Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, index) => {
+                                        const isSelected = formData.attendance_days?.includes(index);
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={day}
+                                                onClick={() => toggleAttendanceDay(index)}
+                                                className={`w-10 h-10 rounded-full text-xs font-bold transition-all border ${isSelected ? 'bg-pink-600 text-white border-pink-600 shadow-md' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                                            >
+                                                {day}
+                                            </button>
+                                        )
+                                    })}
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Banho & Tosa */}
-                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                            <div className="flex items-center gap-3 mb-3">
-                                <Checkbox
-                                    id="extra_banho_tosa"
-                                    checked={formData.extra_services?.banho_tosa || false}
-                                    onCheckedChange={(checked) => setFormData(prev => ({
-                                        ...prev,
-                                        extra_services: {
-                                            ...prev.extra_services,
-                                            banho_tosa: checked === true,
-                                            banho_tosa_quantity: checked === true ? (prev.extra_services?.banho_tosa_quantity || 1) : undefined,
-                                            banho_tosa_price: checked === true ? (prev.extra_services?.banho_tosa_price || 0) : undefined
-                                        }
-                                    }))}
-                                />
-                                <Label htmlFor="extra_banho_tosa" className="text-base font-semibold text-gray-700 cursor-pointer">Banho & Tosa</Label>
                             </div>
-                            {formData.extra_services?.banho_tosa && (
-                                <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <Input
-                                        label="Quantidade"
-                                        type="number"
-                                        min="1"
-                                        value={formData.extra_services?.banho_tosa_quantity || 1}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                banho_tosa_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                            }
-                                        }))}
-                                    />
-                                    <Input
-                                        label="Valor (R$)"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.extra_services?.banho_tosa_price || 0}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                banho_tosa_price: e.target.value
-                                            }
-                                        }))}
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Só banho */}
-                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                            <div className="flex items-center gap-3 mb-3">
-                                <Checkbox
-                                    id="extra_so_banho"
-                                    checked={formData.extra_services?.so_banho || false}
-                                    onCheckedChange={(checked) => setFormData(prev => ({
-                                        ...prev,
-                                        extra_services: {
-                                            ...prev.extra_services,
-                                            so_banho: checked === true,
-                                            so_banho_quantity: checked === true ? (prev.extra_services?.so_banho_quantity || 1) : undefined,
-                                            so_banho_price: checked === true ? (prev.extra_services?.so_banho_price || 0) : undefined
-                                        }
-                                    }))}
-                                />
-                                <Label htmlFor="extra_so_banho" className="text-base font-semibold text-gray-700 cursor-pointer">Só banho</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <DatePicker value={formData.check_in_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_in_date: value }))} label="Data Início" />
+                                <DatePicker value={formData.check_out_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_out_date: value }))} label="Data Fim" />
+                                <Select label="Entrada" name="check_in_time" value={formData.check_in_time || ''} onChange={handleInputChange}>
+                                    <option value="">Selecione...</option>
+                                    {Array.from({ length: 25 }, (_, i) => { const h = 7 + Math.floor(i/2); const m = i%2 ? '30' : '00'; const t = `${String(h).padStart(2,'0')}:${m}`; return <option key={t} value={t}>{t}</option>; })}
+                                </Select>
+                                <Select label="Saída" name="check_out_time" value={formData.check_out_time || ''} onChange={handleInputChange}>
+                                    <option value="">Selecione...</option>
+                                    {Array.from({ length: 25 }, (_, i) => { const h = 7 + Math.floor(i/2); const m = i%2 ? '30' : '00'; const t = `${String(h).padStart(2,'0')}:${m}`; return <option key={t} value={t}>{t}</option>; })}
+                                </Select>
                             </div>
-                            {formData.extra_services?.so_banho && (
-                                <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <Input
-                                        label="Quantidade"
-                                        type="number"
-                                        min="1"
-                                        value={formData.extra_services?.so_banho_quantity || 1}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                so_banho_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                            }
-                                        }))}
-                                    />
-                                    <Input
-                                        label="Valor (R$)"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.extra_services?.so_banho_price || 0}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                so_banho_price: e.target.value
-                                            }
-                                        }))}
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Adestrador */}
-                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                            <div className="flex items-center gap-3 mb-3">
-                                <Checkbox
-                                    id="extra_adestrador"
-                                    checked={formData.extra_services?.adestrador || false}
-                                    onCheckedChange={(checked) => setFormData(prev => ({
-                                        ...prev,
-                                        extra_services: {
-                                            ...prev.extra_services,
-                                            adestrador: checked === true,
-                                            adestrador_quantity: checked === true ? (prev.extra_services?.adestrador_quantity || 1) : undefined,
-                                            adestrador_price: checked === true ? (prev.extra_services?.adestrador_price || 0) : undefined
-                                        }
-                                    }))}
-                                />
-                                <Label htmlFor="extra_adestrador" className="text-base font-semibold text-gray-700 cursor-pointer">Adestrador</Label>
-                            </div>
-                            {formData.extra_services?.adestrador && (
-                                <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <Input
-                                        label="Quantidade (sessões)"
-                                        type="number"
-                                        min="1"
-                                        value={formData.extra_services?.adestrador_quantity || 1}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                adestrador_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                            }
-                                        }))}
-                                    />
-                                    <Input
-                                        label="Valor (R$)"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.extra_services?.adestrador_price || 0}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                adestrador_price: e.target.value
-                                            }
-                                        }))}
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Despesa médica */}
-                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                            <div className="flex items-center gap-3 mb-3">
-                                <Checkbox
-                                    id="extra_despesa_medica"
-                                    checked={formData.extra_services?.despesa_medica || false}
-                                    onCheckedChange={(checked) => setFormData(prev => ({
-                                        ...prev,
-                                        extra_services: {
-                                            ...prev.extra_services,
-                                            despesa_medica: checked === true,
-                                            despesa_medica_quantity: checked === true ? (prev.extra_services?.despesa_medica_quantity || 1) : undefined,
-                                            despesa_medica_price: checked === true ? (prev.extra_services?.despesa_medica_price || 0) : undefined
-                                        }
-                                    }))}
-                                />
-                                <Label htmlFor="extra_despesa_medica" className="text-base font-semibold text-gray-700 cursor-pointer">Despesa médica</Label>
-                            </div>
-                            {formData.extra_services?.despesa_medica && (
-                                <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <Input
-                                        label="Quantidade"
-                                        type="number"
-                                        min="1"
-                                        value={formData.extra_services?.despesa_medica_quantity || 1}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                despesa_medica_quantity: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                            }
-                                        }))}
-                                    />
-                                    <Input
-                                        label="Valor (R$)"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.extra_services?.despesa_medica_price || 0}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                despesa_medica_price: e.target.value
-                                            }
-                                        }))}
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Dia extra */}
-                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                            <div className="flex items-center gap-3 mb-3">
-                                <Checkbox
-                                    id="extra_dia_extra"
-                                    checked={(formData.extra_services?.dia_extra || 0) > 0}
-                                    onCheckedChange={(checked) => setFormData(prev => ({
-                                        ...prev,
-                                        extra_services: {
-                                            ...prev.extra_services,
-                                            dia_extra: checked === true ? 1 : 0,
-                                            dia_extra_price: checked === true ? (prev.extra_services?.dia_extra_price || 0) : undefined
-                                        }
-                                    }))}
-                                />
-                                <Label htmlFor="extra_dia_extra" className="text-base font-semibold text-gray-700 cursor-pointer">Dia extra</Label>
-                            </div>
-                            {formData.extra_services?.dia_extra && (
-                                <div className="grid grid-cols-2 gap-3 ml-7">
-                                    <Input
-                                        label="Quantidade (dias)"
-                                        type="number"
-                                        min="1"
-                                        value={formData.extra_services?.dia_extra || 1}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                dia_extra: e.target.value === '' ? 0 : parseInt(e.target.value)
-                                            }
-                                        }))}
-                                    />
-                                    <Input
-                                        label="Valor (R$)"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.extra_services?.dia_extra_price || 0}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            extra_services: {
-                                                ...prev.extra_services,
-                                                dia_extra_price: e.target.value
-                                            }
-                                        }))}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Data de Matrícula temporariamente removida até a coluna ser adicionada ao banco */}
-                {/* <div className="space-y-6 pt-6 border-t border-gray-200 mt-6">
-                    <h3 className="text-lg font-semibold text-pink-700 border-b pb-2 mb-2">Data de Matrícula</h3>
-                    <div className="grid grid-cols-1 gap-4">
-                        <div>
-                            <DatePicker 
-                                value={formData.enrollment_date || ''} 
-                                onChange={(value) => setFormData(prev => ({ ...prev, enrollment_date: value }))}
-                                label="Data de Matrícula"
-                                placeholder="Selecione a data de matrícula"
-                                required={true}
-                                className="mt-1" 
-                            />
                         </div>
                     </div>
-                </div> */}
 
-                {/* Resumo & Detalhes Financeiros */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[10]">
-                    <CardHeader>
-                        <CardTitle>Resumo & Detalhes Financeiros</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="bg-pink-50/50 p-6 rounded-xl border border-pink-100">
-                            <h4 className="text-lg font-bold text-pink-700 mb-4 text-center">Resumo da Matrícula</h4>
-                            {(() => {
-                                const ciDate = formData.check_in_date || '';
-                                const coDate = formData.check_out_date || '';
-                                const ciTime = String(formData.check_in_time || '').split(':').slice(0, 2).join(':');
-                                const coTime = String(formData.check_out_time || '').split(':').slice(0, 2).join(':');
-                                const diasSemana = (formData.attendance_days || []).map(idx => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][idx]).join(', ');
-                                const extras: string[] = [];
-                                if (formData.extra_services?.pernoite) extras.push('Pernoite');
-                                if (formData.extra_services?.banho_tosa) extras.push('Banho & Tosa');
-                                if (formData.extra_services?.so_banho) extras.push('Só Banho');
-                                if (formData.extra_services?.adestrador) extras.push('Adestrador');
-                                if (formData.extra_services?.despesa_medica) extras.push('Despesa Médica');
-                                const diaExtraQty = formData.extra_services?.dia_extra || 0;
-                                if (diaExtraQty > 0) extras.push(`${diaExtraQty} dia${diaExtraQty > 1 ? 's' : ''} extra${diaExtraQty > 1 ? 's' : ''}`);
-                                return (
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Pet:</span> <span className="text-gray-900">{formData.pet_name || '—'}</span></div>
-                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Tutor:</span> <span className="text-gray-900">{formData.tutor_name || '—'}</span></div>
-                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Telefone:</span> <span className="text-gray-900">{formData.contact_phone || '—'}</span></div>
-                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Plano:</span> <span className="text-gray-900">{formData.contracted_plan ? planLabels[formData.contracted_plan] : '—'}</span></div>
-                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Entrada:</span> <span className="text-gray-900">{ciDate ? formatDateToBR(ciDate) : '—'} {ciTime ? `às ${ciTime}` : ''}</span></div>
-                                            <div className="flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Saída:</span> <span className="text-gray-900">{coDate ? formatDateToBR(coDate) : '—'} {coTime ? `às ${coTime}` : ''}</span></div>
-                                            <div className="sm:col-span-2 flex justify-between sm:block border-b sm:border-0 border-pink-100 pb-1 sm:pb-0"><span className="font-semibold text-gray-600">Dias da Semana:</span> <span className="text-gray-900">{diasSemana || '—'}</span></div>
-                                        </div>
-                                        {extras.length > 0 && (
-                                            <div className="pt-2">
-                                                <h5 className="text-sm font-semibold text-gray-800 mb-2">Serviços Adicionais</h5>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {extras.map(e => (
-                                                        <Badge key={e} variant="secondary" className="bg-pink-100 text-pink-700 hover:bg-pink-200">
-                                                            {e}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
+                    {/* Pertences */}
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">🎒 Pertences Frequentes</h3>
+                        <div className="flex flex-wrap gap-3">
+                            {['Bolinha', 'Pelucia', 'Cama', 'Coleira', 'Comedouro'].map(item => (
+                                <label key={item} className={`flex items-center gap-2 py-1.5 px-3 rounded-full border cursor-pointer transition-colors text-sm ${formData.delivered_items.items.includes(item) ? 'bg-pink-100 border-pink-300 text-pink-800 font-medium' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                                    <input type="checkbox" value={item} checked={formData.delivered_items.items.includes(item)} onChange={handleBelongingsChange} className="sr-only" />
+                                    {formData.delivered_items.items.includes(item) && <svg className="w-3.5 h-3.5 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                    {item}
+                                </label>
+                            ))}
+                        </div>
+                        <Input label="Outros pertences" name="other_belongings" value={formData.delivered_items.other} onChange={handleOtherBelongingsChange} />
+                    </div>
+
+                    {/* Serviços Extras (Admin) */}
+                    {isAdmin && (
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 flex items-center gap-2 mt-6">
+                                <SparklesIcon className="w-5 h-5 text-pink-500" />
+                                Serviços Extras
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {['pernoite', 'banho_tosa', 'so_banho', 'adestrador', 'despesa_medica', 'transporte'].map(ext => {
+                                    const labels = {
+                                        pernoite: 'Pernoite', banho_tosa: 'Banho & Tosa', so_banho: 'Só Banho', adestrador: 'Adestrador', despesa_medica: 'Despesa Médica', transporte: 'Transporte'
+                                    };
+                                    const isChecked = formData.extra_services?.[ext] === true;
+                                    return (
+                                        <div key={ext} className={`p-3 rounded-xl border transition-all ${isChecked ? 'bg-pink-50/50 border-pink-200' : 'bg-white border-gray-200'}`}>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Checkbox 
+                                                    id={`extra_${ext}`}
+                                                    checked={isChecked}
+                                                    onCheckedChange={(checked) => setFormData(prev => ({
+                                                        ...prev, extra_services: { ...prev.extra_services, [ext]: checked === true, [`${ext}_quantity`]: checked === true ? (prev.extra_services?.[ext + '_quantity'] || 1) : undefined, [`${ext}_price`]: checked === true ? (prev.extra_services?.[ext + '_price'] || 0) : undefined }
+                                                    }))}
+                                                />
+                                                <Label htmlFor={`extra_${ext}`} className="font-semibold text-gray-700 cursor-pointer">{labels[ext]}</Label>
                                             </div>
-                                        )}
-                                        <div className="mt-4 p-4 rounded-lg bg-white border border-pink-200 shadow-sm text-center">
-                                            <p className="text-sm text-gray-500 mb-1">Valor Total Estimado</p>
-                                            <p className="text-2xl font-bold text-pink-700">{(formData.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                            {isChecked && (
+                                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                                    <Input label="Qtd" type="number" min="1" value={formData.extra_services?.[ext + '_quantity'] || 1} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, [`${ext}_quantity`]: e.target.value === '' ? 0 : parseInt(e.target.value) } }))} />
+                                                    <Input label="R$" type="number" min="0" step="0.01" value={formData.extra_services?.[ext + '_price'] || 0} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, [`${ext}_price`]: e.target.value } }))} />
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
-                                            <span className="inline-block w-2 h-2 rounded-full bg-pink-400"></span>
-                                            Data de Pagamento: Dia 30 de cada mês
-                                        </div>
-                                    </div>
-                                );
-                            })()}
+                                    )
+                                })}
+                            </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    )}
 
-                {/* Consentimento */}
-                <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.1)] border border-pink-100/70 bg-white/90 backdrop-blur-sm relative z-[0]">
-                    <CardContent className="p-6 space-y-4">
-                        <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-pink-50/30 transition-colors">
-                            <Checkbox
-                                id="agreed_to_checklist"
-                                checked={formData.agreed_to_checklist}
-                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreed_to_checklist: checked }))}
-                                className="mt-1"
-                            />
-                            <Label htmlFor="agreed_to_checklist" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
-                                Li e concordo em enviar o <a href="https://docs.google.com/document/d/1BE4UrgsUzXljtNkzLf-WmLyQn2lFOFde2DHkW2urXLQ/edit?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-pink-600 font-bold hover:underline">Check List</a> através do canal do whatsapp
-                            </Label>
+                    {/* Financeiro */}
+                    {isAdmin && (
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-6 flex flex-wrap gap-4 items-center justify-between">
+                            <div>
+                                <Label className="text-xs text-gray-500 font-bold uppercase">Valor Total (R$)</Label>
+                                <Input type="number" min="0" step="0.01" name="total_price" value={formData.total_price || ''} onChange={handleInputChange} className="w-32 mt-1 font-bold text-lg text-pink-700" />
+                            </div>
+                            <div>
+                                <Label className="text-xs text-gray-500 font-bold uppercase">Data de Pagamento</Label>
+                                <div className="mt-1">
+                                    <DatePicker value={formData.payment_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, payment_date: value }))} label="" />
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-pink-50/30 transition-colors">
-                            <Checkbox
-                                id="agreed_to_contract"
-                                checked={formData.agreed_to_contract}
-                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreed_to_contract: checked }))}
-                                className="mt-1"
-                            />
-                            <Label htmlFor="agreed_to_contract" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
-                                Li e concordo com o <a href="https://docs.google.com/document/d/1YxMDR9dFdpdKv73dTiuFnktmcJ-cdV6CVIJIEdrpXyE/edit?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-pink-600 font-bold hover:underline">Contrato de Hospedagem</a> da Sandy's Pet Shop
-                            </Label>
+                    )}
+
+                    {/* Termos e Condições */}
+                    <div className="bg-pink-50/50 rounded-xl p-4 border border-pink-100 space-y-3 mt-6">
+                        <div className="flex items-start gap-3">
+                            <Checkbox id="agreed_to_checklist" checked={formData.agreed_to_checklist} onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreed_to_checklist: checked === true }))} className="mt-1" />
+                            <Label htmlFor="agreed_to_checklist" className="text-sm text-gray-700 leading-tight cursor-pointer">Li e concordo com as regras de convivência, horários e condições gerais descritas no <a href="#" className="text-pink-600 underline font-semibold">Check List de Entrada</a>.</Label>
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="p-6 bg-white/90 backdrop-blur-sm flex justify-between items-center mt-auto rounded-b-[2rem] border-t border-pink-100">
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="lg"
-                    onClick={onBack || (() => setView && setView('scheduler'))}
-                    className="font-bold text-gray-600"
-                >
-                    {isAdmin ? 'Cancelar' : 'Voltar'}
-                </Button>
-                <Button
-                    type="button"
-                    size="lg"
-                    disabled={isSubmitting}
-                    onClick={(e) => {
-                        if (!validateForm()) return;
-                        if (isAdmin) {
-                            handleSubmit();
-                        } else {
-                            setShowSubmissionWarning(true);
-                        }
-                    }}
-                    className={isAdmin ? "" : "bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-2xl text-lg px-8 shadow-[0_8px_24px_rgba(244,114,182,0.25)] hover:shadow-[0_8px_24px_rgba(244,114,182,0.4)] transition-all"}
-                >
-                    {isSubmitting ? 'Enviando...' : (isAdmin ? 'Adicionar Matrícula' : 'Solicitar Matrícula')}
-                </Button>
+                        <div className="flex items-start gap-3">
+                            <Checkbox id="agreed_to_contract" checked={formData.agreed_to_contract} onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreed_to_contract: checked === true }))} className="mt-1" />
+                            <Label htmlFor="agreed_to_contract" className="text-sm text-gray-700 leading-tight cursor-pointer">Declaro que as informações são verdadeiras e aceito os termos do <a href="#" className="text-pink-600 underline font-semibold">Contrato de Prestação de Serviços</a>.</Label>
+                        </div>
+                    </div>
+
+                    {/* Resumo da Matrícula */}
+                    <div className="bg-pink-50/30 rounded-2xl p-6 border border-pink-100 mt-8">
+                        <h3 className="text-xl font-bold text-pink-700 text-center mb-6">Resumo da Matrícula</h3>
+                        <div className="space-y-3 text-sm">
+                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
+                                <span className="text-gray-500 font-semibold">Pet:</span>
+                                <span className="text-gray-800 font-medium">{formData.pet_name || '-'}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
+                                <span className="text-gray-500 font-semibold">Tutor:</span>
+                                <span className="text-gray-800 font-medium">{formData.tutor_name || '-'}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
+                                <span className="text-gray-500 font-semibold">Telefone:</span>
+                                <span className="text-gray-800 font-medium">{formData.contact_phone || '-'}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
+                                <span className="text-gray-500 font-semibold">Plano:</span>
+                                <span className="text-gray-800 font-medium">
+                                    {formData.contracted_plan ? formData.contracted_plan.replace('x_month', ' X MÊS').replace('x_week', ' X SEMANA').toUpperCase() : '-'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
+                                <span className="text-gray-500 font-semibold">Entrada:</span>
+                                <span className="text-gray-800 font-medium">{formData.check_in_date ? formatDateToBR(formData.check_in_date) : '-'}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
+                                <span className="text-gray-500 font-semibold">Saída:</span>
+                                <span className="text-gray-800 font-medium">{formData.check_out_date ? formatDateToBR(formData.check_out_date) : '-'}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
+                                <span className="text-gray-500 font-semibold">Dias da Semana:</span>
+                                <span className="text-gray-800 font-medium">
+                                    {formData.attendance_days && formData.attendance_days.length > 0
+                                        ? formData.attendance_days.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ')
+                                        : '-'}
+                                </span>
+                            </div>
+
+                            <div className="mt-6 bg-white rounded-xl p-4 border border-pink-100 text-center shadow-sm">
+                                <span className="block text-gray-500 text-xs font-semibold uppercase mb-1">Valor Total Estimado</span>
+                                <span className="block text-3xl font-extrabold text-pink-600">
+                                    R$ {formData.total_price !== undefined ? formData.total_price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
+                                </span>
+                            </div>
+                            
+                            <p className="text-center text-xs text-gray-500 mt-4 flex items-center justify-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-pink-400 inline-block"></span>
+                                Data de Pagamento: Dia 30 de cada mês
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Botões */}
+                    <div className="pt-6 border-t border-gray-100 flex gap-4">
+                        {isAdmin && (
+                            <Button type="button" variant="outline" onClick={onBack} className="flex-1 py-3 text-base">Cancelar</Button>
+                        )}
+                        <Button type="submit" disabled={isSubmitting} className="flex-1 py-3 text-base font-bold bg-pink-600 hover:bg-pink-700 text-white shadow-lg shadow-pink-200">
+                            {isSubmitting ? 'Salvando...' : 'Finalizar Matrícula'}
+                        </Button>
+                    </div>
+
+                </div>
             </div>
         </form>
     );
 
-    const submissionWarningModal = showSubmissionWarning && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm mx-auto p-8 border border-pink-100 animate-fadeInFast">
-                <div className="text-center mb-6">
-                    <div className="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-pink-600">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                        </svg>
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-800">Atenção!</h3>
-                    <p className="text-gray-600 mt-2 text-sm">No dia do check-in, não esqueça de trazer:</p>
-                </div>
-                
-                <ul className="space-y-3 mb-8">
-                    {['RG do tutor', 'Comprovante de residência', 'Carteira de vacinação', 'Atestado de saúde'].map((item, i) => (
-                        <li key={i} className="flex items-center gap-3 text-gray-700 bg-pink-50/50 p-2 rounded-lg text-sm">
-                            <CheckCircleOutlineIcon className="w-4 h-4 text-pink-500 whitespace-nowrap" />
-                            {item}
-                        </li>
-                    ))}
-                </ul>
-
-                <div className="flex flex-col gap-3">
-                    <Button
-                        type="button"
-                        onClick={handleSubmit}
-                        className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-2xl py-6 text-lg font-bold shadow-lg shadow-pink-200"
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? 'Enviando...' : 'Entendi, Solicitar Agora'}
-                    </Button>
-                    <Button 
-                        variant="ghost" 
-                        onClick={() => setShowSubmissionWarning(false)}
-                        className="w-full text-gray-500 hover:text-gray-700 font-semibold"
-                    >
-                        Voltar e Revisar
-                    </Button>
-                </div>
-            </div>
-        </div>
-    );
-
-    if (isAdmin) {
-        return (
-            <>
-                {formContent}
-                {submissionWarningModal}
-            </>
-        );
-    }
-
     return (
-        <div className="min-h-screen p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
-            <div className="w-full max-w-5xl mx-auto animate-fadeIn">
-                {/* ... header e main ... */}
-                <header className="w-full flex flex-col md:flex-row items-center justify-between mb-8 animate-fadeInUp gap-6">
-                    <div className="flex items-center gap-5 text-center md:text-left">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-pink-300 rounded-full blur-xl opacity-50"></div>
-                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-20 w-20 object-contain drop-shadow-2xl" loading="eager" />
-                        </div>
-                        <div>
-                            <h1 className="font-brand text-4xl md:text-5xl text-pink-900 tracking-tight leading-none">Sandy's Pet Shop</h1>
-                            <p className="text-pink-800/70 text-sm md:text-base font-semibold tracking-wide uppercase mt-2">Matrícula na Creche</p>
-                        </div>
-                    </div>
-                </header>
-
-                <main className="w-full max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/50 backdrop-blur-sm relative">
-                    {/* ... botões e conteúdo ... */}
-                    <button
-                        type="button"
-                        onClick={onBack || (() => setView && setView('scheduler'))}
-                        className="absolute left-4 top-4 p-2 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-sm border border-pink-100 transition-all z-10"
-                        title="Voltar"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                        </svg>
-                    </button>
-                    <div className="pt-8">
-                        {formContent}
-                    </div>
-                </main>
-            </div>
-            {submissionWarningModal}
+        <div className="min-h-screen bg-gray-50/50 py-10 px-4 sm:px-6 flex justify-center">
+            {formContent}
         </div>
     );
 };
