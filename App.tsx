@@ -6581,7 +6581,7 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                         <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600">
                              <PhoneIcon className="w-5 h-5" />
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Inter, sans-serif' }}>Agenda</h3>
+                        <h3 className="text-2xl font-bold text-gray-800 whitespace-nowrap" style={{ fontFamily: 'Inter, sans-serif' }}>Agenda</h3>
                     </div>
                 </div>
 
@@ -6638,11 +6638,13 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
             {/* Seção 2: Clientes Ativos (Mensalistas) */}
             <div className="space-y-6">
                 <div className="flex items-center gap-3 px-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
-                         <SparklesIcon className="w-6 h-6" />
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
+                         <SparklesIcon className="w-5 h-5" />
                     </div>
-                    <h3 className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Inter, sans-serif' }}>Clientes Ativos</h3>
-                    <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-100 uppercase tracking-wider">Mensalistas</span>
+                    <div className="flex flex-col -space-y-0.5">
+                        <span className="text-[10px] font-bold text-green-600 uppercase tracking-[0.2em] ml-0.5">Mensalistas</span>
+                        <h3 className="text-2xl font-bold text-gray-800 whitespace-nowrap leading-none" style={{ fontFamily: 'Inter, sans-serif' }}>Clientes Ativos</h3>
+                    </div>
                 </div>
 
                 {loading ? <div className="flex justify-center py-20"><LoadingSpinner /></div> : (
@@ -12310,8 +12312,11 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         <p><strong>Adicionais:</strong> {ADDON_SERVICES.filter(a => selectedAddons[a.id]).map(a => a.label).join(', ')}</p>
                                     )}
                                     <p><strong>Data:</strong> {selectedDate.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })} às {selectedTime}:00</p>
-                                    <div className="mt-4 pt-4 border-t border-gray-200">
-                                        <p className="text-2xl font-bold text-gray-900 text-right">Total: R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</p>
+                                    <div className="mt-6 p-6 bg-gradient-to-r from-pink-100 to-rose-100 border-2 border-pink-200 rounded-[2rem] animate-fadeIn shadow-lg shadow-pink-200/50">
+                                        <div className="flex justify-between items-center gap-3 whitespace-nowrap">
+                                            <span className="text-lg font-bold text-pink-900 uppercase tracking-wider whitespace-nowrap">Preço Total:</span>
+                                            <span className="text-2xl sm:text-3xl font-extrabold text-pink-700 drop-shadow-sm whitespace-nowrap">R$ {(totalPrice ?? 0).toFixed(2).replace('.', ',')}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="mt-8">
