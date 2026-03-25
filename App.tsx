@@ -6639,11 +6639,11 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
             {/* Seção 2: Clientes Ativos (Mensalistas) */}
             <div className="space-y-6">
                 <div className="flex items-center gap-3 px-4">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
+                    <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600">
                          <SparklesIcon className="w-5 h-5" />
                     </div>
                     <div className="flex flex-col -space-y-0.5">
-                        <span className="text-[10px] font-bold text-green-600 uppercase tracking-[0.2em] ml-0.5">Mensalistas</span>
+                        <span className="text-[10px] font-bold text-pink-600 uppercase tracking-[0.2em] ml-0.5">Mensalistas</span>
                         <h3 className="text-2xl font-bold text-gray-800 whitespace-nowrap leading-none" style={{ fontFamily: 'Inter, sans-serif' }}>Clientes Ativos</h3>
                     </div>
                 </div>
@@ -6658,19 +6658,19 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                             return (
                                 <div 
                                     key={client.id} 
-                                    className={`relative group bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden transition-all duration-500 ease-in-out cursor-pointer ${isExpanded ? 'shadow-2xl shadow-green-500/10 ring-2 ring-green-100' : 'hover:bg-gray-50/50'}`}
+                                    className={`relative group bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden transition-all duration-500 ease-in-out cursor-pointer ${isExpanded ? 'shadow-2xl shadow-pink-500/10 ring-2 ring-pink-100' : 'hover:bg-gray-50/50'}`}
                                     onClick={() => setExpandedClientId(isExpanded ? null : client.id)}
                                 >
-                                    <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-green-400 to-emerald-500 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`} />
+                                    <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-pink-400 to-rose-500 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`} />
                                     
                                     <div className={`p-6 transition-all duration-500 ${isExpanded ? 'p-8' : 'p-5'}`}>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-4">
-                                                <div className={`bg-emerald-50 rounded-2xl flex items-center justify-center transition-all duration-500 ${isExpanded ? 'w-16 h-16 text-2xl rotate-12 scale-110 shadow-inner' : 'w-10 h-10 text-lg group-hover:scale-110'}`}>
+                                                <div className={`bg-pink-50 rounded-2xl flex items-center justify-center transition-all duration-500 ${isExpanded ? 'w-16 h-16 text-2xl rotate-12 scale-110 shadow-inner' : 'w-10 h-10 text-lg group-hover:scale-110'}`}>
                                                     <SafeImage alt="Client Icon" className={isExpanded ? "h-8 w-8" : "h-5 w-5"} src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" />
                                                 </div>
                                                 <div>
-                                                    <h4 className={`font-bold text-gray-900 transition-all duration-500 ${isExpanded ? 'text-2xl leading-tight' : 'text-base group-hover:text-green-600'}`}>{client.name}</h4>
+                                                    <h4 className={`font-bold text-gray-900 transition-all duration-500 ${isExpanded ? 'text-2xl leading-tight' : 'text-base group-hover:text-pink-600'}`}>{client.name}</h4>
                                                     {isExpanded && (
                                                         <div className="flex items-center gap-2 mt-1 animate-fadeIn">
                                                             <span className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
@@ -6683,11 +6683,11 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 {!isExpanded && (
-                                                    <div className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-bold border border-emerald-100 animate-fadeIn">
+                                                    <div className="bg-pink-50 text-pink-700 px-3 py-1 rounded-full text-[10px] font-bold border border-pink-100 animate-fadeIn">
                                                         {pets.length} {pets.length === 1 ? 'Pet' : 'Pets'}
                                                     </div>
                                                 )}
-                                                <div className={`text-gray-400 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-green-500' : 'group-hover:translate-x-1'}`}>
+                                                <div className={`text-gray-400 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-pink-500' : 'group-hover:translate-x-1'}`}>
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                                                 </div>
                                             </div>
@@ -6700,7 +6700,7 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">Pets Vinculados</p>
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                             {pets.map(pet => (
-                                                                <div key={pet.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group/pet hover:bg-white hover:border-emerald-200 transition-all cursor-default">
+                                                                <div key={pet.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group/pet hover:bg-white hover:border-pink-200 transition-all cursor-default">
                                                                     {pet.pet_photo_url ? (
                                                                         <SafeImage src={pet.pet_photo_url} alt={pet.pet_name} className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover/pet:scale-105 transition-transform" />
                                                                     ) : (
@@ -6723,9 +6723,9 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                                             target="_blank" 
                                                             rel="noopener noreferrer"
                                                             onClick={(e) => e.stopPropagation()}
-                                                            className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-2xl hover:shadow-lg hover:shadow-green-200/50 transform hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
+                                                            className="px-8 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold rounded-2xl hover:shadow-lg hover:shadow-pink-200/50 transform hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
                                                         >
-                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 0 5.414 0 12.05c0 2.123.55 4.197 1.594 6.012L0 24l6.135-1.61a11.782 11.782 0 005.91 1.588h.005c6.636 0 12.05-5.415 12.05-12.05a11.77 11.77 0 00-3.41-8.513" /></svg>
+                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.397-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 0 5.414 0 12.05c0 2.123.55 4.197 1.594 6.012L0 24l6.135-1.61a11.782 11.782 0 005.91 1.588h.005c6.636 0 12.05-5.415 12.05-12.05a11.77 11.77 0 00-3.41-8.513" /></svg>
                                                             Enviar Mensagem
                                                         </a>
                                                     </div>
