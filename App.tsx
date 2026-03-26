@@ -7930,25 +7930,32 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
             {editingClient && <EditMonthlyClientModal client={editingClient} onClose={() => setEditingClient(null)} onMonthlyClientUpdated={handleUpdateSuccess} />}
             {deletingClient && <ConfirmationModal isOpen={!!deletingClient} onClose={() => setDeletingClient(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o mensalista ${deletingClient.pet_name}? Todos os seus agendamentos futuros também serão removidos.`} confirmText="Excluir" variant="danger" isLoading={isDeleting} />}
 
-            <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
-                <div className="space-y-3">
-                    <div className="space-y-1">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Mensalistas</h2>
-                        <p className="text-sm text-gray-600 text-center">Meus Clientes Mensalistas</p>
+            <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-6 mb-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-gradient-to-br from-pink-50 to-purple-50 rounded-full blur-2xl opacity-70 pointer-events-none"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4 text-center md:text-left mx-auto md:mx-0">
+                        <div>
+                            <h2 className="text-4xl font-bold text-pink-600" style={{ fontFamily: '"Lobster Two", cursive' }}>Mensalistas</h2>
+                            <p className="text-[11px] sm:text-sm text-gray-600 font-medium">Gestão de clientes mensalistas ativos</p>
+                        </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap justify-center">
+                    
+                    <div className="flex gap-3">
                         <button
                             onClick={onAddClient}
-                            title="Adicionar Mensalista"
-                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold h-11 px-6 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-md hover:shadow-lg focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
                         >
-                            <SafeImage alt="Adicionar Mensalista" className="h-6 w-6" src="https://i.imgur.com/19QrZ6g.png" />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" />
+                            </svg>
+                            <span>Novo Mensalista</span>
                         </button>
-
+                        
                         <button
                             onClick={() => setShowFilterPanel(!showFilterPanel)}
+                            className={`inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border ${showFilterPanel ? 'border-pink-300 bg-pink-50 text-pink-700' : 'border-gray-200 hover:border-gray-300'} focus:ring-2 focus:ring-gray-200`}
                             title="Filtros"
-                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-gray-100 text-gray-700 font-semibold h-11 px-5 text-base rounded-lg hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
                         >
                             <svg 
                                 className={`w-5 h-5 transition-transform duration-300 ${showFilterPanel ? 'rotate-180' : ''}`} 
@@ -7957,15 +7964,16 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                             </svg>
                         </button>
+
                         <button
                             onClick={() => setViewMode(prev => prev === 'cards' ? 'stack' : prev === 'stack' ? 'folders' : 'cards')}
                             title={viewMode === 'cards' ? 'Modo Cartões' : viewMode === 'stack' ? 'Modo Pilha' : 'Modo Pastas'}
-                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none group"
+                            className="inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-gray-200"
                         >
-                            <div className="relative w-6 h-6">
+                            <div className="relative w-5 h-5">
                                 {/* Modo Cartões (Arrastar pro lado) - ViewColumns */}
                                 <svg 
-                                    className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${viewMode === 'cards' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'}`} 
+                                    className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${viewMode === 'cards' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'}`} 
                                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                 >
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 4.5v15m6-15v15m-10.5-15h15c.828 0 1.5.672 1.5 1.5v12c0 .828-.672 1.5-1.5 1.5h-15c-.828 0-1.5-.672-1.5-1.5v-12c0-.828.672-1.5 1.5-1.5z" />
@@ -7973,7 +7981,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
 
                                 {/* Modo Pilha - Square 3 Stack 3D */}
                                 <svg 
-                                    className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${viewMode === 'stack' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} 
+                                    className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${viewMode === 'stack' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} 
                                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                 >
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
@@ -7981,29 +7989,30 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
 
                                 {/* Modo Pastas */}
                                 <svg 
-                                    className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${viewMode === 'folders' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} 
+                                    className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${viewMode === 'folders' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} 
                                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                 >
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                                 </svg>
                             </div>
                         </button>
+
                         <button
                             onClick={onOpenDashboard}
+                            className="inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-gray-200"
                             title="Estatísticas"
-                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
                         >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                         </button>
                     </div>
                 </div>
 
-                <div className="mt-4 relative">
+                <div className="mt-6 relative z-10">
                     <input
                         type="text"
-                        placeholder="Buscar..."
+                        placeholder="Buscar por nome do pet ou tutor..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
@@ -11047,14 +11056,14 @@ const DaycareRegistrationForm: React.FC<{
                     {/* PERTENCES */}
                     <div className="space-y-8 pb-4">
                         <h2 className="text-3xl font-extrabold text-pink-950 tracking-tight">Pertences Frequentes</h2>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                             {['Bolinha', 'Pelucia', 'Cama', 'Coleira', 'Comedouro'].map(item => {
                                 const isChecked = formData.delivered_items.items.includes(item);
                                 return (
-                                    <label key={item} className={`flex items-center gap-3 py-3 px-6 rounded-2xl border-2 cursor-pointer transition-all ${isChecked ? 'bg-pink-600 text-white border-pink-600 shadow-md transform scale-105' : 'bg-white text-pink-900 border-pink-100 hover:border-pink-300'}`}>
+                                    <label key={item} className={`flex items-center gap-2 sm:gap-3 py-2 sm:py-3 px-3 sm:px-6 rounded-xl sm:rounded-2xl border-2 cursor-pointer transition-all ${isChecked ? 'bg-pink-600 text-white border-pink-600 shadow-md transform scale-105' : 'bg-white text-pink-900 border-pink-100 hover:border-pink-300'}`}>
                                         <input type="checkbox" value={item} checked={isChecked} onChange={handleBelongingsChange} className="sr-only" />
-                                        {isChecked ? <div className="w-5 h-5 bg-white text-pink-600 rounded-full flex items-center justify-center font-bold">✓</div> : <div className="w-5 h-5 border-2 border-pink-200 rounded-full"></div>}
-                                        <span className="font-bold">{item}</span>
+                                        {isChecked ? <div className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 bg-white text-pink-600 rounded-full flex items-center justify-center font-bold text-xs sm:text-base">✓</div> : <div className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 border-2 border-pink-200 rounded-full"></div>}
+                                        <span className="font-bold text-sm sm:text-base truncate">{item}</span>
                                     </label>
                                 );
                             })}
@@ -12412,6 +12421,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
     const [registrationToReject, setRegistrationToReject] = useState<HotelRegistration | null>(null);
     const [rejectReason, setRejectReason] = useState<string>('');
     const [hotelFilter, setHotelFilter] = useState<'all' | 'in_hotel' | 'approved' | 'analysis' | 'archived'>('all');
+    const [activeTab, setActiveTab] = useState<'in_hotel' | 'approved' | 'analysis' | 'archived'>('in_hotel');
     const [showHotelFilterPanel, setShowHotelFilterPanel] = useState(false);
     const [expandedHotelSections, setExpandedHotelSections] = useState<string[]>(['in_hotel', 'approved', 'analysis', 'archived']);
     const [draggingOverHotel, setDraggingOverHotel] = useState<'in_hotel' | 'approved' | 'analysis' | 'archived' | null>(null);
@@ -13065,129 +13075,139 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
         };
 
         return (
-            <div className="bg-white rounded-2xl shadow-sm p-5 min-h-[360px] hover:shadow-md transition-shadow border border-gray-200">
-                <div className="rounded-xl mb-3 p-5 bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <SafeImage src={registration.pet_photo_url || "https://cdn-icons-png.flaticon.com/512/3009/3009489.png"} alt="Pet" className="w-12 h-12 rounded-full object-cover cursor-pointer" loading="eager" onClick={() => onChangePhoto && onChangePhoto(registration)} />
-                        <div>
-                            <h3 className="text-lg font-bold leading-none">{registration.pet_name}</h3>
+            <div className="p-4 sm:p-5 flex flex-col h-full flex-grow bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+                <div className="flex items-center justify-between mb-4 gap-2">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="relative flex-shrink-0">
+                            <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity"></div>
+                            <SafeImage src={registration.pet_photo_url || "https://cdn-icons-png.flaticon.com/512/3009/3009489.png"} alt={registration.pet_name} className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform" loading="eager" onClick={() => onChangePhoto && onChangePhoto(registration)} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <h3 className="font-outfit font-bold text-lg sm:text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors truncate">{registration.pet_name}</h3>
+                            <div className="flex items-center gap-1.5 mt-1 flex-nowrap overflow-x-auto custom-scrollbar-hide">
+                                {!isAnalysisHeader && (
+                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border uppercase tracking-wide flex-shrink-0 ${statusBadge.bg} ${statusBadge.text}`}>{statusBadge.label}</span>
+                                )}
+                                {(() => {
+                                    const apRaw = (registration.approval_status ?? 'pending');
+                                    const apNorm = (typeof apRaw === 'string' ? apRaw.trim() : 'pending').toLowerCase();
+                                    const map: Record<string, { bg: string; text: string; label: string }> = {
+                                        'pending': { bg: 'bg-yellow-50 text-yellow-600 border-yellow-100', text: '', label: 'Em Análise' },
+                                        'approved': { bg: 'bg-green-50 text-green-600 border-green-100', text: '', label: 'Aprovado' },
+                                        'rejected': { bg: 'bg-red-50 text-red-600 border-red-100', text: '', label: 'Rejeitado' },
+                                        'pendente': { bg: 'bg-yellow-50 text-yellow-600 border-yellow-100', text: '', label: 'Em Análise' },
+                                        'aprovado': { bg: 'bg-green-50 text-green-600 border-green-100', text: '', label: 'Aprovado' },
+                                        'rejeitado': { bg: 'bg-red-50 text-red-600 border-red-100', text: '', label: 'Rejeitado' },
+                                    };
+                                    if (currentCheckInStatus === 'checked_in') {
+                                        return null; // Removido "Hospedagem Ativa"
+                                    }
+                                    if (currentCheckInStatus === 'checked_out' || (registration.status || '') === 'Concluído') {
+                                        return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border uppercase tracking-wide flex-shrink-0 bg-gray-50 text-gray-600 border-gray-200`}>Arquivado</span>;
+                                    }
+                                    const b = map[apNorm] ?? map['pendente'];
+                                    return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border uppercase tracking-wide flex-shrink-0 ${b.bg}`}>{b.label}</span>;
+                                })()}
+                            </div>
                         </div>
                     </div>
-                    <div className="text-right">
-                        <p className="text-xs opacity-90">Valor Total</p>
-                        <p className="text-lg font-extrabold">R$ {invoiceTotal.toFixed(2).replace('.', ',')}</p>
+                    <div className="text-right flex flex-col items-end flex-shrink-0 pl-2">
+                        <div className="font-outfit font-bold text-lg sm:text-xl text-gray-900 whitespace-nowrap">R$ {invoiceTotal.toFixed(2).replace('.', ',')}</div>
+                        <div className="mt-1 flex flex-col items-end gap-1">
+                            {(() => {
+                                const current = (registration.payment_status === 'Pago') ? 'Pago' : 'Pendente';
+                                const cls = current === 'Pago'
+                                    ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                                    : 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200';
+                                return (
+                                    <button
+                                        onClick={() => handleTogglePaymentStatus(registration)}
+                                        disabled={paymentUpdatingId === registration.id}
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-semibold whitespace-nowrap truncate border transition-colors ${cls}`}
+                                        title={current === 'Pago' ? 'Marcar como pendente' : 'Marcar como pago'}
+                                    >
+                                        {paymentUpdatingId === registration.id ? 'Atualizando...' : current}
+                                    </button>
+                                );
+                            })()}
+                        </div>
                     </div>
                 </div>
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex flex-wrap gap-2">
-                        {!isAnalysisHeader && (
-                            <span className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap truncate ${statusBadge.bg} ${statusBadge.text}`}>{statusBadge.label}</span>
-                        )}
-                        {(() => {
-                            const apRaw = (registration.approval_status ?? 'pending');
-                            const apNorm = (typeof apRaw === 'string' ? apRaw.trim() : 'pending').toLowerCase();
-                            const map: Record<string, { bg: string; text: string; label: string }> = {
-                                'pending': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Em Análise' },
-                                'approved': { bg: 'bg-green-100', text: 'text-green-800', label: 'Aprovado' },
-                                'rejected': { bg: 'bg-red-100', text: 'text-red-800', label: 'Rejeitado' },
-                                'pendente': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Em Análise' },
-                                'aprovado': { bg: 'bg-green-100', text: 'text-green-800', label: 'Aprovado' },
-                                'rejeitado': { bg: 'bg-red-100', text: 'text-red-800', label: 'Rejeitado' },
-                            };
-                            if (currentCheckInStatus === 'checked_in') {
-                                return <span className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap truncate bg-green-100 text-green-800`}>Hospedagem Ativa</span>;
-                            }
-                            if (currentCheckInStatus === 'checked_out' || (registration.status || '') === 'Concluído') {
-                                return <span className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap truncate bg-red-100 text-red-800`}>Arquivado</span>;
-                            }
-                            const b = map[apNorm] ?? map['pendente'];
-                            return <span className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap truncate ${b.bg} ${b.text}`}>{b.label}</span>;
-                        })()}
+
+                <div className="grid grid-cols-2 gap-y-3 gap-x-2 mb-4 bg-gray-50/50 p-2.5 sm:p-3 rounded-xl border border-gray-100">
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754012.png" alt="User Icon" className="h-7 w-7 opacity-60" loading="lazy" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Tutor</span>
+                            <span className="text-xs font-medium text-gray-700 truncate">{registration.tutor_name}</span>
+                        </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                        <span className="text-[10px] text-gray-500">Status do pagamento</span>
-                        {(() => {
-                            const current = (registration.payment_status === 'Pago') ? 'Pago' : 'Pendente';
-                            const cls = current === 'Pago'
-                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                                : 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200';
-                            return (
-                                <button
-                                    onClick={() => handleTogglePaymentStatus(registration)}
-                                    disabled={paymentUpdatingId === registration.id}
-                                    className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap truncate border ${cls}`}
-                                    title={current === 'Pago' ? 'Marcar como pendente' : 'Marcar como pago'}
-                                >
-                                    {paymentUpdatingId === registration.id ? 'Atualizando...' : current}
-                                </button>
-                            );
-                        })()}
-                    </div>
-                </div>
-                <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-3 text-gray-600">
-                        <UserIcon />
-                        <span>{registration.tutor_name}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-gray-600">
-                        <WhatsAppIcon />
-                        <a href={buildWhatsAppLink(registration.tutor_phone)} target="_blank" rel="noopener noreferrer" className="text-green-700 hover:underline">{registration.tutor_phone}</a>
+                    <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                        </svg>
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">WhatsApp</span>
+                            <a href={buildWhatsAppLink(registration.tutor_phone)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-green-600 hover:underline truncate">{registration.tutor_phone}</a>
+                        </div>
                     </div>
                     {registration.check_in_date && (
-                        <div className="flex items-center gap-3 text-gray-600">
-                            <img src="https://cdn-icons-png.flaticon.com/512/9576/9576046.png" alt="Check-in Icon" className="h-7 w-7" />
-                            <span>
-                                Check-in: {formatDateToBR(registration.check_in_date)} {String(registration.check_in_time ?? '').split(':').slice(0, 2).join(':')}
-                            </span>
+                        <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                            <SafeImage src="https://cdn-icons-png.flaticon.com/512/9576/9576046.png" alt="Check-in" className="w-5 h-5 opacity-60 mr-1" loading="lazy" />
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Check-in</span>
+                                <span className="text-xs font-bold text-gray-700 truncate">{formatDateToBR(registration.check_in_date)} {String(registration.check_in_time ?? '').split(':').slice(0, 2).join(':')}</span>
+                            </div>
                         </div>
                     )}
                     {registration.check_out_date && (
-                        <div className="flex items-center gap-3 text-gray-600">
-                            <img src="https://cdn-icons-png.flaticon.com/512/9576/9576053.png" alt="Check-out Icon" className="h-7 w-7" />
-                            <span>
-                                Check-out: {formatDateToBR(registration.check_out_date)} {String(registration.check_out_time ?? '').split(':').slice(0, 2).join(':')}
-                            </span>
-                        </div>
-                    )}
-
-                    {registration.extra_services && (
-                        <div className="pt-2">
-                            <div className="flex flex-wrap gap-2">
-                                {registration.extra_services.pernoite?.enabled && (
-                                    <button onClick={() => pendingChip === 'pernoite' ? handleRemoveExtraChip(registration, 'pernoite') : setPendingChip('pernoite')} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                        <span>Pernoite</span>{pendingChip === 'pernoite' && <CloseIcon className="w-3 h-3" />}
-                                    </button>
-                                )}
-                                {registration.extra_services.banho_tosa?.enabled && (
-                                    <button onClick={() => pendingChip === 'banho_tosa' ? handleRemoveExtraChip(registration, 'banho_tosa') : setPendingChip('banho_tosa')} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                        <span>Banho & Tosa</span>{pendingChip === 'banho_tosa' && <CloseIcon className="w-3 h-3" />}
-                                    </button>
-                                )}
-                                {registration.extra_services.so_banho?.enabled && (
-                                    <button onClick={() => pendingChip === 'so_banho' ? handleRemoveExtraChip(registration, 'so_banho') : setPendingChip('so_banho')} className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                        <span>Só banho</span>{pendingChip === 'so_banho' && <CloseIcon className="w-3 h-3" />}
-                                    </button>
-                                )}
-                                {registration.extra_services.adestrador?.enabled && (
-                                    <button onClick={() => pendingChip === 'adestrador' ? handleRemoveExtraChip(registration, 'adestrador') : setPendingChip('adestrador')} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                        <span>Adestrador</span>{pendingChip === 'adestrador' && <CloseIcon className="w-3 h-3" />}
-                                    </button>
-                                )}
-                                {registration.extra_services.despesa_medica?.enabled && (
-                                    <button onClick={() => pendingChip === 'despesa_medica' ? handleRemoveExtraChip(registration, 'despesa_medica') : setPendingChip('despesa_medica')} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                        <span>Despesa médica</span>{pendingChip === 'despesa_medica' && <CloseIcon className="w-3 h-3" />}
-                                    </button>
-                                )}
-                                {registration.extra_services.dias_extras?.quantity > 0 && (
-                                    <button onClick={() => pendingChip === 'dias_extras' ? handleRemoveExtraChip(registration, 'dias_extras') : setPendingChip('dias_extras')} className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full cursor-pointer hover:opacity-80 flex items-center gap-1">
-                                        <span>{registration.extra_services.dias_extras.quantity} dia{registration.extra_services.dias_extras.quantity > 1 ? 's' : ''} extra{registration.extra_services.dias_extras.quantity > 1 ? 's' : ''}</span>{pendingChip === 'dias_extras' && <CloseIcon className="w-3 h-3" />}
-                                    </button>
-                                )}
+                        <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                            <SafeImage src="https://cdn-icons-png.flaticon.com/512/9576/9576053.png" alt="Check-out" className="w-5 h-5 opacity-60 mr-1" loading="lazy" />
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Check-out</span>
+                                <span className="text-xs font-medium text-gray-700 truncate">{formatDateToBR(registration.check_out_date)} {String(registration.check_out_time ?? '').split(':').slice(0, 2).join(':')}</span>
                             </div>
                         </div>
                     )}
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mt-4">
+
+                {registration.extra_services && (
+                    <div className="mb-4 flex flex-wrap gap-1.5">
+                        {registration.extra_services.pernoite?.enabled && (
+                            <button onClick={() => pendingChip === 'pernoite' ? handleRemoveExtraChip(registration, 'pernoite') : setPendingChip('pernoite')} className="px-2 py-1 bg-purple-100 text-purple-700 text-[10px] rounded-md cursor-pointer hover:opacity-80 flex items-center gap-1 font-medium">
+                                <span>Pernoite</span>{pendingChip === 'pernoite' && <CloseIcon className="w-3 h-3" />}
+                            </button>
+                        )}
+                        {registration.extra_services.banho_tosa?.enabled && (
+                            <button onClick={() => pendingChip === 'banho_tosa' ? handleRemoveExtraChip(registration, 'banho_tosa') : setPendingChip('banho_tosa')} className="px-2 py-1 bg-blue-100 text-blue-700 text-[10px] rounded-md cursor-pointer hover:opacity-80 flex items-center gap-1 font-medium">
+                                <span>Banho & Tosa</span>{pendingChip === 'banho_tosa' && <CloseIcon className="w-3 h-3" />}
+                            </button>
+                        )}
+                        {registration.extra_services.so_banho?.enabled && (
+                            <button onClick={() => pendingChip === 'so_banho' ? handleRemoveExtraChip(registration, 'so_banho') : setPendingChip('so_banho')} className="px-2 py-1 bg-cyan-100 text-cyan-700 text-[10px] rounded-md cursor-pointer hover:opacity-80 flex items-center gap-1 font-medium">
+                                <span>Só banho</span>{pendingChip === 'so_banho' && <CloseIcon className="w-3 h-3" />}
+                            </button>
+                        )}
+                        {registration.extra_services.adestrador?.enabled && (
+                            <button onClick={() => pendingChip === 'adestrador' ? handleRemoveExtraChip(registration, 'adestrador') : setPendingChip('adestrador')} className="px-2 py-1 bg-green-100 text-green-700 text-[10px] rounded-md cursor-pointer hover:opacity-80 flex items-center gap-1 font-medium">
+                                <span>Adestrador</span>{pendingChip === 'adestrador' && <CloseIcon className="w-3 h-3" />}
+                            </button>
+                        )}
+                        {registration.extra_services.despesa_medica?.enabled && (
+                            <button onClick={() => pendingChip === 'despesa_medica' ? handleRemoveExtraChip(registration, 'despesa_medica') : setPendingChip('despesa_medica')} className="px-2 py-1 bg-red-100 text-red-700 text-[10px] rounded-md cursor-pointer hover:opacity-80 flex items-center gap-1 font-medium">
+                                <span>Despesa médica</span>{pendingChip === 'despesa_medica' && <CloseIcon className="w-3 h-3" />}
+                            </button>
+                        )}
+                        {registration.extra_services.dias_extras?.quantity > 0 && (
+                            <button onClick={() => pendingChip === 'dias_extras' ? handleRemoveExtraChip(registration, 'dias_extras') : setPendingChip('dias_extras')} className="px-2 py-1 bg-orange-100 text-orange-700 text-[10px] rounded-md cursor-pointer hover:opacity-80 flex items-center gap-1 font-medium">
+                                <span>{registration.extra_services.dias_extras.quantity} dia{registration.extra_services.dias_extras.quantity > 1 ? 's' : ''} extra{registration.extra_services.dias_extras.quantity > 1 ? 's' : ''}</span>{pendingChip === 'dias_extras' && <CloseIcon className="w-3 h-3" />}
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                <div className="flex-grow"></div>
+                <div className="pt-3 border-t border-gray-100 flex flex-wrap sm:grid sm:grid-cols-4 gap-1.5 mt-4">
                     {(() => {
                         const apRaw = (registration.approval_status ?? 'pending');
                         const apNorm = (typeof apRaw === 'string' ? apRaw.trim() : 'pending').toLowerCase();
@@ -13198,27 +13218,27 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                                     <button
                                         onClick={() => handleApprove(registration)}
                                         disabled={isApproving}
-                                        className="w-full bg-green-100 text-green-700 py-1.5 px-2 rounded-md hover:bg-green-200 transition-colors text-xs font-medium flex items-center gap-1.5 justify-center"
+                                        className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-green-100 text-green-700 hover:bg-green-200"
                                     >
-                                        {isApproving ? (<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-700"></div>) : (<><CheckCircleOutlineIcon className="w-4 h-4" /><span>Aprovar</span></>)}
+                                        {isApproving ? (<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-700"></div>) : (<><CheckCircleOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Aprovar</span></>)}
                                     </button>
                                     <button
                                         onClick={() => { setRegistrationToReject(registration); setRejectReason(''); }}
-                                        className="w-full bg-red-100 text-red-700 py-1.5 px-2 rounded-md hover:bg-red-200 transition-colors text-xs font-medium flex items-center gap-1.5 justify-center"
+                                        className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-red-100 text-red-700 hover:bg-red-200"
                                     >
-                                        <XCircleOutlineIcon className="w-4 h-4" /><span>Rejeitar</span>
+                                        <XCircleOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Rejeitar</span>
                                     </button>
                                     <button
                                         onClick={() => setSelectedRegistration(registration)}
-                                        className="w-full bg-gray-100 text-gray-700 py-1.5 px-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium"
+                                        className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-gray-100 text-gray-700 hover:bg-gray-200"
                                     >
-                                        <EyeOutlineIcon className="w-4 h-4" /><span>Visualizar</span>
+                                        <EyeOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Ver</span>
                                     </button>
                                     <button
                                         onClick={() => setRegistrationToEdit(registration)}
-                                        className="w-full bg-blue-100 text-blue-700 py-1.5 px-2 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium"
+                                        className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-blue-50 text-blue-700 hover:bg-blue-100"
                                     >
-                                        <PencilOutlineIcon className="w-4 h-4" /><span>Editar</span>
+                                        <PencilOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Editar</span>
                                     </button>
                                 </>
                             );
@@ -13229,34 +13249,28 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                                     <button
                                         onClick={async () => { await handleToggleCheckIn(registration); await sendHotelCheckoutWebhook(registration); }}
                                         disabled={isUpdating}
-                                        className={`w-full py-1.5 px-2 rounded-md transition-colors ${getCheckInButtonStyle()} disabled:opacity-50 flex items-center justify-center gap-1.5 text-center whitespace-nowrap leading-none text-[11px] font-medium`}
+                                        className={`w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-red-500 hover:bg-red-600 text-white disabled:opacity-50`}
                                     >
-                                        {isUpdating ? (<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>) : (<><CheckCircleOutlineIcon className="w-4 h-4" /><span>Check-out</span></>)}
+                                        {isUpdating ? (<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>) : (<><CheckCircleOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Check-out</span></>)}
                                     </button>
                                     <button
                                         onClick={() => setSelectedRegistration(registration)}
-                                        className="w-full bg-gray-100 text-gray-700 py-1.5 px-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                                        className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-gray-100 text-gray-700 hover:bg-gray-200"
                                     >
-                                        <EyeOutlineIcon className="w-4 h-4" /><span>Visualizar</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setRegistrationToEdit(registration)}
-                                        className="w-full bg-blue-100 text-blue-700 py-1.5 px-2 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
-                                    >
-                                        <PencilOutlineIcon className="w-4 h-4" /><span>Editar</span>
+                                        <EyeOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Ver</span>
                                     </button>
                                     <button
                                         onClick={() => onAddExtraServices(registration)}
-                                        className="w-full bg-green-100 text-green-700 py-1.5 px-2 rounded-md hover:bg-green-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                                        className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
                                         title="Adicionar Serviços Extras"
                                     >
-                                        <PlusOutlineIcon className="w-4 h-4" /><span>Extras</span>
+                                        <PlusOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Extras</span>
                                     </button>
                                     <button
-                                        onClick={() => setRegistrationToDelete(registration)}
-                                        className="w-full bg-red-50 text-red-600 py-1.5 px-2 rounded-md hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                                        onClick={() => setRegistrationToEdit(registration)}
+                                        className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-blue-50 text-blue-700 hover:bg-blue-100"
                                     >
-                                        <TrashOutlineIcon className="w-4 h-4" /><span>Excluir</span>
+                                        <PencilOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Editar</span>
                                     </button>
                                 </>
                             );
@@ -13267,44 +13281,37 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                                     <button
                                         onClick={() => handleToggleCheckIn(registration)}
                                         disabled={isUpdating}
-                                        className={`w-full py-1.5 px-2 rounded-md transition-colors ${getCheckInButtonStyle()} disabled:opacity-50 flex items-center justify-center gap-1.5 text-center whitespace-nowrap leading-none text-[11px] font-medium`}
+                                        className={`w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-50`}
                                     >
-                                        {isUpdating ? (<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>) : (<><CheckCircleOutlineIcon className="w-4 h-4" /><span>Check-in</span></>)}
+                                        {isUpdating ? (<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>) : (<><CheckCircleOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Check-in</span></>)}
                                     </button>
                                 )}
                                 {!showCheckActions && (
                                     <button
                                         onClick={() => handleApprove(registration)}
                                         disabled={isApproving}
-                                        className="w-full bg-green-100 text-green-700 py-1.5 px-2 rounded-md hover:bg-green-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                                        className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-green-100 text-green-700 hover:bg-green-200"
                                     >
-                                        {isApproving ? (<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-700"></div>) : (<><CheckCircleOutlineIcon className="w-4 h-4" /><span>Aprovar</span></>)}
+                                        {isApproving ? (<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-700"></div>) : (<><CheckCircleOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Aprovar</span></>)}
                                     </button>
                                 )}
                                 <button
                                     onClick={() => setSelectedRegistration(registration)}
-                                    className="w-full bg-gray-100 text-gray-700 py-1.5 px-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                                    className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-gray-100 text-gray-700 hover:bg-gray-200"
                                 >
-                                    <EyeOutlineIcon className="w-4 h-4" /><span>Visualizar</span>
+                                    <EyeOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Ver</span>
                                 </button>
                                 <button
                                     onClick={() => setRegistrationToEdit(registration)}
-                                    className="w-full bg-blue-100 text-blue-700 py-1.5 px-2 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                                    className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-blue-50 text-blue-700 hover:bg-blue-100"
                                 >
-                                    <PencilOutlineIcon className="w-4 h-4" /><span>Editar</span>
-                                </button>
-                                <button
-                                    onClick={() => onAddExtraServices(registration)}
-                                    className="w-full bg-green-100 text-green-700 py-1.5 px-2 rounded-md hover:bg-green-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
-                                    title="Adicionar Serviços Extras"
-                                >
-                                    <PlusOutlineIcon className="w-4 h-4" /><span>Extras</span>
+                                    <PencilOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Editar</span>
                                 </button>
                                 <button
                                     onClick={() => setRegistrationToDelete(registration)}
-                                    className="w-full bg-red-50 text-red-600 py-1.5 px-2 rounded-md hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
+                                    className="w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none bg-red-50 text-red-600 hover:bg-red-100"
                                 >
-                                    <TrashOutlineIcon className="w-4 h-4" /><span>Excluir</span>
+                                    <TrashOutlineIcon className="w-4 h-4" /><span className="hidden sm:inline">Excluir</span>
                                 </button>
                             </>
                         );
@@ -13316,73 +13323,190 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-md p-6">
-                <div className="space-y-3">
-                    <div className="space-y-1">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Hotel Pet</h2>
-                        <p className="text-sm text-gray-600 text-center">Clientes Hotel Pet</p>
-                    </div>
-                    <div className="flex gap-2 flex-wrap justify-center">
-                        <button
-                            onClick={() => setIsAddFormOpen(true)}
-                            title="Novo Check-in"
-                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold py-3 sm:py-2.5 px-4 rounded-lg hover:bg-pink-700 transition-colors"
-                        >
-                            <SafeImage alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" loading="eager" />
-                        </button>
-                        <button
-                            onClick={() => setShowHotelFilterPanel(prev => !prev)}
-                            title="Filtros"
-                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-gray-100 text-gray-700 font-semibold h-11 px-5 text-base rounded-lg hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
-                        >
-                            <SafeImage alt="Filtros" className="h-6 w-6" src="https://cdn-icons-png.flaticon.com/512/9702/9702724.png" loading="eager" />
-                        </button>
-                        <button
-                            onClick={() => setShowHotelStatistics?.(true)}
-                            title="Estatísticas"
-                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
-                        >
-                            <ChartBarIcon className="w-6 h-6" />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="mt-4">
-                    <input
-                        type="text"
-                        placeholder="Buscar por nome do pet ou tutor..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                    />
-                </div>
-
-                {showHotelFilterPanel && (
-                    <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <div className="flex flex-wrap gap-1.5">
-                            <button onClick={() => setHotelFilter('all')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter === 'all' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Todos</button>
-                            <button onClick={() => setHotelFilter('in_hotel')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter === 'in_hotel' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Pets no Hotel agora</button>
-                            <button onClick={() => setHotelFilter('approved')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter === 'approved' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Hospedagens Aprovadas</button>
-                            <button onClick={() => setHotelFilter('analysis')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter === 'analysis' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Hospedagens em Análise</button>
-                            <button onClick={() => setHotelFilter('archived')} className={`px-2.5 py-1.5 rounded-md text-xs font-semibold ${hotelFilter === 'archived' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:border-pink-400'}`}>Arquivados</button>
+            <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-6 mb-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-gradient-to-br from-pink-50 to-purple-50 rounded-full blur-2xl opacity-70 pointer-events-none"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4 text-center md:text-left mx-auto md:mx-0">
+                        <div>
+                            <h2 className="text-4xl font-bold text-pink-600" style={{ fontFamily: '"Lobster Two", cursive' }}>Hotel Pet</h2>
+                            <p className="text-[11px] sm:text-sm text-gray-600 font-medium">Gestão de hospedagens e pets ativos</p>
                         </div>
                     </div>
-                )}
+                    
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setIsAddFormOpen(true)}
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold h-11 px-6 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-md hover:shadow-lg focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" />
+                            </svg>
+                            <span>Nova Matrícula</span>
+                        </button>
+                        {setShowHotelStatistics && (
+                            <button
+                                onClick={() => setShowHotelStatistics(true)}
+                                className="inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                                title="Estatísticas"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Resumo Rápido */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6 sm:mt-8 relative z-10">
+                    <div className="bg-green-50 rounded-xl p-2 sm:p-4 border border-green-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-200 rounded-full flex items-center justify-center shrink-0">
+                            <span className="relative flex h-2 w-2 sm:h-3 sm:w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-3 sm:w-3 bg-green-600"></span>
+                            </span>
+                        </div>
+                        <div className="min-w-0 flex-1 w-full">
+                            <p className="text-[9px] sm:text-xs font-bold text-green-700 uppercase tracking-wider truncate">No Hotel</p>
+                            <p className="text-lg sm:text-2xl font-black text-green-900 truncate">{currentInHotel.length}</p>
+                        </div>
+                    </div>
+                    <div className="bg-blue-50 rounded-xl p-2 sm:p-4 border border-blue-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-200 text-blue-700 rounded-full flex items-center justify-center shrink-0 font-bold">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <div className="min-w-0 flex-1 w-full">
+                            <p className="text-[9px] sm:text-xs font-bold text-blue-700 uppercase tracking-wider truncate">Aprovados</p>
+                            <p className="text-lg sm:text-2xl font-black text-blue-900 truncate">{approved.length}</p>
+                        </div>
+                    </div>
+                    <div className="bg-yellow-50 rounded-xl p-2 sm:p-4 border border-yellow-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-200 text-yellow-700 rounded-full flex items-center justify-center shrink-0 font-bold">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <div className="min-w-0 flex-1 w-full">
+                            <p className="text-[9px] sm:text-xs font-bold text-yellow-700 uppercase tracking-wider truncate">Pendentes</p>
+                            <p className="text-lg sm:text-2xl font-black text-yellow-900 truncate">{analysis.length}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {filteredRegistrations.length > 0 ? (
                 <div className="space-y-6">
-                    {(hotelFilter === 'all' || hotelFilter === 'in_hotel') && (
-                        <HotelAccordionSection title="Pets no Hotel agora" items={currentInHotel} sectionId="in_hotel" />
+                    <div className="flex items-center gap-2 p-1.5 bg-gray-100/80 backdrop-blur-sm rounded-2xl w-full sm:w-auto overflow-x-auto custom-scrollbar-hide">
+                        <button
+                            onClick={() => setActiveTab('in_hotel')}
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-300 ${activeTab === 'in_hotel' ? 'bg-white text-pink-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
+                        >
+                            <div className="flex items-center justify-center gap-2">
+                                {activeTab === 'in_hotel' && (
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="absolute inline-flex h-full w-full rounded-full opacity-75 bg-pink-400 animate-ping"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+                                    </span>
+                                )}
+                                No Hotel Hoje
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('approved')}
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-300 ${activeTab === 'approved' ? 'bg-white text-pink-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
+                        >
+                            Hospedagens Aprovadas
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('analysis')}
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'analysis' ? 'bg-white text-pink-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
+                        >
+                            Aprovação Pendente
+                            {analysis.length > 0 && (
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === 'analysis' ? 'bg-pink-100 text-pink-700' : 'bg-red-500 text-white'}`}>{analysis.length}</span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('archived')}
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-300 ${activeTab === 'archived' ? 'bg-white text-pink-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
+                        >
+                            Arquivados
+                        </button>
+                    </div>
+
+                        {activeTab === 'in_hotel' && (
+                        currentInHotel.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                                {currentInHotel.map(reg => (
+                                    <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, 'in_hotel')} className="w-full">
+                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={false} inHotel={true} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-12 border border-pink-100/50 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mb-4">
+                                    <svg className="w-8 h-8 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                                </div>
+                                <p className="text-gray-500 font-medium">Nenhum pet no hotel neste momento.</p>
+                            </div>
+                        )
                     )}
-                    {(hotelFilter === 'all' || hotelFilter === 'approved') && (
-                        <HotelAccordionSection title="Hospedagens Aprovadas" items={approved} sectionId="approved" />
+
+                    {activeTab === 'approved' && (
+                        approved.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                                {approved.map(reg => (
+                                    <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, 'approved')} className="w-full">
+                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={true} inHotel={false} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-12 border border-pink-100/50 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mb-4">
+                                    <svg className="w-8 h-8 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
+                                <p className="text-gray-500 font-medium">Nenhuma hospedagem aprovada aguardando check-in.</p>
+                            </div>
+                        )
                     )}
-                    {(hotelFilter === 'all' || hotelFilter === 'analysis') && (
-                        <HotelAccordionSection title="Hospedagens em Análise" items={analysis} sectionId="analysis" />
+
+                    {activeTab === 'analysis' && (
+                        analysis.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                                {analysis.map(reg => (
+                                    <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, 'analysis')} className="w-full">
+                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={false} inHotel={false} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-12 border border-pink-100/50 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mb-4">
+                                    <svg className="w-8 h-8 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
+                                <p className="text-gray-500 font-medium">Nenhuma hospedagem pendente de aprovação.</p>
+                            </div>
+                        )
                     )}
-                    {(hotelFilter === 'all' || hotelFilter === 'archived') && (
-                        <HotelAccordionSection title="Arquivados" items={archived} sectionId="archived" />
+
+                    {activeTab === 'archived' && (
+                        archived.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                                {archived.map(reg => (
+                                    <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, 'archived')} className="w-full">
+                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={false} inHotel={false} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-12 border border-pink-100/50 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mb-4">
+                                    <svg className="w-8 h-8 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                                </div>
+                                <p className="text-gray-500 font-medium">Nenhum registro arquivado.</p>
+                            </div>
+                        )
                     )}
                 </div>
             ) : (
