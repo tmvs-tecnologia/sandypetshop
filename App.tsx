@@ -9624,6 +9624,49 @@ const HotelRegistrationForm: React.FC<{
     const formRef = useRef<HTMLFormElement | null>(null);
     const [isSuccess, setIsSuccess] = useState(false);
 
+    // --- DRAG TO CLOSE STATES & REFS ---
+    const [dragY, setDragY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const startY = useRef(0);
+    const currentY = useRef(0);
+
+    const handleDragStart = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        setIsDragging(true);
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        startY.current = y;
+        currentY.current = y;
+    };
+
+    const handleDragMove = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        currentY.current = y;
+        const diff = y - startY.current;
+        if (diff > 0) {
+            setDragY(diff);
+        }
+    };
+
+    const handleDragEnd = () => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        if (dragY > 150) {
+            setDragY(0);
+            handleClose();
+        } else {
+            setDragY(0);
+        }
+    };
+    
+    const handleClose = () => {
+        setIsAnimating(true);
+        setTimeout(() => {
+            setView && setView('scheduler');
+        }, 500);
+    };
+    // -----------------------------------
+
 
     useEffect(() => {
         if (!formData.payment_date) {
@@ -9929,30 +9972,68 @@ const HotelRegistrationForm: React.FC<{
     const isStep5Valid = true;
 
     const formContent = (
-        <div className="w-full max-w-3xl mx-auto bg-rose-50 rounded-2xl shadow-xl overflow-hidden animate-fadeIn">
-            <form ref={formRef} onSubmit={handleSubmit} className="relative p-6 sm:p-8">
+        <main 
+            className={`w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-xl border border-pink-100 mb-8 transition-all ease-out transform origin-top ${isAnimating ? 'translate-y-full opacity-0 duration-500' : 'animate-fadeIn opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
+            style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
+        >
+            {/* Header Elegante */}
+            <div 
+                className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
+                onTouchStart={handleDragStart}
+                onTouchMove={handleDragMove}
+                onTouchEnd={handleDragEnd}
+                onMouseDown={handleDragStart}
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+            >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-pink-300/40 rounded-full mt-3 hover:bg-pink-300/60 transition-colors"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                    className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    title="Fechar"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <div className="relative z-10 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-3xl sm:text-4xl font-extrabold text-pink-950 tracking-tight mb-2">Hotel Pet</h2>
+                        <p className="text-pink-800/80 font-medium text-sm sm:text-base">Cadastre uma nova hospedagem para o pet</p>
+                    </div>
+                    <div className="hidden sm:flex h-20 w-20 bg-white rounded-3xl shadow-sm items-center justify-center text-4xl transform rotate-3">
+                        🏨
+                    </div>
+                </div>
+            </div>
+
+            <form ref={formRef} onSubmit={handleSubmit} className="p-6 sm:p-10 space-y-12">
                 {/* Seção 1: Dados do Pet e Tutor */}
-                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">📋 Dados do Pet e Tutor</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <section className="space-y-6">
+                    <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-600 font-bold text-sm">1</span>
+                        <h3 className="text-xl font-bold text-gray-800">Dados do Pet e Tutor</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="md:col-span-2 text-center">
                             <h4 className="text-lg font-bold text-gray-800">Dados Pet</h4>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Pet *</label>
-                            <input type="text" name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome do Pet *</label>
+                            <input type="text" name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Sexo</label>
-                            <select name="pet_sex" value={formData.pet_sex} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Sexo</label>
+                            <select name="pet_sex" value={formData.pet_sex} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all">
                                 <option value="">Selecione o sexo</option>
                                 <option value="Macho">Macho</option>
                                 <option value="Fêmea">Fêmea</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Peso do Pet</label>
-                            <select name="pet_weight" value={formData.pet_weight || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Peso do Pet</label>
+                            <select name="pet_weight" value={formData.pet_weight || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all">
                                 <option value="">Selecione o peso</option>
                                 {(Object.keys(PET_WEIGHT_OPTIONS) as PetWeight[]).map(key => (
                                     <option key={key} value={key}>{PET_WEIGHT_OPTIONS[key]}</option>
@@ -9960,81 +10041,84 @@ const HotelRegistrationForm: React.FC<{
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Raça</label>
-                            <input type="text" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Raça</label>
+                            <input type="text" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Idade</label>
-                            <input type="text" name="pet_age" value={formData.pet_age} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Idade</label>
+                            <input type="text" name="pet_age" value={formData.pet_age} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                         </div>
                         <div className="md:col-span-2 text-center">
                             <h4 className="text-lg font-bold text-gray-800">Dados Tutor</h4>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">RG</label>
-                            <input type="text" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">RG</label>
+                            <input type="text" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Tutor *</label>
-                            <input type="text" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome do Tutor *</label>
+                            <input type="text" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Telefone *</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Telefone *</label>
                             <div className="relative">
                                 <input
                                     type="tel"
                                     name="tutor_phone"
                                     value={formData.tutor_phone}
                                     onChange={handleInputChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
                                     required
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                            <input type="email" name="tutor_email" value={formData.tutor_email} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+                            <input type="email" name="tutor_email" value={formData.tutor_email} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Endereço</label>
-                            <input type="text" name="tutor_address" value={formData.tutor_address} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Endereço</label>
+                            <input type="text" name="tutor_address" value={formData.tutor_address} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Rede Social (Instagram)</label>
-                            <input type="text" name="tutor_social_media" value={formData.tutor_social_media || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="@perfil" />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Rede Social (Instagram)</label>
+                            <input type="text" name="tutor_social_media" value={formData.tutor_social_media || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" placeholder="@perfil" />
                         </div>
                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Contato Emergência - Nome</label>
-                                <input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contato Emergência - Nome</label>
+                                <input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Contato Emergência - Telefone</label>
-                                <input type="tel" name="emergency_contact_phone" value={formData.emergency_contact_phone} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contato Emergência - Telefone</label>
+                                <input type="tel" name="emergency_contact_phone" value={formData.emergency_contact_phone} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Contato Emergência - Relação</label>
-                                <input type="text" name="emergency_contact_relation" value={formData.emergency_contact_relation} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contato Emergência - Relação</label>
+                                <input type="text" name="emergency_contact_relation" value={formData.emergency_contact_relation} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
                 {/* Seção 2: Informações Médicas */}
-                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">🏥 Informações Médicas</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <section className="space-y-6">
+                    <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-600 font-bold text-sm">2</span>
+                        <h3 className="text-xl font-bold text-gray-800">Informações Médicas</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Nome Veterinário</label>
-                            <input type="text" name="veterinarian" value={formData.veterinarian} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome Veterinário</label>
+                            <input type="text" name="veterinarian" value={formData.veterinarian} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Telefone do Veterinário</label>
-                            <input type="tel" name="vet_phone" value={formData.vet_phone || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Telefone do Veterinário</label>
+                            <input type="tel" name="vet_phone" value={formData.vet_phone || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Última vacinação</label>
-                            <input type="date" name="last_vaccination_date" value={formData.last_vaccination_date || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Última vacinação</label>
+                            <input type="date" name="last_vaccination_date" value={formData.last_vaccination_date || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                         </div>
                         <div className="flex items-center gap-3">
                             <input type="checkbox" checked={!!formData.is_neutered} onChange={(e) => setFormData(prev => ({ ...prev, is_neutered: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
@@ -10046,8 +10130,8 @@ const HotelRegistrationForm: React.FC<{
                         </div>
                         {hasPreexistingDisease && (
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Descreva a doença pré-existente</label>
-                                <textarea name="preexisting_disease" value={formData.preexisting_disease || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={3} />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Descreva a doença pré-existente</label>
+                                <textarea name="preexisting_disease" value={formData.preexisting_disease || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" rows={3} />
                             </div>
                         )}
 
@@ -10057,8 +10141,8 @@ const HotelRegistrationForm: React.FC<{
                         </div>
                         {hasBehavior && (
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Comportamento (descreva)</label>
-                                <textarea name="behavior" value={formData.behavior || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={3} />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Comportamento (descreva)</label>
+                                <textarea name="behavior" value={formData.behavior || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" rows={3} />
                             </div>
                         )}
 
@@ -10068,8 +10152,8 @@ const HotelRegistrationForm: React.FC<{
                         </div>
                         {hasFearsTraumas && (
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Medos/Traumas (descreva)</label>
-                                <textarea name="fears_traumas" value={formData.fears_traumas || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={3} />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Medos/Traumas (descreva)</label>
+                                <textarea name="fears_traumas" value={formData.fears_traumas || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" rows={3} />
                             </div>
                         )}
 
@@ -10079,8 +10163,8 @@ const HotelRegistrationForm: React.FC<{
                         </div>
                         {hasWoundsMarks && (
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Feridas/Marcas — marque na foto</label>
-                                <textarea name="wounds_marks" value={formData.wounds_marks || ''} onChange={handleInputChange} placeholder="Descreva e marque na foto durante o check-in" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={2} />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Feridas/Marcas — marque na foto</label>
+                                <textarea name="wounds_marks" value={formData.wounds_marks || ''} onChange={handleInputChange} placeholder="Descreva e marque na foto durante o check-in" className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" rows={2} />
                             </div>
                         )}
 
@@ -10090,28 +10174,31 @@ const HotelRegistrationForm: React.FC<{
                         </div>
                         {hasAllergies && (
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Alergias (descreva)</label>
-                                <textarea name="allergies" value={formData.allergies || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={3} />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Alergias (descreva)</label>
+                                <textarea name="allergies" value={formData.allergies || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" rows={3} />
                             </div>
                         )}
                     </div>
-                </div>
+                </section>
 
                 {/* Seção 3: Alimentação */}
-                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">🍽️ Alimentação</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <section className="space-y-6">
+                    <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-600 font-bold text-sm">3</span>
+                        <h3 className="text-xl font-bold text-gray-800">Alimentação</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Marca da Ração</label>
-                            <input type="text" name="food_brand" value={formData.food_brand || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Marca da Ração</label>
+                            <input type="text" name="food_brand" value={formData.food_brand || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Quantidade por Refeição</label>
-                            <input type="text" name="food_quantity" value={formData.food_quantity || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Quantidade por Refeição</label>
+                            <input type="text" name="food_quantity" value={formData.food_quantity || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Frequência de Alimentação</label>
-                            <select name="feeding_frequency" value={formData.feeding_frequency || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Frequência de Alimentação</label>
+                            <select name="feeding_frequency" value={formData.feeding_frequency || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all">
                                 <option value="">Selecione a frequência</option>
                                 <option value="1x ao dia">1x ao dia</option>
                                 <option value="2x ao dia">2x ao dia</option>
@@ -10129,29 +10216,32 @@ const HotelRegistrationForm: React.FC<{
                         </div>
                         {needsSpecialFoodCare && (
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Descreva o cuidado especial</label>
-                                <textarea name="special_food_care" value={formData.special_food_care || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={3} />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Descreva o cuidado especial</label>
+                                <textarea name="special_food_care" value={formData.special_food_care || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" rows={3} />
                             </div>
                         )}
 
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Observações sobre Alimentação</label>
-                            <textarea name="food_observations" value={formData.food_observations || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={3} />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Observações sobre Alimentação</label>
+                            <textarea name="food_observations" value={formData.food_observations || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" rows={3} />
                         </div>
                     </div>
-                </div>
+                </section>
 
                 {/* Seção 4: Check-in e Check-out */}
-                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">📅 Datas e Horários</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <section className="space-y-6">
+                    <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-600 font-bold text-sm">4</span>
+                        <h3 className="text-xl font-bold text-gray-800">Datas e Horários</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="relative">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Data de Check-in *</label>
-                            <input type="date" name="check_in_date" value={formData.check_in_date} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent relative z-10" required />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Data de Check-in *</label>
+                            <input type="date" name="check_in_date" value={formData.check_in_date} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all relative z-10" required />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Horário de Check-in *</label>
-                            <select name="check_in_time" value={formData.check_in_time || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Horário de Check-in *</label>
+                            <select name="check_in_time" value={formData.check_in_time || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required>
                                 <option value="">Selecione...</option>
                                 {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
                                     const h = 7 + Math.floor(i / 2);
@@ -10162,12 +10252,12 @@ const HotelRegistrationForm: React.FC<{
                             </select>
                         </div>
                         <div className="relative">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Data de Check-out *</label>
-                            <input type="date" name="check_out_date" value={formData.check_out_date} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent relative z-10" required />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Data de Check-out *</label>
+                            <input type="date" name="check_out_date" value={formData.check_out_date} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all relative z-10" required />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Horário de Check-out *</label>
-                            <select name="check_out_time" value={formData.check_out_time || ''} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Horário de Check-out *</label>
+                            <select name="check_out_time" value={formData.check_out_time || ''} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required>
                                 <option value="">Selecione...</option>
                                 {Array.from({ length: ((19 - 7) * 2) + 1 }, (_, i) => {
                                     const h = 7 + Math.floor(i / 2);
@@ -10178,15 +10268,18 @@ const HotelRegistrationForm: React.FC<{
                             </select>
                         </div>
                     </div>
-                </div>
+                </section>
 
                 {/* Seção 5: Serviços Adicionais */}
-                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                <section className="space-y-6">
                     <div
-                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-3 rounded-2xl border border-gray-100 transition-colors bg-gray-50/50"
                         onClick={() => setIsExtraServicesExpanded(!isExtraServicesExpanded)}
                     >
-                        <h3 className="text-xl font-bold text-gray-800">🛁 Serviços Adicionais</h3>
+                        <div className="flex items-center gap-3">
+                            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-600 font-bold text-sm">5</span>
+                            <h3 className="text-xl font-bold text-gray-800">Serviços Adicionais</h3>
+                        </div>
                         <div className="flex items-center space-x-2">
                             <span className="text-sm text-gray-600">
                                 {isExtraServicesExpanded ? 'Ocultar' : 'Mostrar'} opções
@@ -10222,26 +10315,29 @@ const HotelRegistrationForm: React.FC<{
                                     <label className="text-sm font-medium text-gray-700">Adestramento</label>
                                 </div>
                                 <div className="md:col-span-2 lg:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Diária (quantidade de dias)</label>
-                                    <input type="number" name="daily_rate" value={formData.extra_services.daily_rate} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, daily_rate: e.target.value === '' ? 0 : parseInt(e.target.value) } }))} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0" />
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Diária (quantidade de dias)</label>
+                                    <input type="number" name="daily_rate" value={formData.extra_services.daily_rate} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, daily_rate: e.target.value === '' ? 0 : parseInt(e.target.value) } }))} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" min="0" />
                                 </div>
                                 <div className="md:col-span-2 lg:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Hora Extra (quantidade de horas)</label>
-                                    <input type="number" name="extra_hour" value={formData.extra_services.extra_hour} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, extra_hour: e.target.value === '' ? 0 : parseInt(e.target.value) } }))} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0" />
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Hora Extra (quantidade de horas)</label>
+                                    <input type="number" name="extra_hour" value={formData.extra_services.extra_hour} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, extra_hour: e.target.value === '' ? 0 : parseInt(e.target.value) } }))} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" min="0" />
                                 </div>
                                 {/* Campo "Total dos Serviços" removido conforme solicitado */}
                             </div>
                         </div>
                     )}
-                </div>
+                </section>
 
                 {/* Seção 6: Informações Finais */}
-                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">📝 Informações Finais</h3>
-                    <div className="space-y-4">
+                <section className="space-y-6">
+                    <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-600 font-bold text-sm">6</span>
+                        <h3 className="text-xl font-bold text-gray-800">Informações Finais</h3>
+                    </div>
+                    <div className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Informações Adicionais</label>
-                            <textarea name="additional_info" value={formData.additional_info} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={4} placeholder="Observações gerais, comportamento do pet, preferências, etc." />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Informações Adicionais</label>
+                            <textarea name="additional_info" value={formData.additional_info} onChange={handleInputChange} className="block w-full pl-4 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" rows={4} placeholder="Observações gerais, comportamento do pet, preferências, etc." />
                         </div>
 
                         <div className="bg-white p-5 rounded-xl border border-pink-100">
@@ -10281,38 +10377,50 @@ const HotelRegistrationForm: React.FC<{
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="mt-2 p-3 rounded-lg bg-pink-50 border border-pink-100 text-center">
-                                            <p className="text-base font-bold text-pink-700">Total do Serviço: R$ {total.toFixed(2)}</p>
-                                        </div>
                                     </div>
                                 );
                             })()}
                         </div>
 
-                        <div className="space-y-3">
-                            <div className="flex items-start space-x-3">
-                                <input type="checkbox" name="declaration_accepted" checked={formData.declaration_accepted || false} onChange={(e) => setFormData(prev => ({ ...prev, declaration_accepted: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" required />
-                                <label className="text-sm text-gray-700">
-                                    Declaro que todas as informações fornecidas são verdadeiras e autorizo o hotel pet a cuidar do meu animal de acordo com as instruções fornecidas. *
-                                </label>
-                            </div>
-                            <div className="flex items-start space-x-3">
-                                <input type="checkbox" name="photo_authorization" checked={formData.photo_authorization || false} onChange={(e) => setFormData(prev => ({ ...prev, photo_authorization: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                <label className="text-sm text-gray-700">
-                                    Autorizo o uso de fotos do meu pet para divulgação nas redes sociais do estabelecimento.
-                                </label>
-                            </div>
-                            <div className="flex items-start space-x-3">
-                                <input type="checkbox" name="contract_accepted" checked={formData.contract_accepted || false} onChange={(e) => setFormData(prev => ({ ...prev, contract_accepted: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
-                                <label className="text-sm text-gray-700">
-                                    Concordo e estou de acordo com as cláusulas do <button type="button" onClick={() => setShowContractModal(true)} className="underline text-pink-700 hover:text-pink-800">Contrato de hospedagem da Sandy Pet Hotel</button>.
-                                </label>
-                            </div>
+                        <div className="flex flex-col gap-4">
+                            <label className="flex items-start gap-4 p-5 rounded-[2rem] border-2 border-pink-100 bg-white hover:bg-pink-50 cursor-pointer transition-all group">
+                                <input
+                                    id="agreed_to_checklist"
+                                    name="declaration_accepted"
+                                    type="checkbox"
+                                    checked={formData.declaration_accepted || false}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, declaration_accepted: e.target.checked }))}
+                                    className="sr-only"
+                                />
+                                <div className={`mt-1 min-w-[24px] h-6 rounded-lg border-2 flex items-center justify-center transition-all ${formData.declaration_accepted ? 'bg-pink-500 border-pink-500' : 'border-pink-200 bg-white group-hover:border-pink-400'}`}>
+                                    {formData.declaration_accepted && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                </div>
+                                <span className="text-pink-950 font-medium leading-tight">
+                                    Li e concordo com as regras de convivência, horários e condições do <a href="https://docs.google.com/document/d/1BE4UrgsUzXljtNkzLf-WmLyQn2lFOFde2DHkW2urXLQ/edit?usp=sharing" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-pink-600 underline font-bold hover:text-pink-800 transition-colors">Check List de Entrada</a>.
+                                </span>
+                            </label>
+
+                            <label className="flex items-start gap-4 p-5 rounded-[2rem] border-2 border-pink-100 bg-white hover:bg-pink-50 cursor-pointer transition-all group">
+                                <input
+                                    id="agreed_to_contract"
+                                    name="contract_accepted"
+                                    type="checkbox"
+                                    checked={formData.contract_accepted || false}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, contract_accepted: e.target.checked }))}
+                                    className="sr-only"
+                                />
+                                <div className={`mt-1 min-w-[24px] h-6 rounded-lg border-2 flex items-center justify-center transition-all ${formData.contract_accepted ? 'bg-pink-500 border-pink-500' : 'border-pink-200 bg-white group-hover:border-pink-400'}`}>
+                                    {formData.contract_accepted && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                </div>
+                                <span className="text-pink-950 font-medium leading-tight">
+                                    Declaro que as informações são verdadeiras e aceito os termos do <a href="https://docs.google.com/document/d/1YxMDR9dFdpdKv73dTiuFnktmcJ-cdV6CVIJIEdrpXyE/edit?usp=sharing" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-pink-600 underline font-bold hover:text-pink-800 transition-colors">Contrato de Prestação de Serviços</a>.
+                                </span>
+                            </label>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Assinatura do Tutor *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Assinatura do Tutor *</label>
                                 <SignaturePad
                                     value={formData.tutor_signature}
                                     onChange={(dataUrl) => setFormData(prev => ({ ...prev, tutor_signature: dataUrl }))}
@@ -10320,9 +10428,9 @@ const HotelRegistrationForm: React.FC<{
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <div className="mt-8 flex justify_between items-center">
+                <div className="mt-8 flex justify-between items-center pt-6 border-t border-gray-100">
                     <button type="button" onClick={onBack} className="bg-gray-200 text-gray-800 font-bold py-3.5 px-5 rounded-lg hover:bg_gray-300 transition-colors">Voltar</button>
                     <div className="flex-grow"></div>
                     <button
@@ -10427,7 +10535,7 @@ const HotelRegistrationForm: React.FC<{
                 </div>,
                 document.body
             )}
-        </div>
+        </main>
     );
 
     if (isAdmin) {
@@ -10445,7 +10553,7 @@ const HotelRegistrationForm: React.FC<{
                         </div>
                         <div>
                             <h1 className="font-brand text-5xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1">Sandy's<br className="hidden md:block"/><span className="text-pink-600 md:ml-0 ml-2">Pet Shop</span></h1>
-                            <p className="text-pink-800/70 text-lg md:text-xl font-medium tracking-wide uppercase mt-2">Matrícula na Creche</p>
+                            <p className="text-pink-800/70 text-lg md:text-xl font-medium tracking-wide uppercase mt-2">Hospedagem no Hotel</p>
                         </div>
                     </div>
                 </header>
