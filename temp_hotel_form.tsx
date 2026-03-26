@@ -1,4 +1,7 @@
+import { formatPhoneForWebhook } from './src/lib/utils';
+
 const HotelRegistrationForm: React.FC<{
+
     setView?: (view: 'scheduler' | 'login' | 'hotelRegistration') => void;
     isAdmin?: boolean;
     onSuccess?: () => void;
@@ -283,7 +286,27 @@ const HotelRegistrationForm: React.FC<{
                 }
             }
             if (error) throw error;
+
+            // Envio para webhook de documentos (N8N)
+            const webhookUrl = 'https://n8n.intelektus.tech/webhook/envioDocumentosHotel';
+            const formattedPhone = formatPhoneForWebhook(formData.tutor_phone);
+            
+            try {
+                fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tutor_name: formData.tutor_name,
+                        tutor_phone: formattedPhone
+                    })
+                }).catch(err => console.error('Erro assíncrono no webhook:', err));
+                console.log('Webhook de documentos disparado');
+            } catch (webhookErr) {
+                console.error('Erro ao disparar webhook de documentos:', webhookErr);
+            }
+
             setShowCheckinWarning(false);
+
             setIsSuccess(true);
             if (onSuccess) onSuccess();
         } catch (error: any) {

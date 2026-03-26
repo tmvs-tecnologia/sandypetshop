@@ -26,6 +26,8 @@ import AppointmentCard from './src/components/AppointmentCard';
 import StatisticsDashboardModal from './src/components/StatisticsDashboardModal';
 import MonthlyReminderModal from './src/components/MonthlyReminderModal';
 import InsightsDashboard from './src/components/InsightsDashboard';
+import { formatPhoneForWebhook } from './src/lib/utils';
+
 
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" fill=\"%23f3f4f6\"/><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-size=\"28\">🐾</text></svg>';
 
@@ -9919,7 +9921,27 @@ const HotelRegistrationForm: React.FC<{
                 }
             }
             if (error) throw error;
+
+            // Envio para webhook de documentos (N8N)
+            const webhookUrl = 'https://n8n.intelektus.tech/webhook/envioDocumentosHotel';
+            const formattedPhone = formatPhoneForWebhook(formData.tutor_phone);
+            
+            try {
+                fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tutor_name: formData.tutor_name,
+                        tutor_phone: formattedPhone
+                    })
+                }).catch(err => console.error('Erro assíncrono no webhook:', err));
+                console.log('Webhook de documentos disparado');
+            } catch (webhookErr) {
+                console.error('Erro ao disparar webhook de documentos:', webhookErr);
+            }
+
             setShowCheckinWarning(false);
+
             setIsSuccess(true);
             if (onSuccess) onSuccess();
         } catch (error: any) {
