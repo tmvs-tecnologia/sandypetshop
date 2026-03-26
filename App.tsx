@@ -11145,8 +11145,8 @@ const DaycareRegistrationForm: React.FC<{
                     <div className="space-y-6 pt-4">
                         <div className="flex flex-col gap-4">
                             {[
-                                { id: 'agreed_to_checklist', label: 'Li e concordo com as regras de convivência, horários e condições do Check List de Entrada.', link: 'Check List de Entrada' },
-                                { id: 'agreed_to_contract', label: 'Declaro que as informações são verdadeiras e aceito os termos do Contrato de Prestação de Serviços.', link: 'Contrato de Prestação de Serviços' }
+                                { id: 'agreed_to_checklist', label: 'Li e concordo com as regras de convivência, horários e condições do Check List de Entrada.', linkText: 'Check List de Entrada', url: 'https://docs.google.com/document/d/1BE4UrgsUzXljtNkzLf-WmLyQn2lFOFde2DHkW2urXLQ/edit?usp=sharing' },
+                                { id: 'agreed_to_contract', label: 'Declaro que as informações são verdadeiras e aceito os termos do Contrato de Prestação de Serviços.', linkText: 'Contrato de Prestação de Serviços', url: 'https://docs.google.com/document/d/1YxMDR9dFdpdKv73dTiuFnktmcJ-cdV6CVIJIEdrpXyE/edit?usp=sharing' }
                             ].map(term => (
                                 <label key={term.id} className="flex items-start gap-4 p-5 rounded-[2rem] border-2 border-pink-100 bg-white hover:bg-pink-50 cursor-pointer transition-all group">
                                     <input
@@ -11160,9 +11160,11 @@ const DaycareRegistrationForm: React.FC<{
                                         {(formData as any)[term.id] && <div className="text-white text-sm font-black italic">✓</div>}
                                     </div>
                                     <span className="text-pink-950 font-medium leading-tight">
-                                        {term.label.split(term.link)[0]}
-                                        <span className="text-pink-600 underline font-bold">{term.link}</span>
-                                        {term.label.split(term.link)[1]}
+                                        {term.label.split(term.linkText)[0]}
+                                        <a href={term.url} target="_blank" rel="noopener noreferrer" className="text-pink-600 underline font-bold hover:text-pink-800 transition-colors" onClick={(e) => e.stopPropagation()}>
+                                            {term.linkText}
+                                        </a>
+                                        {term.label.split(term.linkText)[1]}
                                     </span>
                                 </label>
                             ))}
