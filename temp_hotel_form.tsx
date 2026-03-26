@@ -772,8 +772,9 @@ const HotelRegistrationForm: React.FC<{
                 </div>
             </form>
             {showCheckinWarning && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center p-4 z-50 pb-24">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+
                         <h3 className="text-xl font-bold text-gray-800">Antes de solicitar o check-in</h3>
                         <p className="text-gray-700 mt-2">No dia do check-in, o tutor deve levar:</p>
                         <ul className="mt-3 list-disc list-inside text-gray-700 space-y-1">
