@@ -7944,12 +7944,12 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                     <div className="flex gap-3">
                         <button
                             onClick={onAddClient}
-                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold h-11 px-6 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-md hover:shadow-lg focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold h-11 px-3 sm:px-6 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-md hover:shadow-lg focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" />
                             </svg>
-                            <span>Novo Mensalista</span>
+                            <span className="whitespace-nowrap text-sm sm:text-base truncate">Novo Mensalista</span>
                         </button>
                         
                         <button
@@ -13342,7 +13342,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" />
                             </svg>
-                            <span>Nova Matrícula</span>
+                            <span>Nova Reserva</span>
                         </button>
                         {setShowHotelStatistics && (
                             <button
