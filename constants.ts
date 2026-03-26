@@ -77,6 +77,12 @@ export const ADDON_SERVICES: AddonService[] = [
 
 // Preços dos planos da creche
 export const DAYCARE_PLAN_PRICES: Record<string, number> = {
+  '1x_week': 0, // Ajustar preço se necessário
+  '2x_week': 0,
+  '3x_week': 0,
+  '4x_week': 0,
+  '5x_week': 0,
+  // Mantidos os antigos por compatibilidade caso haja mensalidades antigas salvas
   '4x_month': 300,
   '8x_month': 520,
   '12x_month': 660,

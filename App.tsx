@@ -83,6 +83,11 @@ const AiChatView: React.FC<{ key?: number }> = () => {
     const listRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
+        // Scroll to top when component mounts
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, []);
+
+    useEffect(() => {
         try { localStorage.setItem('ai_chat_messages', JSON.stringify(messages)); } catch { }
         if (listRef.current) {
             listRef.current.scrollTop = listRef.current.scrollHeight;
@@ -10423,31 +10428,31 @@ const HotelRegistrationForm: React.FC<{
     return (
         <div className="min-h-screen p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
             <div className="w-full max-w-5xl mx-auto animate-fadeIn">
-                <header className="w-full flex flex-col md:flex-row items-center justify-between mb-8 animate-fadeInUp gap-6">
-                    <div className="flex items-center gap-5 text-center md:text-left">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-pink-300 rounded-full blur-xl opacity-50"></div>
-                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-20 w-20 object-contain drop-shadow-2xl" loading="eager" />
+                <header className="w-full flex flex-col md:flex-row items-center justify-between mb-12 animate-fadeInUp gap-8">
+                    <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-pink-300 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500"></div>
+                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-28 w-28 object-contain transform group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl" loading="eager" />
                         </div>
                         <div>
-                            <h1 className="font-brand text-4xl md:text-5xl text-pink-900 tracking-tight leading-none">Sandy's Pet Shop</h1>
-                            <p className="text-pink-800/70 text-sm md:text-base font-semibold tracking-wide uppercase mt-2">Matrícula no Hotel</p>
+                            <h1 className="font-brand text-5xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1">Sandy's<br className="hidden md:block"/><span className="text-pink-600 md:ml-0 ml-2">Pet Shop</span></h1>
+                            <p className="text-pink-800/70 text-lg md:text-xl font-medium tracking-wide uppercase mt-2">Matrícula na Creche</p>
                         </div>
                     </div>
                 </header>
 
-                <main className="w-full max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/50 backdrop-blur-sm relative">
+                <main className="w-full max-w-4xl mx-auto bg-white/95 backdrop-blur-sm shadow-2xl rounded-[2.5rem] overflow-hidden border border-pink-100/40 relative">
                     <button
                         type="button"
-                        onClick={() => setView && setView('scheduler')}
-                        className="absolute left-4 top-4 p-2 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-sm border border-pink-100 transition-all z-10"
+                        onClick={() => onBack ? onBack() : setView && setView('scheduler')}
+                        className="absolute left-6 top-6 p-3 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-md border border-pink-100 transition-all z-20"
                         title="Voltar"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                         </svg>
                     </button>
-                    <div className="pt-8">
+                    <div className="relative">
                         {formContent}
                     </div>
                 </main>
@@ -10513,6 +10518,11 @@ const DaycareRegistrationForm: React.FC<{
         const { value } = e.target;
         setFormData(prev => ({ ...prev, delivered_items: { ...prev.delivered_items, other: value } }));
     }
+
+    useEffect(() => {
+        // Scroll to top when component mounts
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, []);
 
     useEffect(() => {
         const base = formData.contracted_plan ? (DAYCARE_PLAN_PRICES[formData.contracted_plan] || 0) : 0;
@@ -10652,68 +10662,202 @@ const DaycareRegistrationForm: React.FC<{
                 
                 <div className="p-6 sm:p-8 space-y-8">
                     
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-extrabold text-gray-800 tracking-tight mb-2">Matrícula na Creche</h2>
-                        <p className="text-gray-500 text-sm">Preencha os dados abaixo para matricular o pet na creche.</p>
+                    <div className="mb-4 relative flex items-center justify-center min-h-[48px]">
+                        {!isAdmin && (
+                            <button
+                                type="button"
+                                onClick={() => onBack ? onBack() : (setView ? setView('scheduler') : null)}
+                                className="absolute left-0 p-2 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-sm border border-pink-100 transition-all z-10"
+                                title="Voltar"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                </svg>
+                            </button>
+                        )}
+                        <div className="flex flex-col items-center animate-fadeIn">
+                            <div className="flex items-center gap-3">
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-10 h-10 rounded-full object-contain" />
+                                <span className="text-xl font-bold text-gray-800">Creche Pet</span>
+                            </div>
+                            <span className="text-sm font-medium text-pink-600 uppercase tracking-widest mt-1">Formulário de Matrícula</span>
+                        </div>
                     </div>
 
-                    {/* Dados do Tutor */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 flex items-center gap-2">
-                            <UserIcon className="w-5 h-5 text-pink-500" />
-                            Dados do Tutor
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input label="Tutor" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} />
-                            <Input label="Telefone contato" type="tel" name="contact_phone" value={formData.contact_phone} onChange={handleInputChange} />
-                            <Input label="RG" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} />
-                            <Input label="Telefone e nome (emergencial)" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} />
+                    {/* DADOS DO TUTOR */}
+                    <div className="space-y-8 border-b border-pink-50 pb-12">
+                        <h2 className="text-3xl font-extrabold text-pink-950 tracking-tight">Dados do Tutor</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="md:col-span-2">
-                                <Input label="Endereço Completo" name="address" value={formData.address} onChange={handleInputChange} />
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">WhatsApp</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4"><WhatsAppIcon /></span>
+                                    <input
+                                        type="tel"
+                                        name="contact_phone"
+                                        value={formData.contact_phone}
+                                        onChange={handleInputChange}
+                                        required
+                                        placeholder="(XX) XXXXX-XXXX"
+                                        className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Nome Completo</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4"><UserIcon /></span>
+                                    <input
+                                        type="text"
+                                        name="tutor_name"
+                                        value={formData.tutor_name}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Endereço Residencial</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4"><AddressIcon /></span>
+                                    <input
+                                        type="text"
+                                        name="address"
+                                        value={formData.address}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">RG</label>
+                                <input
+                                    type="text"
+                                    name="tutor_rg"
+                                    value={formData.tutor_rg}
+                                    onChange={handleInputChange}
+                                    required
+                                    className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Contato de Emergência</label>
+                                <input
+                                    type="text"
+                                    name="emergency_contact_name"
+                                    value={formData.emergency_contact_name}
+                                    onChange={handleInputChange}
+                                    required
+                                    className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                />
                             </div>
                         </div>
                     </div>
 
-                    {/* Dados do Pet */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 flex items-center gap-2 mt-6">
-                            🐾 Dados do Pet
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            <Input label="Nome do pet" name="pet_name" value={formData.pet_name} onChange={handleInputChange} />
-                            <Input label="Raça" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} />
-                            <Input label="Idade" name="pet_age" value={formData.pet_age} onChange={handleInputChange} />
-                            
-                            <div className="space-y-2">
-                                <Label className="text-xs text-gray-500 font-bold uppercase">Sexo</Label>
-                                <div className="flex gap-2">
-                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.pet_sex === 'M' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                                        <input type="radio" name="pet_sex" value="M" checked={formData.pet_sex === 'M'} onChange={(e) => handleRadioChange('pet_sex', e.target.value)} className="sr-only" />
-                                        Macho
-                                    </label>
-                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.pet_sex === 'F' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                                        <input type="radio" name="pet_sex" value="F" checked={formData.pet_sex === 'F'} onChange={(e) => handleRadioChange('pet_sex', e.target.value)} className="sr-only" />
-                                        Fêmea
-                                    </label>
+                    {/* DADOS DO PET */}
+                    <div className="space-y-8 border-b border-pink-50 pb-12">
+                        <h2 className="text-3xl font-extrabold text-pink-950 tracking-tight">Dados do Pet</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Nome do Pet</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4"><PawIcon /></span>
+                                    <input
+                                        type="text"
+                                        name="pet_name"
+                                        value={formData.pet_name}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                    />
                                 </div>
                             </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-xs text-gray-500 font-bold uppercase">Castrado(a)</Label>
-                                <div className="flex gap-2">
-                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.is_neutered === true ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                                        <input type="radio" name="is_neutered" value="true" checked={formData.is_neutered === true} onChange={() => handleRadioChange('is_neutered', true)} className="sr-only" />
-                                        Sim
-                                    </label>
-                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.is_neutered === false ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                                        <input type="radio" name="is_neutered" value="false" checked={formData.is_neutered === false} onChange={() => handleRadioChange('is_neutered', false)} className="sr-only" />
-                                        Não
-                                    </label>
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Raça</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4"><BreedIcon /></span>
+                                    <input
+                                        type="text"
+                                        name="pet_breed"
+                                        value={formData.pet_breed}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                    />
                                 </div>
                             </div>
-                            
-                            <div className="sm:col-span-2 md:col-span-1">
-                                <Input label="Tel. Veterinário" name="vet_phone" value={formData.vet_phone} onChange={handleInputChange} />
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Idade</label>
+                                <input
+                                    type="text"
+                                    name="pet_age"
+                                    value={formData.pet_age}
+                                    onChange={handleInputChange}
+                                    className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Tel. Veterinário</label>
+                                <input
+                                    type="tel"
+                                    name="vet_phone"
+                                    value={formData.vet_phone}
+                                    onChange={handleInputChange}
+                                    className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Sexo</label>
+                                <div className="flex gap-6 mt-2">
+                                    {[
+                                        { label: 'Macho', value: 'M' },
+                                        { label: 'Fêmea', value: 'F' }
+                                    ].map(option => (
+                                        <label key={option.value} className="flex items-center gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center justify-center">
+                                                <input
+                                                    type="radio"
+                                                    name="pet_sex"
+                                                    value={option.value}
+                                                    checked={formData.pet_sex === option.value}
+                                                    onChange={(e) => handleRadioChange('pet_sex', e.target.value)}
+                                                    className="sr-only"
+                                                />
+                                                <div className={`w-6 h-6 rounded-full border-2 transition-all ${formData.pet_sex === option.value ? 'border-pink-600 bg-pink-600' : 'border-pink-200 bg-white group-hover:border-pink-400'}`}>
+                                                    {formData.pet_sex === option.value && <div className="w-2.5 h-2.5 bg-white rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>}
+                                                </div>
+                                            </div>
+                                            <span className={`text-lg font-medium ${formData.pet_sex === option.value ? 'text-pink-900' : 'text-pink-800/60'}`}>{option.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Castrado?</label>
+                                <div className="flex gap-6 mt-2">
+                                    {[
+                                        { label: 'Sim', value: true },
+                                        { label: 'Não', value: false }
+                                    ].map(option => (
+                                        <label key={String(option.value)} className="flex items-center gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center justify-center">
+                                                <input
+                                                    type="radio"
+                                                    name="is_neutered"
+                                                    checked={formData.is_neutered === option.value}
+                                                    onChange={() => handleRadioChange('is_neutered', option.value)}
+                                                    className="sr-only"
+                                                />
+                                                <div className={`w-6 h-6 rounded-full border-2 transition-all ${formData.is_neutered === option.value ? 'border-pink-600 bg-pink-600' : 'border-pink-200 bg-white group-hover:border-pink-400'}`}>
+                                                    {formData.is_neutered === option.value && <div className="w-2.5 h-2.5 bg-white rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>}
+                                                </div>
+                                            </div>
+                                            <span className={`text-lg font-medium ${formData.is_neutered === option.value ? 'text-pink-900' : 'text-pink-800/60'}`}>{option.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
@@ -10730,280 +10874,344 @@ const DaycareRegistrationForm: React.FC<{
                         )}
                     </div>
 
-                    {/* Saúde e Comportamento */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 flex items-center gap-2 mt-6">
-                            ❤️ Saúde e Comportamento
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs text-gray-500 font-bold uppercase">Se dá bem com outros pets?</Label>
-                                <div className="flex gap-2">
-                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.gets_along_with_others === true ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                                        <input type="radio" name="gets_along_with_others" checked={formData.gets_along_with_others === true} onChange={() => handleRadioChange('gets_along_with_others', true)} className="sr-only" />
-                                        Sim
-                                    </label>
-                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.gets_along_with_others === false ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                                        <input type="radio" name="gets_along_with_others" checked={formData.gets_along_with_others === false} onChange={() => handleRadioChange('gets_along_with_others', false)} className="sr-only" />
-                                        Não
-                                    </label>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs text-gray-500 font-bold uppercase">Alergias?</Label>
-                                <div className="flex gap-2">
-                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.has_allergies === true ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                                        <input type="radio" name="has_allergies" checked={formData.has_allergies === true} onChange={() => handleRadioChange('has_allergies', true)} className="sr-only" />
-                                        Sim
-                                    </label>
-                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.has_allergies === false ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                                        <input type="radio" name="has_allergies" checked={formData.has_allergies === false} onChange={() => handleRadioChange('has_allergies', false)} className="sr-only" />
-                                        Não
-                                    </label>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs text-gray-500 font-bold uppercase">Cuidados Especiais?</Label>
-                                <div className="flex gap-2">
-                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.needs_special_care === true ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                                        <input type="radio" name="needs_special_care" checked={formData.needs_special_care === true} onChange={() => handleRadioChange('needs_special_care', true)} className="sr-only" />
-                                        Sim
-                                    </label>
-                                    <label className={`flex-1 flex items-center justify-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${formData.needs_special_care === false ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                                        <input type="radio" name="needs_special_care" checked={formData.needs_special_care === false} onChange={() => handleRadioChange('needs_special_care', false)} className="sr-only" />
-                                        Não
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+                    {/* SAÚDE E COMPORTAMENTO */}
+                    <div className="space-y-10 border-b border-pink-50 pb-12">
+                        <h2 className="text-3xl font-extrabold text-pink-950 tracking-tight">Saúde e Comportamento</h2>
                         
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {[
+                                { label: 'Se dá bem com outros pets?', name: 'gets_along_with_others' },
+                                { label: 'Possui Alergias?', name: 'has_allergies' },
+                                { label: 'Cuidados Especiais?', name: 'needs_special_care' }
+                            ].map(field => (
+                                <div key={field.name} className="space-y-4">
+                                    <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest">{field.label}</label>
+                                    <div className="flex gap-4">
+                                        {[
+                                            { label: 'Sim', value: true },
+                                            { label: 'Não', value: false }
+                                        ].map(option => {
+                                            const isSelected = formData[field.name as keyof DaycareRegistration] === option.value;
+                                            return (
+                                                <button
+                                                    key={String(option.value)}
+                                                    type="button"
+                                                    onClick={() => handleRadioChange(field.name as keyof DaycareRegistration, option.value)}
+                                                    className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all border-2 ${isSelected ? 'bg-pink-600 text-white border-pink-600 shadow-md' : 'bg-white text-pink-900 border-pink-100 hover:border-pink-300 hover:bg-pink-50'}`}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
                         {(formData.has_allergies || formData.needs_special_care) && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
                                 {formData.has_allergies && (
-                                    <div className="space-y-2">
-                                        <Label htmlFor="allergies_description" className="text-xs text-gray-500 font-bold uppercase">Descreva a alergia</Label>
-                                        <Textarea id="allergies_description" name="allergies_description" value={formData.allergies_description} onChange={handleInputChange} rows={2} className="resize-none bg-gray-50 focus:bg-white" />
+                                    <div className="space-y-3">
+                                        <label className="block text-xs font-bold text-pink-700 uppercase tracking-widest px-1">Descreva as Alergias</label>
+                                        <textarea
+                                            name="allergies_description"
+                                            value={formData.allergies_description}
+                                            onChange={handleInputChange}
+                                            rows={3}
+                                            className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all resize-none"
+                                            placeholder="Ex: Alergia a frango, dermatite..."
+                                        />
                                     </div>
                                 )}
                                 {formData.needs_special_care && (
-                                    <div className="space-y-2">
-                                        <Label htmlFor="special_care_description" className="text-xs text-gray-500 font-bold uppercase">Descreva o cuidado</Label>
-                                        <Textarea id="special_care_description" name="special_care_description" value={formData.special_care_description} onChange={handleInputChange} rows={2} className="resize-none bg-gray-50 focus:bg-white" />
+                                    <div className="space-y-3">
+                                        <label className="block text-xs font-bold text-pink-700 uppercase tracking-widest px-1">Descreva os Cuidados</label>
+                                        <textarea
+                                            name="special_care_description"
+                                            value={formData.special_care_description}
+                                            onChange={handleInputChange}
+                                            rows={3}
+                                            className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all resize-none"
+                                            placeholder="Ex: Medicação às 14h, não pode pular..."
+                                        />
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                            <DatePicker value={formData.last_vaccine || ''} onChange={(value) => setFormData(prev => ({ ...prev, last_vaccine: value }))} label="Última Vacina" />
-                            <DatePicker value={formData.last_deworming || ''} onChange={(value) => setFormData(prev => ({ ...prev, last_deworming: value }))} label="Último Vermífugo" />
-                            <DatePicker value={formData.last_flea_remedy || ''} onChange={(value) => setFormData(prev => ({ ...prev, last_flea_remedy: value }))} label="Remédio de Pulgas" />
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
+                            <div className="space-y-3">
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest px-1">Última Vacina</label>
+                                <DatePicker value={formData.last_vaccine || ''} onChange={(value) => setFormData(prev => ({ ...prev, last_vaccine: value }))} label="" />
+                            </div>
+                            <div className="space-y-3">
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest px-1">Vermífugo</label>
+                                <DatePicker value={formData.last_deworming || ''} onChange={(value) => setFormData(prev => ({ ...prev, last_deworming: value }))} label="" />
+                            </div>
+                            <div className="space-y-3">
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest px-1">Antipulgas</label>
+                                <DatePicker value={formData.last_flea_remedy || ''} onChange={(value) => setFormData(prev => ({ ...prev, last_flea_remedy: value }))} label="" />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Plano & Rotina */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 flex items-center gap-2 mt-6">
-                            📅 Plano & Rotina
-                        </h3>
+                    {/* PLANO E ROTINA */}
+                    <div className="space-y-10 border-b border-pink-50 pb-12">
+                        <h2 className="text-3xl font-extrabold text-pink-950 tracking-tight">Plano e Rotina</h2>
                         
-                        <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100 space-y-4">
-                            <Label className="text-sm text-gray-700 font-bold">Selecione o Plano</Label>
+                        <div className="space-y-6">
+                            <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest px-1">Selecione o Plano Mensal</label>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                                 {[
-                                    { label: '4x Mês', value: '4x_month' }, { label: '8x Mês', value: '8x_month' }, { label: '12x Mês', value: '12x_month' }, { label: '16x Mês', value: '16x_month' }, { label: '20x Mês', value: '20x_month' },
-                                    { label: '2x Sem', value: '2x_week' }, { label: '3x Sem', value: '3x_week' }, { label: '4x Sem', value: '4x_week' }, { label: '5x Sem', value: '5x_week' }
-                                ].map(opt => (
-                                    <button 
-                                        type="button" 
-                                        key={opt.value}
-                                        onClick={() => handleRadioChange('contracted_plan', opt.value)}
-                                        className={`py-2 px-1 text-xs font-semibold rounded-lg border transition-all ${formData.contracted_plan === opt.value ? 'bg-pink-600 text-white border-pink-600 shadow-md transform scale-[1.02]' : 'bg-white text-gray-600 border-gray-200 hover:bg-pink-50'}`}
-                                    >
-                                        {opt.label}
-                                    </button>
-                                ))}
+                                    { label: '1x por semana', value: '1x_week' },
+                                    { label: '2x por semana', value: '2x_week' }, 
+                                    { label: '3x por semana', value: '3x_week' }, 
+                                    { label: '4x por semana', value: '4x_week' }, 
+                                    { label: '5x por semana', value: '5x_week' }
+                                ].map(opt => {
+                                    const isSelected = formData.contracted_plan === opt.value;
+                                    return (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            onClick={() => handleRadioChange('contracted_plan', opt.value)}
+                                            className={`group relative overflow-hidden p-3 rounded-xl border-2 transition-all duration-300 text-center hover:-translate-y-0.5 ${isSelected ? 'bg-pink-100 border-pink-500 shadow-md' : 'bg-white border-pink-50 hover:border-pink-200 hover:shadow-sm'}`}
+                                        >
+                                            <div className="relative z-10">
+                                                <div className={`text-xs font-bold uppercase tracking-widest mb-0.5 ${isSelected ? 'text-pink-600' : 'text-pink-400'}`}>Plano</div>
+                                                <div className={`text-sm sm:text-base font-bold whitespace-nowrap ${isSelected ? 'text-pink-950' : 'text-pink-800'}`}>{opt.label}</div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                                <Label className="text-sm text-gray-700 font-bold">Dias de Frequência</Label>
-                                <div className="flex flex-wrap gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            <div className="space-y-6">
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest px-1">Dias de Frequência</label>
+                                <div className="flex flex-nowrap justify-between gap-1 overflow-x-auto pb-2 scrollbar-hide w-full">
                                     {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, index) => {
                                         const isSelected = formData.attendance_days?.includes(index);
                                         return (
                                             <button
-                                                type="button"
                                                 key={day}
+                                                type="button"
                                                 onClick={() => toggleAttendanceDay(index)}
-                                                className={`w-10 h-10 rounded-full text-xs font-bold transition-all border ${isSelected ? 'bg-pink-600 text-white border-pink-600 shadow-md' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                                                className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold text-sm sm:text-base transition-all border-2 ${isSelected ? 'bg-pink-600 text-white border-pink-600 shadow-lg scale-110' : 'bg-white text-pink-900 border-pink-100 hover:border-pink-300 hover:bg-pink-50'}`}
                                             >
-                                                {day}
+                                                {day[0]}
                                             </button>
-                                        )
+                                        );
                                     })}
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <DatePicker value={formData.check_in_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_in_date: value }))} label="Data Início" />
-                                <DatePicker value={formData.check_out_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_out_date: value }))} label="Data Fim" />
-                                <Select label="Entrada" name="check_in_time" value={formData.check_in_time || ''} onChange={handleInputChange}>
-                                    <option value="">Selecione...</option>
-                                    {Array.from({ length: 25 }, (_, i) => { const h = 7 + Math.floor(i/2); const m = i%2 ? '30' : '00'; const t = `${String(h).padStart(2,'0')}:${m}`; return <option key={t} value={t}>{t}</option>; })}
-                                </Select>
-                                <Select label="Saída" name="check_out_time" value={formData.check_out_time || ''} onChange={handleInputChange}>
-                                    <option value="">Selecione...</option>
-                                    {Array.from({ length: 25 }, (_, i) => { const h = 7 + Math.floor(i/2); const m = i%2 ? '30' : '00'; const t = `${String(h).padStart(2,'0')}:${m}`; return <option key={t} value={t}>{t}</option>; })}
-                                </Select>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <label className="block text-xs font-bold text-pink-700 uppercase tracking-widest px-1 text-center">Data Início</label>
+                                    <DatePicker value={formData.check_in_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_in_date: value }))} label="" />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="block text-xs font-bold text-pink-700 uppercase tracking-widest px-1 text-center">Data Fim</label>
+                                    <DatePicker value={formData.check_out_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, check_out_date: value }))} label="" />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="block text-xs font-bold text-pink-700 uppercase tracking-widest px-1 text-center">Horário Entrada</label>
+                                    <select
+                                        name="check_in_time"
+                                        value={formData.check_in_time || ''}
+                                        onChange={handleInputChange}
+                                        className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                    >
+                                        <option value="">Selecione...</option>
+                                        {Array.from({ length: 25 }, (_, i) => { const h = 7 + Math.floor(i/2); const m = i%2 ? '30' : '00'; const t = `${String(h).padStart(2,'0')}:${m}`; return <option key={t} value={t}>{t}</option>; })}
+                                    </select>
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="block text-xs font-bold text-pink-700 uppercase tracking-widest px-1 text-center">Horário Saída</label>
+                                    <select
+                                        name="check_out_time"
+                                        value={formData.check_out_time || ''}
+                                        onChange={handleInputChange}
+                                        className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                    >
+                                        <option value="">Selecione...</option>
+                                        {Array.from({ length: 25 }, (_, i) => { const h = 7 + Math.floor(i/2); const m = i%2 ? '30' : '00'; const t = `${String(h).padStart(2,'0')}:${m}`; return <option key={t} value={t}>{t}</option>; })}
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Pertences */}
-                    <div className="space-y-3">
-                        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">🎒 Pertences Frequentes</h3>
-                        <div className="flex flex-wrap gap-3">
-                            {['Bolinha', 'Pelucia', 'Cama', 'Coleira', 'Comedouro'].map(item => (
-                                <label key={item} className={`flex items-center gap-2 py-1.5 px-3 rounded-full border cursor-pointer transition-colors text-sm ${formData.delivered_items.items.includes(item) ? 'bg-pink-100 border-pink-300 text-pink-800 font-medium' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                                    <input type="checkbox" value={item} checked={formData.delivered_items.items.includes(item)} onChange={handleBelongingsChange} className="sr-only" />
-                                    {formData.delivered_items.items.includes(item) && <svg className="w-3.5 h-3.5 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                    {item}
-                                </label>
-                            ))}
+                    {/* PERTENCES */}
+                    <div className="space-y-8 pb-4">
+                        <h2 className="text-3xl font-extrabold text-pink-950 tracking-tight">Pertences Frequentes</h2>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            {['Bolinha', 'Pelucia', 'Cama', 'Coleira', 'Comedouro'].map(item => {
+                                const isChecked = formData.delivered_items.items.includes(item);
+                                return (
+                                    <label key={item} className={`flex items-center gap-3 py-3 px-6 rounded-2xl border-2 cursor-pointer transition-all ${isChecked ? 'bg-pink-600 text-white border-pink-600 shadow-md transform scale-105' : 'bg-white text-pink-900 border-pink-100 hover:border-pink-300'}`}>
+                                        <input type="checkbox" value={item} checked={isChecked} onChange={handleBelongingsChange} className="sr-only" />
+                                        {isChecked ? <div className="w-5 h-5 bg-white text-pink-600 rounded-full flex items-center justify-center font-bold">✓</div> : <div className="w-5 h-5 border-2 border-pink-200 rounded-full"></div>}
+                                        <span className="font-bold">{item}</span>
+                                    </label>
+                                );
+                            })}
                         </div>
-                        <Input label="Outros pertences" name="other_belongings" value={formData.delivered_items.other} onChange={handleOtherBelongingsChange} />
+                        <div className="space-y-3">
+                            <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest px-1">Outros Pertences</label>
+                            <input
+                                type="text"
+                                name="other_belongings"
+                                value={formData.delivered_items.other}
+                                onChange={handleOtherBelongingsChange}
+                                className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                placeholder="Descreva aqui outros itens..."
+                            />
+                        </div>
                     </div>
 
-                    {/* Serviços Extras (Admin) */}
+                    {/* FINANCEIRO E ADMIN */}
                     {isAdmin && (
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 flex items-center gap-2 mt-6">
-                                <SparklesIcon className="w-5 h-5 text-pink-500" />
-                                Serviços Extras
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="space-y-10 border-b border-pink-50 pb-12">
+                            <h2 className="text-3xl font-extrabold text-pink-950 tracking-tight">Serviços Extras e Financeiro</h2>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {['pernoite', 'banho_tosa', 'so_banho', 'adestrador', 'despesa_medica', 'transporte'].map(ext => {
-                                    const labels = {
-                                        pernoite: 'Pernoite', banho_tosa: 'Banho & Tosa', so_banho: 'Só Banho', adestrador: 'Adestrador', despesa_medica: 'Despesa Médica', transporte: 'Transporte'
-                                    };
-                                    const isChecked = formData.extra_services?.[ext] === true;
+                                    const labels: any = { pernoite: 'Pernoite', banho_tosa: 'Banho & Tosa', so_banho: 'Só Banho', adestrador: 'Adestrador', despesa_medica: 'Despesa Médica', transporte: 'Transporte' };
+                                    const isChecked = (formData.extra_services as any)?.[ext] === true;
                                     return (
-                                        <div key={ext} className={`p-3 rounded-xl border transition-all ${isChecked ? 'bg-pink-50/50 border-pink-200' : 'bg-white border-gray-200'}`}>
-                                            <div className="flex items-center gap-2 mb-2">
+                                        <div key={ext} className={`p-5 rounded-3xl border-2 transition-all ${isChecked ? 'bg-pink-100 border-pink-500 shadow-md' : 'bg-white border-pink-50'}`}>
+                                            <label className="flex items-center gap-3 cursor-pointer group">
                                                 <Checkbox 
                                                     id={`extra_${ext}`}
                                                     checked={isChecked}
                                                     onCheckedChange={(checked) => setFormData(prev => ({
-                                                        ...prev, extra_services: { ...prev.extra_services, [ext]: checked === true, [`${ext}_quantity`]: checked === true ? (prev.extra_services?.[ext + '_quantity'] || 1) : undefined, [`${ext}_price`]: checked === true ? (prev.extra_services?.[ext + '_price'] || 0) : undefined }
+                                                        ...prev, extra_services: { ...prev.extra_services, [ext]: checked === true, [`${ext}_quantity`]: checked === true ? (prev.extra_services?.[ext + '_quantity'] as any || 1) : undefined, [`${ext}_price`]: checked === true ? (prev.extra_services?.[ext + '_price'] as any || 0) : undefined }
                                                     }))}
+                                                    className="w-6 h-6 border-2 border-pink-200 group-hover:border-pink-400 transition-all"
                                                 />
-                                                <Label htmlFor={`extra_${ext}`} className="font-semibold text-gray-700 cursor-pointer">{labels[ext]}</Label>
-                                            </div>
+                                                <span className="font-bold text-pink-950">{labels[ext]}</span>
+                                            </label>
                                             {isChecked && (
-                                                <div className="grid grid-cols-2 gap-2 mt-2">
-                                                    <Input label="Qtd" type="number" min="1" value={formData.extra_services?.[ext + '_quantity'] || 1} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, [`${ext}_quantity`]: e.target.value === '' ? 0 : parseInt(e.target.value) } }))} />
-                                                    <Input label="R$" type="number" min="0" step="0.01" value={formData.extra_services?.[ext + '_price'] || 0} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, [`${ext}_price`]: e.target.value } }))} />
+                                                <div className="grid grid-cols-2 gap-3 mt-4 animate-scaleIn">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-pink-400 uppercase tracking-widest mb-1 ml-1">Qtd</label>
+                                                        <input type="number" min="1" value={(formData.extra_services as any)?.[ext + '_quantity'] || 1} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, [`${ext}_quantity`]: e.target.value === '' ? 0 : parseInt(e.target.value) } }))} className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-300 outline-none font-bold text-pink-900" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-pink-400 uppercase tracking-widest mb-1 ml-1">R$ Unit</label>
+                                                        <input type="number" min="0" step="0.01" value={(formData.extra_services as any)?.[ext + '_price'] || 0} onChange={(e) => setFormData(prev => ({ ...prev, extra_services: { ...prev.extra_services, [`${ext}_price`]: e.target.value } }))} className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-300 outline-none font-bold text-pink-900" />
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
-                                    )
+                                    );
                                 })}
                             </div>
-                        </div>
-                    )}
 
-                    {/* Financeiro */}
-                    {isAdmin && (
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-6 flex flex-wrap gap-4 items-center justify-between">
-                            <div>
-                                <Label className="text-xs text-gray-500 font-bold uppercase">Valor Total (R$)</Label>
-                                <Input type="number" min="0" step="0.01" name="total_price" value={formData.total_price || ''} onChange={handleInputChange} className="w-32 mt-1 font-bold text-lg text-pink-700" />
-                            </div>
-                            <div>
-                                <Label className="text-xs text-gray-500 font-bold uppercase">Data de Pagamento</Label>
-                                <div className="mt-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-pink-50/50 p-8 rounded-[2.5rem] border-2 border-pink-100">
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest px-1">Valor Total (R$)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        name="total_price"
+                                        value={formData.total_price || ''}
+                                        onChange={handleInputChange}
+                                        className="block w-full px-6 py-5 bg-white border-2 border-pink-500 rounded-3xl focus:outline-none focus:ring-4 focus:ring-pink-200 text-3xl font-black text-pink-700 shadow-inner"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest px-1">Data de Pagamento</label>
                                     <DatePicker value={formData.payment_date || ''} onChange={(value) => setFormData(prev => ({ ...prev, payment_date: value }))} label="" />
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Termos e Condições */}
-                    <div className="bg-pink-50/50 rounded-xl p-4 border border-pink-100 space-y-3 mt-6">
-                        <div className="flex items-start gap-3">
-                            <Checkbox id="agreed_to_checklist" checked={formData.agreed_to_checklist} onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreed_to_checklist: checked === true }))} className="mt-1" />
-                            <Label htmlFor="agreed_to_checklist" className="text-sm text-gray-700 leading-tight cursor-pointer">Li e concordo com as regras de convivência, horários e condições gerais descritas no <a href="#" className="text-pink-600 underline font-semibold">Check List de Entrada</a>.</Label>
-                        </div>
-                        <div className="flex items-start gap-3">
-                            <Checkbox id="agreed_to_contract" checked={formData.agreed_to_contract} onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreed_to_contract: checked === true }))} className="mt-1" />
-                            <Label htmlFor="agreed_to_contract" className="text-sm text-gray-700 leading-tight cursor-pointer">Declaro que as informações são verdadeiras e aceito os termos do <a href="#" className="text-pink-600 underline font-semibold">Contrato de Prestação de Serviços</a>.</Label>
-                        </div>
-                    </div>
-
-                    {/* Resumo da Matrícula */}
-                    <div className="bg-pink-50/30 rounded-2xl p-6 border border-pink-100 mt-8">
-                        <h3 className="text-xl font-bold text-pink-700 text-center mb-6">Resumo da Matrícula</h3>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
-                                <span className="text-gray-500 font-semibold">Pet:</span>
-                                <span className="text-gray-800 font-medium">{formData.pet_name || '-'}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
-                                <span className="text-gray-500 font-semibold">Tutor:</span>
-                                <span className="text-gray-800 font-medium">{formData.tutor_name || '-'}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
-                                <span className="text-gray-500 font-semibold">Telefone:</span>
-                                <span className="text-gray-800 font-medium">{formData.contact_phone || '-'}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
-                                <span className="text-gray-500 font-semibold">Plano:</span>
-                                <span className="text-gray-800 font-medium">
-                                    {formData.contracted_plan ? formData.contracted_plan.replace('x_month', ' X MÊS').replace('x_week', ' X SEMANA').toUpperCase() : '-'}
-                                </span>
-                            </div>
-                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
-                                <span className="text-gray-500 font-semibold">Entrada:</span>
-                                <span className="text-gray-800 font-medium">{formData.check_in_date ? formatDateToBR(formData.check_in_date) : '-'}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
-                                <span className="text-gray-500 font-semibold">Saída:</span>
-                                <span className="text-gray-800 font-medium">{formData.check_out_date ? formatDateToBR(formData.check_out_date) : '-'}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-pink-100/50 pb-2">
-                                <span className="text-gray-500 font-semibold">Dias da Semana:</span>
-                                <span className="text-gray-800 font-medium">
-                                    {formData.attendance_days && formData.attendance_days.length > 0
-                                        ? formData.attendance_days.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ')
-                                        : '-'}
-                                </span>
-                            </div>
-
-                            <div className="mt-6 bg-white rounded-xl p-4 border border-pink-100 text-center shadow-sm">
-                                <span className="block text-gray-500 text-xs font-semibold uppercase mb-1">Valor Total Estimado</span>
-                                <span className="block text-3xl font-extrabold text-pink-600">
-                                    R$ {formData.total_price !== undefined ? formData.total_price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
-                                </span>
-                            </div>
-                            
-                            <p className="text-center text-xs text-gray-500 mt-4 flex items-center justify-center gap-1">
-                                <span className="w-2 h-2 rounded-full bg-pink-400 inline-block"></span>
-                                Data de Pagamento: Dia 30 de cada mês
-                            </p>
+                    {/* TERMOS E CONDIÇÕES */}
+                    <div className="space-y-6 pt-4">
+                        <div className="flex flex-col gap-4">
+                            {[
+                                { id: 'agreed_to_checklist', label: 'Li e concordo com as regras de convivência, horários e condições do Check List de Entrada.', link: 'Check List de Entrada' },
+                                { id: 'agreed_to_contract', label: 'Declaro que as informações são verdadeiras e aceito os termos do Contrato de Prestação de Serviços.', link: 'Contrato de Prestação de Serviços' }
+                            ].map(term => (
+                                <label key={term.id} className="flex items-start gap-4 p-5 rounded-[2rem] border-2 border-pink-100 bg-white hover:bg-pink-50 cursor-pointer transition-all group">
+                                    <input
+                                        type="checkbox"
+                                        id={term.id}
+                                        checked={(formData as any)[term.id]}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, [term.id]: e.target.checked }))}
+                                        className="sr-only"
+                                    />
+                                    <div className={`mt-1 min-w-[24px] h-6 rounded-lg border-2 flex items-center justify-center transition-all ${(formData as any)[term.id] ? 'bg-pink-600 border-pink-600 shadow-md' : 'border-pink-200 bg-white group-hover:border-pink-400'}`}>
+                                        {(formData as any)[term.id] && <div className="text-white text-sm font-black italic">✓</div>}
+                                    </div>
+                                    <span className="text-pink-950 font-medium leading-tight">
+                                        {term.label.split(term.link)[0]}
+                                        <span className="text-pink-600 underline font-bold">{term.link}</span>
+                                        {term.label.split(term.link)[1]}
+                                    </span>
+                                </label>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Botões */}
-                    <div className="pt-6 border-t border-gray-100 flex gap-4">
+                    {/* RESUMO DA MATRÍCULA */}
+                    <div className="mt-16 bg-gradient-to-br from-pink-600 to-pink-700 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 -m-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
+                        <h3 className="text-2xl sm:text-3xl font-black text-center mb-10 tracking-tight uppercase italic whitespace-nowrap overflow-hidden text-ellipsis">Resumo da Matrícula</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 relative z-10">
+                            {[
+                                { label: 'Pet', value: formData.pet_name },
+                                { label: 'Tutor', value: formData.tutor_name },
+                                { label: 'Plano', value: formData.contracted_plan ? formData.contracted_plan.replace('x_month', 'x Mês').replace('x_week', 'x Sem').toUpperCase() : '-' },
+                                { label: 'Início', value: formData.check_in_date ? formatDateToBR(formData.check_in_date) : '-' },
+                                { label: 'Fim', value: formData.check_out_date ? formatDateToBR(formData.check_out_date) : '-' },
+                                { label: 'Dias', value: formData.attendance_days && formData.attendance_days.length > 0 ? formData.attendance_days.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ') : '-' }
+                            ].map(item => (
+                                <div key={item.label} className="flex justify-between items-center border-b border-white/20 pb-3">
+                                    <span className="text-pink-100 font-bold uppercase text-xs tracking-widest">{item.label}</span>
+                                    <span className="font-black text-lg">{item.value || '-'}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* BOTÕES DE AÇÃO */}
+                    <div className="pt-12 flex flex-col sm:flex-row gap-5">
                         {isAdmin && (
-                            <Button type="button" variant="outline" onClick={onBack} className="flex-1 py-3 text-base">Cancelar</Button>
+                            <button
+                                type="button"
+                                onClick={onBack}
+                                className="flex-1 px-8 py-5 rounded-[2rem] border-2 border-pink-200 text-pink-600 font-black uppercase tracking-widest hover:bg-pink-50 transition-all text-sm"
+                            >
+                                Voltar
+                            </button>
                         )}
-                        <Button type="submit" disabled={isSubmitting} className="flex-1 py-3 text-base font-bold bg-pink-600 hover:bg-pink-700 text-white shadow-lg shadow-pink-200">
-                            {isSubmitting ? 'Salvando...' : 'Finalizar Matrícula'}
-                        </Button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="flex-[2] relative group overflow-hidden px-8 py-5 rounded-[2rem] bg-pink-600 hover:bg-pink-700 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-pink-200 transition-all hover:-translate-y-1 active:scale-95 disabled:grayscale disabled:cursor-wait"
+                        >
+                            <span className="relative z-10 flex items-center justify-center gap-3">
+                                {isSubmitting ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <span>Processando...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Finalizar Matrícula</span>
+                                        <div className="text-xl">✨</div>
+                                    </>
+                                )}
+                            </span>
+                        </button>
                     </div>
-
                 </div>
             </div>
         </form>
