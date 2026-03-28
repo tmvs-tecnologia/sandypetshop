@@ -1503,7 +1503,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
             const primaryType = primaryServiceOrder.find(s => Number(serviceQuantities[s] || 0) > 0) || null;
             const unitPrice = getUnitPriceByType(selectedWeight!, primaryType || null) || finalPrice;
             const canonicalServiceLabel = primaryType ? SERVICES[primaryType].label : SERVICES[ServiceType.BATH].label;
-            const isBanhoTosaFixo = formData.condominium === 'Banho & Tosa Fixo';
+            const isBanhoTosaFixo = formData.condominium === 'Banho & Tosa Fixo' || formData.condominium === 'Nenhum Condomínio';
             const { data: existingAppts } = await supabase
                 .from(isBanhoTosaFixo ? 'agendamento_banhotosa' : 'appointments')
                 .select('appointment_time')
@@ -1654,7 +1654,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                                     <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><AddressIcon /></span>
                                     <select name="condominium" id="condominium" value={formData.condominium} onChange={handleInputChange} className="block w-full pl-11 pr-10 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all appearance-none text-ellipsis overflow-hidden whitespace-nowrap">
                                         <option value="">Selecione...</option>
-                                        <option value="Nenhum Condomínio">Banho & Tosa Fixo</option>
+                                        <option value="Banho & Tosa Fixo">Banho & Tosa Fixo</option>
                                         <option value="Vitta Parque">Vitta Parque</option>
                                         <option value="Max Haus">Max Haus</option>
                                         <option value="Paseo">Paseo</option>
@@ -3079,12 +3079,12 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
         if (isVirtual) {
             let tableToInsert: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa' = 'appointments';
             const s = service.toLowerCase();
-            const isBathGroom = s.includes('banho') || s.includes('tosa');
             const isMovel = s.includes('movel') || s.includes('móvel');
+            const isBanhoTosaFixoAppt = appointment.condominium === "Banho & Tosa Fixo" || appointment.condominium === "Nenhum Condomínio";
 
             if (isMovel) {
                 tableToInsert = 'pet_movel_appointments';
-            } else if (isBathGroom || appointment.condominium === "Banho & Tosa Fixo") {
+            } else if (isBanhoTosaFixoAppt) {
                 tableToInsert = 'agendamento_banhotosa';
             }
 
@@ -4846,136 +4846,72 @@ interface AppointmentsViewProps {
     setAppointments: React.Dispatch<React.SetStateAction<AdminAppointment[]>>;
     onOpenActionMenu: (appointment: AdminAppointment, event: React.MouseEvent) => void;
     onDeleteObservation: (appointment: AdminAppointment) => void;
+    onEdit: (appointment: AdminAppointment) => void;
+    onDelete: (appointment: AdminAppointment) => void;
+    onRequestCompletion: (id: string, price: number) => void;
+    updatingStatusId: string | null;
+    deletingAppointmentId: string | null;
     monthlyClients?: MonthlyClient[];
     onDataChanged?: () => void;
     onOpenDashboard: () => void;
     onOpenCloseDay: () => void;
 }
 
-const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, monthlyClients = [], onDataChanged, onOpenDashboard, onOpenCloseDay }) => {
-    const [loading, setLoading] = useState(true);
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({ 
+    refreshKey, 
+    onAddObservation, 
+    appointments, 
+    setAppointments, 
+    onOpenActionMenu, 
+    onDeleteObservation, 
+    onEdit,
+    onDelete,
+    onRequestCompletion,
+    updatingStatusId,
+    deletingAppointmentId,
+    monthlyClients = [], 
+    onDataChanged, 
+    onOpenDashboard, 
+    onOpenCloseDay 
+}) => {
+    const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
-    const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
     const [adminView, setAdminView] = useState<'daily' | 'all'>('daily');
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingAppointment, setEditingAppointment] = useState<AdminAppointment | null>(null);
-    const [appointmentToDelete, setAppointmentToDelete] = useState<AdminAppointment | null>(null);
-    const [deletingAppointmentId, setDeletingAppointmentId] = useState<string | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [confirmingCompletionId, setConfirmingCompletionId] = useState<string | null>(null);
-    const [confirmingCompletionPrice, setConfirmingCompletionPrice] = useState<number | null>(null);
     const [selectedTab, setSelectedTab] = useState<'scheduled' | 'completed'>('scheduled');
 
+    const handleOpenAddModal = () => setIsAddModalOpen(true);
+    const handleCloseAddModal = () => setIsAddModalOpen(false);
+    const handleAppointmentCreated = (created: AdminAppointment) => {
+        // Ensure new manual appointments appear in this view by tagging them correctly
+        const tagged = { ...created, table: created.table || 'appointments' };
+        setAppointments(prev => [tagged, ...prev]);
+        handleCloseAddModal();
+    };
+
     useEffect(() => {
-        // A busca de agendamentos agora é feita no componente App
-        // e os dados são passados via props.
-        // Apenas definimos o loading como false aqui.
         setLoading(false);
     }, [refreshKey, appointments]);
 
-    // FIX: Changed `newStatus` type from `string` to the specific union type to match `AdminAppointment['status']`.
-    const handleOpenEditModal = (appointment: AdminAppointment) => { setEditingAppointment(appointment); setIsEditModalOpen(true); };
-    const handleCloseEditModal = () => { setEditingAppointment(null); setIsEditModalOpen(false); };
-    const handleAppointmentUpdated = (updatedAppointment: AdminAppointment) => {
-        setAppointments(prev => {
-            const exists = prev.some(app => app.id === updatedAppointment.id);
-            if (exists) {
-                return prev.map(app => app.id === updatedAppointment.id ? updatedAppointment : app);
-            } else {
-                // If it was virtual, we remove the virtual row by forcefully refreshing 
-                // the daily appointments view (or just relying on the fact that virtual 
-                // has string "virtual-" which doesn't match the new UUID).
-                // Just add the real one to the list.
-                return [updatedAppointment, ...prev.filter(app => app.id !== editingAppointment?.id)];
-            }
-        });
-
-        try {
-            const sp = getSaoPauloTimeParts(new Date(updatedAppointment.appointment_time));
-            const nextSelected = toSaoPauloUTC(sp.year, sp.month, sp.date, 12);
-            setSelectedAdminDate(nextSelected);
-        } catch { }
-
-        if (onDataChanged) {
-            onDataChanged();
-        }
-        handleCloseEditModal();
-
-        // Quick trigger re-render hack if virtual -> real transition happens caching issues
-        // Removed setRefreshKey as it was undefined. onDataChanged is already called above.
-    };
-    const handleOpenAddModal = () => {
-        setIsAddModalOpen(true);
-    };
-    const handleCloseAddModal = () => setIsAddModalOpen(false);
-    const handleAppointmentCreated = (created: AdminAppointment) => {
-        setAppointments(prev => [created, ...prev]);
-        handleCloseAddModal();
-    };
-    const handleRequestDelete = (appointment: AdminAppointment) => setAppointmentToDelete(appointment);
-    const handleConfirmDelete = async () => {
-        if (!appointmentToDelete) return;
-        setDeletingAppointmentId(appointmentToDelete.id);
-
-        try {
-            const targetTable = appointmentToDelete.table || 'appointments';
-            const { error } = await supabase.from(targetTable).delete().eq('id', appointmentToDelete.id);
-
-            if (error) {
-                throw new Error(`Falha ao excluir o registro do banco de dados na tabela ${targetTable}.`);
-            }
-
-            // Remove do estado local de agendamentos
-            setAppointments(prev => prev.filter(app => app.id !== appointmentToDelete.id));
-            
-        } catch (error: any) {
-            console.error('Erro ao excluir agendamento:', error);
-            alert(error.message || 'Falha ao excluir o agendamento.');
-        } finally {
-            setDeletingAppointmentId(null);
-            setAppointmentToDelete(null);
-        }
-    };
-
-    const handleRequestCompletion = (id: string, price: number) => {
-        console.log('handleRequestCompletion called with id:', id, 'and price:', price);
-        setConfirmingCompletionId(id);
-        setConfirmingCompletionPrice(price);
-    };
-
-    const handleConfirmCompletion = (responsible: string) => {
-        console.log('handleConfirmCompletion called with responsible:', responsible);
-        console.log('Current confirmingCompletionId:', confirmingCompletionId);
-        console.log('Current confirmingCompletionPrice:', confirmingCompletionPrice);
-
-        if (confirmingCompletionId) {
-            console.log('Calling handleUpdateStatus...');
-            handleUpdateStatus(confirmingCompletionId, 'CONCLUÍDO', responsible, confirmingCompletionPrice);
-            setConfirmingCompletionId(null);
-            setConfirmingCompletionPrice(null);
-        } else {
-            console.error('ERROR: confirmingCompletionId is null/undefined inside handleConfirmCompletion!');
-            alert('Erro: ID do agendamento perdido. Tente novamente.');
-        }
-    };
-
     const handleToggleAdminView = () => {
-        if (adminView === 'daily') {
-            setAdminView('all');
-        } else {
-            setAdminView('daily');
-        }
+        setAdminView(prev => prev === 'daily' ? 'all' : 'daily');
     };
+
+    // Filter for Pet Movel related tables only
+    const petMovelOnlyAppointments = useMemo(() => {
+        return (appointments || []).filter(app => app.table === 'appointments' || app.table === 'pet_movel_appointments');
+    }, [appointments]);
 
     const filteredAppointments = useMemo(() => {
-        if (!searchTerm) return appointments;
-        return appointments.filter(app =>
-            app.pet_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            app.owner_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            app.service.toLowerCase().includes(searchTerm.toLowerCase())
+        if (!searchTerm) return petMovelOnlyAppointments;
+        const term = searchTerm.toLowerCase();
+        return petMovelOnlyAppointments.filter(app =>
+            app.pet_name.toLowerCase().includes(term) ||
+            app.owner_name.toLowerCase().includes(term) ||
+            app.service.toLowerCase().includes(term)
         );
-    }, [appointments, searchTerm]);
+    }, [petMovelOnlyAppointments, searchTerm]);
 
     const dailyAppointments = useMemo(() => {
         return filteredAppointments
@@ -4985,7 +4921,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                     c.id === app.monthly_client_id ||
                     (app.pet_name === c.pet_name && app.owner_name === c.owner_name && app.service === c.service)
                 );
-
                 if (parentClient) {
                     return {
                         ...app,
@@ -4999,154 +4934,43 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             })
             .sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
     }, [filteredAppointments, selectedAdminDate, monthlyClients]);
-    const dailyScheduled = useMemo(() => dailyAppointments.filter(a => String(a.status) === 'AGENDADO' || String(a.status) === 'pending'), [dailyAppointments]);
-    const dailyCompleted = useMemo(() => dailyAppointments.filter(a => a.status === 'CONCLUÍDO'), [dailyAppointments]);
+
+    const dailyScheduled = useMemo(() => dailyAppointments.filter(a => {
+        const s = String(a.status || '').toUpperCase();
+        return s === 'AGENDADO' || s === 'PENDING';
+    }), [dailyAppointments]);
+
+    const dailyCompleted = useMemo(() => dailyAppointments.filter(a => {
+        const s = String(a.status || '').toUpperCase();
+        return s === 'CONCLUÍDO' || s === 'CONCLUIDO';
+    }), [dailyAppointments]);
 
     const { upcomingAppointments, pastAppointments } = useMemo(() => {
         if (adminView !== 'all') return { upcomingAppointments: [], pastAppointments: [] };
-        const today = new Date();
-        const upcoming: AdminAppointment[] = []; const past: AdminAppointment[] = [];
-        filteredAppointments.forEach(app => {
-            if (new Date(app.appointment_time) >= today) upcoming.push(app); else past.push(app);
-        });
-        upcoming.sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+        const now = new Date();
+        const upcoming = filteredAppointments
+            .filter(app => new Date(app.appointment_time) >= now)
+            .sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+        const past = filteredAppointments
+            .filter(app => new Date(app.appointment_time) < now)
+            .sort((a, b) => new Date(b.appointment_time).getTime() - new Date(a.appointment_time).getTime());
         return { upcomingAppointments: upcoming, pastAppointments: past };
     }, [filteredAppointments, adminView]);
 
-    const handleUpdateStatus = async (id: string, newStatus: 'AGENDADO' | 'CONCLUÍDO', responsible?: string, finalPrice?: number) => {
-        console.log('handleUpdateStatus STARTED with id:', id, 'status:', newStatus);
-        // Look in both real and virtual appointments (dailyAppointments contains both for the selected day)
-        const appointmentToUpdate = appointments.find(app => app.id === id) || dailyAppointments.find(app => app.id === id);
-
-        if (!appointmentToUpdate) {
-            console.error('handleUpdateStatus: Appointment not found with id', id);
-            return;
-        }
-        setUpdatingStatusId(id);
-
-        // Check if it's a virtual appointment (starts with 'virtual-' or has is_virtual flag)
-        const isVirtual = id.startsWith('virtual-') || appointmentToUpdate.is_virtual;
-        console.log('handleUpdateStatus - isVirtual:', isVirtual, 'id:', id);
-        let actualId = id;
-
-        // If it's a virtual appointment, we need to create a real appointment first
-        if (isVirtual && appointmentToUpdate.monthly_client_id) {
-            console.log('Converting virtual appointment to real one...');
-            
-            // Determine which table to insert into based on service type or condo
-            const s = appointmentToUpdate.service?.toLowerCase() || '';
-            const isPetMovel = s.includes('móvel') || s.includes('mobile');
-            const isBathGroom = s.includes('banho') || s.includes('tosa');
-            
-            let tableToInsert: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa' = 'appointments';
-            if (isPetMovel) {
-                tableToInsert = 'pet_movel_appointments';
-            } else if (isBathGroom || appointmentToUpdate.condominium === "Banho & Tosa Fixo") {
-                tableToInsert = 'agendamento_banhotosa';
-            }
-            
-            console.log('Target table:', tableToInsert);
-
-            console.log('appointmentToUpdate:', appointmentToUpdate);
-
-            const insertPayload: any = {
-                appointment_time: appointmentToUpdate.appointment_time,
-                pet_name: appointmentToUpdate.pet_name,
-                owner_name: appointmentToUpdate.owner_name,
-                whatsapp: appointmentToUpdate.whatsapp,
-                service: appointmentToUpdate.service,
-                weight: appointmentToUpdate.weight || 'PEQUENO', // Default weight if missing
-                price: appointmentToUpdate.price || 0, // Default price if missing
-                status: newStatus,
-                monthly_client_id: appointmentToUpdate.monthly_client_id,
-                owner_address: appointmentToUpdate.owner_address || '',
-                pet_breed: appointmentToUpdate.pet_breed || '',
-                condominium: appointmentToUpdate.condominium || ''
-            };
-
-            // Only add pet_photo_url if the target table is 'appointments' (it doesn't exist in pet_movel_appointments or agendamento_banhotosa)
-            if (tableToInsert === 'appointments') {
-                insertPayload.pet_photo_url = appointmentToUpdate.pet_photo_url || '';
-            }
-            console.log('Insert payload:', insertPayload);
-
-            // Insert the new appointment
-            const { data, error } = await supabase.from(tableToInsert).insert(insertPayload).select();
-
-            console.log('Insert result - data:', data, 'error:', error);
-
-            if (error) {
-                console.error('Error creating real appointment from virtual one:', error);
-                alert(`Falha ao criar o agendamento real a partir do mensalista. Erro: ${error.message || JSON.stringify(error)}`);
-                setUpdatingStatusId(null);
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                console.error('Insert succeeded but no data returned');
-                alert('Erro interno ao criar agendamento.');
-                setUpdatingStatusId(null);
-                return;
-            }
-
-            // Use the new ID for subsequent operations
-            actualId = data[0].id;
-            console.log('New actual ID:', actualId);
-        }
-
-        const updatePayload: any = { status: newStatus };
-        if (responsible) {
-            updatePayload.responsible = responsible;
-        }
-
-        const targetTable = appointmentToUpdate.table || tableToInsert || 'appointments';
-        const { data: updateData, error: updateError } = await supabase.from(targetTable).update(updatePayload).eq('id', actualId).select();
-
-        if (updateError) {
-            console.error(`Error updating in ${targetTable}:`, updateError);
-            alert('Falha ao atualizar o status.');
-        } else {
-            const updatedAppointment = { 
-                ...appointmentToUpdate, 
-                id: actualId, 
-                status: newStatus, 
-                table: targetTable,
-                ...(responsible ? { responsible } : {}) 
-            };
-            setAppointments(prev => prev.map(app => app.id === id ? updatedAppointment : app));
-            if (newStatus === 'CONCLUÍDO') {
-                // Dispara webhook específico quando for uma visita (Creche ou Hotel)
-                const visitLabels = [
-                    SERVICES[ServiceType.VISIT_DAYCARE].label,
-                    SERVICES[ServiceType.VISIT_HOTEL].label,
-                ];
-                // Só considera visita quando não for mensalista
-                const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
-                const url = isVisit
-                    ? 'https://n8n.intelektus.tech/webhook/visitaRealizada'
-                    : 'https://n8n.intelektus.tech/webhook/servicoConcluido';
-                try {
-                    await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            ...updatedAppointment,
-                            id: actualId, // Use the actual ID in the webhook
-                            price: finalPrice ?? updatedAppointment.price,
-                            message: isVisit ? 'Visita Realizada' : 'Serviço Concluído',
-                            isVisit,
-                            responsible: responsible || null // Inclui o responsável no payload do webhook
-                        }),
-                    });
-                } catch (webhookError) {
-                    console.error('Error sending webhook:', webhookError);
-                }
-            }
-        }
-        setUpdatingStatusId(null);
-    };
-
-    const renderAppointments = (apps: AdminAppointment[]) => apps.map(app => <AppointmentCard key={app.id} appointment={app} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />);
+    const renderCard = (appt: AdminAppointment) => (
+        <AppointmentCard 
+            key={appt.id} 
+            appointment={appt} 
+            isUpdating={updatingStatusId === appt.id} 
+            onEdit={onEdit} 
+            onDelete={onDelete} 
+            isDeleting={deletingAppointmentId === appt.id} 
+            onOpenActionMenu={(e) => onOpenActionMenu(appt, e)} 
+            onDeleteObservation={() => onDeleteObservation(appt)} 
+            onAddObservation={() => onAddObservation(appt)}
+            onRequestCompletion={onRequestCompletion} 
+        />
+    );
 
     if (isAddModalOpen) {
         return <AdminAddAppointmentModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onAppointmentCreated={handleAppointmentCreated} />;
@@ -5154,16 +4978,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
 
     return (
         <>
-            <ResponsibleModal
-                isOpen={!!confirmingCompletionId}
-                onClose={() => setConfirmingCompletionId(null)}
-                onConfirm={handleConfirmCompletion}
-                isSubmitting={!!updatingStatusId}
-            />
-            {isEditModalOpen && editingAppointment && <EditAppointmentModal appointment={editingAppointment} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdated} />}
-            {appointmentToDelete && <ConfirmationModal isOpen={!!appointmentToDelete} onClose={() => setAppointmentToDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o agendamento para ${appointmentToDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={deletingAppointmentId === appointmentToDelete.id} />}
-
-
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
                 <div className="space-y-3">
                     <div className="space-y-1 w-full overflow-hidden flex flex-col items-center">
@@ -5293,11 +5107,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                             <div className="animate-fadeIn">
                                                 {dailyScheduled.length > 0 ? (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                        {dailyScheduled.map(app => (
-                                                            <div key={app.id} className="w-full">
-                                                                <AppointmentCard appointment={app} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />
-                                                            </div>
-                                                        ))}
+                                                        {dailyScheduled.map(renderCard)}
                                                     </div>
                                                 ) : (
                                                     <div className="text-center py-12 bg-white rounded-lg shadow-sm">
@@ -5311,11 +5121,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                                             <div className="animate-fadeIn">
                                                 {dailyCompleted.length > 0 ? (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                        {dailyCompleted.map(app => (
-                                                            <div key={app.id} className="w-full">
-                                                                <AppointmentCard appointment={app} isUpdating={updatingStatusId === app.id} onEdit={handleOpenEditModal} onDelete={handleRequestDelete} isDeleting={deletingAppointmentId === app.id} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} onRequestCompletion={handleRequestCompletion} />
-                                                            </div>
-                                                        ))}
+                                                        {dailyCompleted.map(renderCard)}
                                                     </div>
                                                 ) : (
                                                     <div className="text-center py-12 bg-white rounded-lg shadow-sm">
@@ -5334,11 +5140,11 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                         <div className="space-y-12 animate-fadeIn">
                             <section>
                                 <h2 className="text-2xl font-bold text-gray-700 mb-4 pb-2 border-b-2 border-pink-200">Próximos Agendamentos</h2>
-                                {upcomingAppointments.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{renderAppointments(upcomingAppointments)}</div> : <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum próximo agendamento encontrado.</p></div>}
+                                {upcomingAppointments.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{upcomingAppointments.map(renderCard)}</div> : <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum próximo agendamento encontrado.</p></div>}
                             </section>
                             <section>
                                 <h2 className="text-2xl font-bold text-gray-700 mb-4 pb-2 border-b-2 border-pink-200">Agendamentos Anteriores</h2>
-                                {pastAppointments.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{renderAppointments(pastAppointments)}</div> : <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum agendamento anterior encontrado.</p></div>}
+                                {pastAppointments.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{pastAppointments.map(renderCard)}</div> : <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum agendamento anterior encontrado.</p></div>}
                             </section>
                         </div>
                     )}
@@ -5530,11 +5336,16 @@ const PetMovelAppointmentDetailsModal: React.FC<{
 
 interface PetMovelViewProps {
     refreshKey: number;
-    onAddObservation: (id: string, obs: string) => void;
+    onAddObservation: (appointment: AdminAppointment) => void;
     appointments: AdminAppointment[];
     setAppointments: React.Dispatch<React.SetStateAction<AdminAppointment[]>>;
-    onOpenActionMenu: (appointment: AdminAppointment) => void;
-    onDeleteObservation: (id: string, index: number) => void;
+    onOpenActionMenu: (appointment: AdminAppointment, event: React.MouseEvent) => void;
+    onDeleteObservation: (appointment: AdminAppointment) => void;
+    onEdit: (appointment: AdminAppointment) => void;
+    onDelete: (appointment: AdminAppointment) => void;
+    onRequestCompletion: (id: string, price: number) => void;
+    updatingStatusId: string | null;
+    deletingAppointmentId: string | null;
     monthlyClients?: MonthlyClient[];
     onDataChanged?: () => void;
     onOpenDashboard?: () => void;
@@ -5547,81 +5358,35 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
     appointments, 
     setAppointments, 
     onOpenActionMenu, 
-    onDeleteObservation, 
-    monthlyClients = [], 
-    onDataChanged, 
+    onDeleteObservation,
+    onEdit,
+    onDelete,
+    onRequestCompletion,
+    updatingStatusId,
+    deletingAppointmentId,
+    monthlyClients,
+    onDataChanged,
     onOpenDashboard, 
-    onOpenCloseDay 
+    onOpenCloseDay
 }) => {
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
     const [adminView, setAdminView] = useState<'daily' | 'all'>('daily');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedTab, setSelectedTab] = useState<'scheduled' | 'completed'>('scheduled');
-    const [banhoTosaAppointments, setBanhoTosaAppointments] = useState<AdminAppointment[]>([]);
 
-    // Fetch agendamento_banhotosa data
-    const fetchBanhoTosaAppointments = useCallback(async () => {
-        setLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('agendamento_banhotosa')
-                .select('*')
-                .order('appointment_time', { ascending: true });
-
-            if (error) {
-                console.error('Error fetching agendamento_banhotosa:', error);
-                setLoading(false);
-                return;
-            }
-
-            const mapped: AdminAppointment[] = (data || []).map((rec: any) => ({
-                id: rec.id,
-                created_at: rec.created_at,
-                appointment_time: rec.appointment_time,
-                pet_name: rec.pet_name,
-                pet_breed: rec.pet_breed || '',
-                owner_name: rec.owner_name,
-                owner_address: rec.owner_address || '',
-                whatsapp: rec.whatsapp,
-                service: rec.service,
-                weight: rec.weight,
-                addons: rec.addons || [],
-                price: rec.price,
-                status: rec.status || 'AGENDADO',
-                monthly_client_id: rec.monthly_client_id,
-                condominium: rec.condominium || '',
-                extra_services: rec.extra_services,
-                observation: rec.observation || '',
-                responsible: rec.responsible || '',
-            }));
-            setBanhoTosaAppointments(mapped);
-        } catch (err) {
-            console.error('Error:', err);
-        }
-        setLoading(false);
-    }, []);
-
-    useEffect(() => {
-        fetchBanhoTosaAppointments();
-    }, [fetchBanhoTosaAppointments, refreshKey]);
-
-    // Realtime subscription
-    useEffect(() => {
-        const channel = supabase
-            .channel('agendamento_banhotosa_changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamento_banhotosa' }, () => {
-                fetchBanhoTosaAppointments();
-            })
-            .subscribe();
-        return () => { supabase.removeChannel(channel); };
-    }, [fetchBanhoTosaAppointments]);
+    // Filter appointments belonging to agendamento_banhotosa from the global appointments prop
+    const banhoTosaAppointments = useMemo(() => {
+        return (appointments || []).filter(app => app.table === 'agendamento_banhotosa');
+    }, [appointments]);
 
     const handleOpenAddModal = () => setIsAddModalOpen(true);
     const handleCloseAddModal = () => setIsAddModalOpen(false);
     const handleAppointmentCreated = (created: AdminAppointment) => {
-        setBanhoTosaAppointments(prev => [created, ...prev]);
+        // Tag as agendamento_banhotosa so it shows up in this view immediately
+        const tagged = { ...created, table: 'agendamento_banhotosa' };
+        setAppointments(prev => [tagged, ...prev]);
         handleCloseAddModal();
         if (onDataChanged) onDataChanged();
     };
@@ -5683,9 +5448,14 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
         <AppointmentCard
             key={appt.id}
             appointment={appt}
-            onAddObservation={(obs) => onAddObservation(appt.id!, obs)}
-            onDeleteObservation={(idx) => onDeleteObservation(appt.id!, idx)}
-            onOpenActionMenu={() => onOpenActionMenu(appt)}
+            isUpdating={updatingStatusId === appt.id}
+            isDeleting={deletingAppointmentId === appt.id}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onRequestCompletion={onRequestCompletion}
+            onAddObservation={() => onAddObservation(appt)}
+            onDeleteObservation={() => onDeleteObservation(appt)}
+            onOpenActionMenu={(e) => onOpenActionMenu(appt, e)}
         />
     );
 
@@ -6528,7 +6298,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
             }));
 
             if (supabasePayloads.length > 0) {
-                const isBanhoTosaFixoRecreate = formData.condominium === 'Banho & Tosa Fixo';
+                const isBanhoTosaFixoRecreate = formData.condominium === 'Banho & Tosa Fixo' || formData.condominium === 'Nenhum Condomínio';
                 let targetTable: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa' = 'appointments';
 
                 if (isBanhoTosaFixoRecreate) {
@@ -14294,6 +14064,146 @@ const AdminDashboard: React.FC<{
     const handleDataChanged = useCallback(() => setDataKey(Date.now()), []);
     const handleAddMonthlyClient = () => setActiveView('addMonthlyClient');
 
+    // CRUD States lifted from AppointmentsView
+    const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingAppointment, setEditingAppointment] = useState<AdminAppointment | null>(null);
+    const [appointmentToDelete, setAppointmentToDelete] = useState<AdminAppointment | null>(null);
+    const [deletingAppointmentId, setDeletingAppointmentId] = useState<string | null>(null);
+    const [confirmingCompletionId, setConfirmingCompletionId] = useState<string | null>(null);
+    const [confirmingCompletionPrice, setConfirmingCompletionPrice] = useState<number | null>(null);
+
+    // CRUD Handlers
+    const handleOpenEditModal = (appointment: AdminAppointment) => { setEditingAppointment(appointment); setIsEditModalOpen(true); };
+    const handleCloseEditModal = () => { setEditingAppointment(null); setIsEditModalOpen(false); };
+    
+    const handleAppointmentUpdated = (updatedAppointment: AdminAppointment) => {
+        setAppointments(prev => {
+            const exists = prev.some(app => app.id === updatedAppointment.id);
+            if (exists) {
+                return prev.map(app => app.id === updatedAppointment.id ? updatedAppointment : app);
+            } else {
+                return [updatedAppointment, ...prev.filter(app => app.id !== editingAppointment?.id)];
+            }
+        });
+        if (onDataChanged) onDataChanged();
+        handleCloseEditModal();
+    };
+
+    const handleRequestDelete = (appointment: AdminAppointment) => setAppointmentToDelete(appointment);
+    const handleConfirmDelete = async () => {
+        if (!appointmentToDelete) return;
+        setDeletingAppointmentId(appointmentToDelete.id);
+        try {
+            const targetTable = appointmentToDelete.table || 'appointments';
+            const { error } = await supabase.from(targetTable).delete().eq('id', appointmentToDelete.id);
+            if (error) throw new Error(`Falha ao excluir o registro na tabela ${targetTable}.`);
+            setAppointments(prev => prev.filter(app => app.id !== appointmentToDelete.id));
+        } catch (error: any) {
+            console.error('Erro ao excluir agendamento:', error);
+            alert(error.message || 'Falha ao excluir o agendamento.');
+        } finally {
+            setDeletingAppointmentId(null);
+            setAppointmentToDelete(null);
+        }
+    };
+
+    const handleRequestCompletion = (id: string, price: number) => {
+        setConfirmingCompletionId(id);
+        setConfirmingCompletionPrice(price);
+    };
+
+    const handleConfirmCompletion = (responsible: string) => {
+        if (confirmingCompletionId) {
+            handleUpdateStatus(confirmingCompletionId, 'CONCLUÍDO', responsible, confirmingCompletionPrice || 0);
+            setConfirmingCompletionId(null);
+            setConfirmingCompletionPrice(null);
+        }
+    };
+
+    const handleUpdateStatus = async (id: string, newStatus: 'AGENDADO' | 'CONCLUÍDO', responsible?: string, finalPrice?: number) => {
+        const appointmentToUpdate = appointments.find(app => app.id === id);
+        if (!appointmentToUpdate) return;
+        setUpdatingStatusId(id);
+
+        const isVirtual = id.startsWith('virtual-') || appointmentToUpdate.is_virtual;
+        let actualId = id;
+        let tableToInsert: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa' = 'appointments';
+
+        if (isVirtual && appointmentToUpdate.monthly_client_id) {
+            const s = appointmentToUpdate.service?.toLowerCase() || '';
+            const isPetMovel = s.includes('móvel') || s.includes('mobile');
+            const isBanhoTosaFixoAppt = appointmentToUpdate.condominium === "Banho & Tosa Fixo" || appointmentToUpdate.condominium === "Nenhum Condomínio";
+            
+            if (isPetMovel) tableToInsert = 'pet_movel_appointments';
+            else if (isBanhoTosaFixoAppt) tableToInsert = 'agendamento_banhotosa';
+
+            const insertPayload: any = {
+                appointment_time: appointmentToUpdate.appointment_time,
+                pet_name: appointmentToUpdate.pet_name,
+                owner_name: appointmentToUpdate.owner_name,
+                whatsapp: appointmentToUpdate.whatsapp,
+                service: appointmentToUpdate.service,
+                weight: appointmentToUpdate.weight || 'PEQUENO',
+                price: appointmentToUpdate.price || 0,
+                status: newStatus,
+                monthly_client_id: appointmentToUpdate.monthly_client_id,
+                owner_address: appointmentToUpdate.owner_address || '',
+                pet_breed: appointmentToUpdate.pet_breed || '',
+                condominium: appointmentToUpdate.condominium || ''
+            };
+
+            if (tableToInsert === 'appointments') {
+                insertPayload.pet_photo_url = appointmentToUpdate.pet_photo_url || '';
+            }
+
+            const { data, error } = await supabase.from(tableToInsert).insert(insertPayload).select();
+            if (error || !data || data.length === 0) {
+                setUpdatingStatusId(null);
+                return;
+            }
+            actualId = data[0].id;
+        }
+
+        const updatePayload: any = { status: newStatus };
+        if (responsible) updatePayload.responsible = responsible;
+
+        const targetTable = appointmentToUpdate.table || tableToInsert || 'appointments';
+        const { error: updateError } = await supabase.from(targetTable).update(updatePayload).eq('id', actualId).select();
+
+        if (!updateError) {
+            const updatedAppointment = { 
+                ...appointmentToUpdate, 
+                id: actualId, 
+                status: newStatus, 
+                table: targetTable,
+                ...(responsible ? { responsible } : {}) 
+            };
+            setAppointments(prev => prev.map(app => app.id === id ? updatedAppointment : app));
+            
+            if (newStatus === 'CONCLUÍDO') {
+                const visitLabels = [SERVICES[ServiceType.VISIT_DAYCARE].label, SERVICES[ServiceType.VISIT_HOTEL].label];
+                const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
+                const url = isVisit ? 'https://n8n.intelektus.tech/webhook/visitaRealizada' : 'https://n8n.intelektus.tech/webhook/servicoConcluido';
+                try {
+                    await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...updatedAppointment,
+                            id: actualId,
+                            price: finalPrice ?? updatedAppointment.price,
+                            message: isVisit ? 'Visita Realizada' : 'Serviço Concluído',
+                            isVisit,
+                            responsible: responsible || null
+                        }),
+                    });
+                } catch (webhookError) {}
+            }
+        }
+        setUpdatingStatusId(null);
+    };
+
     // Reload combined appointments when dataKey changes (e.g., after creating mensalista)
     useEffect(() => {
         const loadAllAdminAppointments = async () => {
@@ -14304,7 +14214,7 @@ const AdminDashboard: React.FC<{
                 // ALSO: Added a date filter to fetch only appointments from the last 60 days 
                 // onwards to keep the result set well below the 1000-row limit.
                 const now = new Date();
-                const windowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days ago
+                const windowStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString(); // 60 days ago
 
                 const { data: bathAppointments, error: bathError } = await supabase
                     .from('appointments')
@@ -14322,14 +14232,25 @@ const AdminDashboard: React.FC<{
 
                 if (petMovelError) console.warn('Erro ao buscar pet_movel_appointments:', petMovelError);
 
+                const { data: fixedBathGroomAppointments, error: fixedError } = await supabase
+                    .from('agendamento_banhotosa')
+                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
+                    .gte('appointment_time', windowStart)
+                    .order('appointment_time', { ascending: false });
+
+                if (fixedError) console.warn('Erro ao buscar agendamento_banhotosa:', fixedError);
+
                 // Remover duplicados por mensalista e mesmo minuto de appointment_time, mantendo o mais antigo
-                const dedupeMonthlyByMinute = async (srcA: any[] | null | undefined, srcB: any[] | null | undefined) => {
-                    const all: { id: string; table: 'appointments' | 'pet_movel_appointments'; monthly_client_id?: string; appointment_time: string; created_at?: string; raw: any }[] = [];
+                const dedupeMonthlyByMinute = async (srcA: any[] | null | undefined, srcB: any[] | null | undefined, srcC: any[] | null | undefined) => {
+                    const all: { id: string; table: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa'; monthly_client_id?: string; appointment_time: string; created_at?: string; raw: any }[] = [];
                     for (const r of (srcA || [])) {
                         all.push({ id: r.id, table: 'appointments', monthly_client_id: r.monthly_client_id, appointment_time: r.appointment_time, created_at: r.created_at, raw: r });
                     }
                     for (const r of (srcB || [])) {
                         all.push({ id: r.id, table: 'pet_movel_appointments', monthly_client_id: r.monthly_client_id, appointment_time: r.appointment_time, created_at: r.created_at, raw: r });
+                    }
+                    for (const r of (srcC || [])) {
+                        all.push({ id: r.id, table: 'agendamento_banhotosa', monthly_client_id: r.monthly_client_id, appointment_time: r.appointment_time, created_at: r.created_at, raw: r });
                     }
 
                     const groups = new Map<string, typeof all>();
@@ -14342,7 +14263,7 @@ const AdminDashboard: React.FC<{
                         groups.set(key, g);
                     }
 
-                    const toDeleteByTable: Record<'appointments' | 'pet_movel_appointments', string[]> = { appointments: [], pet_movel_appointments: [] };
+                    const toDeleteByTable: Record<'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa', string[]> = { appointments: [], pet_movel_appointments: [], agendamento_banhotosa: [] };
                     const keptSet = new Set<string>();
                     for (const [, list] of groups.entries()) {
                         if (list.length > 1) {
@@ -14363,23 +14284,25 @@ const AdminDashboard: React.FC<{
                     if (toDeleteByTable.pet_movel_appointments.length) {
                         await supabase.from('pet_movel_appointments').delete().in('id', toDeleteByTable.pet_movel_appointments);
                     }
+                    if (toDeleteByTable.agendamento_banhotosa.length) {
+                        await supabase.from('agendamento_banhotosa').delete().in('id', toDeleteByTable.agendamento_banhotosa);
+                    }
 
                     // Keep all non-mensalista records untouched; only filter duplicates for mensalistas
                     const filteredA = (srcA || []).filter(r => r?.monthly_client_id ? keptSet.has(`appointments:${r.id}`) : true);
                     const filteredB = (srcB || []).filter(r => r?.monthly_client_id ? keptSet.has(`pet_movel_appointments:${r.id}`) : true);
-                    return { filteredA, filteredB };
+                    const filteredC = (srcC || []).filter(r => r?.monthly_client_id ? keptSet.has(`agendamento_banhotosa:${r.id}`) : true);
+                    return { filteredA, filteredB, filteredC };
                 };
 
-                const normalize = (arr: any[] | null | undefined): AdminAppointment[] => {
+                const normalize = (arr: any[] | null | undefined, tableName: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa'): AdminAppointment[] => {
                     if (!arr) return [];
                     return arr.map((rec: any) => {
-                        // Use the price directly from DB — it is already the per-session price.
-                        // Do NOT divide by recurrence (weekly/bi-weekly); that division was incorrect
-                        // and was causing the edited price to be overwritten on every fetch.
                         const sessionPrice = Number(rec.price ?? 0);
 
                         return {
                             id: rec.id,
+                            table: tableName,
                             appointment_time: rec.appointment_time,
                             pet_name: rec.pet_name,
                             pet_breed: rec.pet_breed ?? undefined,
@@ -14402,10 +14325,11 @@ const AdminDashboard: React.FC<{
                     });
                 };
 
-                const { filteredA, filteredB } = await dedupeMonthlyByMinute(bathAppointments, petMovelAppointments);
+                const { filteredA, filteredB, filteredC } = await dedupeMonthlyByMinute(bathAppointments, petMovelAppointments, fixedBathGroomAppointments);
                 const combined = [
-                    ...normalize(filteredA),
-                    ...normalize(filteredB),
+                    ...normalize(filteredA, 'appointments'),
+                    ...normalize(filteredB, 'pet_movel_appointments'),
+                    ...normalize(filteredC, 'agendamento_banhotosa'),
                 ].sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
 
                 setAppointments(prev => {
@@ -14446,8 +14370,42 @@ const AdminDashboard: React.FC<{
 
     const renderActiveView = () => {
         switch (activeView) {
-            case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} onOpenCloseDay={handleOpenCloseDay} />;
-            case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('petMovel')} onOpenCloseDay={handleOpenCloseDay} />;
+            case 'appointments': return <AppointmentsView 
+                key={dataKey} 
+                refreshKey={dataKey} 
+                onAddObservation={onAddObservation} 
+                appointments={appointments} 
+                setAppointments={setAppointments} 
+                onOpenActionMenu={onOpenActionMenu} 
+                onDeleteObservation={onDeleteObservation} 
+                onEdit={handleOpenEditModal}
+                onDelete={handleRequestDelete}
+                onRequestCompletion={handleRequestCompletion}
+                updatingStatusId={updatingStatusId}
+                deletingAppointmentId={deletingAppointmentId}
+                monthlyClients={monthlyClients} 
+                onDataChanged={handleDataChanged} 
+                onOpenDashboard={() => handleOpenDashboard('appointments')} 
+                onOpenCloseDay={handleOpenCloseDay} 
+            />;
+            case 'petMovel': return <PetMovelView 
+                key={dataKey} 
+                refreshKey={dataKey} 
+                onAddObservation={onAddObservation} 
+                appointments={appointments} 
+                setAppointments={setAppointments} 
+                onOpenActionMenu={onOpenActionMenu} 
+                onDeleteObservation={onDeleteObservation} 
+                onEdit={handleOpenEditModal}
+                onDelete={handleRequestDelete}
+                onRequestCompletion={handleRequestCompletion}
+                updatingStatusId={updatingStatusId}
+                deletingAppointmentId={deletingAppointmentId}
+                monthlyClients={monthlyClients} 
+                onDataChanged={handleDataChanged} 
+                onOpenDashboard={() => handleOpenDashboard('petMovel')} 
+                onOpenCloseDay={handleOpenCloseDay} 
+            />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
@@ -14456,7 +14414,24 @@ const AdminDashboard: React.FC<{
             case 'dashboard': return <StatisticsDashboardModal onBack={() => setActiveView(previousView)} />;
             case 'closeDay': return <CloseDayView onBack={() => setActiveView(previousView)} />;
             case 'insights': return <InsightsDashboard key={dataKey} />;
-            default: return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} onOpenCloseDay={handleOpenCloseDay} />;
+            default: return <AppointmentsView 
+                key={dataKey} 
+                refreshKey={dataKey} 
+                onAddObservation={onAddObservation} 
+                appointments={appointments} 
+                setAppointments={setAppointments} 
+                onOpenActionMenu={onOpenActionMenu} 
+                onDeleteObservation={onDeleteObservation} 
+                onEdit={handleOpenEditModal}
+                onDelete={handleRequestDelete}
+                onRequestCompletion={handleRequestCompletion}
+                updatingStatusId={updatingStatusId}
+                deletingAppointmentId={deletingAppointmentId}
+                monthlyClients={monthlyClients} 
+                onDataChanged={handleDataChanged} 
+                onOpenDashboard={() => handleOpenDashboard('appointments')} 
+                onOpenCloseDay={handleOpenCloseDay} 
+            />;
         }
     };
 
@@ -14645,6 +14620,32 @@ const AdminDashboard: React.FC<{
                 onClose={() => setIsPriceManagementOpen(false)} 
                 onPricesUpdated={handleDataChanged} 
             />
+
+            <ResponsibleModal
+                isOpen={!!confirmingCompletionId}
+                onClose={() => setConfirmingCompletionId(null)}
+                onConfirm={handleConfirmCompletion}
+                isSubmitting={!!updatingStatusId}
+            />
+            {isEditModalOpen && editingAppointment && (
+                <EditAppointmentModal 
+                    appointment={editingAppointment} 
+                    onClose={handleCloseEditModal} 
+                    onAppointmentUpdated={handleAppointmentUpdated} 
+                />
+            )}
+            {appointmentToDelete && (
+                <ConfirmationModal 
+                    isOpen={!!appointmentToDelete} 
+                    onClose={() => setAppointmentToDelete(null)} 
+                    onConfirm={handleConfirmDelete} 
+                    title="Confirmar Exclusão" 
+                    message={`Tem certeza que deseja excluir o agendamento para ${appointmentToDelete.pet_name}?`} 
+                    confirmText="Excluir" 
+                    variant="danger" 
+                    isLoading={deletingAppointmentId === appointmentToDelete.id} 
+                />
+            )}
         </div>
     );
 };
