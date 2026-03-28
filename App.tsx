@@ -3467,15 +3467,33 @@ const AdminAddAppointmentModal: React.FC<{
             const queryEnd = new Date(endOfDay);
             queryEnd.setHours(queryEnd.getHours() + 4); // Buffer
 
-            const [{ data: regularData, error: regularError }, { data: petMovelData, error: petMovelError }, { data: banhoTosaData, error: banhoTosaError }] = await Promise.all([
-                supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
-                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
-                supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+            // Se for Banho & Tosa (Loja), buscamos apenas na tabela agendamento_banhotosa
+            // Se for Pet Móvel, buscamos apenas na tabela pet_movel_appointments
+            // Caso contrário (Creche/Hotel/Main), buscamos em todas (ou mantemos o padrão anterior)
+            
+            let regularPromise: any = null;
+            let petMovelPromise: any = null;
+            let banhoTosaPromise: any = null;
+
+            if (serviceStepView === 'bath_groom') {
+                banhoTosaPromise = supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
+            } else if (serviceStepView === 'pet_movel') {
+                petMovelPromise = supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
+            } else {
+                regularPromise = supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
+                petMovelPromise = supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
+                banhoTosaPromise = supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
+            }
+
+            const [regularRes, petMovelRes, banhoTosaRes] = await Promise.all([
+                regularPromise || Promise.resolve({ data: [] }),
+                petMovelPromise || Promise.resolve({ data: [] }),
+                banhoTosaPromise || Promise.resolve({ data: [] })
             ]);
 
-            if (regularError) { console.error('Error fetching appointments:', regularError); return; }
-            if (petMovelError) { console.error('Error fetching pet_movel_appointments:', petMovelError); return; }
-            if (banhoTosaError) { console.error('Error fetching agendamento_banhotosa:', banhoTosaError); }
+            if (regularRes.error) { console.error('Error fetching appointments:', regularRes.error); return; }
+            if (petMovelRes.error) { console.error('Error fetching pet_movel_appointments:', petMovelRes.error); return; }
+            if (banhoTosaRes.error) { console.error('Error fetching agendamento_banhotosa:', banhoTosaRes.error); }
 
             const mapToLocal = (data: any[] | null | undefined, tableName: string) => (data || []).map(dbRecord => {
                 let serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === dbRecord.service) as ServiceType | undefined;
@@ -3515,16 +3533,17 @@ const AdminAddAppointmentModal: React.FC<{
             });
 
             const allFetched: any[] = [
-                ...mapToLocal(regularData, 'appointments'),
-                ...mapToLocal(petMovelData, 'pet_movel_appointments'),
-                ...mapToLocal(banhoTosaData, 'agendamento_banhotosa'),
+                ...mapToLocal(regularRes.data, 'appointments'),
+                ...mapToLocal(petMovelRes.data, 'pet_movel_appointments'),
+                ...mapToLocal(banhoTosaRes.data, 'agendamento_banhotosa'),
             ];
 
             setAppointments(allFetched);
         };
 
         fetchAppointments();
-    }, [isOpen, selectedDate]);
+    }, [isOpen, selectedDate, serviceStepView]);
+
 
     // Calendar day restrictions based on service type
     useEffect(() => {
@@ -3699,20 +3718,34 @@ const AdminAddAppointmentModal: React.FC<{
             const queryStart = new Date(startOfDay); queryStart.setHours(queryStart.getHours() - 4);
             const queryEnd = new Date(endOfDay); queryEnd.setHours(queryEnd.getHours() + 4);
 
-            const [{ data: regData }, { data: pmData }, { data: btData }] = await Promise.all([
-                supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
-                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
-                supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
-            ]);
+            // Verificação seletiva: se for Banho & Tosa da Loja, valida apenas agendamento_banhotosa
+            // Se for Pet Móvel, valida apenas pet_movel_appointments
+            
+            let regP: any = Promise.resolve({ data: [] });
+            let pmP: any = Promise.resolve({ data: [] });
+            let btP: any = Promise.resolve({ data: [] });
+
+            if (serviceStepView === 'bath_groom') {
+                btP = supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
+            } else if (serviceStepView === 'pet_movel') {
+                pmP = supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
+            } else {
+                regP = supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
+                pmP = supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
+                btP = supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
+            }
+
+            const [regR, pmR, btR] = await Promise.all([regP, pmP, btP]);
 
             const allReal = [
-                ...(regData || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) })),
-                ...(pmData || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) })),
-                ...(btData || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) }))
+                ...(regR.data || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) })),
+                ...(pmR.data || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) })),
+                ...(btR.data || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) }))
             ].filter(appt => {
                 const s = String(appt.status || '').toUpperCase();
                 return s !== 'CANCELADO';
             });
+
 
             const allExistingAtTime = allReal.filter(a => {
                 const at = new Date(a.appointment_time);
