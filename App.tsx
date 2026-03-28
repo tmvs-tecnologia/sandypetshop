@@ -98,13 +98,14 @@ const AiChatView: React.FC<{ key?: number }> = () => {
 
     const sendSystemDataToWebhook = async (mensagem: string): Promise<{ ok: boolean; status: number; message: string; reply?: string }> => {
         try {
-            const [appointmentsRes, petMovelRes, monthlyRes, hotelRes, daycareRes, clientsRes] = await Promise.all([
+            const [appointmentsRes, petMovelRes, monthlyRes, hotelRes, daycareRes, clientsRes, banhoTosaRes] = await Promise.all([
                 supabase.from('appointments').select('*'),
                 supabase.from('pet_movel_appointments').select('*'),
                 supabase.from('monthly_clients').select('*'),
                 supabase.from('hotel_registrations').select('*'),
                 supabase.from('daycare_enrollments').select('*'),
                 supabase.from('clients').select('*'),
+                supabase.from('agendamento_banhotosa').select('*'),
             ]);
 
             const payload = {
@@ -113,6 +114,7 @@ const AiChatView: React.FC<{ key?: number }> = () => {
                 mensagem,
                 agendamentos: appointmentsRes.data || [],
                 agendamentos_pet_movel: petMovelRes.data || [],
+                agendamentos_banho_tosa: banhoTosaRes.data || [],
                 mensalistas: monthlyRes.data || [],
                 registros_hotel: hotelRes.data || [],
                 matriculas_creche: daycareRes.data || [],
@@ -120,6 +122,7 @@ const AiChatView: React.FC<{ key?: number }> = () => {
                 estatisticas: {
                     total_agendamentos: (appointmentsRes.data || []).length,
                     total_agendamentos_pet_movel: (petMovelRes.data || []).length,
+                    total_agendamentos_banho_tosa: (banhoTosaRes.data || []).length,
                     total_mensalistas: (monthlyRes.data || []).length,
                     total_registros_hotel: (hotelRes.data || []).length,
                     total_matriculas_creche: (daycareRes.data || []).length,
@@ -1500,8 +1503,9 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
             const primaryType = primaryServiceOrder.find(s => Number(serviceQuantities[s] || 0) > 0) || null;
             const unitPrice = getUnitPriceByType(selectedWeight!, primaryType || null) || finalPrice;
             const canonicalServiceLabel = primaryType ? SERVICES[primaryType].label : SERVICES[ServiceType.BATH].label;
+            const isBanhoTosaFixo = formData.condominium === 'Banho & Tosa Fixo';
             const { data: existingAppts } = await supabase
-                .from('appointments')
+                .from(isBanhoTosaFixo ? 'agendamento_banhotosa' : 'appointments')
                 .select('appointment_time')
                 .eq('monthly_client_id', newClient.id);
             const { data: existingPetMovelAppts } = await supabase
@@ -1542,43 +1546,18 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
             );
 
             if (supabasePayloads.length > 0) {
-                if (isPetMovelService) {
-                    // For Pet Móvel services, create specific payloads for pet_movel_appointments
-                    const petMovelPayloads = appointmentsToCreate
-                        .filter(app => !existingTimes.has(app.appointment_time))
-                        .map(app => ({
-                            owner_name: formData.ownerName,
-                            pet_name: formData.petName,
-                            pet_breed: formData.petBreed,
-                            service: canonicalServiceLabel,
-                            appointment_time: app.appointment_time,
-                            status: isPastSaoPauloDate(new Date(app.appointment_time)) ? 'CONCLUÍDO' : 'AGENDADO',
-                            price: unitPrice,
-                            whatsapp: formData.whatsapp,
-                            owner_address: formData.ownerAddress,
-                            weight: PET_WEIGHT_OPTIONS[selectedWeight!],
-                            condominium: formData.condominium,
-                            monthly_client_id: newClient.id,
-                            observation: formData.observation || null
-                        }));
-
-                    // Insert into BOTH tables with appropriate payloads
-                    const [appointmentsResult, petMovelResult] = await Promise.all([
-                        supabase.from('appointments').insert(supabasePayloads),
-                        supabase.from('pet_movel_appointments').insert(petMovelPayloads)
-                    ]);
-
-                    if (appointmentsResult.error || petMovelResult.error) {
-                        const errorMsg = appointmentsResult.error?.message || petMovelResult.error?.message;
-                        throw new Error(`Cadastro criado, mas erro ao gerar agendamentos: ${errorMsg}`);
-                    }
-                } else {
-                    // For regular services, insert only into appointments table
-                    const { error } = await supabase.from('appointments').insert(supabasePayloads);
-                    if (error) throw new Error(`Cadastro criado, mas erro ao gerar agendamentos: ${error.message}`);
+                let targetTable: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa' = 'appointments';
+                
+                if (isBanhoTosaFixo) {
+                    targetTable = 'agendamento_banhotosa';
+                } else if (isPetMovelService) {
+                    targetTable = 'pet_movel_appointments';
                 }
 
-                setAlertInfo({ title: 'Mensalista Cadastrado!', message: `Mensalista ${formData.petName} cadastrado com sucesso! ${supabasePayloads.length} agendamentos foram criados.`, variant: 'success' });
+                const { error } = await supabase.from(targetTable).insert(supabasePayloads);
+                if (error) throw new Error(`Cadastro criado, mas erro ao gerar agendamentos em ${targetTable}: ${error.message}`);
+
+                setAlertInfo({ title: 'Mensalista Cadastrado!', message: `Mensalista ${formData.petName} cadastrado com sucesso! ${supabasePayloads.length} agendamentos foram criados em ${targetTable}.`, variant: 'success' });
             } else {
                 setAlertInfo({ title: 'Aviso', message: "Nenhum agendamento futuro pôde ser criado com as regras fornecidas.", variant: 'error' });
             }
@@ -2994,7 +2973,7 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
                 .from('appointments')
                 .select('appointment_time, service')
                 .gte('appointment_time', `${yStr}-${mStr}-${dStr}T00:00:00`)
-                .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`); // Simple range check
+                .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`);
 
             const { data: petMovelData } = await supabase
                 .from('pet_movel_appointments')
@@ -3002,7 +2981,13 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
                 .gte('appointment_time', `${yStr}-${mStr}-${dStr}T00:00:00`)
                 .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`);
 
-            const allApps = [...(regularData || []), ...(petMovelData || [])];
+            const { data: banhoTosaData } = await supabase
+                .from('agendamento_banhotosa')
+                .select('appointment_time, service')
+                .gte('appointment_time', `${yStr}-${mStr}-${dStr}T00:00:00`)
+                .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`);
+
+            const allApps = [...(regularData || []), ...(petMovelData || []), ...(banhoTosaData || [])];
 
             const counts: Record<number, number> = {};
             const hoursToCheck = [...WORKING_HOURS, ...VISIT_WORKING_HOURS];
@@ -3092,7 +3077,17 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
         const isVirtual = Boolean(appointment.is_virtual) || idStr.includes('virtual-');
 
         if (isVirtual) {
-            const tableToInsert = (service.includes('Pet Móvel') || service.includes('Pet Movel')) ? 'pet_movel_appointments' : 'appointments';
+            let tableToInsert: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa' = 'appointments';
+            const s = service.toLowerCase();
+            const isBathGroom = s.includes('banho') || s.includes('tosa');
+            const isMovel = s.includes('movel') || s.includes('móvel');
+
+            if (isMovel) {
+                tableToInsert = 'pet_movel_appointments';
+            } else if (isBathGroom || appointment.condominium === "Banho & Tosa Fixo") {
+                tableToInsert = 'agendamento_banhotosa';
+            }
+
             const { data, error } = await supabase
                 .from(tableToInsert)
                 .insert([{
@@ -3107,27 +3102,22 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
                 return;
             }
             updatedData = data?.[0];
+            if (updatedData) updatedData.table = tableToInsert;
         } else {
-            const [appointmentsResult, petMovelResult] = await Promise.all([
-                supabase
-                    .from('appointments')
-                    .update(updatePayload)
-                    .eq('id', appointment.id)
-                    .select(),
-                supabase
-                    .from('pet_movel_appointments')
-                    .update(updatePayload)
-                    .eq('id', appointment.id)
-                    .select()
-            ]);
+            const targetTable = appointment.table || 'appointments';
+            const { data, error } = await supabase
+                .from(targetTable)
+                .update(updatePayload)
+                .eq('id', appointment.id)
+                .select();
 
-            if (appointmentsResult.error && petMovelResult.error) {
-                const msg = appointmentsResult.error?.message || petMovelResult.error?.message || 'Erro desconhecido';
-                alert(`Falha ao atualizar o agendamento: ${msg}`);
+            if (error) {
+                alert(`Falha ao atualizar o agendamento em ${targetTable}: ${error.message}`);
                 setIsSubmitting(false);
                 return;
             }
-            updatedData = (Array.isArray(appointmentsResult.data) && appointmentsResult.data[0]) || (Array.isArray(petMovelResult.data) && petMovelResult.data[0]) || null;
+            updatedData = data?.[0];
+            if (updatedData) updatedData.table = targetTable;
         }
 
         if (updatedData) {
@@ -3477,67 +3467,58 @@ const AdminAddAppointmentModal: React.FC<{
             const queryEnd = new Date(endOfDay);
             queryEnd.setHours(queryEnd.getHours() + 4); // Buffer
 
-            const { data: regularData, error: regularError } = await supabase
-                .from('appointments')
-                .select('*')
-                .gte('appointment_time', queryStart.toISOString())
-                .lte('appointment_time', queryEnd.toISOString());
+            const [{ data: regularData, error: regularError }, { data: petMovelData, error: petMovelError }, { data: banhoTosaData, error: banhoTosaError }] = await Promise.all([
+                supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+                supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+            ]);
 
-            if (regularError) {
-                console.error('Error fetching appointments:', regularError);
-                return;
-            }
+            if (regularError) { console.error('Error fetching appointments:', regularError); return; }
+            if (petMovelError) { console.error('Error fetching pet_movel_appointments:', petMovelError); return; }
+            if (banhoTosaError) { console.error('Error fetching agendamento_banhotosa:', banhoTosaError); }
 
-            const { data: petMovelData, error: petMovelError } = await supabase
-                .from('pet_movel_appointments')
-                .select('*')
-                .gte('appointment_time', queryStart.toISOString())
-                .lte('appointment_time', queryEnd.toISOString());
+            const mapToLocal = (data: any[] | null | undefined, tableName: string) => (data || []).map(dbRecord => {
+                let serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === dbRecord.service) as ServiceType | undefined;
 
-            if (petMovelError) {
-                console.error('Error fetching pet_movel_appointments:', petMovelError);
-                return;
-            }
-
-            const combinedData = [...(regularData || []), ...(petMovelData || [])];
-
-            const allFetched: Appointment[] = (combinedData || [])
-                .map((dbRecord: any) => {
-                    let serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === dbRecord.service) as ServiceType | undefined;
-
-                    if (!serviceKey && dbRecord.service) {
-                        const s = String(dbRecord.service).toLowerCase();
-                        if (s.includes('movel') || s.includes('móvel')) {
-                            if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
-                            else if (s.includes('banho')) serviceKey = ServiceType.PET_MOBILE_BATH;
-                            else if (s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
-                        } else {
-                            if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
-                            else if (s.includes('banho')) serviceKey = ServiceType.BATH;
-                            else if (s.includes('tosa')) serviceKey = ServiceType.GROOMING_ONLY;
-                            else if (s.includes('creche')) serviceKey = ServiceType.VISIT_DAYCARE;
-                            else if (s.includes('hotel')) serviceKey = ServiceType.VISIT_HOTEL;
-                        }
+                if (!serviceKey && dbRecord.service) {
+                    const s = String(dbRecord.service).toLowerCase();
+                    if (s.includes('movel') || s.includes('móvel')) {
+                        if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
+                        else if (s.includes('banho')) serviceKey = ServiceType.PET_MOBILE_BATH;
+                        else if (s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
+                    } else {
+                        if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
+                        else if (s.includes('banho')) serviceKey = ServiceType.BATH;
+                        else if (s.includes('tosa')) serviceKey = ServiceType.GROOMING_ONLY;
+                        else if (s.includes('creche')) serviceKey = ServiceType.VISIT_DAYCARE;
+                        else if (s.includes('hotel')) serviceKey = ServiceType.VISIT_HOTEL;
                     }
+                }
 
-                    if (!serviceKey) serviceKey = ServiceType.UNKNOWN;
+                if (!serviceKey) serviceKey = ServiceType.UNKNOWN;
 
-                    let dateStr = dbRecord.appointment_time;
-                    if (dateStr && typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
-                        dateStr += 'Z';
-                    }
+                let dateStr = dbRecord.appointment_time;
+                if (dateStr && typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+                    dateStr += 'Z';
+                }
 
-                    return {
-                        id: dbRecord.id,
-                        petName: dbRecord.pet_name,
-                        ownerName: dbRecord.owner_name,
-                        whatsapp: dbRecord.whatsapp,
-                        service: serviceKey,
-                        appointmentTime: new Date(dateStr),
-                        status: dbRecord.status,
-                    };
-                })
-                .filter(Boolean) as Appointment[];
+                return {
+                    id: dbRecord.id,
+                    petName: dbRecord.pet_name,
+                    ownerName: dbRecord.owner_name,
+                    whatsapp: dbRecord.whatsapp,
+                    service: serviceKey,
+                    appointmentTime: new Date(dateStr),
+                    status: dbRecord.status,
+                    table: tableName
+                };
+            });
+
+            const allFetched: any[] = [
+                ...mapToLocal(regularData, 'appointments'),
+                ...mapToLocal(petMovelData, 'pet_movel_appointments'),
+                ...mapToLocal(banhoTosaData, 'agendamento_banhotosa'),
+            ];
 
             setAppointments(allFetched);
         };
@@ -3706,8 +3687,9 @@ const AdminAddAppointmentModal: React.FC<{
         const day = selectedDate.getDate();
         const appointmentTime = toSaoPauloUTC(year, month, day, selectedTime);
 
-        const isPetMovelSubmit = !!selectedCondo;
-        const targetTable = 'appointments';
+        const isBathGroomAdmin = !!selectedService && [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService);
+        const isPetMovelSubmit = !!selectedCondo && !isBathGroomAdmin;
+        const targetTable = isBathGroomAdmin ? 'agendamento_banhotosa' : (isPetMovelSubmit ? 'pet_movel_appointments' : 'appointments');
 
         try {
             const startOfDay = new Date(selectedDate);
@@ -3717,14 +3699,16 @@ const AdminAddAppointmentModal: React.FC<{
             const queryStart = new Date(startOfDay); queryStart.setHours(queryStart.getHours() - 4);
             const queryEnd = new Date(endOfDay); queryEnd.setHours(queryEnd.getHours() + 4);
 
-            const [{ data: regData }, { data: pmData }] = await Promise.all([
+            const [{ data: regData }, { data: pmData }, { data: btData }] = await Promise.all([
                 supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
                 supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+                supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
             ]);
 
             const allReal = [
                 ...(regData || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) })),
-                ...(pmData || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) }))
+                ...(pmData || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) })),
+                ...(btData || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) }))
             ].filter(appt => {
                 const s = String(appt.status || '').toUpperCase();
                 return s !== 'CANCELADO';
@@ -4935,13 +4919,11 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         setDeletingAppointmentId(appointmentToDelete.id);
 
         try {
-            const [appointmentsResult, petMovelResult] = await Promise.all([
-                supabase.from('appointments').delete().eq('id', appointmentToDelete.id),
-                supabase.from('pet_movel_appointments').delete().eq('id', appointmentToDelete.id)
-            ]);
+            const targetTable = appointmentToDelete.table || 'appointments';
+            const { error } = await supabase.from(targetTable).delete().eq('id', appointmentToDelete.id);
 
-            if (appointmentsResult.error && petMovelResult.error) {
-                throw new Error('Falha ao excluir o registro do banco de dados.');
+            if (error) {
+                throw new Error(`Falha ao excluir o registro do banco de dados na tabela ${targetTable}.`);
             }
 
             // Remove do estado local de agendamentos
@@ -5050,9 +5032,19 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
         // If it's a virtual appointment, we need to create a real appointment first
         if (isVirtual && appointmentToUpdate.monthly_client_id) {
             console.log('Converting virtual appointment to real one...');
-            // Determine which table to insert into based on service type
-            const isPetMovel = appointmentToUpdate.service?.toLowerCase().includes('móvel') || appointmentToUpdate.service?.toLowerCase().includes('mobile');
-            const tableToInsert = isPetMovel ? 'pet_movel_appointments' : 'appointments';
+            
+            // Determine which table to insert into based on service type or condo
+            const s = appointmentToUpdate.service?.toLowerCase() || '';
+            const isPetMovel = s.includes('móvel') || s.includes('mobile');
+            const isBathGroom = s.includes('banho') || s.includes('tosa');
+            
+            let tableToInsert: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa' = 'appointments';
+            if (isPetMovel) {
+                tableToInsert = 'pet_movel_appointments';
+            } else if (isBathGroom || appointmentToUpdate.condominium === "Banho & Tosa Fixo") {
+                tableToInsert = 'agendamento_banhotosa';
+            }
+            
             console.log('Target table:', tableToInsert);
 
             console.log('appointmentToUpdate:', appointmentToUpdate);
@@ -5072,7 +5064,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
                 condominium: appointmentToUpdate.condominium || ''
             };
 
-            // Only add pet_photo_url if the target table is 'appointments' (it doesn't exist in pet_movel_appointments)
+            // Only add pet_photo_url if the target table is 'appointments' (it doesn't exist in pet_movel_appointments or agendamento_banhotosa)
             if (tableToInsert === 'appointments') {
                 insertPayload.pet_photo_url = appointmentToUpdate.pet_photo_url || '';
             }
@@ -5107,21 +5099,20 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             updatePayload.responsible = responsible;
         }
 
-        // Try to update in both tables since we don't know which table the appointment is in
-        const [appointmentsResult, petMovelResult] = await Promise.all([
-            supabase.from('appointments').update(updatePayload).eq('id', actualId),
-            supabase.from('pet_movel_appointments').update(updatePayload).eq('id', actualId)
-        ]);
+        const targetTable = appointmentToUpdate.table || tableToInsert || 'appointments';
+        const { data: updateData, error: updateError } = await supabase.from(targetTable).update(updatePayload).eq('id', actualId).select();
 
-        // Check if at least one update was successful
-        const hasError = appointmentsResult.error && petMovelResult.error;
-
-        if (hasError) {
-            console.error('Error updating in appointments:', appointmentsResult.error);
-            console.error('Error updating in pet_movel_appointments:', petMovelResult.error);
+        if (updateError) {
+            console.error(`Error updating in ${targetTable}:`, updateError);
             alert('Falha ao atualizar o status.');
         } else {
-            const updatedAppointment = { ...appointmentToUpdate, id: actualId, status: newStatus, ...(responsible ? { responsible } : {}) };
+            const updatedAppointment = { 
+                ...appointmentToUpdate, 
+                id: actualId, 
+                status: newStatus, 
+                table: targetTable,
+                ...(responsible ? { responsible } : {}) 
+            };
             setAppointments(prev => prev.map(app => app.id === id ? updatedAppointment : app));
             if (newStatus === 'CONCLUÍDO') {
                 // Dispara webhook específico quando for uma visita (Creche ou Hotel)
@@ -5176,9 +5167,9 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ refreshKey, onAddOb
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
                 <div className="space-y-3">
                     <div className="space-y-1 w-full overflow-hidden flex flex-col items-center">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Banho & Tosa</h2>
+                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Pet Móvel</h2>
                         <div className="w-full overflow-x-auto custom-scrollbar-hide">
-                            <p className="text-[11px] sm:text-sm text-gray-600 text-center whitespace-nowrap px-1 min-w-max mx-auto">Agenda Banho & Tosa - Pet Móvel - Mensalistas</p>
+                            <p className="text-[11px] sm:text-sm text-gray-600 text-center whitespace-nowrap px-1 min-w-max mx-auto">Agendamentos Pet Móvel</p>
                         </div>
                     </div>
                     <div className="flex gap-2 flex-wrap justify-center">
@@ -5537,890 +5528,316 @@ const PetMovelAppointmentDetailsModal: React.FC<{
     );
 };
 
-const PetMovelView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
-    const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>([]);
+interface PetMovelViewProps {
+    refreshKey: number;
+    onAddObservation: (id: string, obs: string) => void;
+    appointments: AdminAppointment[];
+    setAppointments: React.Dispatch<React.SetStateAction<AdminAppointment[]>>;
+    onOpenActionMenu: (appointment: AdminAppointment) => void;
+    onDeleteObservation: (id: string, index: number) => void;
+    monthlyClients?: MonthlyClient[];
+    onDataChanged?: () => void;
+    onOpenDashboard?: () => void;
+    onOpenCloseDay?: () => void;
+}
+
+const PetMovelView: React.FC<PetMovelViewProps> = ({ 
+    refreshKey, 
+    onAddObservation, 
+    appointments, 
+    setAppointments, 
+    onOpenActionMenu, 
+    onDeleteObservation, 
+    monthlyClients = [], 
+    onDataChanged, 
+    onOpenDashboard, 
+    onOpenCloseDay 
+}) => {
     const [loading, setLoading] = useState(true);
-    const [expandedCondos, setExpandedCondos] = useState<string[]>([]);
-    const [selectedForDetails, setSelectedForDetails] = useState<MonthlyClient | null>(null);
-    const [selectedForEdit, setSelectedForEdit] = useState<MonthlyClient | null>(null);
-    const [selectedForDelete, setSelectedForDelete] = useState<MonthlyClient | null>(null);
-    const [selectedAppointmentForDetails, setSelectedAppointmentForDetails] = useState<PetMovelAppointment | null>(null);
-    const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState<PetMovelAppointment | null>(null);
-    const [selectedAppointmentForDelete, setSelectedAppointmentForDelete] = useState<PetMovelAppointment | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [searchTerm, setSearchTerm] = useState<string>('');
-    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-    const [selectedClientForAppointments, setSelectedClientForAppointments] = useState<MonthlyClient | null>(null);
-    const [clientAppointments, setClientAppointments] = useState<AdminAppointment[]>([]);
-    const [loadingAppointments, setLoadingAppointments] = useState(false);
-    const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-    const [calendarAppointments, setCalendarAppointments] = useState<PetMovelAppointment[]>([]);
-    const [loadingCalendar, setLoadingCalendar] = useState(false);
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedAppointment, setSelectedAppointment] = useState<AdminAppointment | PetMovelAppointment | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
+    const [adminView, setAdminView] = useState<'daily' | 'all'>('daily');
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [selectedTab, setSelectedTab] = useState<'scheduled' | 'completed'>('scheduled');
+    const [banhoTosaAppointments, setBanhoTosaAppointments] = useState<AdminAppointment[]>([]);
 
-    // Hotel registrations state for badge
-    const [activeHotelRegistrations, setActiveHotelRegistrations] = useState<HotelRegistration[]>([]);
-    // Daycare enrollments state for badge
-    const [activeDaycareEnrollments, setActiveDaycareEnrollments] = useState<DaycareRegistration[]>([]);
-
-    useEffect(() => {
-        fetchMonthlyClients();
-        fetchActiveHotelRegistrations();
-        fetchActiveDaycareEnrollments();
-    }, []);
-
-    const fetchActiveHotelRegistrations = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('hotel_registrations')
-                .select('*')
-                .or('approval_status.eq.Aprovado,approval_status.eq.aprovado');
-
-            if (error) throw error;
-            if (data) setActiveHotelRegistrations(data);
-        } catch (error) {
-            console.error('Error fetching active hotel registrations:', error);
-        }
-    };
-
-    const fetchActiveDaycareEnrollments = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('daycare_enrollments')
-                .select('*')
-                .eq('status', 'Aprovado');
-
-            if (error) throw error;
-            if (data) setActiveDaycareEnrollments(data);
-        } catch (error) {
-            console.error('Error fetching active daycare enrollments:', error);
-        }
-    };
-
-    const fetchMonthlyClients = useCallback(async () => {
+    // Fetch agendamento_banhotosa data
+    const fetchBanhoTosaAppointments = useCallback(async () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('monthly_clients')
-                .select('*')
-                .order('condominium', { ascending: true })
-                .order('owner_name', { ascending: true });
-            if (error) {
-                const cached = localStorage.getItem('cached_monthly_clients');
-                if (cached) {
-                    const parsed = JSON.parse(cached) as MonthlyClient[];
-                    setMonthlyClients(parsed);
-                    if (parsed && parsed.length > 0) {
-                        setExpandedCondos([parsed[0].condominium || 'Nenhum Condomínio']);
-                    }
-                }
-            } else {
-                const petMovelCondominiums = [
-                    'Vitta Parque', 'Paseo', 'Max Haus', 'Nenhum Condomínio'
-                ];
-                const petMovelClients = (data as MonthlyClient[]).filter(client => {
-                    const raw = client.condominium ? String(client.condominium).trim() : '';
-                    if (!raw) return true;
-                    const condominium = raw.toLowerCase();
-                    return petMovelCondominiums.some(targetCondo => targetCondo.toLowerCase() === condominium);
-                });
-                setMonthlyClients(petMovelClients);
-                if (petMovelClients && petMovelClients.length > 0) {
-                    setExpandedCondos([petMovelClients[0].condominium || 'Nenhum Condomínio']);
-                }
-                try { localStorage.setItem('cached_monthly_clients', JSON.stringify(data || [])); } catch { }
-            }
-        } catch (_) {
-            const cached = localStorage.getItem('cached_monthly_clients');
-            if (cached) {
-                const parsed = JSON.parse(cached) as MonthlyClient[];
-                setMonthlyClients(parsed);
-                if (parsed && parsed.length > 0) {
-                    setExpandedCondos([parsed[0].condominium || 'Nenhum Condomínio']);
-                }
-            }
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchMonthlyClients();
-    }, [refreshKey]);
-
-    const fetchClientAppointments = useCallback(async (clientId: string) => {
-        setLoadingAppointments(true);
-        try {
-            const { data, error } = await supabase
-                .from('appointments')
-                .select('*')
-                .eq('monthly_client_id', clientId)
-                .order('appointment_time', { ascending: false });
-
-            if (error) {
-                console.error('Error fetching client appointments:', error);
-                setClientAppointments([]);
-            } else {
-                const rows = (data as AdminAppointment[]) || [];
-                const map = new Map<string, AdminAppointment[]>();
-                for (const r of rows) {
-                    const t = new Date(r.appointment_time);
-                    const key = `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')} ${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')}`;
-                    const g = map.get(key) || [];
-                    g.push(r);
-                    map.set(key, g);
-                }
-                const toDelete: string[] = [];
-                const unique: AdminAppointment[] = [];
-                for (const [, list] of map.entries()) {
-                    if (list.length > 1) {
-                        unique.push(list[0]);
-                        for (let i = 1; i < list.length; i++) toDelete.push(list[i].id);
-                    } else {
-                        unique.push(list[0]);
-                    }
-                }
-                if (toDelete.length > 0) {
-                    await supabase.from('appointments').delete().in('id', toDelete);
-                }
-                setClientAppointments(unique);
-            }
-        } catch (error) {
-            console.error('Error fetching client appointments:', error);
-            setClientAppointments([]);
-        } finally {
-            setLoadingAppointments(false);
-        }
-    }, []);
-
-    const handleClientUpdated = (updatedClient: MonthlyClient) => {
-        setMonthlyClients(prev => prev.map(client => client.id === updatedClient.id ? updatedClient : client));
-        setSelectedForEdit(null);
-    };
-
-    const handleOpenAppointmentsModal = async (client: MonthlyClient) => {
-        setSelectedClientForAppointments(client);
-        await fetchClientAppointments(client.id);
-    };
-
-    const handleCloseAppointmentsModal = () => {
-        setSelectedClientForAppointments(null);
-        setClientAppointments([]);
-    };
-
-    const handleAppointmentUpdated = (updatedAppointment: PetMovelAppointment) => {
-        setCalendarAppointments(prev => prev.map(appt => appt.id === updatedAppointment.id ? updatedAppointment : appt));
-        setSelectedAppointmentForEdit(null);
-    };
-
-    const handleConfirmDeleteAppointment = async () => {
-        if (!selectedAppointmentForDelete) return;
-
-        setIsDeleting(true);
-        const { error } = await supabase
-            .from('pet_movel_appointments')
-            .delete()
-            .eq('id', selectedAppointmentForDelete.id);
-
-        if (error) {
-            alert('Falha ao excluir o agendamento.');
-            console.error(error);
-        } else {
-            setCalendarAppointments(prev => prev.filter(appt => appt.id !== selectedAppointmentForDelete.id));
-        }
-
-        setIsDeleting(false);
-        setSelectedAppointmentForDelete(null);
-    };
-
-    const fetchCalendarAppointments = useCallback(async () => {
-        setLoadingCalendar(true);
-        try {
-            // Buscar nomes dos pets dos clientes Pet Móvel
-            const petMovelPetNames = monthlyClients.map(client => client.pet_name).filter(name => name && name.trim());
-            const { data, error } = await supabase
-                .from('appointments')
+                .from('agendamento_banhotosa')
                 .select('*')
                 .order('appointment_time', { ascending: true });
 
             if (error) {
-                console.error('Error fetching calendar appointments:', error);
-                setCalendarAppointments([]);
-            } else {
-                const filtered = (data as AdminAppointment[]).filter(appointment => {
-                    const name = appointment.pet_name?.trim().toLowerCase();
-                    const isMonthly = petMovelPetNames.some(n => n && n.trim().toLowerCase() === name);
-                    const isVisit = appointment.service === 'Creche Pet' || appointment.service === 'Hotel Pet';
-                    return isMonthly || isVisit;
-                });
-                const enrichedAppointments = filtered.map(appointment => {
-                    const monthlyClient = monthlyClients.find(client =>
-                        client.pet_name && client.pet_name.trim().toLowerCase() === appointment.pet_name.trim().toLowerCase()
-                    );
-
-                    // Extrair condomínio e apartamento do endereço
-                    let condominium = 'Não informado';
-                    let apartment = '';
-
-                    if (monthlyClient?.owner_address || appointment.owner_address) {
-                        const address = monthlyClient?.owner_address || appointment.owner_address || '';
-                        // Tentar extrair apartamento (padrões comuns: "Apt 123", "Apto 123", "123")
-                        const aptMatch = address.match(/(?:apt|apto|apartamento)\s*\.?\s*(\d+)/i) ||
-                            address.match(/\b(\d{2,4})\b/);
-                        if (aptMatch) {
-                            apartment = aptMatch[1];
-                        }
-
-                        condominium = address;
-                    }
-
-                    return {
-                        ...appointment,
-                        condominium,
-                        client_name: monthlyClient?.owner_name || appointment.owner_name,
-                        apartment,
-                        date: appointment.appointment_time.split('T')[0],
-                        time: appointment.appointment_time.split('T')[1]?.substring(0, 5) || '00:00'
-                    } as PetMovelAppointment;
-                });
-
-                setCalendarAppointments(enrichedAppointments);
+                console.error('Error fetching agendamento_banhotosa:', error);
+                setLoading(false);
+                return;
             }
-        } catch (error) {
-            console.error('Error fetching calendar appointments:', error);
-            setCalendarAppointments([]);
-        } finally {
-            setLoadingCalendar(false);
+
+            const mapped: AdminAppointment[] = (data || []).map((rec: any) => ({
+                id: rec.id,
+                created_at: rec.created_at,
+                appointment_time: rec.appointment_time,
+                pet_name: rec.pet_name,
+                pet_breed: rec.pet_breed || '',
+                owner_name: rec.owner_name,
+                owner_address: rec.owner_address || '',
+                whatsapp: rec.whatsapp,
+                service: rec.service,
+                weight: rec.weight,
+                addons: rec.addons || [],
+                price: rec.price,
+                status: rec.status || 'AGENDADO',
+                monthly_client_id: rec.monthly_client_id,
+                condominium: rec.condominium || '',
+                extra_services: rec.extra_services,
+                observation: rec.observation || '',
+                responsible: rec.responsible || '',
+            }));
+            setBanhoTosaAppointments(mapped);
+        } catch (err) {
+            console.error('Error:', err);
         }
-    }, [monthlyClients]);
-
-    useEffect(() => {
-        if (viewMode === 'calendar') {
-            fetchCalendarAppointments();
-        }
-    }, [viewMode, monthlyClients, fetchCalendarAppointments]);
-
-    const handleConfirmDelete = async () => {
-        if (!selectedForDelete) return;
-        setIsDeleting(true);
-        const getDbId = (id: any) => { const s = String(id ?? ''); return /^\d+$/.test(s) ? Number(s) : id; };
-        const dbId = getDbId(selectedForDelete.id);
-
-        try {
-            // Delete all appointments for this client (both tables to be safe, though mainly 'appointments')
-            await Promise.all([
-                supabase.from('appointments').delete().eq('monthly_client_id', dbId),
-                supabase.from('pet_movel_appointments').delete().eq('monthly_client_id', dbId)
-            ]);
-
-            const { error: delErr } = await supabase.from('monthly_clients').delete().eq('id', dbId);
-            if (delErr) {
-                alert('Falha ao excluir o mensalista.');
-            } else {
-                setMonthlyClients(prev => prev.filter(client => client.id !== selectedForDelete.id));
-                alert('Mensalista e agendamentos excluídos com sucesso!');
-            }
-        } finally {
-            setIsDeleting(false);
-            setSelectedForDelete(null);
-        }
-    };
-
-    const groupedClients = useMemo(() => {
-        const groups: Record<string, Record<string, MonthlyClient[]>> = {};
-        const ALL_CONDOS = ['Vitta Parque', 'Paseo', 'Max Haus', 'Nenhum Condomínio'];
-        ALL_CONDOS.forEach(c => { groups[c] = {}; });
-        const extractNumber = (address: string | null) => address ? `Apto/Casa ${address.match(/\d+/)?.[0] || address}` : 'Endereço não informado';
-
-        // Filtrar clientes baseado no termo de busca
-        const filteredClients = monthlyClients.filter(client => {
-            if (!searchTerm.trim()) return true;
-
-            const searchLower = searchTerm.toLowerCase().trim();
-            const petName = (client.pet_name || '').toLowerCase();
-            const ownerName = (client.owner_name || '').toLowerCase();
-            const condominium = (client.condominium || '').toLowerCase();
-            const address = (client.owner_address || '').toLowerCase();
-
-            return petName.includes(searchLower) ||
-                ownerName.includes(searchLower) ||
-                condominium.includes(searchLower) ||
-                address.includes(searchLower);
-        });
-
-        filteredClients.forEach(client => {
-            const condo = client.condominium || 'Nenhum Condomínio';
-            const number = extractNumber(client.owner_address);
-            if (!groups[condo]) groups[condo] = {};
-            if (!groups[condo][number]) groups[condo][number] = [];
-            groups[condo][number].push(client);
-        });
-        return groups;
-    }, [monthlyClients, searchTerm]);
-
-    const condoScrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
-    const toggleCondo = (condoName: string) => {
-        setExpandedCondos(prev => {
-            const next = prev.includes(condoName) ? prev.filter(c => c !== condoName) : [...prev, condoName];
-            if (!prev.includes(condoName)) {
-                setTimeout(() => {
-                    const container = condoScrollRefs.current[condoName];
-                    if (container) {
-                        const first = container.querySelector('[data-card-item]') as HTMLDivElement | null;
-                        if (first) {
-                            const width = container.clientWidth;
-                            const cardWidth = first.clientWidth;
-                            container.scrollLeft = first.offsetLeft + (cardWidth / 2) - (width / 2);
-                        }
-                    }
-                }, 0);
-            }
-            return next;
-        });
-    };
-
-    // Expandir automaticamente todos os condomínios quando há busca ativa
-    useEffect(() => {
-        if (searchTerm.trim()) {
-            const allCondos = Object.keys(groupedClients);
-            setExpandedCondos(allCondos);
-        }
-    }, [searchTerm, groupedClients]);
-
-    const adminTitleFull = "Sandy's Pet Admin";
-    const [adminTitle, setAdminTitle] = useState('');
-    useEffect(() => {
-        let i = 0;
-        const timer = setInterval(() => {
-            setAdminTitle(adminTitleFull.slice(0, i + 1));
-            i++;
-            if (i >= adminTitleFull.length) {
-                clearInterval(timer);
-            }
-        }, 45);
-        return () => clearInterval(timer);
+        setLoading(false);
     }, []);
 
-    return (
-        <div className="animate-fadeIn bg-gray-50 min-h-screen px-0 sm:px-2 py-4">
-            {selectedForEdit && <EditMonthlyClientModal client={selectedForEdit} onClose={() => setSelectedForEdit(null)} onMonthlyClientUpdated={handleClientUpdated} />}
-            {selectedForDelete && <ConfirmationModal isOpen={!!selectedForDelete} onClose={() => setSelectedForDelete(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" message={`Tem certeza que deseja excluir o mensalista ${selectedForDelete.pet_name}?`} confirmText="Excluir" variant="danger" isLoading={isDeleting} />}
+    useEffect(() => {
+        fetchBanhoTosaAppointments();
+    }, [fetchBanhoTosaAppointments, refreshKey]);
 
+    // Realtime subscription
+    useEffect(() => {
+        const channel = supabase
+            .channel('agendamento_banhotosa_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamento_banhotosa' }, () => {
+                fetchBanhoTosaAppointments();
+            })
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [fetchBanhoTosaAppointments]);
+
+    const handleOpenAddModal = () => setIsAddModalOpen(true);
+    const handleCloseAddModal = () => setIsAddModalOpen(false);
+    const handleAppointmentCreated = (created: AdminAppointment) => {
+        setBanhoTosaAppointments(prev => [created, ...prev]);
+        handleCloseAddModal();
+        if (onDataChanged) onDataChanged();
+    };
+
+    const handleToggleAdminView = () => {
+        setAdminView(prev => prev === 'daily' ? 'all' : 'daily');
+    };
+
+    // Filtered appointments based on search
+    const filteredAppointments = useMemo(() => {
+        if (!searchTerm.trim()) return banhoTosaAppointments;
+        const term = searchTerm.toLowerCase();
+        return banhoTosaAppointments.filter(app =>
+            app.pet_name.toLowerCase().includes(term) ||
+            app.owner_name.toLowerCase().includes(term) ||
+            (app.whatsapp || '').includes(term)
+        );
+    }, [banhoTosaAppointments, searchTerm]);
+
+    // Daily appointments
+    const dailyAppointments = useMemo(() => {
+        return filteredAppointments.filter(app =>
+            isSameSaoPauloDay(new Date(app.appointment_time), selectedAdminDate)
+        );
+    }, [filteredAppointments, selectedAdminDate]);
+
+    const scheduledDaily = useMemo(() => dailyAppointments.filter(a => {
+        const s = (a.status || '').toUpperCase();
+        return s !== 'CONCLUIDO' && s !== 'CONCLUÍDO' && s !== 'CANCELADO';
+    }), [dailyAppointments]);
+
+    const completedDaily = useMemo(() => dailyAppointments.filter(a => {
+        const s = (a.status || '').toUpperCase();
+        return s === 'CONCLUIDO' || s === 'CONCLUÍDO';
+    }), [dailyAppointments]);
+
+    // All view (upcoming / past)
+    const upcomingAppointments = useMemo(() => {
+        const now = new Date();
+        return filteredAppointments
+            .filter(app => new Date(app.appointment_time) >= now && (app.status || '').toUpperCase() !== 'CANCELADO')
+            .sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+    }, [filteredAppointments]);
+
+    const pastAppointments = useMemo(() => {
+        const now = new Date();
+        return filteredAppointments
+            .filter(app => new Date(app.appointment_time) < now)
+            .sort((a, b) => new Date(b.appointment_time).getTime() - new Date(a.appointment_time).getTime());
+    }, [filteredAppointments]);
+
+    // Search results
+    const searchResults = useMemo(() => {
+        if (!searchTerm.trim()) return [];
+        return filteredAppointments;
+    }, [filteredAppointments, searchTerm]);
+
+    const renderCard = (appt: AdminAppointment) => (
+        <AppointmentCard
+            key={appt.id}
+            appointment={appt}
+            onAddObservation={(obs) => onAddObservation(appt.id!, obs)}
+            onDeleteObservation={(idx) => onDeleteObservation(appt.id!, idx)}
+            onOpenActionMenu={() => onOpenActionMenu(appt)}
+        />
+    );
+
+    if (isAddModalOpen) {
+        return <AdminAddAppointmentModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onAppointmentCreated={handleAppointmentCreated} />;
+    }
+
+    return (
+        <>
             <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
                 <div className="space-y-3">
-                    <div className="space-y-1">
-                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Pet Móvel</h2>
-                        <p className="text-sm text-gray-600 text-center">Gerencie seus clientes Pet Móvel</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                        <div className="bg-gray-100 rounded-lg p-3 text-center">
-                            <div className="text-2xl font-bold text-gray-800">{Object.values(groupedClients).reduce((total, clients) => total + Object.values(clients).reduce((sum, list) => sum + list.length, 0), 0)}</div>
-                            <div className="text-sm text-gray-600">Total Clientes</div>
-                        </div>
-                        <div className="bg-gray-100 rounded-lg p-3 text-center">
-                            <div className="text-2xl font-bold text-gray-800">{Object.keys(groupedClients).length}</div>
-                            <div className="text-sm text-gray-600">Condomínios</div>
+                    <div className="space-y-1 w-full overflow-hidden flex flex-col items-center">
+                        <h2 className="text-4xl font-bold text-pink-600 text-center" style={{ fontFamily: 'Lobster Two, cursive' }}>Banho & Tosa</h2>
+                        <div className="w-full overflow-x-auto custom-scrollbar-hide">
+                            <p className="text-[11px] sm:text-sm text-gray-600 text-center whitespace-nowrap px-1 min-w-max mx-auto">Agendamentos Banho & Tosa Fixo</p>
                         </div>
                     </div>
-                    <div className="mt-2 relative">
-                        <input
-                            type="text"
-                            placeholder="Buscar..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                        />
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                    <div className="flex gap-2 flex-wrap justify-center">
+                        <button onClick={handleOpenAddModal} title="Adicionar Agendamento" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
+                            <SafeImage alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" loading="eager" />
+                        </button>
+                        <button onClick={onOpenDashboard} title="Estatísticas" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
-                        </div>
+                        </button>
+                        <button onClick={onOpenCloseDay} title="Bloquear Dias" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
+                            <SafeImage alt="Bloquear Dias" className="h-6 w-6" src="https://i.imgur.com/BaVdolX.png" loading="eager" />
+                        </button>
+                        <button onClick={handleToggleAdminView} title={adminView === 'daily' ? 'Ver Todos' : 'Ver Calendário'} className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
+                            {adminView === 'daily' ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                                </svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+                                </svg>
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="mt-4">
+                    <div className="relative">
+                        <input type="text" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent" />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><SearchIcon /></div>
                     </div>
                 </div>
             </div>
 
-
-
-            {loading ? (
-                <div className="flex justify-center py-16">
-                    <LoadingSpinner />
-                </div>
-            ) : Object.keys(groupedClients).length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-                    <div className="max-w-md mx-auto">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <SearchIcon className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                            {searchTerm.trim() ? 'Nenhum resultado encontrado' : 'Nenhum cliente encontrado'}
-                        </h3>
-                        <p className="text-gray-500 mb-4">
-                            {searchTerm.trim() ?
-                                `Não encontramos resultados para "${searchTerm}"` :
-                                'Não há mensalistas Pet Móvel cadastrados ainda.'
-                            }
-                        </p>
-                        {searchTerm.trim() && (
-                            <button
-                                onClick={() => setSearchTerm('')}
-                                className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-                            >
-                                Limpar busca
-                            </button>
-                        )}
-                    </div>
-                </div>
-            ) : (
-                <div className="space-y-6">
-                    {Object.entries(groupedClients)
-                        .sort(([a], [b]) => {
-                            const pa = a === 'Nenhum Condomínio' ? 0 : 1;
-                            const pb = b === 'Nenhum Condomínio' ? 0 : 1;
-                            if (pa !== pb) return pa - pb;
-                            return a.localeCompare(b);
-                        })
-                        .map(([condo, clients]) => (
-                            <div key={condo} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 w-full">
-                                <button
-                                    onClick={() => toggleCondo(condo)}
-                                    className="w-full text-left p-6 flex justify-between items-center hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <img
-                                            src="https://cdn-icons-png.flaticon.com/512/6917/6917662.png"
-                                            alt={condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : `Condomínio ${condo}`}
-                                            className="w-12 h-12 rounded-lg object-cover"
-                                        />
-                                        <div>
-                                            <h3 className="text-xl font-bold text-gray-800">{condo === 'Nenhum Condomínio' ? 'Banho & Tosa Fixo' : condo}</h3>
-                                            <p className="text-sm text-gray-500">
-                                                {Object.values(clients).reduce((sum, list) => sum + list.length, 0)} clientes
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <ChevronRightIcon className={`h-6 w-6 text-gray-400 transform transition-transform ${expandedCondos.includes(condo) ? 'rotate-90' : ''}`} />
-                                </button>
-
-                                {expandedCondos.includes(condo) && (
-                                    <div className="border-t border-gray-100 bg-gray-50/50 animate-fadeIn">
-                                        <div className="p-6">
-                                            <div className="overflow-x-auto snap-x snap-mandatory -mx-6" ref={(el) => { condoScrollRefs.current[condo] = el; }}>
-                                                <div className="flex gap-4 pb-2 justify-start">
-                                                    {Object.values(clients).flat().map((client) => {
-                                                        const normalizeStr = (str: string | undefined | null) => str ? str.toLowerCase().trim() : '';
-                                                        const normalizePhone = (phone: string | undefined | null) => phone ? phone.replace(/\D/g, '') : '';
-
-                                                        // Helper to check if phones match (handles country codes e.g. 5571... vs 71...)
-                                                        const checkPhoneMatch = (p1: string, p2: string) => {
-                                                            if (!p1 || !p2) return false;
-                                                            // If exact match
-                                                            if (p1 === p2) return true;
-                                                            // If one ends with the other (and is at least 8 digits long to avoid false positives with short numbers)
-                                                            if (p1.length >= 8 && p2.length >= 8) {
-                                                                return p1.endsWith(p2) || p2.endsWith(p1);
-                                                            }
-                                                            return false;
-                                                        };
-
-                                                        const clientPet = normalizeStr(client.pet_name);
-                                                        const clientOwner = normalizeStr(client.owner_name);
-                                                        const clientPhone = normalizePhone(client.whatsapp);
-
-                                                        // Check for active Hotel Registration
-                                                        const hasActiveHotel = activeHotelRegistrations.some(reg => {
-                                                            const regPet = normalizeStr(reg.pet_name);
-                                                            const regOwner = normalizeStr(reg.tutor_name || reg.owner_name);
-                                                            const regPhone = normalizePhone(reg.tutor_phone);
-
-                                                            // Match logic: Pet name matches AND (Owner name matches OR Phone matches)
-                                                            const nameMatch = regPet === clientPet && regOwner === clientOwner;
-                                                            const phoneMatch = regPet === clientPet && checkPhoneMatch(clientPhone, regPhone);
-
-                                                            return nameMatch || phoneMatch;
-                                                        });
-
-                                                        // Check for active Daycare Enrollment
-                                                        const hasActiveDaycare = activeDaycareEnrollments.some(enroll => {
-                                                            const enrollPet = normalizeStr(enroll.pet_name);
-                                                            const enrollOwner = normalizeStr(enroll.tutor_name);
-                                                            const enrollPhone = normalizePhone(enroll.contact_phone);
-
-                                                            const nameMatch = enrollPet === clientPet && enrollOwner === clientOwner;
-                                                            const phoneMatch = enrollPet === clientPet && checkPhoneMatch(clientPhone, enrollPhone);
-
-                                                            return nameMatch || phoneMatch;
-                                                        });
-
-                                                        return (
-                                                            <div key={client.id} data-card-item className="flex-none min-w-full snap-center" style={{ scrollSnapStop: 'always' }}>
-                                                                <div
-                                                                    className="bg-white rounded-2xl shadow-sm p-6 min-h-[380px] hover:shadow-md transition-shadow border border-gray-200 cursor-pointer flex flex-col"
-                                                                    onClick={() => handleOpenAppointmentsModal(client)}
-                                                                >
-                                                                    <div className="rounded-xl mb-3 p-5 bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-between">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <img
-                                                                                src="https://cdn-icons-png.flaticon.com/512/2171/2171990.png"
-                                                                                alt={`Pet ${client.pet_name}`}
-                                                                                className="w-10 h-10 rounded-full object-cover"
-                                                                            />
-                                                                            <div>
-                                                                                <div className="flex items-center gap-2 flex-wrap">
-                                                                                    <h5 className="text-lg font-bold leading-none">{client.pet_name}</h5>
-                                                                                    {hasActiveHotel && (
-                                                                                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full shadow-sm flex items-center gap-1">
-                                                                                            <span>🏨</span> Hotel
-                                                                                        </span>
-                                                                                    )}
-                                                                                    {hasActiveDaycare && (
-                                                                                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-[10px] font-bold rounded-full shadow-sm flex items-center gap-1">
-                                                                                            <span>🏠</span> Creche
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
-                                                                                <p className="text-xs opacity-90">{client.owner_name}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="text-right">
-                                                                            <p className="text-xs opacity-90">Preço</p>
-                                                                            <p className="text-lg font-extrabold">R$ {(client.price ?? 0).toFixed(2).replace('.', ',')}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="space-y-2 text-sm">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full">{client.service}</span>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2 text-gray-600">
-                                                                            <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                                                                            <span>{client.recurrence_type === 'weekly' ? 'Semanal' : client.recurrence_type === 'bi-weekly' ? 'Quinzenal' : 'Mensal'}</span>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2 text-gray-600">
-                                                                            <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                                                                            <span className="text-xs">Agendamentos: toque para ver datas</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="mt-auto pt-4">
-                                                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
-                                                                            <button
-                                                                                onClick={(e) => { e.stopPropagation(); handleOpenAppointmentsModal(client); }}
-                                                                                className="w-full bg-gray-100 text-gray-700 py-1.5 px-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
-                                                                                title="Visualizar"
-                                                                            >
-                                                                                <EyeOutlineIcon className="w-4 h-4" />
-                                                                                <span>Visualizar</span>
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={(e) => { e.stopPropagation(); setSelectedForEdit(client); }}
-                                                                                className="w-full bg-blue-100 text-blue-700 py-1.5 px-2 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
-                                                                                aria-label="Editar"
-                                                                            >
-                                                                                <EditIcon className="w-4 h-4" />
-                                                                                <span>Editar</span>
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={(e) => { e.stopPropagation(); setSelectedForDelete(client); }}
-                                                                                className="w-full bg-red-50 text-red-600 py-1.5 px-2 rounded-md hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium"
-                                                                                aria-label="Excluir"
-                                                                            >
-                                                                                <DeleteIcon className="w-4 h-4" />
-                                                                                <span>Excluir</span>
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                </div>
+            {/* Search results */}
+            {searchTerm.trim() && (
+                <section className="animate-fadeIn">
+                    <h2 className="text-2xl font-bold text-gray-700 mb-4 pb-2 border-b-2 border-pink-200">Resultados da busca</h2>
+                    {searchResults.length > 0 ? (
+                        <div className="space-y-4">{searchResults.map(renderCard)}</div>
+                    ) : (
+                        <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum agendamento encontrado.</p></div>
+                    )}
+                </section>
             )}
 
-            {/* Modo Calendário */}
-            {viewMode === 'calendar' && (
-                <div className="space-y-4">
-                    {loadingCalendar ? (
-                        <div className="flex justify-center items-center py-12">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
-                        </div>
-                    ) : calendarAppointments.length === 0 ? (
-                        <div className="text-center py-12">
-                            <p className="text-gray-500">Nenhum agendamento encontrado para esta data.</p>
-                        </div>
-                    ) : (
-                        <div className="grid gap-4">
-                            {calendarAppointments.map((appointment) => (
-                                <div key={appointment.id} className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <h3 className="font-semibold text-lg text-gray-800">{appointment.pet_name}</h3>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                    appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-red-100 text-red-800'
-                                                    }`}>
-                                                    {appointment.status === 'confirmed' ? 'Confirmado' :
-                                                        appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
-                                                </span>
-                                                {((appointment.service === 'Creche Pet' || appointment.service === 'Hotel Pet') && !appointment.monthly_client_id) && (
-                                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                        🏠 Visita
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <div className="space-y-1 text-sm text-gray-600">
-                                                <p><span className="font-medium">Dono:</span> {appointment.owner_name}</p>
-                                                <p><span className="font-medium">Serviço:</span> {appointment.service}</p>
-                                                <p><span className="font-medium">Horário:</span> {new Date(appointment.appointment_time).toLocaleString('pt-BR')}</p>
-                                                <p><span className="font-medium">Endereço:</span> {appointment.owner_address}</p>
-                                                {appointment.condominium && (
-                                                    <p><span className="font-medium">Condomínio:</span> {appointment.condominium}</p>
-                                                )}
-                                                <p><span className="font-medium">Preço:</span> R$ {(appointment.price ?? 0).toFixed(2).replace('.', ',')}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex gap-2 ml-4">
-                                            <button
-                                                onClick={() => setSelectedAppointmentForDetails(appointment)}
-                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                title="Ver detalhes"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                onClick={() => setSelectedAppointmentForEdit(appointment)}
-                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                                title="Editar"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                onClick={() => setSelectedAppointmentForDelete(appointment)}
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                title="Excluir"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
+            {!searchTerm.trim() && (loading ? <div className="flex justify-center py-16"><LoadingSpinner /></div> : (
+                <>
+                    {adminView === 'daily' ? (
+                        <>
+                            <section className="mb-8 p-4 bg-white rounded-2xl shadow-sm animate-fadeIn"><Calendar selectedDate={selectedAdminDate} onDateChange={setSelectedAdminDate} /></section>
+                            <section className="animate-fadeInUp">
+                                <div className="flex items-center justify-center mb-4">
+                                    <h2 className="text-2xl font-bold text-gray-700 pb-2 border-b-2 border-pink-200 whitespace-nowrap truncate text-center">Agendamentos - {selectedAdminDate.toLocaleDateString('pt-BR')}</h2>
                                 </div>
-                            ))}
+                                <div className="space-y-6">
+                                    <div className="flex gap-4 mb-6 w-full">
+                                        <button
+                                            onClick={() => setSelectedTab('scheduled')}
+                                            className={`flex-1 justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center gap-2 ${selectedTab === 'scheduled'
+                                                ? 'bg-pink-600 text-white shadow-md'
+                                                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                                }`}
+                                        >
+                                            Agendados
+                                            <span className={`px-2 py-0.5 rounded-full text-xs ${selectedTab === 'scheduled' ? 'bg-pink-700 bg-opacity-30 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                                                {scheduledDaily.length}
+                                            </span>
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedTab('completed')}
+                                            className={`flex-1 justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-2 ${selectedTab === 'completed'
+                                                ? 'bg-green-600 text-white shadow-md'
+                                                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                                }`}
+                                        >
+                                            Concluídos
+                                            <span className={`px-2 py-0.5 rounded-full text-xs ${selectedTab === 'completed' ? 'bg-green-700 bg-opacity-30 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                                                {completedDaily.length}
+                                            </span>
+                                        </button>
+                                    </div>
+
+                                    {selectedTab === 'scheduled' && (
+                                        <div className="animate-fadeIn">
+                                            {scheduledDaily.length > 0 ? (
+                                                <div className="space-y-4">{scheduledDaily.map(renderCard)}</div>
+                                            ) : (
+                                                <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                                                    <p className="text-gray-500">Nenhum agendamento pendente para este dia.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {selectedTab === 'completed' && (
+                                        <div className="animate-fadeIn">
+                                            {completedDaily.length > 0 ? (
+                                                <div className="space-y-4">{completedDaily.map(renderCard)}</div>
+                                            ) : (
+                                                <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                                                    <p className="text-gray-500">Nenhum serviço concluído neste dia.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+                        </>
+                    ) : (
+                        <div className="space-y-12 animate-fadeIn">
+                            <section>
+                                <h2 className="text-2xl font-bold text-gray-700 mb-4 pb-2 border-b-2 border-pink-200">Próximos Agendamentos</h2>
+                                {upcomingAppointments.length > 0 ? (
+                                    <div className="space-y-4">{upcomingAppointments.map(renderCard)}</div>
+                                ) : (
+                                    <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum próximo agendamento encontrado.</p></div>
+                                )}
+                            </section>
+                            <section>
+                                <h2 className="text-2xl font-bold text-gray-700 mb-4 pb-2 border-b-2 border-pink-200">Agendamentos Anteriores</h2>
+                                {pastAppointments.length > 0 ? (
+                                    <div className="space-y-4">{pastAppointments.map(renderCard)}</div>
+                                ) : (
+                                    <div className="text-center py-12 bg-white rounded-lg shadow-sm"><p className="text-gray-500">Nenhum agendamento anterior encontrado.</p></div>
+                                )}
+                            </section>
                         </div>
                     )}
-                </div>
-            )}
-
-            {/* Modal de Agendamentos do Cliente */}
-            {selectedClientForAppointments && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-                        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h2 className="text-2xl font-bold">Agendamentos de {selectedClientForAppointments.pet_name}</h2>
-                                    <p className="text-pink-100 mt-1">Tutor: {selectedClientForAppointments.owner_name}</p>
-                                </div>
-                                <button
-                                    onClick={handleCloseAppointmentsModal}
-                                    className="p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors"
-                                >
-                                    <CloseIcon className="w-6 h-6" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                            {loadingAppointments ? (
-                                <div className="flex justify-center py-12">
-                                    <LoadingSpinner />
-                                </div>
-                            ) : clientAppointments.length > 0 ? (
-                                <div className="space-y-4">
-                                    <div className="grid gap-4">
-                                        {clientAppointments.map(appointment => (
-                                            <div key={appointment.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <img
-                                                            src="https://cdn-icons-png.flaticon.com/512/2171/2171990.png"
-                                                            alt="Ícone do pet"
-                                                            className="w-10 h-10 rounded-full object-cover"
-                                                        />
-                                                        <div>
-                                                            <h4 className="font-semibold text-gray-800">
-                                                                {new Date(appointment.appointment_time).toLocaleDateString('pt-BR', {
-                                                                    day: '2-digit',
-                                                                    month: 'long',
-                                                                    year: 'numeric',
-                                                                    timeZone: 'America/Sao_Paulo'
-                                                                })}
-                                                            </h4>
-                                                            <p className="text-sm text-gray-600">
-                                                                {new Date(appointment.appointment_time).toLocaleTimeString('pt-BR', {
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit',
-                                                                    timeZone: 'America/Sao_Paulo'
-                                                                })}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${appointment.status === 'CONCLUÍDO'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-blue-100 text-blue-800'
-                                                            }`}>
-                                                            {appointment.status}
-                                                        </div>
-                                                        {((appointment.service === 'Creche Pet' || appointment.service === 'Hotel Pet') && !appointment.monthly_client_id) && (
-                                                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                                🏠 Visita
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                                    <div>
-                                                        <p className="text-gray-500 font-medium">Serviço</p>
-                                                        <p className="text-gray-800">{appointment.service}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-gray-500 font-medium">Peso</p>
-                                                        <p className="text-gray-800">{appointment.weight}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-gray-500 font-medium">Preço</p>
-                                                        <p className="text-green-600 font-semibold">
-                                                            R$ {Number(appointment.price || 0).toFixed(2).replace('.', ',')}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {appointment.addons && appointment.addons.length > 0 && (
-                                                    <div className="mt-3 pt-3 border-t border-gray-200">
-                                                        <p className="text-gray-500 font-medium text-sm mb-2">Adicionais</p>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {appointment.addons.map((addon, index) => (
-                                                                <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
-                                                                    {addon}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="text-center py-12">
-                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <CalendarIcon className="w-8 h-8 text-gray-400" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Nenhum agendamento encontrado</h3>
-                                    <p className="text-gray-500">Este cliente ainda não possui agendamentos registrados.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal de Detalhes do Agendamento do Calendário */}
-            {selectedAppointment && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001] p-4">
-                    <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Detalhes do Agendamento</h3>
-                                <button
-                                    onClick={() => setSelectedAppointment(null)}
-                                    className="text-gray-400 hover:text-gray-600 text-xl font-bold"
-                                >
-                                    ×
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <h4 className="font-medium text-gray-900 mb-2">Pet</h4>
-                                    <p className="text-gray-700">{selectedAppointment.pet_name}</p>
-                                    <p className="text-sm text-gray-500">{selectedAppointment.pet_breed}</p>
-                                </div>
-
-                                <div>
-                                    <h4 className="font-medium text-gray-900 mb-2">Tutor</h4>
-                                    <p className="text-gray-700">{selectedAppointment.owner_name}</p>
-                                    <p className="text-sm text-gray-500">{selectedAppointment.whatsapp}</p>
-                                </div>
-
-                                <div>
-                                    <h4 className="font-medium text-gray-900 mb-2">Serviço</h4>
-                                    <p className="text-gray-700">{selectedAppointment.service}</p>
-                                    <p className="text-sm text-green-600 font-medium">R$ {selectedAppointment.price}</p>
-                                </div>
-
-                                <div>
-                                    <h4 className="font-medium text-gray-900 mb-2">Status</h4>
-                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${selectedAppointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                        selectedAppointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                            'bg-red-100 text-red-800'
-                                        }`}>
-                                        {selectedAppointment.status === 'confirmed' ? 'Confirmado' :
-                                            selectedAppointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
-                                    </span>
-                                </div>
-
-                                {selectedAppointment.pet_movel_appointments && (
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Pet Móvel</h4>
-                                        <p className="text-sm text-gray-600">Endereço: {selectedAppointment.pet_movel_appointments.owner_address}</p>
-                                        {selectedAppointment.pet_movel_appointments.condominium && (
-                                            <p className="text-sm text-gray-600">Condomínio: {selectedAppointment.pet_movel_appointments.condominium}</p>
-                                        )}
-                                    </div>
-                                )}
-
-                                {selectedAppointment.addons && selectedAppointment.addons.length > 0 && (
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Adicionais</h4>
-                                        <ul className="text-sm text-gray-600 space-y-1">
-                                            {selectedAppointment.addons.map((addon, index) => (
-                                                <li key={index}>• {addon}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-
-                                {selectedAppointment.notes && (
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Observações</h4>
-                                        <p className="text-sm text-gray-600">{selectedAppointment.notes}</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+                </>
+            ))}
+        </>
     );
 };
+
 
 
 const EditClientModal: React.FC<{ client: Client; onClose: () => void; onClientUpdated: (client: Client) => void; }> = ({ client, onClose, onClientUpdated }) => {
@@ -6968,11 +6385,20 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
 
         const today = new Date().toISOString();
 
-        const { error: deleteError } = await supabase.from('appointments').delete().eq('monthly_client_id', client.id).gte('appointment_time', today);
+        // Determine the correct table for deletion based on condominium
+        const isBanhoTosaFixoEdit = formData.condominium === 'Banho & Tosa Fixo' || client.condominium === 'Banho & Tosa Fixo';
+        const deleteTable = isBanhoTosaFixoEdit ? 'agendamento_banhotosa' : 'appointments';
+        const { error: deleteError } = await supabase.from(deleteTable).delete().eq('monthly_client_id', client.id).gte('appointment_time', today);
         if (deleteError) {
             setAlertInfo({ title: 'Erro', message: "Erro ao limpar agendamentos antigos. A atualização foi cancelada.", variant: 'error' });
             setIsSubmitting(false);
             return;
+        }
+        // Also clean from the other table in case condominium changed
+        if (isBanhoTosaFixoEdit) {
+            await supabase.from('appointments').delete().eq('monthly_client_id', client.id).gte('appointment_time', today);
+        } else {
+            await supabase.from('agendamento_banhotosa').delete().eq('monthly_client_id', client.id).gte('appointment_time', today);
         }
 
         // Também limpar agendamentos de Pet Móvel quando aplicável
@@ -7102,40 +6528,20 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
             }));
 
             if (supabasePayloads.length > 0) {
-                if (isPetMovelSelected || looksLikePetMovel) {
-                    // Montar payloads para pet_movel_appointments com nomenclatura do módulo Pet Móvel
-                    const petMovelPayloads = appointmentsToCreate.map(app => ({
-                        owner_name: formData.ownerName,
-                        pet_name: formData.petName,
-                        pet_breed: formData.petBreed,
-                        service: SERVICES[selectedService!].label,
-                        appointment_time: app.appointment_time,
-                        status: 'AGENDADO',
-                        price: unitPriceEdit,
-                        whatsapp: formData.whatsapp,
-                        owner_address: formData.ownerAddress,
-                        condominium: formData.condominium,
-                        monthly_client_id: client.id,
-                    }));
+                const isBanhoTosaFixoRecreate = formData.condominium === 'Banho & Tosa Fixo';
+                let targetTable: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa' = 'appointments';
 
-                    const [appointmentsResult, petMovelResult] = await Promise.all([
-                        supabase.from('appointments').insert(supabasePayloads),
-                        supabase.from('pet_movel_appointments').insert(petMovelPayloads),
-                    ]);
+                if (isBanhoTosaFixoRecreate) {
+                    targetTable = 'agendamento_banhotosa';
+                } else if (isPetMovelSelected || looksLikePetMovel) {
+                    targetTable = 'pet_movel_appointments';
+                }
 
-                    if (appointmentsResult.error || petMovelResult.error) {
-                        const errorMsg = appointmentsResult.error?.message || petMovelResult.error?.message || 'Erro desconhecido';
-                        setAlertInfo({ title: 'Erro Parcial', message: `${baseSuccessMessage} Falha ao recriar agendamentos: ${errorMsg}`, variant: 'error' });
-                    } else {
-                        setAlertInfo({ title: 'Sucesso!', message: `${baseSuccessMessage} Agendamentos (incluindo Pet Móvel) recriados com sucesso!`, variant: 'success' });
-                    }
+                const { error: insertError } = await supabase.from(targetTable).insert(supabasePayloads);
+                if (insertError) {
+                    setAlertInfo({ title: 'Erro Parcial', message: `${baseSuccessMessage} Falha ao recriar agendamentos em ${targetTable}: ${insertError.message}`, variant: 'error' });
                 } else {
-                    const { error: insertError } = await supabase.from('appointments').insert(supabasePayloads);
-                    if (insertError) {
-                        setAlertInfo({ title: 'Erro Parcial', message: `${baseSuccessMessage} Houve um erro ao recriar os agendamentos futuros.`, variant: 'error' });
-                    } else {
-                        setAlertInfo({ title: 'Sucesso!', message: `${baseSuccessMessage} Agendamentos futuros recriados com sucesso!`, variant: 'success' });
-                    }
+                    setAlertInfo({ title: 'Sucesso!', message: `${baseSuccessMessage} Agendamentos futuros recriados com sucesso em ${targetTable}!`, variant: 'success' });
                 }
             } else {
                 setAlertInfo({ title: 'Sucesso', message: `${baseSuccessMessage} Nenhum agendamento futuro foi criado.`, variant: 'success' });
@@ -7703,23 +7109,25 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
 
         try {
             // 1. Unlink past appointments so we don't lose historical revenue data
-            const [updatePastAppts, updatePastPetMovel] = await Promise.all([
+            const [updatePastAppts, updatePastPetMovel, updatePastBanhoTosa] = await Promise.all([
                 supabase.from('appointments').update({ monthly_client_id: null }).eq('monthly_client_id', dbId).lt('appointment_time', now),
-                supabase.from('pet_movel_appointments').update({ monthly_client_id: null }).eq('monthly_client_id', dbId).lt('appointment_time', now)
+                supabase.from('pet_movel_appointments').update({ monthly_client_id: null }).eq('monthly_client_id', dbId).lt('appointment_time', now),
+                supabase.from('agendamento_banhotosa').update({ monthly_client_id: null }).eq('monthly_client_id', dbId).lt('appointment_time', now)
             ]);
 
-            if (updatePastAppts.error || updatePastPetMovel.error) {
+            if (updatePastAppts.error || updatePastPetMovel.error || updatePastBanhoTosa.error) {
                 setAlertInfo({ title: 'Erro', message: 'Falha ao desvincular agendamentos passados.', variant: 'error' });
                 return;
             }
 
             // 2. Delete future appointments
-            const [delFutureAppts, delFuturePetMovel] = await Promise.all([
+            const [delFutureAppts, delFuturePetMovel, delFutureBanhoTosa] = await Promise.all([
                 supabase.from('appointments').delete().eq('monthly_client_id', dbId).gte('appointment_time', now),
-                supabase.from('pet_movel_appointments').delete().eq('monthly_client_id', dbId).gte('appointment_time', now)
+                supabase.from('pet_movel_appointments').delete().eq('monthly_client_id', dbId).gte('appointment_time', now),
+                supabase.from('agendamento_banhotosa').delete().eq('monthly_client_id', dbId).gte('appointment_time', now)
             ]);
 
-            if (delFutureAppts.error || delFuturePetMovel.error) {
+            if (delFutureAppts.error || delFuturePetMovel.error || delFutureBanhoTosa.error) {
                 setAlertInfo({ title: 'Erro', message: 'Falha ao remover agendamentos futuros.', variant: 'error' });
                 return;
             }
@@ -9594,10 +9002,11 @@ const EditDaycareEnrollmentModal: React.FC<{
 };
 
 const HotelRegistrationForm: React.FC<{
-    setView?: (view: 'scheduler' | 'login' | 'hotelRegistration') => void;
+    setView?: (view: 'scheduler' | 'login' | 'admin' | 'daycareRegistration' | 'hotelRegistration' | 'visitSelector' | 'visitAppointment' | 'splash') => void;
     isAdmin?: boolean;
     onSuccess?: () => void;
-}> = ({ setView, isAdmin = false, onSuccess }) => {
+    onBack?: () => void;
+}> = ({ setView, isAdmin = false, onSuccess, onBack }) => {
     const [formData, setFormData] = useState<HotelRegistration>({
         pet_name: '', pet_sex: null, pet_breed: '', is_neutered: null, pet_age: '',
         pet_weight: null,
@@ -9664,7 +9073,11 @@ const HotelRegistrationForm: React.FC<{
     const handleClose = () => {
         setIsAnimating(true);
         setTimeout(() => {
-            setView && setView('scheduler');
+            if (setView) {
+                setView('scheduler');
+            } else if (onBack) {
+                onBack();
+            }
         }, 500);
     };
     // -----------------------------------
@@ -9979,11 +9392,13 @@ const HotelRegistrationForm: React.FC<{
 
     const hotelHours = [8, 9, 10, 11, 12, 14, 15, 16, 17, 18];
 
-    const onBack = () => {
+    const handleBack = () => {
         if (step > 1) {
             setStep(step - 1);
-        } else {
-            setView && setView('scheduler');
+        } else if (onBack) {
+            onBack();
+        } else if (setView) {
+            setView('scheduler');
         }
     };
 
@@ -10453,7 +9868,7 @@ const HotelRegistrationForm: React.FC<{
                 </section>
 
                 <div className="mt-8 flex justify-between items-center pt-6 border-t border-gray-100">
-                    <button type="button" onClick={onBack} className="bg-gray-200 text-gray-800 font-bold py-3.5 px-5 rounded-lg hover:bg_gray-300 transition-colors">Voltar</button>
+                    <button type="button" onClick={handleBack} className="bg-gray-200 text-gray-800 font-bold py-3.5 px-5 rounded-lg hover:bg-gray-300 transition-colors">Voltar</button>
                     <div className="flex-grow"></div>
                     <button
                         type="button"
@@ -11462,6 +10877,8 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const { getPricesForWeight } = useServicePrices();
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [banhoTosaOnlyAppointments, setBanhoTosaOnlyAppointments] = useState<Appointment[]>([]);
+    const [petMovelOnlyAppointments, setPetMovelOnlyAppointments] = useState<Appointment[]>([]);
     const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', observation: '' });
     const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
     const [serviceStepView, setServiceStepView] = useState<'main' | 'bath_groom' | 'pet_movel' | 'pet_movel_condo' | 'hotel_pet'>('main');
@@ -11504,25 +10921,15 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         const queryEnd = new Date(endOfDay);
         queryEnd.setHours(queryEnd.getHours() + 4);
 
-        const { data: regularData, error: regularError } = await supabase
-            .from('appointments')
-            .select('*')
-            .gte('appointment_time', queryStart.toISOString())
-            .lte('appointment_time', queryEnd.toISOString());
+        const [{ data: regularData, error: regularError }, { data: petMovelData, error: petMovelError }, { data: banhoTosaData, error: banhoTosaError }] = await Promise.all([
+            supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+            supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+            supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+        ]);
 
-        if (regularError) {
-            console.error('Error fetching appointments:', regularError);
-        }
-
-        const { data: petMovelData, error: petMovelError } = await supabase
-            .from('pet_movel_appointments')
-            .select('*')
-            .gte('appointment_time', queryStart.toISOString())
-            .lte('appointment_time', queryEnd.toISOString());
-
-        if (petMovelError) {
-            console.error('Error fetching pet_movel_appointments:', petMovelError);
-        }
+        if (regularError) { console.error('Error fetching appointments:', regularError); }
+        if (petMovelError) { console.error('Error fetching pet_movel_appointments:', petMovelError); }
+        if (banhoTosaError) { console.error('Error fetching agendamento_banhotosa:', banhoTosaError); }
 
         const regularAppointments: Appointment[] = (regularData || [])
             .map((rec: any) => {
@@ -11597,8 +11004,36 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             })
             .filter(Boolean) as Appointment[];
 
-        const allFetched: Appointment[] = [...regularAppointments, ...mobileAppointments];
+        const banhoTosaAppointments: Appointment[] = (banhoTosaData || [])
+            .map((rec: any) => {
+                const s = String(rec.service || '').toLowerCase();
+                let serviceKey: ServiceType;
+                if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
+                else if (s.includes('tosa')) serviceKey = ServiceType.GROOMING_ONLY;
+                else serviceKey = ServiceType.BATH;
 
+                let dateStr = rec.appointment_time;
+                if (dateStr && typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+                    dateStr += 'Z';
+                }
+
+                return {
+                    id: rec.id,
+                    petName: rec.pet_name,
+                    ownerName: rec.owner_name,
+                    whatsapp: rec.whatsapp,
+                    service: serviceKey,
+                    appointmentTime: new Date(dateStr),
+                    monthly_client_id: rec.monthly_client_id || undefined,
+                    status: rec.status,
+                };
+            })
+            .filter(Boolean) as Appointment[];
+
+        const allFetched: Appointment[] = [...regularAppointments, ...mobileAppointments, ...banhoTosaAppointments];
+
+        setBanhoTosaOnlyAppointments(banhoTosaAppointments);
+        setPetMovelOnlyAppointments(mobileAppointments);
         setAppointments(allFetched);
     }, [selectedDate]);
 
@@ -11849,7 +11284,8 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         const day = selectedDate.getDate();
         const appointmentTime = toSaoPauloUTC(year, month, day, selectedTime);
 
-        const appointmentsAtHour = appointments.filter(app => {
+        const relevantAppointments = isBathGroomService ? banhoTosaOnlyAppointments : isPetMovelService ? petMovelOnlyAppointments : appointments;
+        const appointmentsAtHour = relevantAppointments.filter(app => {
             const appDate = new Date(app.appointmentTime);
             return isSameSaoPauloDay(appDate, selectedDate) && 
                    getSaoPauloTimeParts(appDate).hour === selectedTime &&
@@ -11868,7 +11304,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             setIsSubmitting(false);
             return;
         }
-        const targetTable = isPetMovelSubmit ? 'pet_movel_appointments' : 'appointments';
+        const targetTable = isPetMovelSubmit ? 'pet_movel_appointments' : isBathGroomService ? 'agendamento_banhotosa' : 'appointments';
 
         const basePayload = {
             appointment_time: appointmentTime.toISOString(),
@@ -12429,7 +11865,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                             key={selectedDate.toISOString()}
                                             selectedDate={selectedDate}
                                             selectedService={selectedService}
-                                            appointments={appointments}
+                                            appointments={serviceStepView === 'bath_groom' ? banhoTosaOnlyAppointments : serviceStepView === 'pet_movel' ? petMovelOnlyAppointments : appointments}
                                             onTimeSelect={setSelectedTime}
                                             selectedTime={selectedTime}
                                             workingHours={isVisitService ? VISIT_WORKING_HOURS : (serviceStepView === 'bath_groom' || (selectedService && [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService)) ? BATH_GROOMING_HOURS : WORKING_HOURS)}
@@ -14990,8 +14426,8 @@ const AdminDashboard: React.FC<{
     }, [dataKey]);
 
     const menuItems = [
-        { id: 'appointments', label: 'Banho & Tosa', icon: <BathTosaIcon /> },
-        { id: 'petMovel', label: 'Pet Móvel', icon: <PetMovelIcon /> },
+        { id: 'appointments', label: 'Pet Móvel', icon: <PetMovelIcon /> },
+        { id: 'petMovel', label: 'Banho & Tosa', icon: <BathTosaIcon /> },
         { id: 'daycare', label: 'Creche', icon: <DaycareIcon /> },
         { id: 'hotel', label: 'Hotel Pet', icon: <HotelIcon /> },
         { id: 'clients', label: 'Clientes', icon: <ClientsMenuIcon /> },
@@ -15011,7 +14447,7 @@ const AdminDashboard: React.FC<{
     const renderActiveView = () => {
         switch (activeView) {
             case 'appointments': return <AppointmentsView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('appointments')} onOpenCloseDay={handleOpenCloseDay} />;
-            case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} />;
+            case 'petMovel': return <PetMovelView key={dataKey} refreshKey={dataKey} onAddObservation={onAddObservation} appointments={appointments} setAppointments={setAppointments} onOpenActionMenu={onOpenActionMenu} onDeleteObservation={onDeleteObservation} monthlyClients={monthlyClients} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('petMovel')} onOpenCloseDay={handleOpenCloseDay} />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
@@ -15387,8 +14823,10 @@ const App: React.FC = () => {
     const handleSaveObservation = async (observation: string) => {
         if (!selectedAppointmentForObservation) return;
 
+        const targetTable = selectedAppointmentForObservation.table || 'appointments';
+
         const { data, error } = await supabase
-            .from('appointments')
+            .from(targetTable)
             .update({ observation: observation })
             .eq('id', selectedAppointmentForObservation.id)
             .select();
@@ -15585,6 +15023,13 @@ const App: React.FC = () => {
                     .order('appointment_time', { ascending: false });
                 if (petMovelError) console.warn('Erro ao buscar pet_movel_appointments:', petMovelError);
 
+                const { data: banhoTosaAppointments, error: banhoTosaError } = await supabase
+                    .from('agendamento_banhotosa')
+                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
+                    .gte('appointment_time', windowStart)
+                    .order('appointment_time', { ascending: false });
+                if (banhoTosaError) console.warn('Erro ao buscar agendamento_banhotosa:', banhoTosaError);
+
                 const { data: monthlyClientsData } = await supabase
                     .from('monthly_clients')
                     .select('*')
@@ -15592,7 +15037,7 @@ const App: React.FC = () => {
 
                 if (!cancelled && monthlyClientsData) setMonthlyClients(monthlyClientsData);
 
-                const normalize = (arr: any[] | null | undefined): AdminAppointment[] => {
+                const normalize = (arr: any[] | null | undefined, tableName: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa'): AdminAppointment[] => {
                     if (!arr) return [];
                     return arr.map((rec: any) => ({
                         id: rec.id,
@@ -15615,12 +15060,14 @@ const App: React.FC = () => {
                         pet_photo_url: rec.monthly_clients?.pet_photo_url ?? undefined,
                         recurrence_type: rec.monthly_clients?.recurrence_type ?? undefined,
                         responsible: rec.responsible ?? undefined,
+                        table: tableName,
                     }));
                 };
 
                 const combined = [
-                    ...normalize(bathAppointments),
-                    ...normalize(petMovelAppointments),
+                    ...normalize(bathAppointments, 'appointments'),
+                    ...normalize(petMovelAppointments, 'pet_movel_appointments'),
+                    ...normalize(banhoTosaAppointments, 'agendamento_banhotosa'),
                 ].sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
 
                 if (!cancelled) setAppointments(combined);

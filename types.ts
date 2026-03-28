@@ -75,6 +75,7 @@ export interface AdminAppointment {
     pintura?: { enabled: boolean; value: number };
     patacure?: { enabled: boolean; value: number };
   };
+  table?: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa';
 }
 
 export interface PetMovelAppointment extends AdminAppointment {
