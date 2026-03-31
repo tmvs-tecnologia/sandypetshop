@@ -2969,23 +2969,26 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
             // we need to fetch from DB or rely on a passed prop. 
             // Ideally we should fetch, but for performance let's try to fetch just for the day.
 
+            const startOfDay = `${yStr}-${mStr}-${dStr}T00:00:00`;
+            const endOfDay = new Date(Date.UTC(year, month, day + 1)).toISOString().split('.')[0] + 'Z';
+
             const { data: regularData } = await supabase
                 .from('appointments')
                 .select('appointment_time, service')
-                .gte('appointment_time', `${yStr}-${mStr}-${dStr}T00:00:00`)
-                .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`);
+                .gte('appointment_time', startOfDay)
+                .lt('appointment_time', endOfDay);
 
             const { data: petMovelData } = await supabase
                 .from('pet_movel_appointments')
                 .select('appointment_time, service')
-                .gte('appointment_time', `${yStr}-${mStr}-${dStr}T00:00:00`)
-                .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`);
+                .gte('appointment_time', startOfDay)
+                .lt('appointment_time', endOfDay);
 
             const { data: banhoTosaData } = await supabase
                 .from('agendamento_banhotosa')
                 .select('appointment_time, service')
-                .gte('appointment_time', `${yStr}-${mStr}-${dStr}T00:00:00`)
-                .lt('appointment_time', `${yStr}-${mStr}-${Number(dStr) + 1}T00:00:00`);
+                .gte('appointment_time', startOfDay)
+                .lt('appointment_time', endOfDay);
 
             const allApps = [...(regularData || []), ...(petMovelData || []), ...(banhoTosaData || [])];
 
@@ -14119,7 +14122,7 @@ const AdminDashboard: React.FC<{
                 return [updatedAppointment, ...prev.filter(app => app.id !== editingAppointment?.id)];
             }
         });
-        if (onDataChanged) onDataChanged();
+        handleDataChanged();
         handleCloseEditModal();
     };
 
