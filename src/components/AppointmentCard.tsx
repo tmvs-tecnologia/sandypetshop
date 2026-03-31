@@ -103,21 +103,26 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
     const isCompleted = status === 'CONCLUÍDO';
 
+    const IGNORED_EXTRAS_CALC = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
+
     // Price Calculation
     const extrasTotal = (() => {
         if (!es) return 0;
         let total = 0;
-        // Ignored base services in extras calculation
-        // if (es.banho_tosa?.enabled) total += Number(es.banho_tosa.value || 0);
-        // if (es.so_banho?.enabled) total += Number(es.so_banho.value || 0);
+        Object.entries(es).forEach(([key, value]: [string, any]) => {
+            if (IGNORED_EXTRAS_CALC.includes(key)) return;
 
-        if (es.pernoite?.enabled) total += Number(es.pernoite.value || 0);
-        if (es.adestrador?.enabled) total += Number(es.adestrador.value || 0);
-        if (es.despesa_medica?.enabled) total += Number(es.despesa_medica.value || 0);
-        if (es.penteado?.enabled) total += Number(es.penteado.value || 0);
-        if (es.desembolo?.enabled) total += Number(es.desembolo.value || 0);
-        if (es.transporte?.enabled) total += Number(es.transporte.value || 0);
-        if (es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
+            if (value && typeof value === 'object') {
+                if (key === 'dias_extras' && value.quantity > 0) {
+                    total += Number(value.quantity) * Number(value.value || 0);
+                } else if (value.enabled) {
+                    total += Number(value.value || 0);
+                }
+            } else if (value === true) {
+                // Should not happen with new structure, but safe fallback
+                // Assuming we don't know the price if it's just 'true'
+            }
+        });
         return total;
     })();
 

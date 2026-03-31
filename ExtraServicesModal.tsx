@@ -153,6 +153,7 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
   const finalTotal = trueBasePrice + totalExtras;
 
   const getTableName = () => {
+    if (type === 'appointment' && data?.table) return data.table;
     switch (type) {
       case 'appointment': return 'appointments';
       case 'monthly': return 'monthly_clients';

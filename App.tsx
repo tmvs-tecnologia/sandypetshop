@@ -4995,7 +4995,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
 
     const renderCard = (appt: AdminAppointment) => (
         <AppointmentCard 
-            key={appt.id} 
+            key={`${appt.table}-${appt.id}`} 
             appointment={appt} 
             isUpdating={updatingStatusId === appt.id} 
             onEdit={onEdit} 
@@ -5482,7 +5482,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
 
     const renderCard = (appt: AdminAppointment) => (
         <AppointmentCard
-            key={appt.id}
+            key={`${appt.table}-${appt.id}`}
             appointment={appt}
             isUpdating={updatingStatusId === appt.id}
             isDeleting={deletingAppointmentId === appt.id}
@@ -14252,29 +14252,30 @@ const AdminDashboard: React.FC<{
                 const now = new Date();
                 const windowStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString(); // 60 days ago
 
-                const { data: bathAppointments, error: bathError } = await supabase
-                    .from('appointments')
-                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
-                    .gte('appointment_time', windowStart)
-                    .order('appointment_time', { ascending: false });
+                const fetchPaginated = async (table: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa', start: string) => {
+                    let allData: any[] = [];
+                    let page = 0;
+                    while (true) {
+                        const { data, error } = await supabase
+                            .from(table)
+                            .select('*, monthly_clients(pet_photo_url, recurrence_type)')
+                            .gte('appointment_time', start)
+                            .order('appointment_time', { ascending: false })
+                            .range(page * 1000, (page + 1) * 1000 - 1);
+                        if (error) {
+                            console.warn(`Erro paginando ${table}:`, error);
+                            break;
+                        }
+                        if (data) allData = allData.concat(data);
+                        if (!data || data.length < 1000) break;
+                        page++;
+                    }
+                    return allData;
+                };
 
-                if (bathError) console.warn('Erro ao buscar appointments (Banho & Tosa):', bathError);
-
-                const { data: petMovelAppointments, error: petMovelError } = await supabase
-                    .from('pet_movel_appointments')
-                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
-                    .gte('appointment_time', windowStart)
-                    .order('appointment_time', { ascending: false });
-
-                if (petMovelError) console.warn('Erro ao buscar pet_movel_appointments:', petMovelError);
-
-                const { data: fixedBathGroomAppointments, error: fixedError } = await supabase
-                    .from('agendamento_banhotosa')
-                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
-                    .gte('appointment_time', windowStart)
-                    .order('appointment_time', { ascending: false });
-
-                if (fixedError) console.warn('Erro ao buscar agendamento_banhotosa:', fixedError);
+                const bathAppointments = await fetchPaginated('appointments', windowStart);
+                const petMovelAppointments = await fetchPaginated('pet_movel_appointments', windowStart);
+                const fixedBathGroomAppointments = await fetchPaginated('agendamento_banhotosa', windowStart);
 
                 // Remover duplicados por mensalista e mesmo minuto de appointment_time, mantendo o mais antigo
                 const dedupeMonthlyByMinute = async (srcA: any[] | null | undefined, srcB: any[] | null | undefined, srcC: any[] | null | undefined) => {
@@ -14293,7 +14294,7 @@ const AdminDashboard: React.FC<{
                     for (const r of all) {
                         if (!r.monthly_client_id) continue;
                         const t = new Date(r.appointment_time);
-                        const key = `${r.monthly_client_id}|${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')} ${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')}`;
+                        const key = `${r.table}|${r.monthly_client_id}|${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')} ${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')}`;
                         const g = groups.get(key) || [] as any[];
                         g.push(r);
                         groups.set(key, g);
@@ -15046,26 +15047,30 @@ const App: React.FC = () => {
                 const now = new Date();
                 const windowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-                const { data: bathAppointments, error: bathError } = await supabase
-                    .from('appointments')
-                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
-                    .gte('appointment_time', windowStart)
-                    .order('appointment_time', { ascending: false });
-                if (bathError) console.warn('Erro ao buscar appointments (Banho & Tosa):', bathError);
+                const fetchPaginated = async (table: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa', start: string) => {
+                    let allData: any[] = [];
+                    let page = 0;
+                    while (true) {
+                        const { data, error } = await supabase
+                            .from(table)
+                            .select('*, monthly_clients(pet_photo_url, recurrence_type)')
+                            .gte('appointment_time', start)
+                            .order('appointment_time', { ascending: false })
+                            .range(page * 1000, (page + 1) * 1000 - 1);
+                        if (error) {
+                            console.warn(`Erro paginando ${table}:`, error);
+                            break;
+                        }
+                        if (data) allData = allData.concat(data);
+                        if (!data || data.length < 1000) break;
+                        page++;
+                    }
+                    return allData;
+                };
 
-                const { data: petMovelAppointments, error: petMovelError } = await supabase
-                    .from('pet_movel_appointments')
-                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
-                    .gte('appointment_time', windowStart)
-                    .order('appointment_time', { ascending: false });
-                if (petMovelError) console.warn('Erro ao buscar pet_movel_appointments:', petMovelError);
-
-                const { data: banhoTosaAppointments, error: banhoTosaError } = await supabase
-                    .from('agendamento_banhotosa')
-                    .select('*, monthly_clients(pet_photo_url, recurrence_type)')
-                    .gte('appointment_time', windowStart)
-                    .order('appointment_time', { ascending: false });
-                if (banhoTosaError) console.warn('Erro ao buscar agendamento_banhotosa:', banhoTosaError);
+                const bathAppointments = await fetchPaginated('appointments', windowStart);
+                const petMovelAppointments = await fetchPaginated('pet_movel_appointments', windowStart);
+                const banhoTosaAppointments = await fetchPaginated('agendamento_banhotosa', windowStart);
 
                 const { data: monthlyClientsData } = await supabase
                     .from('monthly_clients')
