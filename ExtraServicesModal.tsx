@@ -83,11 +83,16 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
   };
 
   const handleValueChange = (service: string, value: string) => {
+    // Troca vírgula por ponto para cálculo e permite apenas números e um ponto
+    let safeValue = value.replace(',', '.').replace(/[^0-9.]/g, '');
+    const parts = safeValue.split('.');
+    if (parts.length > 2) safeValue = parts[0] + '.' + parts.slice(1).join('');
+
     setExtraServices(prev => ({
       ...prev,
       [service]: {
         ...(prev as any)[service],
-        value: value
+        value: safeValue
       }
     }));
   };
@@ -102,14 +107,12 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
     }));
   };
 
-  const IGNORED_EXTRAS_KEYS = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
 
   const calculateTotal = () => {
     let total = 0;
     (Object.keys(extraServices) as Array<keyof ExtraServicesData>).forEach((key) => {
       const service = extraServices[key];
       if (service && service.enabled) {
-        if (IGNORED_EXTRAS_KEYS.includes(key)) return;
         if (key === 'dias_extras' && 'quantity' in service && service.quantity) {
           total += (Number(service.value) || 0) * service.quantity;
         } else {
@@ -125,7 +128,6 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
     let total = 0;
     if (data?.extra_services) {
       Object.entries(data.extra_services).forEach(([key, service]: [string, any]) => {
-        if (IGNORED_EXTRAS_KEYS.includes(key)) return;
         if (service?.enabled) {
           if (key === 'dias_extras' && service.quantity) {
             total += (Number(service.value) || 0) * service.quantity;

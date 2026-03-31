@@ -153,11 +153,8 @@ const AppointmentCardWithEditablePrice: React.FC<AppointmentCardWithEditablePric
 
     // Get active extras list
     const activeExtras: string[] = [];
-    const IGNORED_EXTRAS_DISPLAY = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
-
     if (es) {
         Object.entries(es).forEach(([key, value]: [string, any]) => {
-            if (IGNORED_EXTRAS_DISPLAY.includes(key)) return;
 
             if (value) {
                 if (key === 'dias_extras') {

@@ -304,12 +304,9 @@ const MonthlyClientCard: React.FC<{
     };
 
     const totalInvoiceValue = calculateTotalInvoiceValue(client);
-    // Keys to exclude from extras display
-    const IGNORED_EXTRAS_DISPLAY = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
-
     const hasMonthlyExtras = Boolean(
         client.extra_services && Object.entries(client.extra_services).some(([key, s]: [string, any]) =>
-            s.enabled && !IGNORED_EXTRAS_DISPLAY.includes(key)
+            s.enabled
         )
     );
 
@@ -444,7 +441,7 @@ const MonthlyClientCard: React.FC<{
                 {hasMonthlyExtras && (
                     <div className="mb-4 flex flex-wrap gap-1.5">
                         {client.extra_services && Object.entries(client.extra_services).map(([key, value]: [string, any]) => {
-                            if (!value.enabled || IGNORED_EXTRAS_DISPLAY.includes(key)) return null;
+                            if (!value.enabled) return null;
                             const label = key.replace(/_/g, ' ').replace('so ', ''); // Simple formatting
                             return (
                                 <span key={key} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 capitalize">

@@ -103,14 +103,12 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
     const isCompleted = status === 'CONCLUÍDO';
 
-    const IGNORED_EXTRAS_CALC = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
 
     // Price Calculation
     const extrasTotal = (() => {
         if (!es) return 0;
         let total = 0;
         Object.entries(es).forEach(([key, value]: [string, any]) => {
-            if (IGNORED_EXTRAS_CALC.includes(key)) return;
 
             if (value && typeof value === 'object') {
                 if (key === 'dias_extras' && value.quantity > 0) {
@@ -133,11 +131,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
     // Get active extras list
     const activeExtras: string[] = [];
-    const IGNORED_EXTRAS_DISPLAY = ['banho_tosa', 'banho', 'tosa', 'so_banho', 'so_tosa', 'pet_movel'];
-
     if (es) {
         Object.entries(es).forEach(([key, value]: [string, any]) => {
-            if (IGNORED_EXTRAS_DISPLAY.includes(key)) return;
 
             if (value) {
                 if (key === 'dias_extras') {

@@ -81,7 +81,8 @@ const ServiceCard: React.FC<{
                     <div className="flex items-center flex-1 bg-white border border-pink-200 rounded-lg px-2 py-1 shadow-sm">
                         <span className="text-xs text-gray-400 mr-1">R$</span>
                         <input 
-                            type="number" 
+                            type="text"
+                            inputMode="decimal"
                             placeholder="0,00"
                             value={item.value || ''}
                             onChange={(e) => onValueChange(e.target.value)}
