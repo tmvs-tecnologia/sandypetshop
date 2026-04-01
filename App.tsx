@@ -6706,6 +6706,11 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
     const [filterDayOfWeek, setFilterDayOfWeek] = useState(''); // '1' to '5'
     const [filterTime, setFilterTime] = useState(''); // '9' to '17'
     const [sortBy, setSortBy] = useState(''); // 'pet-az', 'owner-az'
+    
+    // Estados do Modal de Cobrança
+    const [isCobrancaModalOpen, setIsCobrancaModalOpen] = useState(false);
+    const [isCobrancaLoading, setIsCobrancaLoading] = useState(false);
+    const [pendentesCount, setPendentesCount] = useState(0);
 
     // Estados para modal de serviços extras
     const [isMonthlyExtraServicesModalOpen, setIsMonthlyExtraServicesModalOpen] = useState(false);
@@ -6974,6 +6979,33 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
         }
     };
 
+    const handleCobrancaMensalistas = async () => {
+        const pendentes = monthlyClients.filter(c => c.payment_status === 'Pendente').length;
+        if (pendentes === 0) {
+            alert('Não há clientes mensalistas com status pendente para cobrar.');
+            return;
+        }
+        setPendentesCount(pendentes);
+        setIsCobrancaModalOpen(true);
+    };
+
+    const confirmCobrancaMensalistas = async () => {
+        setIsCobrancaLoading(true);
+        try {
+            await fetch('https://n8n.intelektus.tech/webhook/cobraMensalistas', {
+                method: 'POST',
+                mode: 'no-cors'
+            });
+            setAlertInfo({ title: 'Sucesso!', message: 'Solicitação de cobrança enviada com sucesso!', variant: 'success' });
+        } catch (err) {
+            console.error('Erro ao disparar webhook de cobrança:', err);
+            setAlertInfo({ title: 'Erro de Conexão', message: 'Erro ao conectar com o webhook. Tente novamente mais tarde.', variant: 'error' });
+        } finally {
+            setIsCobrancaLoading(false);
+            setIsCobrancaModalOpen(false);
+        }
+    };
+
     // Filter and sort clients based on search term, filters and archive toggle
     const filteredClients = useMemo(() => {
         let filtered = monthlyClients;
@@ -7220,6 +7252,16 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </button>
+
+                        <button
+                            onClick={handleCobrancaMensalistas}
+                            className="inline-flex items-center justify-center bg-white text-green-600 font-bold h-11 w-11 rounded-xl hover:bg-green-50 transition-all shadow-sm border border-gray-200 hover:border-green-300 focus:ring-2 focus:ring-green-200"
+                            title="Cobrar Mensalistas Pendentes"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </button>
                     </div>
@@ -7688,6 +7730,18 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
             <MonthlyReminderModal 
                 isOpen={isReminderOpen} 
                 onClose={() => setIsReminderOpen(false)} 
+            />
+
+            <ConfirmationModal
+                isOpen={isCobrancaModalOpen}
+                onClose={() => setIsCobrancaModalOpen(false)}
+                onConfirm={confirmCobrancaMensalistas}
+                title="Cobrar Mensalistas"
+                message={`Deseja realizar a cobrança de ${pendentesCount} clientes mensalistas com status pendente agora?`}
+                confirmText="Cobrar"
+                cancelText="Cancelar"
+                variant="primary"
+                isLoading={isCobrancaLoading}
             />
         </>
     );
@@ -13517,6 +13571,12 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     const [daycarePaymentUpdatingId, setDaycarePaymentUpdatingId] = useState<string | null>(null);
     const [showLocalStats, setShowLocalStats] = useState(false);
 
+    // Estados do Modal de Cobrança - Creche Pet
+    const [isCobrancaCrecheModalOpen, setIsCobrancaCrecheModalOpen] = useState(false);
+    const [isCobrancaCrecheLoading, setIsCobrancaCrecheLoading] = useState(false);
+    const [pendentesCrecheCount, setPendentesCrecheCount] = useState(0);
+    const [alertCrecheInfo, setAlertCrecheInfo] = useState<{ title: string; message: string; variant: 'success' | 'error' } | null>(null);
+
     useEffect(() => {
         if (isUploadDaycarePhotoModalOpen) {
             document.body.style.overflow = 'hidden';
@@ -13857,6 +13917,33 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
         );
     };
 
+    const handleCobrancaCreche = () => {
+        const pendentes = enrollments.filter(e => e.payment_status === 'Pendente').length;
+        if (pendentes === 0) {
+            alert('Não há matrículas da creche com status pendente para cobrar.');
+            return;
+        }
+        setPendentesCrecheCount(pendentes);
+        setIsCobrancaCrecheModalOpen(true);
+    };
+
+    const confirmCobrancaCreche = async () => {
+        setIsCobrancaCrecheLoading(true);
+        try {
+            await fetch('https://n8n.intelektus.tech/webhook/cobreCreche', {
+                method: 'POST',
+                mode: 'no-cors'
+            });
+            setAlertCrecheInfo({ title: 'Sucesso!', message: 'Solicitação de cobrança da creche enviada com sucesso!', variant: 'success' });
+        } catch (err) {
+            console.error('Erro ao disparar webhook de cobrança creche:', err);
+            setAlertCrecheInfo({ title: 'Erro de Conexão', message: 'Erro ao conectar com o webhook. Tente novamente mais tarde.', variant: 'error' });
+        } finally {
+            setIsCobrancaCrecheLoading(false);
+            setIsCobrancaCrecheModalOpen(false);
+        }
+    };
+
     if (diaryFor) {
         return <DaycareDiaryPage enrollment={diaryFor} date={diaryDate} onDateChange={setDiaryDate} onBack={closeDiary} />
     }
@@ -13869,6 +13956,7 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
 
     return (
         <div className="animate-fadeIn">
+            {alertCrecheInfo && <AlertModal isOpen={!!alertCrecheInfo} onClose={() => setAlertCrecheInfo(null)} title={alertCrecheInfo.title} message={alertCrecheInfo.message} variant={alertCrecheInfo.variant} />}
             {isUploadDaycarePhotoModalOpen && uploadTargetDaycareEnrollment && (
                 createPortal(
                     <div className="fixed inset-0 z-[10000] flex items-center justify-center">
@@ -13930,6 +14018,17 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                     isLoading={isDeleting}
                 />
             )}
+            <ConfirmationModal
+                isOpen={isCobrancaCrecheModalOpen}
+                onClose={() => setIsCobrancaCrecheModalOpen(false)}
+                onConfirm={confirmCobrancaCreche}
+                title="Cobrar Creche Pet"
+                message={`Deseja realizar a cobrança de ${pendentesCrecheCount} matrículas da creche com status pendente agora?`}
+                confirmText="Cobrar"
+                cancelText="Cancelar"
+                variant="primary"
+                isLoading={isCobrancaCrecheLoading}
+            />
 
             <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-6 mb-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-gradient-to-br from-pink-50 to-purple-50 rounded-full blur-2xl opacity-70 pointer-events-none"></div>
@@ -13956,6 +14055,16 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                             title="Estatísticas"
                         >
                             <ChartBarIcon className="w-5 h-5" />
+                        </button>
+
+                        <button
+                            onClick={handleCobrancaCreche}
+                            className="inline-flex items-center justify-center bg-white text-green-600 font-bold h-11 w-11 rounded-xl hover:bg-green-50 transition-all shadow-sm border border-gray-200 hover:border-green-300 focus:ring-2 focus:ring-green-200"
+                            title="Cobrar Matrículas Pendentes"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </button>
                     </div>
                 </div>
