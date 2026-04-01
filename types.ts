@@ -183,6 +183,7 @@ export interface DaycareRegistration {
     status: 'Pendente' | 'Aprovado' | 'Rejeitado';
     agreed_to_checklist?: boolean;
     agreed_to_contract?: boolean;
+    checklist_url?: string | null;
 }
 
 export interface HotelRegistration {
@@ -260,4 +261,5 @@ export interface HotelRegistration {
         despesa_medica: { enabled: boolean; value: number };
         dias_extras: { quantity: number; value: number };
     };
+    checklist_url?: string | null;
 }

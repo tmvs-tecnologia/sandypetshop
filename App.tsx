@@ -7772,7 +7772,10 @@ const DaycareEnrollmentCard: React.FC<{
     paymentUpdatingId?: string | null;
     onTogglePresence?: (enrollment: DaycareRegistration) => void;
     isInDaycare?: boolean;
-}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare }) => {
+    onUploadChecklist?: (enrollment: DaycareRegistration, file: File) => void;
+    onRemoveChecklist?: (enrollment: DaycareRegistration, docIndex: number) => void;
+    isUploadingChecklist?: boolean;
+}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare, onUploadChecklist, onRemoveChecklist, isUploadingChecklist }) => {
     const { created_at, pet_name, tutor_name, contracted_plan, status } = enrollment;
     const formatTimeText = (time: string | null | undefined): string => {
         if (!time) return 'Não definido';
@@ -7959,6 +7962,70 @@ const DaycareEnrollmentCard: React.FC<{
                                 </span>
                             ))
                             : <span className="text-xs text-gray-500">Não informado</span>}
+                    </div>
+                </div>
+
+                {/* Checklist de Entrada & Contrato */}
+                <div className="mb-4">
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
+                        Checklist e Contrato 
+                    </span>
+                    <div className="flex flex-col gap-2">
+                        {(() => {
+                            let checklists: {name: string, url: string}[] = [];
+                            if (enrollment.checklist_url) {
+                                try {
+                                    const parsed = JSON.parse(enrollment.checklist_url);
+                                    if (Array.isArray(parsed)) checklists = parsed;
+                                    else checklists = [{ name: 'Documento Anexado', url: enrollment.checklist_url }];
+                                } catch {
+                                    checklists = [{ name: 'Documento Anexado', url: enrollment.checklist_url }];
+                                }
+                            }
+                            return (
+                                <div className="flex flex-nowrap overflow-x-auto items-center gap-1.5 pb-1 -mb-1 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+                                    <label onClick={(e) => e.stopPropagation()} className={`inline-flex flex-shrink-0 items-center justify-center w-8 h-8 rounded-lg border transition-all shadow-sm ${isUploadingChecklist ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-400 border-gray-200 hover:bg-pink-50 hover:text-pink-600 cursor-pointer hover:border-pink-200 hover:shadow-pink-100'}`} title="Anexar arquivo PDF ou Imagem">
+                                        {isUploadingChecklist ? (
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                                        ) : (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                        )}
+                                        <input type="file" className="hidden" accept=".pdf,.doc,.docx,image/*" disabled={isUploadingChecklist} onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file && onUploadChecklist) {
+                                                if (file.size > 50 * 1024 * 1024) {
+                                                    alert('O arquivo deve ter no máximo 50MB.');
+                                                    return;
+                                                }
+                                                onUploadChecklist(enrollment, file);
+                                            }
+                                            e.target.value = '';
+                                        }} />
+                                    </label>
+
+                                    {checklists.map((doc, idx) => (
+                                        <div key={idx} className="relative group inline-flex flex-shrink-0">
+                                            <a href={doc.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 pl-2 pr-6 py-1 rounded-md text-[10px] font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors shadow-sm max-w-[130px]" title={doc.name}>
+                                                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                                <span className="truncate">{doc.name}</span>
+                                            </a>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (window.confirm('Tem certeza que deseja remover este documento?')) {
+                                                        onRemoveChecklist?.(enrollment, idx);
+                                                    }
+                                                }}
+                                                className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-green-600 hover:text-red-500 hover:bg-red-100 rounded-md transition-all opacity-0 group-hover:opacity-100 bg-green-50"
+                                                title="Remover anexo"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
 
@@ -11861,6 +11928,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [selectedPhotoName, setSelectedPhotoName] = useState<string>('');
+    const [isUploadingChecklistMap, setIsUploadingChecklistMap] = useState<Record<string, boolean>>({});
 
     const handlePetPhotoUpload = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -11900,6 +11968,88 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
         } finally {
             setIsUploadingPhoto(false);
             setSelectedPhotoName('');
+        }
+    };
+
+    const handleHotelChecklistUpload = async (registration: HotelRegistration, file: File) => {
+        setIsUploadingChecklistMap(prev => ({ ...prev, [registration.id!]: true }));
+        try {
+            const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+            const baseName = `hotel_reg_${registration.id}_${Date.now()}`;
+            const path = `${baseName}.${ext}`;
+            const { error: uploadError } = await supabase.storage.from('hotel_checklists').upload(path, file, { upsert: true, contentType: file.type });
+            if (uploadError) throw uploadError;
+
+            const { data } = supabase.storage.from('hotel_checklists').getPublicUrl(path);
+            const publicUrl = data.publicUrl;
+
+            let currentChecklists: { name: string, url: string }[] = [];
+            if (registration.checklist_url) {
+                try {
+                    const parsed = JSON.parse(registration.checklist_url);
+                    if (Array.isArray(parsed)) currentChecklists = parsed;
+                    else currentChecklists = [{ name: 'Documento Anexado', url: registration.checklist_url }];
+                } catch {
+                    currentChecklists = [{ name: 'Documento Anexado', url: registration.checklist_url }];
+                }
+            }
+
+            const newValue = JSON.stringify([...currentChecklists, { name: file.name, url: publicUrl }]);
+
+            const { data: updated, error: dbErr } = await supabase.from('hotel_registrations')
+                .update({ checklist_url: newValue })
+                .eq('id', getDbId(registration.id)).select().single();
+            if (dbErr) throw dbErr;
+
+            const normalizedUpdated = { ...updated, id: String((updated as any).id) };
+            setRegistrations(prev => prev.map(r => String(r.id) === String(registration.id) ? (normalizedUpdated as HotelRegistration) : r));
+        } catch (err: any) {
+            alert('Falha ao enviar arquivo do checklist: ' + (err.message || String(err)));
+        } finally {
+            setIsUploadingChecklistMap(prev => ({ ...prev, [registration.id!]: false }));
+        }
+    };
+
+    const handleHotelChecklistRemove = async (registration: HotelRegistration, docIndex: number) => {
+        setIsUploadingChecklistMap(prev => ({ ...prev, [registration.id!]: true }));
+        try {
+            let currentChecklists: { name: string, url: string }[] = [];
+            if (registration.checklist_url) {
+                try {
+                    const parsed = JSON.parse(registration.checklist_url);
+                    if (Array.isArray(parsed)) currentChecklists = parsed;
+                    else currentChecklists = [{ name: 'Documento Anexado', url: registration.checklist_url }];
+                } catch {
+                    currentChecklists = [{ name: 'Documento Anexado', url: registration.checklist_url }];
+                }
+            }
+
+            if (docIndex >= 0 && docIndex < currentChecklists.length) {
+                const docToRemove = currentChecklists[docIndex];
+                currentChecklists.splice(docIndex, 1);
+                
+                if (docToRemove.url.includes('/hotel_checklists/')) {
+                    const pathParts = docToRemove.url.split('/hotel_checklists/');
+                    if (pathParts.length > 1) {
+                        const filePath = pathParts[1].split('?')[0];
+                        await supabase.storage.from('hotel_checklists').remove([filePath]);
+                    }
+                }
+            }
+
+            const newValue = currentChecklists.length > 0 ? JSON.stringify(currentChecklists) : null;
+            
+            const { data: updated, error: dbErr } = await supabase.from('hotel_registrations')
+                .update({ checklist_url: newValue })
+                .eq('id', getDbId(registration.id)).select().single();
+            if (dbErr) throw dbErr;
+            
+            const normalizedUpdated = { ...updated, id: String((updated as any).id) };
+            setRegistrations(prev => prev.map(r => String(r.id) === String(registration.id) ? (normalizedUpdated as HotelRegistration) : r));
+        } catch (err: any) {
+            alert('Falha ao remover arquivo do checklist: ' + (err.message || String(err)));
+        } finally {
+            setIsUploadingChecklistMap(prev => ({ ...prev, [registration.id!]: false }));
         }
     };
 
@@ -12433,7 +12583,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                                     <div className="flex gap-4 pb-2 snap-x snap-mandatory">
                                         {items.map(reg => (
                                             <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, sectionId)} className="shrink-0 w-screen sm:w-[420px] lg:w-[460px] snap-center">
-                                                <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={sectionId === 'approved'} inHotel={sectionId === 'in_hotel'} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
+                                                <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={sectionId === 'approved'} inHotel={sectionId === 'in_hotel'} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} onUploadChecklist={handleHotelChecklistUpload} onRemoveChecklist={handleHotelChecklistRemove} isUploadingChecklist={!!isUploadingChecklistMap[reg.id!]} />
                                             </div>
                                         ))}
                                     </div>
@@ -12461,7 +12611,10 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
         showCheckActions?: boolean;
         inHotel?: boolean;
         onChangePhoto?: (registration: HotelRegistration) => void;
-    }> = ({ registration, onAddExtraServices, showCheckActions = false, inHotel = false, onChangePhoto }) => {
+        onUploadChecklist?: (registration: HotelRegistration, file: File) => void;
+        onRemoveChecklist?: (registration: HotelRegistration, index: number) => void;
+        isUploadingChecklist?: boolean;
+    }> = ({ registration, onAddExtraServices, showCheckActions = false, inHotel = false, onChangePhoto, onUploadChecklist, onRemoveChecklist, isUploadingChecklist }) => {
         const invoiceTotal = calculateHotelInvoiceTotal(registration);
         const currentCheckInStatus = registration.check_in_status || 'pending';
         const isUpdating = updatingId === registration.id;
@@ -12600,6 +12753,68 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                             </div>
                         </div>
                     )}
+                </div>
+
+                {/* --- Sessão Check List e Contrato --- */}
+                <div className="mb-4">
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 select-none">Checklist e Contrato</h4>
+                    <div className="flex items-center">
+                        {(() => {
+                            let checklists: { name: string, url: string }[] = [];
+                            if (registration.checklist_url) {
+                                try {
+                                    const parsed = JSON.parse(registration.checklist_url);
+                                    if (Array.isArray(parsed)) checklists = parsed;
+                                    else checklists = [{ name: 'Documento Anexado', url: registration.checklist_url }];
+                                } catch {
+                                    checklists = [{ name: 'Documento Anexado', url: registration.checklist_url }];
+                                }
+                            }
+                            return (
+                                <div className="flex flex-nowrap overflow-x-auto items-center gap-1.5 pb-1 -mb-1 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+                                    <label onClick={(e) => e.stopPropagation()} className={`inline-flex flex-shrink-0 items-center justify-center w-8 h-8 rounded-lg border transition-all shadow-sm ${isUploadingChecklist ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-400 border-gray-200 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer hover:border-indigo-200 hover:shadow-indigo-100'}`} title="Anexar arquivo PDF ou Imagem">
+                                        {isUploadingChecklist ? (
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                                        ) : (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                        )}
+                                        <input type="file" className="hidden" accept=".pdf,.doc,.docx,image/*" disabled={isUploadingChecklist} onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file && onUploadChecklist) {
+                                                if (file.size > 50 * 1024 * 1024) {
+                                                    alert('O arquivo deve ter no máximo 50MB.');
+                                                    return;
+                                                }
+                                                onUploadChecklist(registration, file);
+                                            }
+                                            e.target.value = '';
+                                        }} />
+                                    </label>
+
+                                    {checklists.map((doc, idx) => (
+                                        <div key={idx} className="relative group inline-flex flex-shrink-0">
+                                            <a href={doc.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 pl-2 pr-6 py-1 rounded-md text-[10px] font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors shadow-sm max-w-[130px]" title={doc.name}>
+                                                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                                <span className="truncate">{doc.name}</span>
+                                            </a>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (window.confirm('Tem certeza que deseja remover este documento?')) {
+                                                        onRemoveChecklist?.(registration, idx);
+                                                    }
+                                                }}
+                                                className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-green-600 hover:text-red-500 hover:bg-red-100 rounded-md transition-all opacity-0 group-hover:opacity-100 bg-green-50"
+                                                title="Remover anexo"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })()}
+                    </div>
                 </div>
 
                 {registration.extra_services && (
@@ -12869,7 +13084,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                                 {currentInHotel.map(reg => (
                                     <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, 'in_hotel')} className="w-full">
-                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={false} inHotel={true} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
+                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={false} inHotel={true} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} onUploadChecklist={handleHotelChecklistUpload} onRemoveChecklist={handleHotelChecklistRemove} isUploadingChecklist={!!isUploadingChecklistMap[reg.id!]} />
                                     </div>
                                 ))}
                             </div>
@@ -12888,7 +13103,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                                 {approved.map(reg => (
                                     <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, 'approved')} className="w-full">
-                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={true} inHotel={false} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
+                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={true} inHotel={false} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} onUploadChecklist={handleHotelChecklistUpload} onRemoveChecklist={handleHotelChecklistRemove} isUploadingChecklist={!!isUploadingChecklistMap[reg.id!]} />
                                     </div>
                                 ))}
                             </div>
@@ -12907,7 +13122,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                                 {analysis.map(reg => (
                                     <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, 'analysis')} className="w-full">
-                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={false} inHotel={false} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
+                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={false} inHotel={false} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} onUploadChecklist={handleHotelChecklistUpload} onRemoveChecklist={handleHotelChecklistRemove} isUploadingChecklist={!!isUploadingChecklistMap[reg.id!]} />
                                     </div>
                                 ))}
                             </div>
@@ -12926,7 +13141,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                                 {archived.map(reg => (
                                     <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, 'archived')} className="w-full">
-                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={false} inHotel={false} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} />
+                                        <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={false} inHotel={false} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} onUploadChecklist={handleHotelChecklistUpload} onRemoveChecklist={handleHotelChecklistRemove} isUploadingChecklist={!!isUploadingChecklistMap[reg.id!]} />
                                     </div>
                                 ))}
                             </div>
@@ -13547,7 +13762,6 @@ const EditHotelRegistrationModal: React.FC<{
     );
 };
 
-// FIX: Add the missing DaycareView component to manage daycare enrollments.
 const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     const [enrollments, setEnrollments] = useState<DaycareRegistration[]>([]);
     const [petsInDaycareNow, setPetsInDaycareNow] = useState<DaycareRegistration[]>([]);
@@ -13567,6 +13781,7 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     const [uploadTargetDaycareEnrollment, setUploadTargetDaycareEnrollment] = useState<DaycareRegistration | null>(null);
     const [isUploadingDaycarePhoto, setIsUploadingDaycarePhoto] = useState(false);
     const [daycareUploadError, setDaycareUploadError] = useState<string | null>(null);
+    const [isUploadingChecklistMap, setIsUploadingChecklistMap] = useState<Record<string, boolean>>({});
     const [selectedDaycarePhotoName, setSelectedDaycarePhotoName] = useState<string>('');
     const [diaryFor, setDiaryFor] = useState<DaycareRegistration | null>(null);
     const [diaryDate, setDiaryDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
@@ -13745,6 +13960,91 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
         }
     };
 
+    const handleDaycareChecklistUpload = async (enrollment: DaycareRegistration, file: File) => {
+        setIsUploadingChecklistMap(prev => ({ ...prev, [enrollment.id!]: true }));
+        try {
+            const ext = (file.name.split('.')?.pop() || 'pdf').toLowerCase();
+            const base = (enrollment.id || enrollment.pet_name.replace(/\s+/g, '_'));
+            // Define o path e um token aleatório para permitir repetição no nome
+            const path = `${base}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+            
+            const { error: upErr } = await supabase.storage.from('daycare_checklists').upload(path, file, { upsert: true, contentType: file.type });
+            if (upErr) throw upErr;
+            const { data } = supabase.storage.from('daycare_checklists').getPublicUrl(path);
+            const publicUrl = data.publicUrl;
+            
+            let currentChecklists: { name: string, url: string }[] = [];
+            if (enrollment.checklist_url) {
+                try {
+                    const parsed = JSON.parse(enrollment.checklist_url);
+                    if (Array.isArray(parsed)) currentChecklists = parsed;
+                    else currentChecklists = [{ name: 'Documento Anexado', url: enrollment.checklist_url }];
+                } catch {
+                    currentChecklists = [{ name: 'Documento Anexado', url: enrollment.checklist_url }];
+                }
+            }
+            
+            currentChecklists.push({ name: file.name, url: publicUrl });
+            const newValue = JSON.stringify(currentChecklists);
+            
+            const { data: updated, error: dbErr } = await supabase.from('daycare_enrollments').update({ checklist_url: newValue }).eq('id', enrollment.id as string).select().single();
+            if (dbErr) throw dbErr;
+            
+            setEnrollments(prev => prev.map(e => e.id === enrollment.id ? (updated as DaycareRegistration) : e));
+            
+            // Também sincroniza em petsInDaycareNow se estiver lá
+            setPetsInDaycareNow(prev => prev.map(e => e.id === enrollment.id ? (updated as DaycareRegistration) : e));
+        } catch (err: any) {
+            alert('Falha ao enviar arquivo do checklist: ' + (err.message || String(err)));
+        } finally {
+            setIsUploadingChecklistMap(prev => ({ ...prev, [enrollment.id!]: false }));
+        }
+    };
+
+    const handleDaycareChecklistRemove = async (enrollment: DaycareRegistration, docIndex: number) => {
+        setIsUploadingChecklistMap(prev => ({ ...prev, [enrollment.id!]: true }));
+        try {
+            let currentChecklists: { name: string, url: string }[] = [];
+            if (enrollment.checklist_url) {
+                try {
+                    const parsed = JSON.parse(enrollment.checklist_url);
+                    if (Array.isArray(parsed)) currentChecklists = parsed;
+                    else currentChecklists = [{ name: 'Documento Anexado', url: enrollment.checklist_url }];
+                } catch {
+                    currentChecklists = [{ name: 'Documento Anexado', url: enrollment.checklist_url }];
+                }
+            }
+
+            if (docIndex >= 0 && docIndex < currentChecklists.length) {
+                const docToRemove = currentChecklists[docIndex];
+                currentChecklists.splice(docIndex, 1);
+                
+                // Exclusão do storage caso seja um link do supabase
+                if (docToRemove.url.includes('/daycare_checklists/')) {
+                    const pathParts = docToRemove.url.split('/daycare_checklists/');
+                    if (pathParts.length > 1) {
+                        const filePath = pathParts[1].split('?')[0]; // Remove query params se houver
+                        await supabase.storage.from('daycare_checklists').remove([filePath]);
+                    }
+                }
+            }
+
+            const newValue = currentChecklists.length > 0 ? JSON.stringify(currentChecklists) : null;
+            
+            const { data: updated, error: dbErr } = await supabase.from('daycare_enrollments')
+                .update({ checklist_url: newValue })
+                .eq('id', enrollment.id as string).select().single();
+            if (dbErr) throw dbErr;
+            
+            setEnrollments(prev => prev.map(e => e.id === enrollment.id ? (updated as DaycareRegistration) : e));
+            setPetsInDaycareNow(prev => prev.map(e => e.id === enrollment.id ? (updated as DaycareRegistration) : e));
+        } catch (err: any) {
+            alert('Falha ao remover arquivo do checklist: ' + (err.message || String(err)));
+        } finally {
+            setIsUploadingChecklistMap(prev => ({ ...prev, [enrollment.id!]: false }));
+        }
+    };
+
     const handleDaycarePetPhotoUpload = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setDaycareUploadError(null);
@@ -13913,6 +14213,9 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                         paymentUpdatingId={daycarePaymentUpdatingId}
                         onTogglePresence={handleToggleDaycarePresence}
                         isInDaycare={petsInDaycareNow.some(p => p.id === enrollment.id)}
+                        onUploadChecklist={handleDaycareChecklistUpload}
+                        onRemoveChecklist={handleDaycareChecklistRemove}
+                        isUploadingChecklist={!!isUploadingChecklistMap[enrollment.id!]}
                     />
                 ))}
             </div>
