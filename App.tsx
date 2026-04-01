@@ -314,12 +314,12 @@ const AlbumManagementView: React.FC = () => {
     };
 
     return (
-        <div className="animate-fadeIn p-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                <div>
-                    <h2 className="text-3xl font-extrabold text-pink-950">Álbum de Fotos</h2>
-                    <p className="text-pink-800/60 font-medium tracking-tight">Gerencie as belas fotos que os clientes verão em mosaico</p>
-                </div>
+        <div className="animate-fadeIn p-6 flex flex-col items-center text-center">
+            <div className="w-full max-w-4xl mb-10">
+                <h2 className="text-4xl font-bold text-pink-600 mb-2" style={{ fontFamily: '"Lobster Two", cursive' }}>Álbum de Fotos</h2>
+                <p className="text-pink-800/60 font-medium tracking-tight">Gerencie as belas fotos que os clientes verão em mosaico</p>
+            </div>
+            <div className="mb-8">
                 <label className={`flex items-center justify-center gap-2 px-8 py-4 bg-pink-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 active:scale-95 ${uploading ? 'opacity-70 cursor-wait' : ''}`}>
                     <PlusIcon className="w-5 h-5" />
                     {uploading ? 'Enviando Fotos...' : 'Adicionar Fotos ao Álbum'}
