@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon as XMarkOutlineIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon, PencilSquareIcon, PlusIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
 import { SERVICES, WORKING_HOURS, BATH_GROOMING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
@@ -223,6 +222,150 @@ const AiChatView: React.FC<{ key?: number }> = () => {
                     </button>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const AlbumManagementView: React.FC = () => {
+    const [photos, setPhotos] = useState<{ id: string; url: string; storage_path: string }[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
+
+    const fetchPhotos = useCallback(async () => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('pet_album_photos')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            if (data) setPhotos(data);
+        } catch (err) {
+            console.error('Erro ao buscar fotos:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchPhotos();
+    }, [fetchPhotos]);
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        setUploading(true);
+        for (const file of files) {
+            try {
+                if (file.size > 50 * 1024 * 1024) {
+                    alert(`O arquivo ${file.name} excede o limite de 50MB.`);
+                    continue;
+                }
+
+                const ext = file.name.split('.').pop() || 'jpg';
+                const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${ext}`;
+                const storagePath = `album/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('pet_album')
+                    .upload(storagePath, file);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('pet_album')
+                    .getPublicUrl(storagePath);
+
+                const { error: dbError } = await supabase
+                    .from('pet_album_photos')
+                    .insert([{ url: publicUrl, storage_path: storagePath }]);
+
+                if (dbError) throw dbError;
+            } catch (err: any) {
+                console.error('Erro no upload:', err);
+                alert(`Erro ao carregar ${file.name}: ` + (err.message || 'Erro desconhecido'));
+            }
+        }
+        setUploading(false);
+        fetchPhotos();
+    };
+
+    const handleDelete = async (photo: { id: string; storage_path: string }) => {
+        if (!confirm('Tem certeza que deseja excluir esta foto?')) return;
+
+        try {
+            await supabase.storage
+                .from('pet_album')
+                .remove([photo.storage_path]);
+
+            const { error: dbError } = await supabase
+                .from('pet_album_photos')
+                .delete()
+                .eq('id', photo.id);
+
+            if (dbError) throw dbError;
+
+            setPhotos(prev => prev.filter(p => p.id !== photo.id));
+        } catch (err: any) {
+            console.error('Erro na exclusão:', err);
+            alert('Erro ao excluir a foto: ' + (err.message || 'Erro desconhecido'));
+        }
+    };
+
+    return (
+        <div className="animate-fadeIn p-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <h2 className="text-3xl font-extrabold text-pink-950">Álbum de Fotos</h2>
+                    <p className="text-pink-800/60 font-medium tracking-tight">Gerencie as belas fotos que os clientes verão em mosaico</p>
+                </div>
+                <label className={`flex items-center justify-center gap-2 px-8 py-4 bg-pink-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 active:scale-95 ${uploading ? 'opacity-70 cursor-wait' : ''}`}>
+                    <PlusIcon className="w-5 h-5" />
+                    {uploading ? 'Enviando Fotos...' : 'Adicionar Fotos ao Álbum'}
+                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
+                </label>
+            </div>
+
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-24 gap-4">
+                    <LoadingSpinner />
+                    <p className="text-pink-800/40 font-medium">Carregando seu álbum...</p>
+                </div>
+            ) : photos.length === 0 ? (
+                <div className="text-center py-20 bg-white/40 rounded-[2.5rem] border-4 border-dashed border-pink-100 backdrop-blur-sm">
+                    <div className="w-24 h-24 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <PhotoIcon className="w-12 h-12 text-pink-200" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-pink-900 mb-2">Seu Álbum está Vazio</h3>
+                    <p className="text-pink-800/60 max-w-sm mx-auto">As fotos que você adicionar aqui aparecerão em um mosaico animado na tela inicial dos seus clientes.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 animate-fadeIn">
+                    {photos.map((photo, index) => (
+                        <div 
+                            key={photo.id} 
+                            style={{ animationDelay: `${index * 50}ms` }}
+                            className="relative group rounded-3xl overflow-hidden shadow-xl bg-white border border-pink-100 aspect-square animate-scaleIn"
+                        >
+                            <SafeImage 
+                                src={photo.url} 
+                                alt="Pet no Álbum" 
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-pink-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+                                <button
+                                    onClick={() => handleDelete(photo)}
+                                    className="p-4 bg-white/20 backdrop-blur-md text-white rounded-full hover:bg-white/40 border border-white/30 transform scale-90 group-hover:scale-100 transition-all shadow-xl"
+                                    title="Excluir Foto"
+                                >
+                                    <TrashOutlineIcon className="w-7 h-7" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
@@ -788,10 +931,10 @@ const CameraAddIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 const TagIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/13733/13733507.png" alt="Tag" className="h-5 w-5 mr-1.5" />;
-const CheckCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>;
+const CheckCircleSolidIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>;
 const LoadingSpinner = () => <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>;
-const ListIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>;
-const UserPlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" /></svg>;
+const ListSolidIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>;
+const UserPlusSolidIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" /></svg>;
 const EditIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>
 );
@@ -10801,9 +10944,87 @@ const TimeSlotPicker: React.FC<{
     );
 };
 
+const AlbumGrid = ({ onPhotoClick }: { onPhotoClick: (photo: {url: string, filename: string}) => void }) => {
+    const [photos, setPhotos] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchPhotos();
+    }, []);
+
+    const fetchPhotos = async () => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('pet_album_photos')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            if (data) setPhotos(data);
+        } catch (error) {
+            console.error('Error fetching album photos:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 animate-fadeIn">
+            <div className="relative">
+                <div className="w-24 h-24 border-8 border-pink-100 border-t-pink-600 rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center text-3xl">🐶</div>
+            </div>
+            <p className="text-pink-900 font-black text-2xl tracking-tight animate-pulse">Carregando memórias...</p>
+        </div>
+    );
+
+    if (photos.length === 0) return (
+        <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40 space-y-6 animate-fadeIn">
+            <div className="text-9xl">📸</div>
+            <div className="space-y-2">
+                <p className="text-3xl font-black text-pink-950">Nenhuma foto ainda.</p>
+                <p className="font-bold text-pink-700 text-lg">Em breve, muitos momentos lindos aqui!</p>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 pb-20">
+            {photos.map((photo, index) => (
+                <div 
+                    key={photo.id} 
+                    onClick={() => onPhotoClick({ url: photo.url, filename: photo.filename })}
+                    className="animate-bloom cursor-pointer group"
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                    <div className="relative aspect-square rounded-[2rem] overflow-hidden shadow-md hover:shadow-2xl transition-all duration-700 hover:-translate-y-2 border-4 border-white bg-pink-50">
+                        <img 
+                            src={photo.url} 
+                            alt={photo.filename}
+                            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000 ease-out"
+                            loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-pink-950/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-4">
+                            <p className="text-white font-bold text-xs truncate mb-1">{photo.filename}</p>
+                            <p className="text-pink-200 text-[10px] uppercase font-black tracking-tighter">
+                                {new Date(photo.created_at).toLocaleDateString('pt-BR')}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 // --- MAIN APP COMPONENT ---
 const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegistration' | 'hotelRegistration') => void }> = ({ setView }) => {
     const { getPricesForWeight } = useServicePrices();
+
+    const [showPublicAlbum, setShowPublicAlbum] = useState(false);
+    const [selectedPhoto, setSelectedPhoto] = useState<{url: string, filename: string} | null>(null);
+    const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [banhoTosaOnlyAppointments, setBanhoTosaOnlyAppointments] = useState<Appointment[]>([]);
@@ -11333,12 +11554,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         }
     };
 
-    const isStep1Valid = formData.petName && formData.ownerName && formData.whatsapp.length > 13 && formData.petBreed && formData.ownerAddress;
-    const isPetMovelServiceSelected = !!selectedService && [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
-    const isStep2Valid = serviceStepView !== 'main' && selectedService && (isVisitService || selectedWeight) && (!isPetMovelServiceSelected || !!selectedCondo);
-    const isStep3Valid = selectedTime !== null;
 
-    const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
@@ -11354,19 +11570,90 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             <p className="text-pink-800/70 text-lg md:text-xl font-medium tracking-wide uppercase mt-2">Agendamento Online</p>
                         </div>
                     </div>
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 flex flex-row gap-3 items-center justify-center w-full md:w-auto">
                         <button
                             onClick={() => setIsPriceModalOpen(true)}
-                            className="group relative overflow-hidden px-8 py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center gap-3 transform hover:-translate-y-1"
+                            className="flex-1 sm:flex-none group relative overflow-hidden px-4 sm:px-8 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center justify-center gap-2 sm:gap-3 transform hover:-translate-y-1"
                         >
                             <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
                             <span className="relative z-10 text-2xl">📋</span>
-                            <span className="relative z-10 uppercase tracking-wider text-sm">Tabela de Preços</span>
+                            <span className="relative z-10 uppercase tracking-wider text-sm">Preços</span>
+                        </button>
+                        <button
+                            onClick={() => setShowPublicAlbum(true)}
+                            className="flex-1 sm:flex-none group relative overflow-hidden px-4 sm:px-8 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center justify-center gap-2 sm:gap-3 transform hover:-translate-y-1"
+                        >
+                            <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
+                            <span className="relative z-10 text-2xl">📸</span>
+                            <span className="relative z-10 uppercase tracking-wider text-sm font-black">Álbum</span>
                         </button>
                     </div>
                 </header>
 
+
+
                 <PriceTableModal isOpen={isPriceModalOpen} onClose={() => setIsPriceModalOpen(false)} />
+
+                {/* Estilos de Animação Premium */}
+                <style dangerouslySetInnerHTML={{ __html: `
+                    @keyframes bloomIn {
+                        0% { opacity: 0; transform: scale(0.6) translateY(30px); }
+                        60% { transform: scale(1.05); }
+                        100% { opacity: 1; transform: scale(1) translateY(0); }
+                    }
+                    .animate-bloom {
+                        animation: bloomIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                        opacity: 0;
+                    }
+                    @keyframes slideDown {
+                        from { transform: translateY(-100%); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
+                    }
+                    .animate-slideDown {
+                        animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    }
+                `}} />
+
+                {/* Lightbox para fotos do álbum */}
+                {selectedPhoto && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-pink-950/90 backdrop-blur-xl animate-fadeIn" onClick={() => setSelectedPhoto(null)}>
+                        <div className="relative max-w-5xl w-full h-full flex flex-col items-center justify-center gap-6" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => setSelectedPhoto(null)} className="absolute top-0 right-0 p-4 text-white hover:scale-110 transition-transform"><XMarkIcon className="w-10 h-10" /></button>
+                            <img src={selectedPhoto.url} alt={selectedPhoto.filename} className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl animate-scaleIn" />
+                            <p className="text-white text-xl font-bold tracking-wide italic bg-pink-900/50 px-6 py-2 rounded-full border border-white/20">{selectedPhoto.filename}</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* VISÃO DO ÁLBUM PREMIUM */}
+                {showPublicAlbum && (
+                    <div className="fixed inset-0 z-[150] bg-[#fff0f5] overflow-y-auto animate-fadeIn flex flex-col">
+                        <div className="w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col flex-1">
+                            <header className="flex flex-col md:flex-row items-center justify-between mb-12 gap-8 animate-slideDown">
+                                <div className="flex items-center gap-6">
+                                    <button 
+                                        onClick={() => setShowPublicAlbum(false)}
+                                        className="absolute top-4 left-4 z-50 p-2.5 bg-white/80 backdrop-blur-sm text-pink-700 rounded-full shadow-md border border-pink-100 hover:bg-pink-600 hover:text-white transition-all duration-300 hover:scale-110 flex items-center justify-center group"
+                                        title="Voltar"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                                        </svg>
+                                    </button>
+                                    <div className="text-center md:text-left">
+                                        <h2 className="text-5xl font-bold text-pink-600 leading-none" style={{ fontFamily: 'Lobster Two, cursive' }}>Álbum</h2>
+                                        <p className="text-pink-600 font-extrabold text-[10px] uppercase tracking-[0.3em] mt-2">Momentos Inesquecíveis</p>
+                                    </div>
+                                </div>
+                                <div className="flex -space-x-4">
+                                    {[1,2,3,4].map(i => <div key={i} className="w-12 h-12 rounded-full border-4 border-white bg-pink-100 flex items-center justify-center text-xl shadow-md">📸</div>)}
+                                </div>
+                            </header>
+
+                            <AlbumGrid onPhotoClick={(p: any) => setSelectedPhoto(p)} />
+                        </div>
+                    </div>
+                )}
 
                 {serviceStepView === 'main' && (
                     <section className="w-full animate-fadeIn">
@@ -14465,6 +14752,8 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     );
 };
 
+
+
 // FIX: Destructure the 'onLogout' prop to make it available within the component. This resolves 'Cannot find name' errors.
 const AdminDashboard: React.FC<{
     onLogout: () => void;
@@ -14808,6 +15097,7 @@ const AdminDashboard: React.FC<{
         { id: 'hotel', label: 'Hotel Pet', icon: <HotelIcon /> },
         { id: 'clients', label: 'Clientes', icon: <ClientsMenuIcon /> },
         { id: 'monthlyClients', label: 'Mensalistas', icon: <MonthlyIcon /> },
+        { id: 'album', label: 'Álbum de Fotos', icon: <PhotoIcon className="w-5 h-5 mr-3" /> },
     ];
 
     const handleOpenDashboard = (fromView: string) => {
@@ -14866,6 +15156,7 @@ const AdminDashboard: React.FC<{
             case 'dashboard': return <StatisticsDashboardModal onBack={() => setActiveView(previousView)} />;
             case 'closeDay': return <CloseDayView onBack={() => setActiveView(previousView)} />;
             case 'insights': return <InsightsDashboard key={dataKey} />;
+            case 'album': return <AlbumManagementView />;
             default: return <AppointmentsView 
                 key={dataKey} 
                 refreshKey={dataKey} 
@@ -14982,6 +15273,13 @@ const AdminDashboard: React.FC<{
                             Insights
                         </button>
                         <button
+                            onClick={() => { setActiveView('album'); closeMobileMenu(); }}
+                            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'album' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                        >
+                            <PhotoIcon className="w-6 h-6" />
+                            Álbum de Fotos
+                        </button>
+                        <button
                             onClick={() => { setIsPriceManagementOpen(true); closeMobileMenu(); }}
                             className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors text-pink-700 hover:bg-pink-50"
                         >
@@ -15027,6 +15325,13 @@ const AdminDashboard: React.FC<{
                             >
                                 <SparklesIcon className="w-6 h-6" />
                                 Insights
+                            </button>
+                            <button
+                                onClick={() => setActiveView('album')}
+                                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'album' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                <PhotoIcon className="w-6 h-6" />
+                                Álbum de Fotos
                             </button>
                             <div className="md:hidden space-y-1.5">
                                 <button
@@ -15726,7 +16031,8 @@ const ObservationModal: React.FC<{
     );
 };
 
-export default App;
+// Componentes auxiliares movidos após o App para manter o fluxo
+
 const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void; onDone: () => void }> = ({ serviceLabel, onBack, onDone }) => {
     const [petName, setPetName] = useState('');
     const [petBreed, setPetBreed] = useState('');
@@ -16526,3 +16832,5 @@ const PublicDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string;
         </div>
     );
 };
+
+export default App;
