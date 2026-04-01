@@ -15097,7 +15097,6 @@ const AdminDashboard: React.FC<{
         { id: 'hotel', label: 'Hotel Pet', icon: <HotelIcon /> },
         { id: 'clients', label: 'Clientes', icon: <ClientsMenuIcon /> },
         { id: 'monthlyClients', label: 'Mensalistas', icon: <MonthlyIcon /> },
-        { id: 'album', label: 'Álbum de Fotos', icon: <PhotoIcon className="w-5 h-5 mr-3" /> },
     ];
 
     const handleOpenDashboard = (fromView: string) => {
