@@ -871,7 +871,8 @@ const ConfirmationModal: React.FC<{
     cancelText?: string;
     variant?: 'danger' | 'primary';
     isLoading: boolean;
-}> = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Confirmar', cancelText = 'Cancelar', variant = 'primary', isLoading }) => {
+    icon?: React.ReactNode;
+}> = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Confirmar', cancelText = 'Cancelar', variant = 'primary', isLoading, icon }) => {
     if (!isOpen) return null;
 
     const confirmButtonClasses = {
@@ -884,7 +885,7 @@ const ConfirmationModal: React.FC<{
             <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md animate-scaleIn overflow-hidden font-jakarta">
                 <div className="p-8 sm:p-10 text-center">
                     <div className="w-20 h-20 bg-pink-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
-                        {variant === 'danger' ? '⚠️' : '❓'}
+                        {icon ? icon : variant === 'danger' ? '⚠️' : '❓'}
                     </div>
                     <h2 className="text-3xl font-extrabold text-gray-800 leading-tight mb-4 tracking-tight">{title}</h2>
                     <p className="text-slate-500 text-[17px] leading-relaxed mb-10">{message}</p>
@@ -7742,6 +7743,7 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                 cancelText="Cancelar"
                 variant="primary"
                 isLoading={isCobrancaLoading}
+                icon={<svg className="w-9 h-9 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
             />
         </>
     );
@@ -14028,6 +14030,7 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                 cancelText="Cancelar"
                 variant="primary"
                 isLoading={isCobrancaCrecheLoading}
+                icon={<svg className="w-9 h-9 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
             />
 
             <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-6 mb-6 relative overflow-hidden">
