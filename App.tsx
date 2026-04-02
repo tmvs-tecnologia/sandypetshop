@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon, PencilSquareIcon, PlusIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon, PencilSquareIcon, PlusIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
 import { SERVICES, WORKING_HOURS, BATH_GROOMING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
@@ -319,6 +319,7 @@ const AlbumManagementView: React.FC = () => {
                 <h2 className="text-4xl font-bold text-pink-600 mb-2" style={{ fontFamily: '"Lobster Two", cursive' }}>Álbum de Fotos</h2>
                 <p className="text-pink-800/60 font-medium tracking-tight">Gerencie as belas fotos que os clientes verão em mosaico</p>
             </div>
+            
             <div className="mb-8">
                 <label className={`flex items-center justify-center gap-2 px-8 py-4 bg-pink-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 active:scale-95 ${uploading ? 'opacity-70 cursor-wait' : ''}`}>
                     <PlusIcon className="w-5 h-5" />
