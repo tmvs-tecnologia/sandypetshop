@@ -11555,7 +11555,22 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         }
     };
 
-
+    // Validation variables for the public scheduling form
+    // Step 1: Personal data (name, WhatsApp, pet name, breed, address)
+    const isStep1Valid = !!(
+        formData.petName &&
+        formData.ownerName &&
+        formData.whatsapp.length > 13 &&
+        formData.petBreed &&
+        formData.ownerAddress
+    );
+    // Step 2: Service selected + (weight if not a visit service)
+    const isStep2Valid = !!(
+        selectedService &&
+        (isVisitService || selectedWeight)
+    );
+    // Step 3: Date + time slot selected
+    const isStep3Valid = !!(selectedTime !== null);
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
