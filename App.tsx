@@ -322,7 +322,7 @@ const AlbumManagementView: React.FC = () => {
             
             <div className="mb-8">
                 <label className={`flex items-center justify-center gap-2 px-8 py-4 bg-pink-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 active:scale-95 ${uploading ? 'opacity-70 cursor-wait' : ''}`}>
-                    <PlusIcon className="w-5 h-5" />
+                    <PlusOutlineIcon className="w-5 h-5" />
                     {uploading ? 'Enviando Fotos...' : 'Adicionar Fotos ao Álbum'}
                     <input type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
                 </label>
