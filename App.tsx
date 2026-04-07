@@ -968,6 +968,7 @@ const ClientsMenuIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com
 const MonthlyIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" alt="Mensalistas Icon" className="h-7 w-7" />;
 const HotelIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/1131/1131938.png" alt="Hotel Pet Icon" className="h-7 w-7" />;
 const PetMovelIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel Icon" className="h-7 w-7" />;
+const ResumoIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/17045/17045218.png" alt="Resumo Icon" className="h-7 w-7" />;
 
 
 // --- ADMIN COMPONENTS ---
@@ -3536,7 +3537,8 @@ const AdminAddAppointmentModal: React.FC<{
     const [isDragging, setIsDragging] = useState(false);
     const [dragY, setDragY] = useState(0);
     const [startY, setStartY] = useState(0);
-    const [isAnimating, setIsAnimating] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(true);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const handleDragStart = (e: React.TouchEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
         setIsDragging(true);
@@ -3595,6 +3597,16 @@ const AdminAddAppointmentModal: React.FC<{
             setClientFound(false);
             setFoundPets([]);
             setIsFetchingClient(false);
+            
+            // Inicia animação de slide-in
+            setIsAnimating(true);
+            const timer = setTimeout(() => {
+                setIsAnimating(false);
+                if (scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollTop = 0;
+                }
+            }, 10);
+            return () => clearTimeout(timer);
         }
     }, [isOpen]);
 
@@ -4012,12 +4024,19 @@ const AdminAddAppointmentModal: React.FC<{
 
     if (!isOpen) return null;
 
-    return (
-        <main 
-            className={`w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-xl border border-pink-100 mb-8 transition-all ease-out transform origin-top ${isAnimating ? 'translate-y-full opacity-0 duration-500' : 'animate-fadeIn opacity-100 scale-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
-            style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
-        >
-            <form onSubmit={handleSubmit} className="relative z-10">
+    return createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
+            {/* Backdrop com desfoque e clique para fechar */}
+            <div 
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
+                onClick={handleClose}
+            />
+
+            <main 
+                className={`relative w-full max-w-5xl bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl border border-pink-100 overflow-hidden flex flex-col max-h-[95dvh] sm:max-h-[90vh] transition-all ease-out transform origin-bottom ${isAnimating ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100'} ${!isDragging && !isAnimating ? 'duration-500' : 'duration-0'}`}
+                style={!isAnimating && dragY > 0 ? { transform: `translateY(${dragY}px)` } : {}}
+            >
+            <form onSubmit={handleSubmit} className="relative z-10 flex flex-col flex-1 overflow-hidden">
                 {/* Header estilo Mensalista */}
                 <div
                     className="relative p-6 sm:p-10 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100 rounded-t-[2rem] overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
@@ -4051,7 +4070,7 @@ const AdminAddAppointmentModal: React.FC<{
                     </div>
                 </div>
 
-                <div className="p-6 sm:p-8 space-y-8">
+                <div ref={scrollContainerRef} className="p-6 sm:p-8 space-y-8 overflow-y-auto flex-1 custom-scrollbar scroll-smooth">
                         {/* Seção 1: Identificação */}
                         <section>
                             <div className="flex items-center gap-3 border-b border-gray-100 pb-3 mb-6">
@@ -4270,7 +4289,9 @@ const AdminAddAppointmentModal: React.FC<{
                         </button>
                     </div>
                 </form>
-        </main>
+            </main>
+        </div>,
+        document.body
     );
 };
 
@@ -5036,6 +5057,9 @@ interface AppointmentsViewProps {
     onDataChanged?: () => void;
     onOpenDashboard: () => void;
     onOpenCloseDay: () => void;
+    isAddModalOpen?: boolean;
+    onOpenAddModal?: () => void;
+    onCloseAddModal?: () => void;
 }
 
 const AppointmentsView: React.FC<AppointmentsViewProps> = ({ 
@@ -5053,17 +5077,19 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     monthlyClients = [], 
     onDataChanged, 
     onOpenDashboard, 
-    onOpenCloseDay 
+    onOpenCloseDay,
+    isAddModalOpen: _isAddModalOpen,
+    onOpenAddModal,
+    onCloseAddModal 
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
     const [adminView, setAdminView] = useState<'daily' | 'all'>('daily');
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedTab, setSelectedTab] = useState<'scheduled' | 'completed'>('scheduled');
 
-    const handleOpenAddModal = () => setIsAddModalOpen(true);
-    const handleCloseAddModal = () => setIsAddModalOpen(false);
+    const handleOpenAddModal = () => onOpenAddModal?.();
+    const handleCloseAddModal = () => onCloseAddModal?.();
     const handleAppointmentCreated = (created: AdminAppointment) => {
         // Ensure new manual appointments appear in this view by tagging them correctly
         const tagged = { ...created, table: created.table || 'appointments' };
@@ -5153,9 +5179,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
         />
     );
 
-    if (isAddModalOpen) {
-        return <AdminAddAppointmentModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onAppointmentCreated={handleAppointmentCreated} />;
-    }
 
     return (
         <>
@@ -5531,6 +5554,9 @@ interface PetMovelViewProps {
     onDataChanged?: () => void;
     onOpenDashboard?: () => void;
     onOpenCloseDay?: () => void;
+    isAddModalOpen?: boolean;
+    onOpenAddModal?: () => void;
+    onCloseAddModal?: () => void;
 }
 
 const PetMovelView: React.FC<PetMovelViewProps> = ({ 
@@ -5548,13 +5574,15 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
     monthlyClients,
     onDataChanged,
     onOpenDashboard, 
-    onOpenCloseDay
+    onOpenCloseDay,
+    isAddModalOpen: _isAddModalOpen,
+    onOpenAddModal,
+    onCloseAddModal
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdminDate, setSelectedAdminDate] = useState(new Date());
     const [adminView, setAdminView] = useState<'daily' | 'all'>('daily');
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedTab, setSelectedTab] = useState<'scheduled' | 'completed'>('scheduled');
 
     // Filter appointments belonging to agendamento_banhotosa from the global appointments prop
@@ -5562,10 +5590,10 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
         return (appointments || []).filter(app => app.table === 'agendamento_banhotosa');
     }, [appointments]);
 
-    const handleOpenAddModal = () => setIsAddModalOpen(true);
-    const handleCloseAddModal = () => setIsAddModalOpen(false);
+    const handleOpenAddModal = () => onOpenAddModal?.();
+    const handleCloseAddModal = () => onCloseAddModal?.();
     const handleAppointmentCreated = (created: AdminAppointment) => {
-        // Tag as agendamento_banhotosa so it shows up in this view immediately
+        // Local handling is now delegated to dashboard but we keep logic for consistency if needed
         const tagged = { ...created, table: 'agendamento_banhotosa' };
         setAppointments(prev => [tagged, ...prev]);
         handleCloseAddModal();
@@ -5640,9 +5668,6 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
         />
     );
 
-    if (isAddModalOpen) {
-        return <AdminAddAppointmentModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onAppointmentCreated={handleAppointmentCreated} />;
-    }
 
     return (
         <>
@@ -14771,6 +14796,238 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
 
 
 // FIX: Destructure the 'onLogout' prop to make it available within the component. This resolves 'Cannot find name' errors.
+
+const ResumoView: React.FC<{ 
+    appointments: AdminAppointment[]; 
+    setActiveView: (view: string) => void;
+    onDataChanged?: () => void;
+    onAddNewPet?: () => void;
+}> = ({ appointments, setActiveView, onDataChanged, onAddNewPet }) => {
+    const [isAgendaMenuOpen, setIsAgendaMenuOpen] = useState(false);
+    const now = new Date();
+    
+    const todayAppointments = useMemo(() => {
+        return (appointments || []).filter(app => isSameSaoPauloDay(new Date(app.appointment_time), now));
+    }, [appointments]);
+
+    const stats = useMemo(() => {
+        const banhoTosa = todayAppointments.filter(app => app.table === 'agendamento_banhotosa');
+        const petMovel = todayAppointments.filter(app => app.table === 'appointments' || app.table === 'pet_movel_appointments');
+        
+        return {
+            banhoTosa: {
+                total: banhoTosa.length,
+                scheduled: banhoTosa.filter(a => (a.status || '').toUpperCase() !== 'CONCLUÍDO' && (a.status || '').toUpperCase() !== 'CONCLUIDO' && (a.status || '').toUpperCase() !== 'CANCELADO').length,
+                completed: banhoTosa.filter(a => (a.status || '').toUpperCase() === 'CONCLUÍDO' || (a.status || '').toUpperCase() === 'CONCLUIDO').length,
+            },
+            petMovel: {
+                total: petMovel.length,
+                scheduled: petMovel.filter(a => (a.status || '').toUpperCase() !== 'CONCLUÍDO' && (a.status || '').toUpperCase() !== 'CONCLUIDO' && (a.status || '').toUpperCase() !== 'CANCELADO').length,
+                completed: petMovel.filter(a => (a.status || '').toUpperCase() === 'CONCLUÍDO' || (a.status || '').toUpperCase() === 'CONCLUIDO').length,
+            }
+        };
+    }, [todayAppointments]);
+
+    const totalStats = {
+        total: stats.banhoTosa.total + stats.petMovel.total,
+        scheduled: stats.banhoTosa.scheduled + stats.petMovel.scheduled,
+        completed: stats.banhoTosa.completed + stats.petMovel.completed,
+    };
+
+    const nextAppointments = useMemo(() => {
+        return [...todayAppointments]
+            .filter(a => (a.status || '').toUpperCase() !== 'CONCLUÍDO' && (a.status || '').toUpperCase() !== 'CONCLUIDO' && (a.status || '').toUpperCase() !== 'CANCELADO')
+            .sort((a,b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+    }, [todayAppointments]);
+
+    return (
+        <div className="animate-fadeIn p-4 space-y-6 max-w-xl mx-auto pb-20">
+            {/* Header */}
+            <div className="flex flex-col items-center mb-8 mt-2">
+                <h1 className="text-4xl font-extrabold text-pink-600 mb-1" style={{ fontFamily: '"Lobster Two", cursive' }}>Resumo do Dia</h1>
+                <p className="text-gray-500 font-medium">{new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }).format(now)}</p>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 gap-4">
+                {/* Banho & Tosa */}
+                <div className="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 flex flex-col items-center text-center">
+                    <div className="w-12 h-12 bg-pink-50 rounded-2xl flex items-center justify-center mb-3">
+                        <BathTosaIcon />
+                    </div>
+                    <span className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Banho & Tosa</span>
+                    <span className="text-4xl font-black text-pink-600 mb-3">{stats.banhoTosa.total}</span>
+                    <div className="w-full flex justify-between text-[10px] font-bold text-gray-500">
+                        <div className="flex flex-col items-center flex-1">
+                            <span>Agendados</span>
+                            <span className="text-pink-600 font-black">{stats.banhoTosa.scheduled}</span>
+                        </div>
+                        <div className="w-px h-6 bg-gray-100 mx-1"></div>
+                        <div className="flex flex-col items-center flex-1">
+                            <span>Concluídos</span>
+                            <span className="text-green-500 font-black">{stats.banhoTosa.completed}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Pet Móvel */}
+                <div className="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 flex flex-col items-center text-center">
+                    <div className="w-12 h-12 bg-pink-50 rounded-2xl flex items-center justify-center mb-3">
+                        <PetMovelIcon />
+                    </div>
+                    <span className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Pet Móvel</span>
+                    <span className="text-4xl font-black text-pink-600 mb-3">{stats.petMovel.total}</span>
+                    <div className="w-full flex justify-between text-[10px] font-bold text-gray-500">
+                        <div className="flex flex-col items-center flex-1">
+                            <span>Agendados</span>
+                            <span className="text-pink-600 font-black">{stats.petMovel.scheduled}</span>
+                        </div>
+                        <div className="w-px h-6 bg-gray-100 mx-1"></div>
+                        <div className="flex flex-col items-center flex-1">
+                            <span>Concluídos</span>
+                            <span className="text-green-500 font-black">{stats.petMovel.completed}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Total Day Card */}
+            <div className="bg-pink-600 rounded-[2.5rem] p-5 shadow-xl shadow-pink-200 text-white relative overflow-hidden group border-4 border-white/20">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                <div className="relative z-10 flex flex-col items-center">
+                    <span className="text-pink-100 text-sm font-bold uppercase tracking-widest mb-1">Total do Dia</span>
+                    <span className="text-5xl font-black mb-2">{totalStats.total}</span>
+                    <div className="w-full grid grid-cols-2 gap-4 border-t border-white/20 pt-3 mt-1">
+                        <div className="text-center">
+                            <span className="block text-pink-200 text-[10px] font-bold uppercase">Total Agendados</span>
+                            <span className="text-2xl font-bold">{totalStats.scheduled}</span>
+                        </div>
+                        <div className="text-center border-l border-white/20">
+                            <span className="block text-pink-200 text-[10px] font-bold uppercase">Total Concluídos</span>
+                            <span className="text-2xl font-bold">{totalStats.completed}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="space-y-3">
+                <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest ml-1">Ações Rápidas</h3>
+                <div className="grid grid-cols-2 gap-3 items-start relative px-1">
+                    <div className="relative group">
+                        <button 
+                            onClick={() => setIsAgendaMenuOpen(!isAgendaMenuOpen)} 
+                            className={`flex w-full items-center gap-3 p-4 bg-white rounded-2xl border transition-all active:scale-95 text-left z-30 relative ${isAgendaMenuOpen ? 'border-pink-300 shadow-lg ring-4 ring-pink-50' : 'border-gray-100 shadow-sm hover:border-pink-200'}`}
+                        >
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${isAgendaMenuOpen ? 'bg-pink-600 text-white rotate-[360deg]' : 'bg-pink-100 text-pink-600'}`}>
+                                <CalendarIcon className="w-5 h-5" />
+                            </div>
+                            <div className="flex flex-col flex-1">
+                                <span className="text-gray-800 font-bold text-sm">Agenda</span>
+                                <span className="text-gray-400 text-[10px] font-medium">{isAgendaMenuOpen ? 'Escolha o tipo' : 'Visualizar'}</span>
+                            </div>
+                            <div className={`transition-transform duration-500 ${isAgendaMenuOpen ? 'rotate-180 text-pink-600' : 'text-gray-300'}`}>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </button>
+
+                        {/* Submenu Elegante com Animação Premium */}
+                        <div className={`absolute left-0 right-0 top-full mt-3 bg-white rounded-2xl border border-pink-100 shadow-2xl z-[100] overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] transform origin-top ${isAgendaMenuOpen ? 'opacity-100 scale-100 translate-y-0 visible' : 'opacity-0 scale-90 -translate-y-4 invisible pointer-events-none'}`}>
+                            <div className="p-2 space-y-1 bg-gradient-to-b from-white to-pink-50/30">
+                                <button 
+                                    onClick={() => { setActiveView('appointments'); setIsAgendaMenuOpen(false); }}
+                                    className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:bg-white hover:shadow-md text-left transition-all group/item active:scale-[0.98] border border-transparent hover:border-pink-100"
+                                >
+                                    <div className="w-9 h-9 bg-pink-100 text-pink-600 rounded-lg flex items-center justify-center group-hover/item:bg-pink-600 group-hover/item:text-white transition-all duration-300">
+                                        <CalendarIcon className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-gray-800">Banho & Tosa</span>
+                                        <span className="text-[10px] text-gray-400">Agenda Geral</span>
+                                    </div>
+                                </button>
+                                <button 
+                                    onClick={() => { setActiveView('petMovel'); setIsAgendaMenuOpen(false); }}
+                                    className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:bg-white hover:shadow-md text-left transition-all group/item active:scale-[0.98] border border-transparent hover:border-pink-100"
+                                >
+                                    <div className="w-9 h-9 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center group-hover/item:bg-orange-600 group-hover/item:text-white transition-all duration-300">
+                                        <PetMovelIcon className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-gray-800">Pet Móvel</span>
+                                        <span className="text-[10px] text-gray-400">Serviço à Domicílio</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Clique fora para fechar */}
+                    {isAgendaMenuOpen && <div className="fixed inset-0 z-20 backdrop-blur-[1px] bg-black/5" onClick={() => setIsAgendaMenuOpen(false)} />}
+                    <button onClick={() => setActiveView('insights')} className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all text-left">
+                        <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
+                            <SparklesIcon className="w-5 h-5" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-gray-800 font-bold text-sm">Insights IA</span>
+                            <span className="text-gray-400 text-[10px] font-medium">Relatórios</span>
+                        </div>
+                    </button>
+                    <button onClick={() => onAddNewPet?.()} className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all text-left">
+                        <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center">
+                            <PlusOutlineIcon className="w-5 h-5" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-gray-800 font-bold text-sm">Novo Pet</span>
+                            <span className="text-gray-400 text-[10px] font-medium">Agendar</span>
+                        </div>
+                    </button>
+                    <button onClick={() => setActiveView('monthlyClients')} className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all text-left">
+                        <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center">
+                            <UserIcon className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-gray-800 font-bold text-sm">Mensalistas</span>
+                            <span className="text-gray-400 text-[10px] font-medium">Gerenciar</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            {/* Next Appointments */}
+            {nextAppointments.length > 0 && (
+                <div className="space-y-4">
+                    <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest ml-1">Próximos Agendamentos</h3>
+                    <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1 pb-4 custom-scrollbar">
+                        {nextAppointments.map(app => (
+                            <div key={app.id} className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
+                                <div className="w-12 h-12 bg-pink-50 rounded-2xl flex items-center justify-center overflow-hidden border border-pink-100 shadow-inner">
+                                    {app.pet_photo_url ? (
+                                        <SafeImage src={app.pet_photo_url} alt={app.pet_name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-2xl animate-bounce">🐶</span>
+                                    )}
+                                </div>
+                                <div className="flex-1 flex flex-col">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-black text-gray-800 text-lg tracking-tight uppercase" style={{ fontFamily: '"Inter", sans-serif' }}>{app.pet_name}</span>
+                                        <span className="text-pink-600 font-black text-sm bg-pink-50 px-2 py-0.5 rounded-lg border border-pink-100">{new Date(app.appointment_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-1">
+                                        <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest whitespace-nowrap flex-1">{app.service}</span>
+                                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md shadow-sm whitespace-nowrap shrink-0 ${app.table === 'agendamento_banhotosa' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
+                                            {app.table === 'agendamento_banhotosa' ? 'Banho & Tosa' : 'Pet Móvel'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const AdminDashboard: React.FC<{
     onLogout: () => void;
     isScheduleOpen: boolean;
@@ -14783,12 +15040,13 @@ const AdminDashboard: React.FC<{
     handleOpenExtraServicesModal: (appointment: AdminAppointment) => void;
     monthlyClients?: MonthlyClient[];
 }> = ({ onLogout, isScheduleOpen, setIsScheduleOpen, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, handleOpenExtraServicesModal, monthlyClients = [] }) => {
-    const [activeView, setActiveView] = useState('appointments');
-    const [previousView, setPreviousView] = useState('appointments');
+    const [activeView, setActiveView] = useState('resumo');
+    const [previousView, setPreviousView] = useState('resumo');
     const [dataKey, setDataKey] = useState(Date.now()); // Used to force re-fetches
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const openMobileMenu = () => {
         setShowMobileMenu(true);
@@ -14830,6 +15088,8 @@ const AdminDashboard: React.FC<{
     const [confirmingCompletionPrice, setConfirmingCompletionPrice] = useState<number | null>(null);
 
     // CRUD Handlers
+    const handleOpenAddModal = () => setIsAddModalOpen(true);
+    const handleCloseAddModal = () => setIsAddModalOpen(false);
     const handleOpenEditModal = (appointment: AdminAppointment) => { setEditingAppointment(appointment); setIsEditModalOpen(true); };
     const handleCloseEditModal = () => { setEditingAppointment(null); setIsEditModalOpen(false); };
     
@@ -14844,6 +15104,13 @@ const AdminDashboard: React.FC<{
         });
         handleDataChanged();
         handleCloseEditModal();
+    };
+
+    const handleAppointmentCreated = (created: AdminAppointment) => {
+        const tagged = { ...created, table: created.table || 'appointments' };
+        setAppointments(prev => [tagged, ...prev]);
+        handleCloseAddModal();
+        handleDataChanged();
     };
 
     const handleRequestDelete = (appointment: AdminAppointment) => setAppointmentToDelete(appointment);
@@ -15107,6 +15374,7 @@ const AdminDashboard: React.FC<{
     }, [dataKey]);
 
     const menuItems = [
+        { id: 'resumo', label: 'Resumo', icon: <ResumoIcon /> },
         { id: 'appointments', label: 'Pet Móvel', icon: <PetMovelIcon /> },
         { id: 'petMovel', label: 'Banho & Tosa', icon: <BathTosaIcon /> },
         { id: 'daycare', label: 'Creche', icon: <DaycareIcon /> },
@@ -15127,6 +15395,7 @@ const AdminDashboard: React.FC<{
 
     const renderActiveView = () => {
         switch (activeView) {
+            case 'resumo': return <ResumoView appointments={appointments} setActiveView={setActiveView} onDataChanged={handleDataChanged} onAddNewPet={handleOpenAddModal} />;
             case 'appointments': return <AppointmentsView 
                 key={dataKey} 
                 refreshKey={dataKey} 
@@ -15144,6 +15413,9 @@ const AdminDashboard: React.FC<{
                 onDataChanged={handleDataChanged} 
                 onOpenDashboard={() => handleOpenDashboard('appointments')} 
                 onOpenCloseDay={handleOpenCloseDay} 
+                isAddModalOpen={isAddModalOpen}
+                onOpenAddModal={handleOpenAddModal}
+                onCloseAddModal={handleCloseAddModal}
             />;
             case 'petMovel': return <PetMovelView 
                 key={dataKey} 
@@ -15162,6 +15434,9 @@ const AdminDashboard: React.FC<{
                 onDataChanged={handleDataChanged} 
                 onOpenDashboard={() => handleOpenDashboard('petMovel')} 
                 onOpenCloseDay={handleOpenCloseDay} 
+                isAddModalOpen={isAddModalOpen}
+                onOpenAddModal={handleOpenAddModal}
+                onCloseAddModal={handleCloseAddModal}
             />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
@@ -15170,7 +15445,7 @@ const AdminDashboard: React.FC<{
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
             case 'dashboard': return <StatisticsDashboardModal onBack={() => setActiveView(previousView)} />;
             case 'closeDay': return <CloseDayView onBack={() => setActiveView(previousView)} />;
-            case 'insights': return <InsightsDashboard key={dataKey} />;
+            case 'insights': return <InsightsDashboard key={dataKey} onBack={() => setActiveView('resumo')} />;
             case 'album': return <AlbumManagementView />;
             default: return <AppointmentsView 
                 key={dataKey} 
@@ -15189,6 +15464,9 @@ const AdminDashboard: React.FC<{
                 onDataChanged={handleDataChanged} 
                 onOpenDashboard={() => handleOpenDashboard('appointments')} 
                 onOpenCloseDay={handleOpenCloseDay} 
+                isAddModalOpen={isAddModalOpen}
+                onOpenAddModal={handleOpenAddModal}
+                onCloseAddModal={handleCloseAddModal}
             />;
         }
     };
@@ -15285,7 +15563,7 @@ const AdminDashboard: React.FC<{
                             className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'insights' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                         >
                             <SparklesIcon className="w-6 h-6" />
-                            Insights
+                            Insights IA
                         </button>
                         <button
                             onClick={() => { setActiveView('album'); closeMobileMenu(); }}
@@ -15339,7 +15617,7 @@ const AdminDashboard: React.FC<{
                                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'insights' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
                                 <SparklesIcon className="w-6 h-6" />
-                                Insights
+                                Insights IA
                             </button>
                             <button
                                 onClick={() => setActiveView('album')}
@@ -15404,6 +15682,13 @@ const AdminDashboard: React.FC<{
                     appointment={editingAppointment} 
                     onClose={handleCloseEditModal} 
                     onAppointmentUpdated={handleAppointmentUpdated} 
+                />
+            )}
+            {isAddModalOpen && (
+                <AdminAddAppointmentModal 
+                    isOpen={isAddModalOpen} 
+                    onClose={handleCloseAddModal} 
+                    onAppointmentCreated={handleAppointmentCreated} 
                 />
             )}
             {appointmentToDelete && (
