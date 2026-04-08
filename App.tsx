@@ -11393,7 +11393,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         const day = selectedDate.getDate();
         const appointmentTime = toSaoPauloUTC(year, month, day, selectedTime);
 
-        const relevantAppointments = isBathGroomService ? banhoTosaOnlyAppointments : isPetMovelService ? petMovelOnlyAppointments : appointments;
+        const relevantAppointments = appointments;
         const appointmentsAtHour = relevantAppointments.filter(app => {
             const appDate = new Date(app.appointmentTime);
             return isSameSaoPauloDay(appDate, selectedDate) && 
@@ -12055,7 +12055,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                             key={selectedDate.toISOString()}
                                             selectedDate={selectedDate}
                                             selectedService={selectedService}
-                                            appointments={serviceStepView === 'bath_groom' ? banhoTosaOnlyAppointments : serviceStepView === 'pet_movel' ? petMovelOnlyAppointments : appointments}
+                                            appointments={appointments}
                                             onTimeSelect={setSelectedTime}
                                             selectedTime={selectedTime}
                                             workingHours={isVisitService ? VISIT_WORKING_HOURS : (serviceStepView === 'bath_groom' || (selectedService && [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService)) ? BATH_GROOMING_HOURS : WORKING_HOURS)}
