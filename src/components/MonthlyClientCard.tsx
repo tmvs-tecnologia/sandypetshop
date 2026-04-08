@@ -452,6 +452,15 @@ const MonthlyClientCard: React.FC<{
                         })}
                     </div>
                 )}
+                
+                {/* Observation */}
+                {client.observation && (
+                    <div className="mb-4 bg-yellow-50 p-2.5 rounded-xl border border-yellow-100/50">
+                        <p className="text-[10px] sm:text-xs text-gray-600 italic">
+                            "{client.observation}"
+                        </p>
+                    </div>
+                )}
 
                 {/* Next Appointments List - Elegant & Minimalist */}
                 <div className="mb-4 bg-pink-50/30 rounded-xl p-3 border border-pink-100 flex-1 overflow-hidden flex flex-col min-h-[140px] max-h-[180px]">

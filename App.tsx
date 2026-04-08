@@ -6264,8 +6264,14 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
 
 const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => void; onMonthlyClientUpdated: () => void; }> = ({ client, onClose, onMonthlyClientUpdated }) => {
     const { getPricesForWeight } = useServicePrices();
-    const serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === client.service) as ServiceType | undefined;
-    const weightKey = Object.keys(PET_WEIGHT_OPTIONS).find(key => PET_WEIGHT_OPTIONS[key as PetWeight] === (client as any).weight) as PetWeight | undefined;
+    const serviceKey = Object.keys(SERVICES).find(key => {
+        const label = SERVICES[key as ServiceType].label;
+        return client.service === label || client.service.endsWith(label);
+    }) as ServiceType | undefined;
+    const weightKey = Object.keys(PET_WEIGHT_OPTIONS).find(key => {
+        const label = PET_WEIGHT_OPTIONS[key as PetWeight];
+        return (client as any).weight === label || (client as any).weight?.endsWith?.(label);
+    }) as PetWeight | undefined;
 
     const [formData, setFormData] = useState({
         petName: client.pet_name,
@@ -6273,7 +6279,8 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
         whatsapp: client.whatsapp,
         petBreed: (client as any).pet_breed || '',
         ownerAddress: (client as any).owner_address || '',
-        condominium: (client as any).condominium || ''
+        condominium: (client as any).condominium || '',
+        observation: client.observation || ''
     });
     const [selectedService, setSelectedService] = useState<ServiceType | null>(serviceKey || null);
     const [selectedWeight, setSelectedWeight] = useState<PetWeight | null>(weightKey || null);
@@ -6329,6 +6336,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
             payment_due_date: 'Data de vencimento',
             is_active: 'Status ativo',
             payment_status: 'Status do pagamento',
+            observation: 'Observações',
         };
 
         const normalizeDate = (v: any) => {
@@ -6356,47 +6364,14 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Permitir edição mesmo com campos incompletos
         setIsSubmitting(true);
-
-        const today = new Date().toISOString();
-
-        // Determine the correct table for deletion based on condominium
-        const isBanhoTosaFixoEdit = formData.condominium === 'Banho & Tosa Fixo' || client.condominium === 'Banho & Tosa Fixo';
-        const deleteTable = isBanhoTosaFixoEdit ? 'agendamento_banhotosa' : 'appointments';
-        const { error: deleteError } = await supabase.from(deleteTable).delete().eq('monthly_client_id', client.id).gte('appointment_time', today);
-        if (deleteError) {
-            setAlertInfo({ title: 'Erro', message: "Erro ao limpar agendamentos antigos. A atualização foi cancelada.", variant: 'error' });
-            setIsSubmitting(false);
-            return;
-        }
-        // Also clean from the other table in case condominium changed
-        if (isBanhoTosaFixoEdit) {
-            await supabase.from('appointments').delete().eq('monthly_client_id', client.id).gte('appointment_time', today);
-        } else {
-            await supabase.from('agendamento_banhotosa').delete().eq('monthly_client_id', client.id).gte('appointment_time', today);
-        }
-
-        // Também limpar agendamentos de Pet Móvel quando aplicável
-        const isPetMovelSelected = !!selectedService && [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService as ServiceType);
-        const looksLikePetMovel = typeof client.service === 'string' && client.service.toLowerCase().includes('pet móvel');
-        if (isPetMovelSelected || looksLikePetMovel) {
-            const { error: deletePetMovelError } = await supabase
-                .from('pet_movel_appointments')
-                .delete()
-                .eq('monthly_client_id', client.id)
-                .gte('appointment_time', today);
-            if (deletePetMovelError) {
-                setAlertInfo({ title: 'Erro', message: "Erro ao limpar agendamentos de Pet Móvel antigos.", variant: 'error' });
-                setIsSubmitting(false);
-                return;
-            }
-        }
 
         // Fallbacks seguros para evitar violação de NOT NULL no banco
         const safeRecurrenceDay = Number.isFinite(Number(recurrence.day)) ? parseInt(String(recurrence.day), 10) : client.recurrence_day;
         const safeRecurrenceTime = Number.isFinite(Number(recurrence.time)) ? parseInt(String(recurrence.time), 10) : client.recurrence_time;
         const safePrice = Number.isFinite(Number(price)) ? Number(price) : (client as any).price || 0;
+
+
 
         const updatePayload = {
             pet_name: formData.petName,
@@ -6415,6 +6390,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
             payment_due_date: paymentDueDate && paymentDueDate.trim() !== '' ? paymentDueDate : null,
             is_active: isActive,
             payment_status: paymentStatus,
+            observation: formData.observation,
         };
         const { error: updateError } = await supabase.from('monthly_clients').update(updatePayload).eq('id', client.id);
         if (updateError) {
@@ -6428,100 +6404,46 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
             ? `${changedLabels[0] ?? 'Dados'} atualizado(s) com sucesso.`
             : `Campos atualizados: ${changedLabels.join(', ')}.`;
 
-        if (isActive && selectedService && selectedWeight) {
-            const appointmentsToCreate: { appointment_time: string }[] = [];
-            const serviceDuration = SERVICES[selectedService].duration;
-            const recurrenceDay = parseInt(String(recurrence.day), 10);
-            const recurrenceTime = parseInt(String(recurrence.time), 10);
-            const now = new Date();
-
-            if (recurrence.type === 'weekly' || recurrence.type === 'bi-weekly') {
-                let firstDate = new Date();
-                const todaySaoPaulo = getSaoPauloTimeParts(firstDate);
-                let firstDateDayOfWeek = todaySaoPaulo.day === 0 ? 7 : todaySaoPaulo.day;
-
-                let daysToAdd = (recurrenceDay - firstDateDayOfWeek + 7) % 7;
-                if (daysToAdd === 0 && todaySaoPaulo.hour >= recurrenceTime) {
-                    daysToAdd = 7;
-                }
-                firstDate.setDate(firstDate.getDate() + daysToAdd);
-
-                const appointmentsToGenerate = recurrence.type === 'weekly' ? 4 : 2;
-                const intervalDays = recurrence.type === 'weekly' ? 7 : 15;
-
-                for (let i = 0; i < appointmentsToGenerate; i++) {
-                    const targetDate = new Date(firstDate);
-                    targetDate.setDate(targetDate.getDate() + (i * intervalDays));
-                    const appointmentTime = toSaoPauloUTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), recurrenceTime);
-                    appointmentsToCreate.push({ appointment_time: appointmentTime.toISOString() });
-                }
-            } else { // monthly
-                let targetDate = new Date();
-                const todaySaoPaulo = getSaoPauloTimeParts(targetDate);
-                targetDate.setDate(recurrenceDay);
-                if (targetDate < now || (isSameSaoPauloDay(targetDate, now) && todaySaoPaulo.hour >= recurrenceTime)) {
-                    targetDate.setMonth(targetDate.getMonth() + 1);
-                }
-                const appointmentTime = toSaoPauloUTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), recurrenceTime);
-                appointmentsToCreate.push({ appointment_time: appointmentTime.toISOString() });
-            }
-
-
-            const unitPriceEdit = (() => {
-                const prices = getPricesForWeight(selectedWeight);
-                if (!prices || !selectedService) return Number(price || 0);
-                if (selectedService === ServiceType.BATH_AND_GROOMING || selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING) {
-                    return Number(prices.BATH) + Number(prices.GROOMING_ONLY);
-                }
-                if (selectedService === ServiceType.BATH || selectedService === ServiceType.PET_MOBILE_BATH) {
-                    return Number(prices.BATH);
-                }
-                if (selectedService === ServiceType.GROOMING_ONLY || selectedService === ServiceType.PET_MOBILE_GROOMING_ONLY) {
-                    return Number(prices.GROOMING_ONLY);
-                }
-                return Number(price || 0);
+        if (isActive) {
+            const today = new Date().toISOString();
+            
+            const unitPriceUpdate = (() => {
+                const total = Number(price || 0);
+                if (recurrence.type === 'weekly') return total / 4;
+                if (recurrence.type === 'bi-weekly') return total / 2;
+                return total;
             })();
-            const supabasePayloads = appointmentsToCreate.map(app => ({
+
+            const commonPayload = {
                 pet_name: formData.petName,
                 owner_name: formData.ownerName,
                 whatsapp: formData.whatsapp,
                 pet_breed: formData.petBreed,
                 owner_address: formData.ownerAddress,
-                service: SERVICES[selectedService!].label,
-                weight: PET_WEIGHT_OPTIONS[selectedWeight!],
-                price: unitPriceEdit,
-                status: 'AGENDADO',
-                appointment_time: app.appointment_time,
-                monthly_client_id: client.id,
-                extra_services: {
-                    pernoite: { enabled: false, quantity: 0 },
-                    banho_tosa: { enabled: false, value: 0 },
-                    so_banho: { enabled: false, value: 0 },
-                    adestrador: { enabled: false, value: 0 },
-                    despesa_medica: { enabled: false, value: 0 },
-                    dias_extras: { enabled: false, quantity: 0 }
-                }
-            }));
+                service: selectedService ? SERVICES[selectedService].label : client.service,
+                weight: selectedWeight ? PET_WEIGHT_OPTIONS[selectedWeight] : (client as any).weight,
+                price: unitPriceUpdate,
+                condominium: formData.condominium,
+                observation: formData.observation
+            };
 
-            if (supabasePayloads.length > 0) {
-                const isBanhoTosaFixoRecreate = formData.condominium === 'Banho & Tosa Fixo' || formData.condominium === 'Nenhum Condomínio';
-                let targetTable: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa' = 'appointments';
+            // Atualiza em massa nas 3 tabelas possíveis para garantir que todos os futuros sejam sincronizados
+            const tables: ('appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa')[] = 
+                ['appointments', 'pet_movel_appointments', 'agendamento_banhotosa'];
 
-                if (isBanhoTosaFixoRecreate) {
-                    targetTable = 'agendamento_banhotosa';
-                } else if (isPetMovelSelected || looksLikePetMovel) {
-                    targetTable = 'pet_movel_appointments';
-                }
-
-                const { error: insertError } = await supabase.from(targetTable).insert(supabasePayloads);
-                if (insertError) {
-                    setAlertInfo({ title: 'Erro Parcial', message: `${baseSuccessMessage} Falha ao recriar agendamentos em ${targetTable}: ${insertError.message}`, variant: 'error' });
-                } else {
-                    setAlertInfo({ title: 'Sucesso!', message: `${baseSuccessMessage} Agendamentos futuros recriados com sucesso em ${targetTable}!`, variant: 'success' });
-                }
-            } else {
-                setAlertInfo({ title: 'Sucesso', message: `${baseSuccessMessage} Nenhum agendamento futuro foi criado.`, variant: 'success' });
+            for (const table of tables) {
+                await supabase
+                    .from(table)
+                    .update(commonPayload)
+                    .eq('monthly_client_id', client.id)
+                    .gte('appointment_time', today);
             }
+            
+            setAlertInfo({ 
+                title: 'Sucesso!', 
+                message: `${baseSuccessMessage} Agendamentos futuros foram atualizados com as novas informações.`, 
+                variant: 'success' 
+            });
         } else {
             setAlertInfo({ title: 'Sucesso', message: baseSuccessMessage, variant: 'success' });
         }
@@ -6569,6 +6491,17 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-sm font-medium text-gray-700 ml-1">Condomínio</label>
                                         <input type="text" name="condominium" placeholder="Ex: Paseo (Opcional)" value={formData.condominium} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5 md:col-span-2">
+                                        <label className="text-sm font-medium text-gray-700 ml-1">Observações</label>
+                                        <textarea
+                                            name="observation"
+                                            placeholder="Ex: Alérgico a Shampoo de Coco, muito agitado..."
+                                            value={formData.observation}
+                                            onChange={handleInputChange as any}
+                                            rows={2}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400 resize-none"
+                                        />
                                     </div>
                                 </div>
                             </section>
@@ -10881,7 +10814,7 @@ const DaycareRegistrationForm: React.FC<{
 
 
 // FIX: Define the missing TimeSlotPicker component
-const TimeSlotPicker: React.FC<{
+export const TimeSlotPicker: React.FC<{
     selectedDate: Date;
     selectedService: ServiceType | null;
     appointments: Appointment[];

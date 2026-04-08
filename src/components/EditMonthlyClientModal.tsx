@@ -236,7 +236,8 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                 status: 'AGENDADO',
                 appointment_time: isoString,
                 recurrence_type: client.recurrence_type,
-                pet_photo_url: client.pet_photo_url
+                pet_photo_url: client.pet_photo_url,
+                observation: client.observation
             });
 
             currentDate = addInterval(currentDate, client.recurrence_type);
@@ -292,8 +293,36 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
 
             if (updateError) throw updateError;
 
-            // Generate future appointments automatically
-            await generateFutureAppointments(payload);
+            // Mass update future appointments with new info instead of recreating them
+            const today = new Date().toISOString();
+            const unitPriceUpdate = (() => {
+                const total = Number(payload.price || 0);
+                if (payload.recurrence_type === 'weekly') return total / 4;
+                if (payload.recurrence_type === 'bi-weekly') return total / 2;
+                return total;
+            })();
+
+            const commonPayload = {
+                pet_name: payload.pet_name,
+                owner_name: payload.owner_name,
+                whatsapp: payload.whatsapp,
+                pet_breed: payload.pet_breed,
+                owner_address: payload.owner_address,
+                service: payload.service,
+                weight: payload.weight,
+                price: unitPriceUpdate,
+                condominium: (payload as any).condominium,
+                observation: (payload as any).observation,
+            };
+
+            const tables = ['appointments', 'pet_movel_appointments', 'agendamento_banhotosa'];
+            for (const table of tables) {
+                await supabase
+                    .from(table)
+                    .update(commonPayload)
+                    .eq('monthly_client_id', client.id)
+                    .gte('appointment_time', today);
+            }
 
             onMonthlyClientUpdated();
             onClose();
@@ -459,6 +488,18 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                                     <div className="sm:col-span-2 lg:col-span-2">
                                         <Label htmlFor="condominium">Condomínio</Label>
                                         <Input id="condominium" name="condominium" value={formData.condominium || ''} onChange={handleInputChange} placeholder="Ex: Vila das Flores" />
+                                    </div>
+                                    <div className="sm:col-span-2 lg:col-span-4">
+                                        <Label htmlFor="observation">Observações</Label>
+                                        <textarea
+                                            id="observation"
+                                            name="observation"
+                                            value={formData.observation || ''}
+                                            onChange={handleInputChange as any}
+                                            placeholder="Ex: Alérgico a Shampoo de Coco, muito agitado..."
+                                            rows={2}
+                                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all placeholder-gray-400 resize-none"
+                                        />
                                     </div>
                                 </div>
                             </section>
