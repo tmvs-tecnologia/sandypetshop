@@ -956,19 +956,19 @@ const LockClosedIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="
 const LockOpenIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>;
 
 // --- NEW ADMIN MENU ICONS ---
-const BathTosaIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa Icon" className="h-7 w-7" />;
+const BathTosaIcon: React.FC<{ className?: string }> = ({ className }) => <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa Icon" className={className || 'h-7 w-7'} />;
 const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
         <path d="M6 9l6 6 6-6" />
     </svg>
 );
 // ChevronRightIcon já está definido acima; evitando redefinição
-const DaycareIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet Icon" className="h-7 w-7" />;
-const ClientsMenuIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/1192/1192913.png" alt="Clientes Icon" className="h-7 w-7" />;
-const MonthlyIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" alt="Mensalistas Icon" className="h-7 w-7" />;
-const HotelIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/1131/1131938.png" alt="Hotel Pet Icon" className="h-7 w-7" />;
-const PetMovelIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel Icon" className="h-7 w-7" />;
-const ResumoIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/17045/17045218.png" alt="Resumo Icon" className="h-7 w-7" />;
+const DaycareIcon: React.FC<{ className?: string }> = ({ className }) => <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet Icon" className={className || 'h-7 w-7'} />;
+const ClientsMenuIcon: React.FC<{ className?: string }> = ({ className }) => <SafeImage src="https://cdn-icons-png.flaticon.com/512/1192/1192913.png" alt="Clientes Icon" className={className || 'h-7 w-7'} />;
+const MonthlyIcon: React.FC<{ className?: string }> = ({ className }) => <SafeImage src="https://cdn-icons-png.flaticon.com/512/13731/13731277.png" alt="Mensalistas Icon" className={className || 'h-7 w-7'} />;
+const HotelIcon: React.FC<{ className?: string }> = ({ className }) => <SafeImage src="https://cdn-icons-png.flaticon.com/512/1131/1131938.png" alt="Hotel Pet Icon" className={className || 'h-7 w-7'} />;
+const PetMovelIcon: React.FC<{ className?: string }> = ({ className }) => <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel Icon" className={className || 'h-7 w-7'} />;
+const ResumoIcon: React.FC<{ className?: string }> = ({ className }) => <SafeImage src="https://cdn-icons-png.flaticon.com/512/17045/17045218.png" alt="Resumo Icon" className={className || 'h-7 w-7'} />;
 
 
 // --- ADMIN COMPONENTS ---
@@ -14735,7 +14735,8 @@ const ResumoView: React.FC<{
     setActiveView: (view: string) => void;
     onDataChanged?: () => void;
     onAddNewPet?: () => void;
-}> = ({ appointments, setActiveView, onDataChanged, onAddNewPet }) => {
+    onCloseMobileMenu?: () => void;
+}> = ({ appointments, setActiveView, onDataChanged, onAddNewPet, onCloseMobileMenu }) => {
     const [isAgendaMenuOpen, setIsAgendaMenuOpen] = useState(false);
     const now = new Date();
     
@@ -14868,11 +14869,11 @@ const ResumoView: React.FC<{
                         <div className={`absolute left-0 right-0 top-full mt-3 bg-white rounded-2xl border border-pink-100 shadow-2xl z-[100] overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] transform origin-top ${isAgendaMenuOpen ? 'opacity-100 scale-100 translate-y-0 visible' : 'opacity-0 scale-90 -translate-y-4 invisible pointer-events-none'}`}>
                             <div className="p-2 space-y-1 bg-gradient-to-b from-white to-pink-50/30">
                                 <button 
-                                    onClick={() => { setActiveView('appointments'); setIsAgendaMenuOpen(false); }}
+                                    onClick={() => { setActiveView('petMovel'); setIsAgendaMenuOpen(false); onCloseMobileMenu?.(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                     className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:bg-white hover:shadow-md text-left transition-all group/item active:scale-[0.98] border border-transparent hover:border-pink-100"
                                 >
                                     <div className="w-9 h-9 bg-pink-100 text-pink-600 rounded-lg flex items-center justify-center group-hover/item:bg-pink-600 group-hover/item:text-white transition-all duration-300">
-                                        <CalendarIcon className="w-4 h-4" />
+                                        <BathTosaIcon className="w-4 h-4" />
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="text-sm font-bold text-gray-800">Banho & Tosa</span>
@@ -14880,7 +14881,7 @@ const ResumoView: React.FC<{
                                     </div>
                                 </button>
                                 <button 
-                                    onClick={() => { setActiveView('petMovel'); setIsAgendaMenuOpen(false); }}
+                                    onClick={() => { setActiveView('appointments'); setIsAgendaMenuOpen(false); onCloseMobileMenu?.(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                     className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:bg-white hover:shadow-md text-left transition-all group/item active:scale-[0.98] border border-transparent hover:border-pink-100"
                                 >
                                     <div className="w-9 h-9 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center group-hover/item:bg-orange-600 group-hover/item:text-white transition-all duration-300">
@@ -15328,7 +15329,7 @@ const AdminDashboard: React.FC<{
 
     const renderActiveView = () => {
         switch (activeView) {
-            case 'resumo': return <ResumoView appointments={appointments} setActiveView={setActiveView} onDataChanged={handleDataChanged} onAddNewPet={handleOpenAddModal} />;
+            case 'resumo': return <ResumoView appointments={appointments} setActiveView={setActiveView} onDataChanged={handleDataChanged} onAddNewPet={handleOpenAddModal} onCloseMobileMenu={closeMobileMenu} />;
             case 'appointments': return <AppointmentsView 
                 key={dataKey} 
                 refreshKey={dataKey} 
