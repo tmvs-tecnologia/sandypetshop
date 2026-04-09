@@ -14785,13 +14785,14 @@ const ResumoView: React.FC<{
             {/* Summary Cards */}
             <div className="grid grid-cols-2 gap-4">
                 {/* Banho & Tosa */}
-                <div className="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 flex flex-col items-center text-center">
-                    <div className="w-12 h-12 bg-pink-50 rounded-2xl flex items-center justify-center mb-3">
+                <div className="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 flex flex-col items-center text-center relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-200 to-pink-100"></div>
+                    <div className="w-12 h-12 bg-pink-50 rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110">
                         <BathTosaIcon />
                     </div>
                     <span className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Banho & Tosa</span>
-                    <span className="text-4xl font-black text-pink-600 mb-3">{stats.banhoTosa.total}</span>
-                    <div className="w-full flex justify-between text-[10px] font-bold text-gray-500">
+                    <span className="text-5xl font-black text-pink-600 mb-3 drop-shadow-sm">{stats.banhoTosa.total}</span>
+                    <div className="w-full flex justify-between text-[10px] font-bold text-gray-500 mb-4">
                         <div className="flex flex-col items-center flex-1">
                             <span>Agendados</span>
                             <span className="text-pink-600 font-black">{stats.banhoTosa.scheduled}</span>
@@ -14802,16 +14803,29 @@ const ResumoView: React.FC<{
                             <span className="text-green-500 font-black">{stats.banhoTosa.completed}</span>
                         </div>
                     </div>
+                    {/* Progress Bar */}
+                    <div className="w-full relative">
+                        <div className="w-full bg-gray-100/80 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                                className="bg-gradient-to-r from-green-400 to-green-500 h-full rounded-full transition-all duration-1000 ease-out"
+                                style={{ width: `${stats.banhoTosa.total > 0 ? Math.round((stats.banhoTosa.completed / stats.banhoTosa.total) * 100) : 0}%` }}
+                            />
+                        </div>
+                        <span className="block mt-2 text-[9px] text-green-600 font-bold uppercase tracking-widest text-center">
+                            {stats.banhoTosa.total > 0 ? Math.round((stats.banhoTosa.completed / stats.banhoTosa.total) * 100) : 0}% Concluído
+                        </span>
+                    </div>
                 </div>
 
                 {/* Pet Móvel */}
-                <div className="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 flex flex-col items-center text-center">
-                    <div className="w-12 h-12 bg-pink-50 rounded-2xl flex items-center justify-center mb-3">
+                <div className="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 flex flex-col items-center text-center relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-200 to-orange-100"></div>
+                    <div className="w-12 h-12 bg-pink-50 rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110">
                         <PetMovelIcon />
                     </div>
                     <span className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Pet Móvel</span>
-                    <span className="text-4xl font-black text-pink-600 mb-3">{stats.petMovel.total}</span>
-                    <div className="w-full flex justify-between text-[10px] font-bold text-gray-500">
+                    <span className="text-5xl font-black text-pink-600 mb-3 drop-shadow-sm">{stats.petMovel.total}</span>
+                    <div className="w-full flex justify-between text-[10px] font-bold text-gray-500 mb-4">
                         <div className="flex flex-col items-center flex-1">
                             <span>Agendados</span>
                             <span className="text-pink-600 font-black">{stats.petMovel.scheduled}</span>
@@ -14821,6 +14835,18 @@ const ResumoView: React.FC<{
                             <span>Concluídos</span>
                             <span className="text-green-500 font-black">{stats.petMovel.completed}</span>
                         </div>
+                    </div>
+                    {/* Progress Bar */}
+                    <div className="w-full relative">
+                        <div className="w-full bg-gray-100/80 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                                className="bg-gradient-to-r from-green-400 to-green-500 h-full rounded-full transition-all duration-1000 ease-out"
+                                style={{ width: `${stats.petMovel.total > 0 ? Math.round((stats.petMovel.completed / stats.petMovel.total) * 100) : 0}%` }}
+                            />
+                        </div>
+                        <span className="block mt-2 text-[9px] text-green-600 font-bold uppercase tracking-widest text-center">
+                            {stats.petMovel.total > 0 ? Math.round((stats.petMovel.completed / stats.petMovel.total) * 100) : 0}% Concluído
+                        </span>
                     </div>
                 </div>
             </div>
@@ -14958,6 +14984,20 @@ const ResumoView: React.FC<{
                     </div>
                 </div>
             )}
+
+            {/* Insights IA Snippet */}
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100/50 rounded-3xl p-4 flex flex-col sm:flex-row items-center sm:items-start gap-4 shadow-sm mt-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/40 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                <div className="w-12 h-12 bg-white rounded-2xl shadow-sm text-purple-600 flex items-center justify-center shrink-0 relative z-10 group-hover:scale-110 transition-transform duration-500">
+                    <SparklesIcon className="w-6 h-6 animate-[pulse_2s_ease-in-out_infinite]" />
+                </div>
+                <div className="flex flex-col text-center sm:text-left relative z-10 flex-1">
+                    <span className="text-xs font-bold text-purple-900 uppercase tracking-widest mb-1 opacity-70">Insights IA</span>
+                    <p className="text-purple-800 text-sm font-medium leading-relaxed">
+                        "O movimento de hoje está 15% acima da média das terças-feiras."
+                    </p>
+                </div>
+            </div>
         </div>
     );
 };
