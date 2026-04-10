@@ -14805,10 +14805,15 @@ const ResumoView: React.FC<{
         completed: stats.banhoTosa.completed + stats.petMovel.completed,
     };
 
-    const nextAppointments = useMemo(() => {
+    const allTodayAppointments = useMemo(() => {
         return [...todayAppointments]
-            .filter(a => (a.status || '').toUpperCase() !== 'CONCLUÍDO' && (a.status || '').toUpperCase() !== 'CONCLUIDO' && (a.status || '').toUpperCase() !== 'CANCELADO')
-            .sort((a,b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+            .sort((a,b) => {
+                const aDone = (a.status || '').toUpperCase() === 'CONCLUÍDO' || (a.status || '').toUpperCase() === 'CONCLUIDO';
+                const bDone = (b.status || '').toUpperCase() === 'CONCLUÍDO' || (b.status || '').toUpperCase() === 'CONCLUIDO';
+                if (aDone && !bDone) return 1;
+                if (!aDone && bDone) return -1;
+                return new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime();
+            });
     }, [todayAppointments]);
 
     return (
@@ -14990,34 +14995,47 @@ const ResumoView: React.FC<{
                 </div>
             </div>
 
-            {/* Next Appointments */}
-            {nextAppointments.length > 0 && (
+            {/* Daily Appointments List */}
+            {allTodayAppointments.length > 0 && (
                 <div className="space-y-4">
-                    <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest ml-1">Próximos Agendamentos</h3>
+                    <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest ml-1">Agendamentos de Hoje</h3>
                     <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1 pb-4 custom-scrollbar">
-                        {nextAppointments.map(app => (
-                            <div key={app.id} className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
-                                <div className="w-12 h-12 bg-pink-50 rounded-2xl flex items-center justify-center overflow-hidden border border-pink-100 shadow-inner">
-                                    {app.pet_photo_url ? (
-                                        <SafeImage src={app.pet_photo_url} alt={app.pet_name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <span className="text-2xl animate-bounce">🐶</span>
-                                    )}
-                                </div>
-                                <div className="flex-1 flex flex-col">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-black text-gray-800 text-lg tracking-tight uppercase" style={{ fontFamily: '"Inter", sans-serif' }}>{app.pet_name}</span>
-                                        <span className="text-pink-600 font-black text-sm bg-pink-50 px-2 py-0.5 rounded-lg border border-pink-100">{new Date(app.appointment_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        {allTodayAppointments.map(app => {
+                            const isDone = (app.status || '').toUpperCase() === 'CONCLUÍDO' || (app.status || '').toUpperCase() === 'CONCLUIDO';
+                            
+                            return (
+                                <div key={app.id} className={`flex items-center gap-4 p-4 bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all active:scale-[0.98] ${isDone ? 'opacity-70 border-gray-100 shadow-none' : 'border-pink-50 shadow-pink-100/50'}`}>
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden border shadow-inner relative ${isDone ? 'bg-gray-50 border-gray-200' : 'bg-pink-50 border-pink-100'}`}>
+                                        {app.pet_photo_url ? (
+                                            <SafeImage src={app.pet_photo_url} alt={app.pet_name} className={`w-full h-full object-cover transition-all ${isDone ? 'grayscale-[0.5]' : ''}`} />
+                                        ) : (
+                                            <span className={`text-2xl ${isDone ? '' : 'animate-bounce'}`}>🐶</span>
+                                        )}
+                                        {isDone && (
+                                            <div className="absolute inset-0 bg-green-500/10 flex items-center justify-center">
+                                                <div className="bg-white rounded-full p-0.5 shadow-sm">
+                                                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="flex items-center justify-between mt-1">
-                                        <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest whitespace-nowrap flex-1">{app.service}</span>
-                                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md shadow-sm whitespace-nowrap shrink-0 ${app.table === 'agendamento_banhotosa' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
-                                            {app.table === 'agendamento_banhotosa' ? 'Banho & Tosa' : 'Pet Móvel'}
-                                        </span>
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="flex items-center justify-between">
+                                            <span className={`font-black text-lg tracking-tight uppercase ${isDone ? 'text-gray-500' : 'text-gray-800'}`} style={{ fontFamily: '"Inter", sans-serif' }}>{app.pet_name}</span>
+                                            <span className={`font-black text-sm px-2 py-0.5 rounded-lg border ${isDone ? 'bg-gray-100 text-gray-400 border-gray-100' : 'bg-pink-50 text-pink-600 border-pink-100'}`}>
+                                                {new Date(app.appointment_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-1">
+                                            <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest whitespace-nowrap flex-1">{app.service}</span>
+                                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md shadow-sm whitespace-nowrap shrink-0 ${isDone ? 'bg-gray-50 text-gray-400 border border-gray-200' : (app.table === 'agendamento_banhotosa' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-orange-50 text-orange-600 border border-orange-100')}`}>
+                                                {app.table === 'agendamento_banhotosa' ? 'Banho & Tosa' : 'Pet Móvel'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -15220,6 +15238,19 @@ const AdminDashboard: React.FC<{
                 const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
                 
                 if (!isVisit) {
+                    // Gerar URL de feedback personalizada para o pet
+                    const appBaseUrl = window.location.origin + window.location.pathname;
+                    const feedbackParams = new URLSearchParams({
+                        id: actualId,
+                        table: targetTable,
+                        pet: updatedAppointment.pet_name || '',
+                        owner: updatedAppointment.owner_name || '',
+                        wa: updatedAppointment.whatsapp || '',
+                        service: updatedAppointment.service || '',
+                        photo: updatedAppointment.pet_photo_url || '',
+                    });
+                    const feedbackUrl = `${appBaseUrl}#feedback?${feedbackParams.toString()}`;
+
                     const url = 'https://n8n.intelektus.tech/webhook/servicoConcluido';
                     try {
                         await fetch(url, {
@@ -15231,7 +15262,8 @@ const AdminDashboard: React.FC<{
                                 price: finalPrice ?? updatedAppointment.price,
                                 message: 'Serviço Concluído',
                                 isVisit,
-                                responsible: responsible || null
+                                responsible: responsible || null,
+                                feedback_url: feedbackUrl,
                             }),
                         });
                     } catch (webhookError) {}
