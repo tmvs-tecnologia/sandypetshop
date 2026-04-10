@@ -268,37 +268,41 @@ export const FeedbackPage: React.FC = () => {
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-48 h-48 rounded-full pointer-events-none"
                         style={{ background: 'radial-gradient(circle, #fce7f3, transparent 70%)', animation: 'pulseRing 3s ease-in-out infinite' }} />
 
-                    {/* Ícone central animado */}
-                    <div className="success-icon relative mx-auto mb-5" style={{ width: 110, height: 110 }}>
-                        {/* Glow externo pulsante — não cobre mais a animação */}
+                    {/* Ícone central animado — sem clip no canvas (Shadow DOM não respeita overflow:hidden) */}
+                    <div className="success-icon relative mx-auto mb-2" style={{ width: 128, height: 128 }}>
+                        {/* Glow pulsante posicionado ATRÁS da animação */}
                         <div
-                            className="absolute inset-0 rounded-full"
                             style={{
-                                background: 'radial-gradient(circle, rgba(236,72,153,0.18) 0%, transparent 70%)',
-                                transform: 'scale(1.35)',
+                                position: 'absolute',
+                                inset: '-20px',
+                                borderRadius: '50%',
+                                background: 'radial-gradient(circle, rgba(236,72,153,0.22) 0%, transparent 68%)',
                                 animation: 'pulseRing 2.5s ease-in-out infinite',
+                                pointerEvents: 'none',
+                                zIndex: 0,
                             }}
                         />
-                        {/* Círculo branco de fundo para contrastar com o Lottie colorido */}
+                        {/* Círculo branco decorativo atrás — sem overflow-hidden */}
                         <div
-                            className="absolute inset-0 rounded-full"
                             style={{
-                                background: 'rgba(255,255,255,0.95)',
-                                boxShadow: '0 16px 48px rgba(236,72,153,0.35)',
-                                border: '2.5px solid rgba(236,72,153,0.2)',
+                                position: 'absolute',
+                                inset: '4px',
+                                borderRadius: '50%',
+                                background: 'rgba(255,255,255,0.9)',
+                                boxShadow: '0 8px 32px rgba(236,72,153,0.25)',
+                                border: '2px solid rgba(236,72,153,0.15)',
+                                zIndex: 0,
                             }}
                         />
-                        {/* Lottie do pet de celebração — cores próprias, sem filtro */}
-                        <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
-                            <div style={{ width: 140, height: 140, flexShrink: 0, marginTop: -4 }}>
-                                {/* @ts-ignore */}
-                                <dotlottie-wc
-                                    src="https://lottie.host/e46c9d27-f5df-4d6a-99e2-63d58c0f1e36/UUGtjP1iJz.lottie"
-                                    style={{ width: '140px', height: '140px', display: 'block' }}
-                                    autoplay
-                                    loop
-                                />
-                            </div>
+                        {/* Lottie livre — proporção 1:1, sem clip que deforme o canvas */}
+                        <div style={{ position: 'relative', zIndex: 1, width: '128px', height: '128px' }}>
+                            {/* @ts-ignore */}
+                            <dotlottie-wc
+                                src="https://lottie.host/e46c9d27-f5df-4d6a-99e2-63d58c0f1e36/UUGtjP1iJz.lottie"
+                                style={{ width: '128px', height: '128px', display: 'block' }}
+                                autoplay
+                                loop
+                            />
                         </div>
                     </div>
 
