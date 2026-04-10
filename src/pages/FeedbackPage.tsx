@@ -1,6 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 
+// Declaração de tipo para o Web Component do Lottie (evita erro TS no JSX)
+declare global {
+    namespace JSX {
+        interface IntrinsicElements {
+            'dotlottie-wc': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+                src?: string;
+                autoplay?: boolean | string;
+                loop?: boolean | string;
+                style?: React.CSSProperties;
+            }, HTMLElement>;
+        }
+    }
+}
+
 // ─── Design System: "Warm Luxury" ────────────────────────────────────────────
 // Tone: Organic/Natural com acento Luxury/Refined
 // Fonte display: Lobster Two (brand identity)
@@ -118,6 +132,14 @@ export const FeedbackPage: React.FC = () => {
     const commentRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
+        // Carrega o script do Lottie Web Component (uma única vez)
+        if (!document.querySelector('script[data-lottie-wc]')) {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js';
+            script.type = 'module';
+            script.setAttribute('data-lottie-wc', '1');
+            document.head.appendChild(script);
+        }
         // Animação de entrada com pequeno delay
         const t = setTimeout(() => setMounted(true), 100);
         return () => clearTimeout(t);
@@ -274,13 +296,40 @@ export const FeedbackPage: React.FC = () => {
                     {petName && (
                         <div className="pet-card flex items-center gap-4 mb-8 p-4 rounded-2xl" style={{ background: 'linear-gradient(135deg, #fdf2f8, #fff1f7)', border: '1px solid #fce7f3' }}>
                             <div className="relative flex-shrink-0">
-                                <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(135deg, #fbcfe8, #fed7aa)', filter: 'blur(8px)', opacity: 0.6, transform: 'scale(1.1)' }} />
-                                <SafeImage
-                                    src={petPhotoUrl}
-                                    alt={petName}
-                                    className="relative w-20 h-20 rounded-full object-cover border-4 border-white"
-                                    style={{ boxShadow: '0 8px 24px rgba(236,72,153,0.25)' } as React.CSSProperties}
-                                />
+                                {/* Glow atrás do avatar */}
+                                <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(135deg, #fbcfe8, #fed7aa)', filter: 'blur(8px)', opacity: 0.6, transform: 'scale(1.2)' }} />
+
+                                {petPhotoUrl ? (
+                                    /* Foto real do pet */
+                                    <SafeImage
+                                        src={petPhotoUrl}
+                                        alt={petName}
+                                        className="relative w-20 h-20 rounded-full object-cover border-4 border-white"
+                                        style={{ boxShadow: '0 8px 24px rgba(236,72,153,0.25)' } as React.CSSProperties}
+                                    />
+                                ) : (
+                                    /* Sem foto: Lottie animation dentro do avatar circular */
+                                    <div
+                                        className="relative rounded-full border-4 border-white overflow-hidden flex items-center justify-center"
+                                        style={{
+                                            width: 80,
+                                            height: 80,
+                                            background: 'linear-gradient(135deg, #fce7f3 0%, #fff1f7 100%)',
+                                            boxShadow: '0 8px 24px rgba(236,72,153,0.25)',
+                                        }}
+                                    >
+                                        {/* O dotlottie-wc é 300×300 internamente; escalamos para caber no avatar */}
+                                        <div style={{ width: 110, height: 110, marginTop: 12, flexShrink: 0, transform: 'scale(0.7)', transformOrigin: 'center center' }}>
+                                            {/* @ts-ignore — custom element do Lottie */}
+                                            <dotlottie-wc
+                                                src="https://lottie.host/4e6e8e18-9bb2-4dff-bf5e-f029c53b65eb/a0ljmbwA4O.lottie"
+                                                style={{ width: '110px', height: '110px', display: 'block' }}
+                                                autoplay
+                                                loop
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <div style={{ fontFamily: '"Outfit", sans-serif', fontWeight: 700, fontSize: '1.3rem', color: '#111827' }}>{petName}</div>
