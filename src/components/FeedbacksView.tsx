@@ -161,7 +161,7 @@ const FeedbacksView: React.FC = () => {
             `}</style>
 
             {/* ── Header ──────────────────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+            <div className="flex flex-col items-center text-center gap-3 mb-8">
                 <div>
                     <h1 style={{
                         fontFamily: '"Lobster Two", cursive',
@@ -179,7 +179,7 @@ const FeedbacksView: React.FC = () => {
                 <button
                     onClick={fetchFeedbacks}
                     disabled={loading}
-                    className="filter-btn flex items-center gap-2 self-start sm:self-auto"
+                    className="filter-btn flex items-center gap-2"
                     style={{
                         background: 'linear-gradient(135deg, #fce7f3, #fff1f7)',
                         border: '1px solid #fce7f3',
