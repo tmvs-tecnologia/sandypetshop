@@ -15239,8 +15239,8 @@ const AdminDashboard: React.FC<{
                 const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
                 
                 if (!isVisit) {
-                    // Gerar URL de feedback personalizada para o pet
-                    const appBaseUrl = window.location.origin + window.location.pathname;
+                    // URL base sempre aponta para produção (Vercel), não para localhost
+                    const appBaseUrl = 'https://agendamento-sandyspetshop.vercel.app/';
                     const feedbackParams = new URLSearchParams({
                         id: actualId,
                         table: targetTable,
