@@ -17,57 +17,77 @@ interface Feedback {
     submitted_at: string;
 }
 
+// Declaração de tipo para o Web Component do Lottie
+declare global {
+    namespace JSX {
+        interface IntrinsicElements {
+            'dotlottie-wc': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+                src?: string;
+                autoplay?: boolean | string;
+                loop?: boolean | string;
+                style?: React.CSSProperties;
+            }, HTMLElement>;
+        }
+    }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const STAR_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981'];
+const STAR_COLORS = ['#f43f5e', '#fb923c', '#facc15', '#a3e635', '#2dd4bf'];
 const STAR_LABELS = ['Ruim', 'Regular', 'Bom', 'Ótimo', 'Excelente'];
 
-function StarRow({ count, animate }: { count: number; animate?: boolean }) {
+function StarRow({ count, fbId, animate }: { count: number; fbId: string; animate?: boolean }) {
     const color = STAR_COLORS[count - 1] || '#fbbf24';
     return (
         <div className="flex items-center gap-1.5">
-            {[1, 2, 3, 4, 5].map((n) => (
-                <div
-                    key={n}
-                    style={{
-                        display: 'inline-flex',
-                        filter: n <= count
-                            ? `drop-shadow(0 2px 6px ${color}66)`
-                            : 'none',
-                        // @ts-ignore
-                        '--target-opacity': n <= count ? 1 : 0.15,
-                        opacity: 'var(--target-opacity)',
-                        animation: animate ? `starIn 0.5s cubic-bezier(0.34,1.56,0.64,1) ${(n - 1) * 70}ms both` : 'none',
-                    }}
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <defs>
-                            <linearGradient id={`star-grad-admin-${n}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor={n <= count ? color : '#d1d5db'} />
-                                <stop offset="100%" stopColor={n <= count ? color : '#9ca3af'} />
-                            </linearGradient>
-                        </defs>
-                        <path
-                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                            fill={`url(#star-grad-admin-${n})`}
-                        />
-                    </svg>
-                </div>
-            ))}
+            {[1, 2, 3, 4, 5].map((n) => {
+                const isFilled = n <= count;
+                const gradId = `star-grad-${fbId}-${n}`;
+                return (
+                    <div
+                        key={n}
+                        style={{
+                            display: 'inline-flex',
+                            filter: isFilled
+                                ? `drop-shadow(0 0 8px ${color}55) drop-shadow(0 2px 4px ${color}33)`
+                                : 'none',
+                            // @ts-ignore
+                            '--target-opacity': isFilled ? 1 : 0.12,
+                            opacity: 'var(--target-opacity)',
+                            animation: animate ? `starIn 0.6s cubic-bezier(0.34,1.56,0.64,1) ${(n - 1) * 80}ms both` : 'none',
+                        }}
+                    >
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+                            <defs>
+                                <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor={isFilled ? color : '#d1d5db'} />
+                                    <stop offset="100%" stopColor={isFilled ? color : '#9ca3af'} />
+                                </linearGradient>
+                            </defs>
+                            <path
+                                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                                fill={`url(#${gradId})`}
+                                style={{ transition: 'fill 0.3s ease' }}
+                            />
+                        </svg>
+                    </div>
+                );
+            })}
         </div>
     );
 }
 
 function RatingBadge({ stars }: { stars: number }) {
-    const color = STAR_COLORS[stars - 1];
-    const label = STAR_LABELS[stars - 1];
+    const color = STAR_COLORS[stars - 1] || '#9ca3af';
+    const label = STAR_LABELS[stars - 1] || 'Nota';
     return (
         <span
-            className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+            className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider"
             style={{
-                background: `${color}18`,
+                background: `${color}15`,
                 color,
                 border: `1px solid ${color}30`,
                 fontFamily: '"Outfit", sans-serif',
+                boxShadow: `0 2px 10px ${color}10`,
             }}
         >
             {stars}★ {label}
@@ -79,8 +99,23 @@ function SafeImage({ src, alt, className }: { src: string; alt: string; classNam
     const [err, setErr] = useState(false);
     if (!src || err) {
         return (
-            <div className={`${className} flex items-center justify-center bg-pink-50 text-pink-300 text-xl`} style={{ borderRadius: 'inherit' }}>
-                🐾
+            <div
+                className={`${className} flex items-center justify-center overflow-hidden`}
+                style={{
+                    background: 'linear-gradient(135deg, #fdf2f8 0%, #fff1f7 100%)',
+                    borderRadius: 'inherit'
+                }}
+            >
+                {/* Lottie Animation proporcional ao tamanho do avatar */}
+                <div style={{ transform: 'scale(1.2)', transformOrigin: 'center' }}>
+                    {/* @ts-ignore */}
+                    <dotlottie-wc
+                        src="https://lottie.host/ec93d9f5-43c7-4df9-8b68-7bf2d462895a/qNefgNdKvi.lottie"
+                        style={{ width: '48px', height: '48px', display: 'block' }}
+                        autoplay
+                        loop
+                    />
+                </div>
             </div>
         );
     }
@@ -108,6 +143,15 @@ const FeedbacksView: React.FC = () => {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // Carrega o script do Lottie Web Component (uma única vez)
+        if (!document.querySelector('script[data-lottie-wc-admin]')) {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js';
+            script.type = 'module';
+            script.setAttribute('data-lottie-wc-admin', '1');
+            document.head.appendChild(script);
+        }
+
         const t = setTimeout(() => setMounted(true), 60);
         return () => clearTimeout(t);
     }, []);
@@ -458,7 +502,7 @@ const FeedbacksView: React.FC = () => {
                                 </div>
 
                                 <div className="mb-2">
-                                    <StarRow count={fb.stars} animate />
+                                    <StarRow count={fb.stars} fbId={fb.id} animate />
                                 </div>
 
                                 {fb.service && (
