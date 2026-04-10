@@ -269,18 +269,32 @@ export const FeedbackPage: React.FC = () => {
                         style={{ background: 'radial-gradient(circle, #fce7f3, transparent 70%)', animation: 'pulseRing 3s ease-in-out infinite' }} />
 
                     {/* Ícone central animado */}
-                    <div className="success-icon relative mx-auto mb-5" style={{ width: 100, height: 100 }}>
+                    <div className="success-icon relative mx-auto mb-5" style={{ width: 110, height: 110 }}>
+                        {/* Glow externo pulsante — não cobre mais a animação */}
                         <div
                             className="absolute inset-0 rounded-full"
-                            style={{ background: 'linear-gradient(135deg, #ec4899 0%, #f97316 100%)', boxShadow: '0 16px 48px rgba(236,72,153,0.45)' }}
+                            style={{
+                                background: 'radial-gradient(circle, rgba(236,72,153,0.18) 0%, transparent 70%)',
+                                transform: 'scale(1.35)',
+                                animation: 'pulseRing 2.5s ease-in-out infinite',
+                            }}
                         />
-                        {/* Lottie dentro do círculo de sucesso */}
+                        {/* Círculo branco de fundo para contrastar com o Lottie colorido */}
+                        <div
+                            className="absolute inset-0 rounded-full"
+                            style={{
+                                background: 'rgba(255,255,255,0.95)',
+                                boxShadow: '0 16px 48px rgba(236,72,153,0.35)',
+                                border: '2.5px solid rgba(236,72,153,0.2)',
+                            }}
+                        />
+                        {/* Lottie do pet de celebração — cores próprias, sem filtro */}
                         <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
-                            <div style={{ width: 130, height: 130, transform: 'scale(0.85)', marginTop: 10, flexShrink: 0 }}>
+                            <div style={{ width: 140, height: 140, flexShrink: 0, marginTop: -4 }}>
                                 {/* @ts-ignore */}
                                 <dotlottie-wc
-                                    src="https://lottie.host/4e6e8e18-9bb2-4dff-bf5e-f029c53b65eb/a0ljmbwA4O.lottie"
-                                    style={{ width: '130px', height: '130px', display: 'block', filter: 'brightness(0) invert(1)' }}
+                                    src="https://lottie.host/e46c9d27-f5df-4d6a-99e2-63d58c0f1e36/UUGtjP1iJz.lottie"
+                                    style={{ width: '140px', height: '140px', display: 'block' }}
                                     autoplay
                                     loop
                                 />
