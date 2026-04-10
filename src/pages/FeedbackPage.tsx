@@ -126,6 +126,8 @@ export const FeedbackPage: React.FC = () => {
     const [comment, setComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+    const [checking, setChecking] = useState(true); // aguarda verificação inicial
     const [error, setError] = useState('');
     const [mounted, setMounted] = useState(false);
     const [showParticles, setShowParticles] = useState(false);
@@ -140,10 +142,123 @@ export const FeedbackPage: React.FC = () => {
             script.setAttribute('data-lottie-wc', '1');
             document.head.appendChild(script);
         }
+
+        // Verifica se já há avaliação para este agendamento
+        const checkExisting = async () => {
+            if (!appointmentId) { setChecking(false); return; }
+            try {
+                const { data } = await supabase
+                    .from('feedbacks')
+                    .select('id')
+                    .eq('appointment_id', appointmentId)
+                    .limit(1);
+                if (data && data.length > 0) setAlreadySubmitted(true);
+            } catch (_) {
+                // em caso de erro de rede, deixa o formulário abrir normalmente
+            } finally {
+                setChecking(false);
+            }
+        };
+        checkExisting();
+
         // Animação de entrada com pequeno delay
         const t = setTimeout(() => setMounted(true), 100);
         return () => clearTimeout(t);
-    }, []);
+    }, [appointmentId]);
+
+    // ─── TELA: JÁ AVALIOU ────────────────────────────────────────────────────
+    if (checking) {
+        return (
+            <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fdf2f8 0%, #fff7f0 50%, #fce7f3 100%)' }}>
+                <div className="w-10 h-10 rounded-full border-4 border-pink-100 border-t-pink-400 animate-spin" />
+            </div>
+        );
+    }
+
+    if (alreadySubmitted) {
+        return (
+            <div
+                className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-5"
+                style={{ background: 'linear-gradient(135deg, #fdf2f8 0%, #fff7f0 55%, #fce7f3 100%)' }}
+            >
+                <style>{`
+                    @import url('https://fonts.googleapis.com/css2?family=Lobster+Two:wght@700&family=Outfit:wght@400;500;600;700&display=swap');
+                    @keyframes floatHeart { 0%,100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-14px) rotate(4deg); } }
+                    @keyframes floatPaw  { 0%,100% { transform: translateY(0) rotate(8deg);  } 50% { transform: translateY(-10px) rotate(-4deg); } }
+                    @keyframes revealUp  { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:none; } }
+                    @keyframes orbFloat  { from { transform: translateY(0); } to { transform: translateY(-22px); } }
+                    .aa-card  { animation: revealUp 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.1s both; }
+                    .aa-title { animation: revealUp 0.55s ease 0.45s both; }
+                    .aa-body  { animation: revealUp 0.55s ease 0.6s both; }
+                    .aa-footer{ animation: revealUp 0.55s ease 0.75s both; }
+                `}</style>
+
+                {/* Orbs decorativos */}
+                <div className="absolute pointer-events-none" style={{ width:320, height:320, left:'-12%', top:'-18%', background:'radial-gradient(circle, #f9a8d4 0%, transparent 65%)', filter:'blur(40px)', opacity:0.4, animation:'orbFloat 7s ease-in-out infinite alternate' }} />
+                <div className="absolute pointer-events-none" style={{ width:220, height:220, right:'-8%', bottom:'10%', background:'radial-gradient(circle, #fde68a 0%, transparent 65%)', filter:'blur(36px)', opacity:0.35, animation:'orbFloat 9s ease-in-out 2s infinite alternate' }} />
+
+                {/* Card central */}
+                <div
+                    className="aa-card relative w-full max-w-sm text-center"
+                    style={{
+                        background: 'rgba(255,255,255,0.88)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                        borderRadius: '2.25rem',
+                        border: '1.5px solid rgba(255,255,255,0.95)',
+                        boxShadow: '0 28px 72px rgba(236,72,153,0.14), 0 6px 24px rgba(0,0,0,0.05)',
+                        padding: '2.5rem 2rem 2rem',
+                    }}
+                >
+                    {/* Emoji flutuante principal */}
+                    <div style={{ fontSize:'5rem', lineHeight:1, marginBottom:'0.5rem', display:'inline-block', animation:'floatHeart 3.5s ease-in-out infinite' }}>
+                        💝
+                    </div>
+
+                    {/* Patasinhas decorativas flutuantes */}
+                    <div style={{ position:'absolute', top:'1.2rem', right:'1.5rem', fontSize:'1.5rem', opacity:0.4, animation:'floatPaw 4s ease-in-out 0.5s infinite' }}>🐾</div>
+                    <div style={{ position:'absolute', bottom:'1.5rem', left:'1.2rem', fontSize:'1.1rem', opacity:0.3, animation:'floatPaw 5s ease-in-out 1s infinite' }}>🐾</div>
+
+                    {/* Logo */}
+                    <div className="aa-title" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginBottom:'1rem' }}>
+                        <img src="https://i.imgur.com/M3Gt3OA.png" alt="Logo Sandy's" style={{ width:28, height:28 }} onError={e => (e.currentTarget.style.display='none')} />
+                        <span style={{ fontFamily:'"Lobster Two", cursive', fontSize:'1.1rem', color:'#9d174d' }}>Sandy's Pet Shop</span>
+                    </div>
+
+                    <h1
+                        className="aa-title"
+                        style={{ fontFamily:'"Lobster Two", cursive', fontSize:'clamp(1.6rem,6vw,2.2rem)', color:'#9d174d', lineHeight:1.15, marginBottom:'0.75rem' }}
+                    >
+                        Que carinho!
+                    </h1>
+
+                    <p
+                        className="aa-body"
+                        style={{ fontFamily:'"Outfit", sans-serif', fontSize:'1rem', color:'#374151', lineHeight:1.7, marginBottom:'0.6rem' }}
+                    >
+                        A avaliação do <strong style={{ color:'#db2777' }}>{petName || 'seu pet'}</strong> já foi registrada com sucesso! 🌸
+                    </p>
+                    <p
+                        className="aa-body"
+                        style={{ fontFamily:'"Outfit", sans-serif', fontSize:'0.88rem', color:'#9ca3af', lineHeight:1.65 }}
+                    >
+                        Cada opinião nos ajuda a melhorar ainda mais o cuidado com os nossos peludos. Obrigada pelo carinho! 💕
+                    </p>
+
+                    {/* Divisor */}
+                    <div className="aa-footer" style={{ display:'flex', alignItems:'center', gap:'0.75rem', margin:'1.5rem 0 1rem' }}>
+                        <div style={{ flex:1, height:1, background:'linear-gradient(to right, transparent, #fce7f3)' }} />
+                        <span style={{ fontSize:'1rem', opacity:0.5 }}>🐾</span>
+                        <div style={{ flex:1, height:1, background:'linear-gradient(to left, transparent, #fce7f3)' }} />
+                    </div>
+
+                    <p className="aa-footer" style={{ fontFamily:'"Outfit", sans-serif', fontSize:'0.8rem', color:'#d1d5db' }}>
+                        Você pode fechar esta janela com segurança 🌷
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     const handleStarClick = (rating: number) => {
         setStars(rating);
