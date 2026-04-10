@@ -102,6 +102,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     } = appointment;
 
     const isCompleted = status === 'CONCLUÍDO';
+    const isVisitService = (service === 'Creche Pet' || service === 'Hotel Pet' || (service && typeof service === 'string' && service.toLowerCase().includes('visita')));
+    const isVisit = isVisitService && !monthly_client_id;
 
 
     // Price Calculation
@@ -180,6 +182,17 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
             {/* --- Status Bar --- */}
             <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${status === 'CONCLUÍDO' ? 'from-green-400 to-emerald-500' : 'from-pink-400 to-purple-500'}`} />
 
+            {/* VISITA BANNER VIP */}
+            {isVisit && (
+                <div className="w-full bg-gradient-to-r from-amber-500 to-orange-400 text-white text-[11px] font-black uppercase tracking-widest py-1.5 px-5 flex items-center justify-between shadow-sm relative overflow-hidden">
+                    <div className="absolute inset-0 bg-white/10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30 mix-blend-overlay"></div>
+                    <div className="flex items-center gap-2 relative z-10">
+                        <span className="text-sm">🏠</span>
+                        <span>Agendamento de Visita</span>
+                    </div>
+                </div>
+            )}
+
             <div className="p-5 flex flex-col h-full">
 
                 {/* Header Section */}
@@ -254,11 +267,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Serviço</span>
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-xs font-medium text-gray-700">{service}</span>
-                                {((service === 'Creche Pet' || service === 'Hotel Pet') && !monthly_client_id) && (
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-100 ml-2">
-                                        🏠 Visita
-                                    </span>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -278,15 +286,17 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                         </div>
                     </a>
 
-                    <div className="flex items-center gap-2 col-span-2">
-                        <div className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">🏢</div>
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Condomínio</span>
-                            <span className="text-xs font-medium text-gray-700">
-                                {(!condominium || condominium === 'Nenhum Condomínio') ? 'Banho & Tosa Fixo' : condominium}
-                            </span>
+                    {!isVisit && (
+                        <div className="flex items-center gap-2 col-span-2">
+                            <div className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">🏢</div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Condomínio</span>
+                                <span className="text-xs font-medium text-gray-700">
+                                    {(!condominium || condominium === 'Nenhum Condomínio') ? 'Banho & Tosa Fixo' : condominium}
+                                </span>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {responsible && (
                         <div className="flex items-center gap-2 col-span-2 bg-purple-50 p-1.5 rounded-lg border border-purple-100">

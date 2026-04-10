@@ -10836,17 +10836,50 @@ export const TimeSlotPicker: React.FC<{
 
     const isSameDaySP = (d1: Date, d2: Date) => isSameSaoPauloDay(d1, d2);
 
+    // Separate calendars logic
+    const isMobileAppt = (appt: any) => {
+        const s = String(appt.service || '').toUpperCase();
+        const c = String(appt.condominium || '').toUpperCase();
+        
+        const isMobileServiceStr = s.includes('PET_MOBILE') || s.includes('MÓVEL') || s.includes('MOVEL');
+        const hasCondo = c && c !== 'UNDEFINED' && c !== 'NULL' && !c.includes('NENHUM') && !c.includes('FIXO');
+        
+        return isMobileServiceStr || hasCondo;
+    };
+
+    const isVisitAppt = (appt: any) => {
+        const s = String(appt.service || '').toUpperCase();
+        return s.includes('VISIT') || s.includes('VISITA') || 
+               appt.service === ServiceType.VISIT_DAYCARE || 
+               appt.service === ServiceType.VISIT_HOTEL;
+    };
+
     const getAppointmentsAtHour = (hour: number) => {
         return allAppointments.filter(appt => {
             const apptTime = new Date(appt.appointmentTime);
             const { hour: apptHour } = getSaoPauloTimeParts(apptTime);
 
-            // Check for status if available (prevent blocking if cancelled)
             if (String(appt.status || '').toUpperCase() === 'CANCELADO') {
                 return false;
             }
 
-            return isSameSaoPauloDay(apptTime, selectedDate) && apptHour === hour;
+            // VISITS DO NOT BLOCK SLOTS
+            if (isVisitAppt(appt)) {
+                return false;
+            }
+
+            if (!isSameSaoPauloDay(apptTime, selectedDate) || apptHour !== hour) {
+                return false;
+            }
+
+            // A agenda Pet Móvel só é bloqueada por atendimentos Pet Móvel
+            // A agenda Fixo só é bloqueada por atendimentos Fixos
+            const apptIsMobile = isMobileAppt(appt);
+            if (isPetMovel) {
+                return apptIsMobile;
+            } else {
+                return !apptIsMobile;
+            }
         }).length;
     };
 
@@ -11046,17 +11079,17 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
                 if (!serviceKey && rec.service) {
                     const s = String(rec.service).toLowerCase();
-                    // PRIORITIZE MOBILE DETECTION: Check for 'movel' or 'mobile' first
+                    // PRIORITIZE MOBILE DETECTION
                     if (s.includes('movel') || s.includes('móvel') || s.includes('mobile')) {
                         if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_BATH_AND_GROOMING;
                         else if (s.includes('tosa')) serviceKey = ServiceType.PET_MOBILE_GROOMING_ONLY;
                         else serviceKey = ServiceType.PET_MOBILE_BATH;
                     }
+                    else if (s.includes('creche')) serviceKey = ServiceType.VISIT_DAYCARE;
+                    else if (s.includes('hotel')) serviceKey = ServiceType.VISIT_HOTEL;
                     else if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
                     else if (s.includes('banho')) serviceKey = ServiceType.BATH;
                     else if (s.includes('tosa')) serviceKey = ServiceType.GROOMING_ONLY;
-                    else if (s.includes('creche')) serviceKey = ServiceType.VISIT_DAYCARE;
-                    else if (s.includes('hotel')) serviceKey = ServiceType.VISIT_HOTEL;
                 }
 
                 if (!serviceKey) serviceKey = ServiceType.UNKNOWN;
@@ -11077,6 +11110,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     appointmentTime: new Date(dateStr),
                     monthly_client_id: rec.monthly_client_id || undefined,
                     status: rec.status,
+                    condominium: rec.condominium || rec.condo || undefined,
                 };
             })
             .filter(Boolean) as Appointment[];
@@ -11117,7 +11151,9 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             .map((rec: any) => {
                 const s = String(rec.service || '').toLowerCase();
                 let serviceKey: ServiceType;
-                if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
+                if (s.includes('creche') || (s.includes('visita') && s.includes('creche'))) serviceKey = ServiceType.VISIT_DAYCARE;
+                else if (s.includes('hotel') || (s.includes('visita') && s.includes('hotel'))) serviceKey = ServiceType.VISIT_HOTEL;
+                else if (s.includes('banho') && s.includes('tosa')) serviceKey = ServiceType.BATH_AND_GROOMING;
                 else if (s.includes('tosa')) serviceKey = ServiceType.GROOMING_ONLY;
                 else serviceKey = ServiceType.BATH;
 
@@ -11135,6 +11171,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     appointmentTime: new Date(dateStr),
                     monthly_client_id: rec.monthly_client_id || undefined,
                     status: rec.status,
+                    condominium: rec.condominium || rec.condo || undefined,
                 };
             })
             .filter(Boolean) as Appointment[];
@@ -15181,21 +15218,24 @@ const AdminDashboard: React.FC<{
             if (newStatus === 'CONCLUÍDO') {
                 const visitLabels = [SERVICES[ServiceType.VISIT_DAYCARE].label, SERVICES[ServiceType.VISIT_HOTEL].label];
                 const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
-                const url = isVisit ? 'https://n8n.intelektus.tech/webhook/visitaRealizada' : 'https://n8n.intelektus.tech/webhook/servicoConcluido';
-                try {
-                    await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            ...updatedAppointment,
-                            id: actualId,
-                            price: finalPrice ?? updatedAppointment.price,
-                            message: isVisit ? 'Visita Realizada' : 'Serviço Concluído',
-                            isVisit,
-                            responsible: responsible || null
-                        }),
-                    });
-                } catch (webhookError) {}
+                
+                if (!isVisit) {
+                    const url = 'https://n8n.intelektus.tech/webhook/servicoConcluido';
+                    try {
+                        await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                ...updatedAppointment,
+                                id: actualId,
+                                price: finalPrice ?? updatedAppointment.price,
+                                message: 'Serviço Concluído',
+                                isVisit,
+                                responsible: responsible || null
+                            }),
+                        });
+                    } catch (webhookError) {}
+                }
             }
         }
         setUpdatingStatusId(null);
@@ -16338,7 +16378,7 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
             owner_address: ownerAddress || null,
             observation: observation || null,
         };
-        const { error } = await supabase.from('appointments').insert([payload]);
+        const { error } = await supabase.from('agendamento_banhotosa').insert([payload]);
         setIsSubmitting(false);
         if (!error) setIsSuccess(true);
     };
