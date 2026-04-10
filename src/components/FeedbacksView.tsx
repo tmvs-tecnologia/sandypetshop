@@ -22,23 +22,36 @@ const STAR_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981'];
 const STAR_LABELS = ['Ruim', 'Regular', 'Bom', 'Ótimo', 'Excelente'];
 
 function StarRow({ count, animate }: { count: number; animate?: boolean }) {
+    const color = STAR_COLORS[count - 1] || '#fbbf24';
     return (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
             {[1, 2, 3, 4, 5].map((n) => (
-                <span
+                <div
                     key={n}
                     style={{
-                        fontSize: '1.1rem',
-                        display: 'inline-block',
+                        display: 'inline-flex',
                         filter: n <= count
-                            ? `drop-shadow(0 1px 4px ${STAR_COLORS[count - 1]}88)`
+                            ? `drop-shadow(0 2px 6px ${color}66)`
                             : 'none',
-                        opacity: n <= count ? 1 : 0.22,
-                        animation: animate ? `starIn 0.4s cubic-bezier(0.34,1.56,0.64,1) ${(n - 1) * 60}ms both` : 'none',
+                        // @ts-ignore
+                        '--target-opacity': n <= count ? 1 : 0.15,
+                        opacity: 'var(--target-opacity)',
+                        animation: animate ? `starIn 0.5s cubic-bezier(0.34,1.56,0.64,1) ${(n - 1) * 70}ms both` : 'none',
                     }}
                 >
-                    ⭐
-                </span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <defs>
+                            <linearGradient id={`star-grad-admin-${n}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor={n <= count ? color : '#d1d5db'} />
+                                <stop offset="100%" stopColor={n <= count ? color : '#9ca3af'} />
+                            </linearGradient>
+                        </defs>
+                        <path
+                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                            fill={`url(#star-grad-admin-${n})`}
+                        />
+                    </svg>
+                </div>
             ))}
         </div>
     );
@@ -149,7 +162,7 @@ const FeedbacksView: React.FC = () => {
         >
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Lobster+Two:wght@700&family=Outfit:wght@400;500;600;700&display=swap');
-                @keyframes starIn { from { opacity: 0; transform: translateY(-8px) scale(0.5); } to { opacity: 1; transform: none; } }
+                @keyframes starIn { from { opacity: 0; transform: translateY(-8px) scale(0.6); } to { opacity: var(--target-opacity); transform: none; } }
                 @keyframes cardSlide { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
                 @keyframes barGrow { from { width: 0; } to { width: var(--bar-w); } }
                 .fb-card { animation: cardSlide 0.5s cubic-bezier(0.34,1.1,0.64,1) both; }
