@@ -189,41 +189,156 @@ export const FeedbackPage: React.FC = () => {
         }
     };
 
-    // ─── TELA DE SUCESSO ──────────────────────────────────────────────────────
+    // ─── OVERLAY DE SUCESSO (aparece sobre o formulário com blur) ───────────────
     if (submitted) {
         return (
-            <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fdf2f8 0%, #fff1f7 50%, #fce7f3 100%)' }}>
+            <div
+                className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+                style={{ background: 'rgba(253,242,248,0.55)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}
+            >
                 <style>{`
-                    @keyframes float { from { transform: translateY(0px); } to { transform: translateY(-20px); } }
-                    @keyframes sparkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.3); } }
-                    @keyframes successPop { 0% { transform: scale(0) rotate(-10deg); opacity: 0; } 70% { transform: scale(1.1) rotate(3deg); } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
+                    @import url('https://fonts.googleapis.com/css2?family=Lobster+Two:wght@700&family=Outfit:wght@400;500;600;700&display=swap');
+                    @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+                    @keyframes cardUp   { from { opacity: 0; transform: translateY(60px) scale(0.93); } to { opacity: 1; transform: translateY(0) scale(1); } }
+                    @keyframes iconPop  { 0% { transform: scale(0) rotate(-15deg); opacity: 0; } 65% { transform: scale(1.18) rotate(4deg); } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
+                    @keyframes fadeUp   { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+                    @keyframes starDrop { 0% { opacity: 0; transform: translateY(-20px) scale(0.5); } 70% { transform: translateY(3px) scale(1.2); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+                    @keyframes confetti {
+                        0%   { transform: translate(0, 0) rotate(0deg);   opacity: 1; }
+                        100% { transform: translate(var(--cx), var(--cy)) rotate(var(--cr)); opacity: 0; }
+                    }
+                    @keyframes pulseRing { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.15); opacity: 0.07; } }
+                    .success-overlay { animation: overlayIn 0.4s ease forwards; }
+                    .success-card    { animation: cardUp 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.1s both; }
+                    .success-icon    { animation: iconPop 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.3s both; }
+                    .success-title   { animation: fadeUp 0.5s ease 0.65s both; }
+                    .success-body    { animation: fadeUp 0.5s ease 0.8s both; }
+                    .success-stars   { animation: fadeUp 0.5s ease 0.95s both; }
+                    .success-cta     { animation: fadeUp 0.5s ease 1.1s both; }
                 `}</style>
 
-                <FloatingOrb size={300} x="-10%" y="-15%" color="radial-gradient(circle, #f9a8d4, #ec4899)" delay="0s" duration="6s" />
-                <FloatingOrb size={200} x="80%" y="70%" color="radial-gradient(circle, #fbbf24, #f97316)" delay="2s" duration="8s" />
+                {/* Confetti de partículas */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden success-overlay">
+                    {[...Array(22)].map((_, i) => {
+                        const colors = ['#ec4899','#f97316','#fbbf24','#a78bfa','#34d399','#fb7185'];
+                        const cx = `${(Math.random() - 0.5) * 200}px`;
+                        const cy = `${-(60 + Math.random() * 160)}px`;
+                        const cr = `${(Math.random() - 0.5) * 360}deg`;
+                        const delay = `${i * 55}ms`;
+                        const size = 6 + Math.random() * 8;
+                        const left = `${10 + Math.random() * 80}%`;
+                        const top  = `${20 + Math.random() * 60}%`;
+                        const shape = i % 3 === 0 ? '2px' : i % 3 === 1 ? '50%' : '0';
+                        return (
+                            <div
+                                key={i}
+                                style={{
+                                    position: 'absolute',
+                                    width: size,
+                                    height: size,
+                                    left,
+                                    top,
+                                    background: colors[i % colors.length],
+                                    borderRadius: shape,
+                                    '--cx': cx,
+                                    '--cy': cy,
+                                    '--cr': cr,
+                                    animation: `confetti 1.4s cubic-bezier(0.25,0.46,0.45,0.94) ${delay} both`,
+                                } as React.CSSProperties}
+                            />
+                        );
+                    })}
+                </div>
 
-                <div className="relative z-10 text-center px-6 max-w-sm mx-auto" style={{ animation: 'successPop 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards' }}>
-                    <div className="w-28 h-28 mx-auto mb-6 rounded-full flex items-center justify-center text-6xl"
-                        style={{ background: 'linear-gradient(135deg, #ec4899, #f97316)', boxShadow: '0 20px 60px rgba(236,72,153,0.4)' }}>
-                        🐾
+                {/* Card principal */}
+                <div
+                    className="success-card relative w-full max-w-sm mx-4 mb-8 sm:mb-0 text-center"
+                    style={{
+                        background: 'rgba(255,255,255,0.92)',
+                        backdropFilter: 'blur(24px)',
+                        WebkitBackdropFilter: 'blur(24px)',
+                        borderRadius: '2rem',
+                        border: '1.5px solid rgba(255,255,255,0.95)',
+                        boxShadow: '0 32px 80px rgba(236,72,153,0.18), 0 8px 32px rgba(0,0,0,0.06)',
+                        padding: '2.5rem 2rem 2rem',
+                        overflow: 'hidden',
+                    }}
+                >
+                    {/* Anel de pulso atrás do ícone */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-48 h-48 rounded-full pointer-events-none"
+                        style={{ background: 'radial-gradient(circle, #fce7f3, transparent 70%)', animation: 'pulseRing 3s ease-in-out infinite' }} />
+
+                    {/* Ícone central animado */}
+                    <div className="success-icon relative mx-auto mb-5" style={{ width: 100, height: 100 }}>
+                        <div
+                            className="absolute inset-0 rounded-full"
+                            style={{ background: 'linear-gradient(135deg, #ec4899 0%, #f97316 100%)', boxShadow: '0 16px 48px rgba(236,72,153,0.45)' }}
+                        />
+                        {/* Lottie dentro do círculo de sucesso */}
+                        <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
+                            <div style={{ width: 130, height: 130, transform: 'scale(0.85)', marginTop: 10, flexShrink: 0 }}>
+                                {/* @ts-ignore */}
+                                <dotlottie-wc
+                                    src="https://lottie.host/4e6e8e18-9bb2-4dff-bf5e-f029c53b65eb/a0ljmbwA4O.lottie"
+                                    style={{ width: '130px', height: '130px', display: 'block', filter: 'brightness(0) invert(1)' }}
+                                    autoplay
+                                    loop
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <h1 className="font-brand text-pink-800 text-4xl mb-3" style={{ fontFamily: '"Lobster Two", cursive' }}>
+
+                    {/* Título */}
+                    <h1
+                        className="success-title"
+                        style={{ fontFamily: '"Lobster Two", cursive', fontSize: '2.4rem', color: '#9d174d', lineHeight: 1.1, marginBottom: '0.6rem' }}
+                    >
                         Que amor!
                     </h1>
-                    <p className="text-gray-600 text-lg leading-relaxed font-outfit mb-2">
-                        Sua avaliação foi enviada com sucesso!
+
+                    {/* Subtítulo */}
+                    <p
+                        className="success-body"
+                        style={{ fontFamily: '"Outfit", sans-serif', fontSize: '1rem', color: '#374151', lineHeight: 1.6, marginBottom: '0.5rem' }}
+                    >
+                        Sua avaliação foi enviada!
                     </p>
-                    <p className="text-pink-500 text-base font-outfit font-medium">
-                        O seu carinho nos motiva a cuidar ainda melhor do <strong>{petName || 'seu pet'}</strong>. 💕
+                    <p
+                        className="success-body"
+                        style={{ fontFamily: '"Outfit", sans-serif', fontSize: '0.9rem', color: '#ec4899', fontWeight: 600, lineHeight: 1.5, marginBottom: '1.4rem' }}
+                    >
+                        O seu carinho nos motiva a cuidar ainda<br />melhor de{' '}
+                        <strong style={{ color: '#db2777' }}>{petName || 'seu pet'}</strong> 💕
                     </p>
 
-                    <div className="mt-8 flex justify-center gap-2">
-                        {[...Array(5)].map((_, i) => (
-                            <span key={i} className="text-3xl" style={{ animation: `sparkle 1.5s ease-in-out ${i * 0.2}s infinite` }}>
-                                {i < stars ? '⭐' : '☆'}
+                    {/* Estrelas como recap da nota dada — entrada em stagger */}
+                    <div className="success-stars flex justify-center gap-2 mb-6">
+                        {[1,2,3,4,5].map((n, i) => (
+                            <span
+                                key={n}
+                                style={{
+                                    fontSize: '1.8rem',
+                                    display: 'inline-block',
+                                    animation: `starDrop 0.55s cubic-bezier(0.34,1.56,0.64,1) ${1.1 + i * 0.1}s both`,
+                                    filter: n <= stars ? 'drop-shadow(0 2px 8px rgba(251,146,60,0.6))' : 'none',
+                                }}
+                            >
+                                {n <= stars ? '⭐' : '☆'}
                             </span>
                         ))}
                     </div>
+
+                    {/* Linha divisória decorativa */}
+                    <div className="success-cta flex items-center gap-3 mb-5">
+                        <div className="flex-1 h-px" style={{ background: 'linear-gradient(to right, transparent, #fce7f3)' }} />
+                        <span style={{ fontSize: '0.75rem', color: '#f9a8d4', fontFamily: '"Outfit", sans-serif', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Sandy's Pet Shop</span>
+                        <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, transparent, #fce7f3)' }} />
+                    </div>
+
+                    {/* Mensagem final */}
+                    <p className="success-cta" style={{ fontFamily: '"Outfit", sans-serif', fontSize: '0.8rem', color: '#9ca3af' }}>
+                        Você pode fechar esta janela 🐾
+                    </p>
                 </div>
             </div>
         );
@@ -490,7 +605,7 @@ export const FeedbackPage: React.FC = () => {
                 </div>
 
                 {/* Footer */}
-                <p className="mt-6 text-center" style={{ fontFamily: '"Outfit", sans-serif', fontSize: '0.8rem', color: '#d1d5db' }}>
+                <p className="mt-6 text-center" style={{ fontFamily: '"Outfit", sans-serif', fontSize: '0.8rem', color: '#374151', opacity: 0.7 }}>
                     Sua opinião ajuda a melhorar o atendimento 💕
                 </p>
             </div>
