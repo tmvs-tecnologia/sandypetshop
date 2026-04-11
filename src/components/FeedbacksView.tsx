@@ -218,50 +218,54 @@ const FeedbacksView: React.FC = () => {
             `}</style>
 
             {/* ── Header ──────────────────────────────────────────────────────── */}
-            <div className="flex flex-col items-center text-center gap-3 mb-8">
-                <div>
-                    <h1 style={{
-                        fontFamily: '"Lobster Two", cursive',
-                        fontSize: 'clamp(1.8rem, 5vw, 2.6rem)',
-                        color: '#9d174d',
-                        lineHeight: 1.1,
-                        marginBottom: '0.25rem',
-                    }}>
-                        Avaliações
-                    </h1>
-                    <p style={{ color: '#6b7280', fontSize: '0.9rem', fontWeight: 500 }}>
-                        O que os tutores estão dizendo sobre seus pets
-                    </p>
-                </div>
+            <div className="relative flex flex-col items-center text-center mb-8">
                 <button
                     onClick={fetchFeedbacks}
                     disabled={loading}
-                    className="filter-btn flex items-center gap-2"
+                    className="absolute left-0 top-1 filter-btn flex items-center justify-center w-10 h-10 rounded-xl transition-all"
                     style={{
-                        background: 'linear-gradient(135deg, #fce7f3, #fff1f7)',
-                        border: '1px solid #fce7f3',
-                        borderRadius: '0.875rem',
-                        padding: '0.6rem 1.2rem',
-                        color: '#be185d',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
+                        background: 'rgba(252, 231, 243, 0.4)',
+                        border: '1px solid rgba(252, 231, 243, 0.5)',
+                        color: '#db2777',
                         cursor: loading ? 'not-allowed' : 'pointer',
-                        opacity: loading ? 0.6 : 1,
+                        opacity: loading ? 0.6 : 0.7,
                     }}
+                    title="Atualizar"
                 >
-                    <svg className={loading ? 'animate-spin' : ''} width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg 
+                        className={loading ? 'animate-spin' : ''} 
+                        width="20" height="20" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                    >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Atualizar
                 </button>
+
+                <div>
+                    <h1 style={{
+                        fontFamily: '"Lobster Two", cursive',
+                        fontSize: '2.25rem',
+                        fontWeight: 700,
+                        color: '#db2777',
+                        lineHeight: 1.1,
+                        marginBottom: '0.2rem',
+                    }}>
+                        Avaliações
+                    </h1>
+                    <p className="text-[11px] sm:text-sm text-gray-600 font-medium">
+                        O que os tutores estão dizendo sobre seus pets
+                    </p>
+                </div>
             </div>
 
             {/* ── Stats Cards ─────────────────────────────────────────────────── */}
             {!loading && feedbacks.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-8">
                     {/* Média geral */}
                     <div
-                        className="rounded-2xl p-5 flex flex-col items-center text-center relative overflow-hidden"
+                        className="rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center relative overflow-hidden h-full"
                         style={{
                             background: 'linear-gradient(135deg, #ec4899 0%, #f97316 100%)',
                             boxShadow: '0 12px 40px rgba(236,72,153,0.3)',
@@ -269,23 +273,27 @@ const FeedbacksView: React.FC = () => {
                         }}
                     >
                         <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-10 -mt-10" />
-                        <span style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1 }}>{avg.toFixed(1)}</span>
-                        <span style={{ fontSize: '1.4rem', marginTop: '-0.2rem' }}>⭐</span>
-                        <span className="mt-2 text-white/80 text-xs font-bold uppercase tracking-widest">Média Geral</span>
+                        <span style={{ fontSize: 'clamp(2rem, 8vw, 3rem)', fontWeight: 900, lineHeight: 1 }}>
+                            {avg.toFixed(1)}
+                        </span>
+                        <span style={{ fontSize: 'clamp(1rem, 4vw, 1.4rem)', marginTop: '-0.1rem' }}>⭐</span>
+                        <span className="mt-1 text-white/90 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Média Geral</span>
                     </div>
 
                     {/* Total de avaliações */}
                     <div
-                        className="rounded-2xl p-5 flex flex-col items-center text-center"
+                        className="rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center h-full"
                         style={{ background: 'white', border: '1px solid #fce7f3', boxShadow: '0 4px 20px rgba(236,72,153,0.07)' }}
                     >
-                        <span style={{ fontSize: '3rem', fontWeight: 900, color: '#db2777', lineHeight: 1 }}>{feedbacks.length}</span>
-                        <span className="mt-2 text-gray-400 text-xs font-bold uppercase tracking-widest">Avaliações</span>
+                        <span style={{ fontSize: 'clamp(2.2rem, 10vw, 3.2rem)', fontWeight: 900, color: '#db2777', lineHeight: 1 }}>
+                            {feedbacks.length}
+                        </span>
+                        <span className="mt-1 text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Avaliações</span>
                     </div>
 
                     {/* Distribuição por estrelas */}
                     <div
-                        className="rounded-2xl p-4 flex flex-col gap-1.5"
+                        className="rounded-2xl p-4 flex flex-col gap-1.5 col-span-2 lg:col-span-1"
                         style={{ background: 'white', border: '1px solid #fce7f3', boxShadow: '0 4px 20px rgba(236,72,153,0.07)' }}
                     >
                         {dist.map(({ stars: s, count }) => {
