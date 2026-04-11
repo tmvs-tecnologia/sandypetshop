@@ -141,6 +141,11 @@ const FeedbacksView: React.FC = () => {
     const [filterStars, setFilterStars] = useState(0); // 0 = todos
     const [sortOrder, setSortOrder] = useState<'newest' | 'highest' | 'lowest'>('newest');
     const [mounted, setMounted] = useState(false);
+    
+    // Novas estados para Ação
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [activeFeedback, setActiveFeedback] = useState<Feedback | null>(null);
+    const [shareStyle, setShareStyle] = useState<'pink-sweet' | 'elegant-minimal'>('pink-sweet');
 
     useEffect(() => {
         // Carrega o script do Lottie Web Component (uma única vez)
@@ -215,6 +220,15 @@ const FeedbacksView: React.FC = () => {
                 .bar-fill { animation: barGrow 0.9s cubic-bezier(0.4,0,0.2,1) 0.3s both; }
                 .filter-btn { transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
                 .filter-btn:active { transform: scale(0.95); }
+                .action-btn { transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); position: relative; overflow: hidden; }
+                .action-btn::after { content: ''; position: absolute; inset: 0; background: white; opacity: 0; transition: opacity 0.2s; }
+                .action-btn:hover::after { opacity: 0.1; }
+                .action-btn:active { transform: scale(0.96); }
+                .modal-overlay { backdrop-filter: blur(12px); animation: fadeIn 0.3s ease-out; }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes slideUp { from { transform: translateY(20px) scale(0.95); opacity: 0; } to { transform: none; opacity: 1; } }
+                .share-card { animation: slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+                .paw-pattern { opacity: 0.1; pointer-events: none; }
             `}</style>
 
             {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -552,11 +566,232 @@ const FeedbacksView: React.FC = () => {
                                         Sem comentário
                                     </p>
                                 )}
+
+                                {/* ── Ações (Feedback ⮕ Ação) ────────────────────── */}
+                                <div className="mt-4 pt-4 border-t border-gray-100/50 flex items-center gap-3">
+                                    {fb.stars >= 4 ? (
+                                        <button
+                                            onClick={() => {
+                                                setActiveFeedback(fb);
+                                                setIsShareModalOpen(true);
+                                            }}
+                                            className="action-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #db2777 0%, #ec4899 100%)',
+                                                color: 'white',
+                                                boxShadow: '0 4px 12px rgba(219,39,119,0.2)',
+                                            }}
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                            </svg>
+                                            Gerar Post Instagram
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                const phone = fb.whatsapp ? fb.whatsapp.replace(/\D/g, '') : '';
+                                                const message = encodeURIComponent(`Olá ${fb.owner_name}, aqui é da Sandy's PetShop. 🐾 Recebemos o seu feedback sobre o(a) ${fb.pet_name}. Gostaríamos de entender melhor o que aconteceu para que possamos melhorar nossos cuidados! Como podemos te ajudar?`);
+                                                window.open(`https://wa.me/${phone.startsWith('55') ? phone : '55' + phone}?text=${message}`, '_blank');
+                                            }}
+                                            className="action-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold"
+                                            style={{
+                                                background: 'rgba(5, 150, 105, 0.08)',
+                                                color: '#059669',
+                                                border: '1px solid rgba(5, 150, 105, 0.15)',
+                                            }}
+                                        >
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                            </svg>
+                                            Entender o Problema
+                                        </button>
+                                    )}
+
+                                    <div className="ml-auto flex items-center gap-2">
+                                        <button
+                                            className="p-2 transition-all hover:bg-gray-100 rounded-full text-gray-400 hover:text-pink-500"
+                                            title="Histórico do Pet"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 ))}
             </div>
+
+            {/* ── Modal de Compartilhamento (Feedback ⮕ Ação) ────────────────── */}
+            {isShareModalOpen && activeFeedback && (
+                <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60">
+                    <div className="share-card relative w-full max-w-sm flex flex-col items-center">
+                        {/* Seletor de Estilo */}
+                        <div className="absolute -top-16 bg-white/20 backdrop-blur-md rounded-2xl p-1 flex gap-1 border border-white/20">
+                            <button
+                                onClick={() => setShareStyle('pink-sweet')}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${shareStyle === 'pink-sweet' ? 'bg-white text-pink-600 shadow-lg' : 'text-white hover:bg-white/10'}`}
+                            >
+                                Pink Sweet
+                            </button>
+                            <button
+                                onClick={() => setShareStyle('elegant-minimal')}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${shareStyle === 'elegant-minimal' ? 'bg-white text-gray-800 shadow-lg' : 'text-white hover:bg-white/10'}`}
+                            >
+                                Elegant Minimal
+                            </button>
+                        </div>
+
+                        {/* O Card do Instagram */}
+                        <div
+                            className="w-full aspect-square rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col p-8 select-none"
+                            style={shareStyle === 'pink-sweet' ? {
+                                background: 'linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%)',
+                                color: 'white'
+                            } : {
+                                background: '#ffffff',
+                                color: '#111827',
+                                border: '1px solid #f3f4f6'
+                            }}
+                        >
+                            {/* Patinhas Decorativas (Apenas no Pink Sweet) */}
+                            {shareStyle === 'pink-sweet' && (
+                                <div className="absolute inset-0 overflow-hidden paw-pattern pointer-events-none">
+                                    <span style={{ position: 'absolute', top: '5%', left: '10%', fontSize: '3rem' }}>🐾</span>
+                                    <span style={{ position: 'absolute', bottom: '10%', right: '10%', fontSize: '4rem', transform: 'rotate(25deg)' }}>🐾</span>
+                                    <span style={{ position: 'absolute', top: '40%', right: '-5%', fontSize: '2.5rem', opacity: 0.2 }}>🐾</span>
+                                </div>
+                            )}
+
+                            {/* Logo / Header do Card */}
+                            <div className="flex items-center justify-between mb-8 relative z-10">
+                                <div className="flex flex-col">
+                                    <span style={{
+                                        fontFamily: '"Lobster Two", cursive',
+                                        fontSize: '1.6rem',
+                                        lineHeight: 1
+                                    }}>
+                                        Sandy's
+                                    </span>
+                                    <span style={{
+                                        fontSize: '0.6rem',
+                                        fontWeight: 800,
+                                        letterSpacing: '0.2em',
+                                        opacity: 0.8,
+                                        marginTop: '1px'
+                                    }}>
+                                        PET SHOP
+                                    </span>
+                                </div>
+                                <div
+                                    className="px-3 py-1 rounded-full text-[10px] font-bold tracking-tighter"
+                                    style={{
+                                        background: shareStyle === 'pink-sweet' ? 'rgba(255,255,255,0.2)' : '#fce7f3',
+                                        color: shareStyle === 'pink-sweet' ? 'white' : '#db2777'
+                                    }}
+                                >
+                                    Feedback do Mês
+                                </div>
+                            </div>
+
+                            {/* Foto e Nome */}
+                            <div className="flex flex-col items-center mb-6 relative z-10">
+                                <div className="relative mb-4">
+                                    <div
+                                        className="absolute inset-0 blur-xl rounded-full"
+                                        style={{ background: shareStyle === 'pink-sweet' ? 'rgba(255,255,255,0.4)' : 'rgba(219,39,119,0.2)' }}
+                                    />
+                                    <SafeImage
+                                        src={activeFeedback.pet_photo_url || ''}
+                                        alt={activeFeedback.pet_name}
+                                        className="w-24 h-24 rounded-full object-cover relative border-4"
+                                        style={{ borderColor: shareStyle === 'pink-sweet' ? 'rgba(255,255,255,0.3)' : '#fce7f3' }}
+                                    />
+                                    <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-white p-1.5 rounded-full shadow-lg border-2 border-white">
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <h4 style={{
+                                    fontFamily: '"Lobster Two", cursive',
+                                    fontSize: '2.2rem',
+                                    lineHeight: 1,
+                                    textShadow: shareStyle === 'pink-sweet' ? '0 2px 10px rgba(0,0,0,0.1)' : 'none'
+                                }}>
+                                    {activeFeedback.pet_name}
+                                </h4>
+                                <div className="flex gap-1 mt-2">
+                                    {[1, 2, 3, 4, 5].map(n => (
+                                        <svg key={n} className="w-4 h-4" fill={n <= activeFeedback.stars ? (shareStyle === 'pink-sweet' ? '#ffffff' : '#facc15') : 'rgba(0,0,0,0.1)'} viewBox="0 0 24 24">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                        </svg>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Comentário */}
+                            <div className="flex-1 flex items-center justify-center relative z-10 text-center">
+                                <div className="relative">
+                                    <span style={{
+                                        position: 'absolute',
+                                        top: '-1rem',
+                                        left: '-1.5rem',
+                                        fontSize: '3rem',
+                                        opacity: 0.15,
+                                        fontFamily: 'serif'
+                                    }}>"</span>
+                                    <p style={{
+                                        fontSize: '1.1rem',
+                                        fontWeight: 600,
+                                        fontStyle: 'italic',
+                                        lineHeight: 1.4,
+                                        letterSpacing: '-0.01em'
+                                    }}>
+                                        {activeFeedback.comment || "Super recomendo o Sandy's PetShop! Cuidados impecáveis e muito carinho."}
+                                    </p>
+                                    <span style={{
+                                        position: 'absolute',
+                                        bottom: '-2rem',
+                                        right: '-1.5rem',
+                                        fontSize: '3rem',
+                                        opacity: 0.15,
+                                        fontFamily: 'serif'
+                                    }}>"</span>
+                                </div>
+                            </div>
+
+                            {/* Footer do Card */}
+                            <div className="mt-6 flex justify-center relative z-10">
+                                <div className="px-4 py-1.5 rounded-full border border-current opacity-60 text-[9px] font-bold uppercase tracking-widest">
+                                    @sandypetshop.oficial
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Botões de Ação do Modal */}
+                        <div className="mt-8 flex gap-3 w-full">
+                            <button
+                                onClick={() => setIsShareModalOpen(false)}
+                                className="flex-1 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold transition-all border border-white/20"
+                            >
+                                Fechar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    alert('Dica: Tire um print desta tela para postar nos stories! Em breve teremos exportação direta de imagem.');
+                                }}
+                                className="flex-[2] py-4 bg-white text-pink-600 rounded-2xl font-bold shadow-xl shadow-pink-900/40 transform hover:scale-105 transition-all"
+                            >
+                                Como postar?
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
