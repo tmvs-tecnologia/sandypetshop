@@ -740,12 +740,12 @@ const FeedbacksView: React.FC = () => {
                                 <div className="flex flex-col items-center relative z-10 shrink-0">
                                     <div className="relative mb-3">
                                         <div
-                                            className="absolute inset-0 blur-2xl rounded-full"
+                                            className="absolute inset-[-20%] rounded-full opacity-60"
                                             style={{
                                                 background:
-                                                    shareStyle === 'bubblegum' ? 'rgba(255,255,255,0.5)' :
-                                                    shareStyle === 'berry-night' ? 'rgba(236,72,153,0.3)' :
-                                                    'rgba(219,39,119,0.3)'
+                                                    shareStyle === 'bubblegum' ? 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%)' :
+                                                    shareStyle === 'berry-night' ? 'radial-gradient(circle, rgba(236,72,153,0.5) 0%, rgba(236,72,153,0) 70%)' :
+                                                    'radial-gradient(circle, rgba(219,39,119,0.4) 0%, rgba(219,39,119,0) 70%)'
                                             }}
                                         />
                                         <SafeImage
