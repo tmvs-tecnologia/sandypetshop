@@ -224,7 +224,11 @@ const FeedbacksView: React.FC = () => {
                 .action-btn::after { content: ''; position: absolute; inset: 0; background: white; opacity: 0; transition: opacity 0.2s; }
                 .action-btn:hover::after { opacity: 0.1; }
                 .action-btn:active { transform: scale(0.96); }
-                .modal-overlay { backdrop-filter: blur(12px); animation: fadeIn 0.3s ease-out; }
+                .modal-overlay { 
+                    backdrop-filter: blur(12px); 
+                    animation: fadeIn 0.3s ease-out; 
+                    overflow-y: auto; 
+                }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes slideUp { from { transform: translateY(20px) scale(0.95); opacity: 0; } to { transform: none; opacity: 1; } }
                 .share-card { animation: slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
@@ -627,10 +631,10 @@ const FeedbacksView: React.FC = () => {
 
             {/* ── Modal de Compartilhamento (Feedback ⮕ Ação) ────────────────── */}
             {isShareModalOpen && activeFeedback && (
-                <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60">
-                    <div className="share-card relative w-full max-w-sm flex flex-col items-center">
+                <div className="modal-overlay fixed inset-0 z-[100] flex items-start justify-center p-4 bg-black/60 pt-20 pb-10">
+                    <div className="share-card relative w-full h-fit flex flex-col items-center" style={{ maxWidth: 'min(384px, 95vw)' }}>
                         {/* Seletor de Estilo */}
-                        <div className="absolute -top-16 bg-white/20 backdrop-blur-md rounded-2xl p-1 flex gap-1 border border-white/20">
+                        <div className="absolute -top-14 bg-white/20 backdrop-blur-md rounded-2xl p-1 flex gap-1 border border-white/20 z-20">
                             <button
                                 onClick={() => setShareStyle('pink-sweet')}
                                 className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${shareStyle === 'pink-sweet' ? 'bg-white text-pink-600 shadow-lg' : 'text-white hover:bg-white/10'}`}
@@ -650,11 +654,13 @@ const FeedbacksView: React.FC = () => {
                             className="w-full aspect-square rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col p-8 select-none"
                             style={shareStyle === 'pink-sweet' ? {
                                 background: 'linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%)',
-                                color: 'white'
+                                color: 'white',
+                                maxHeight: '70vh'
                             } : {
                                 background: '#ffffff',
                                 color: '#111827',
-                                border: '1px solid #f3f4f6'
+                                border: '1px solid #f3f4f6',
+                                maxHeight: '70vh'
                             }}
                         >
                             {/* Patinhas Decorativas (Apenas no Pink Sweet) */}
@@ -671,13 +677,13 @@ const FeedbacksView: React.FC = () => {
                                 <div className="flex flex-col">
                                     <span style={{
                                         fontFamily: '"Lobster Two", cursive',
-                                        fontSize: '1.6rem',
+                                        fontSize: 'clamp(1rem, 5vw, 1.6rem)',
                                         lineHeight: 1
                                     }}>
                                         Sandy's
                                     </span>
                                     <span style={{
-                                        fontSize: '0.6rem',
+                                        fontSize: 'clamp(0.4rem, 2vw, 0.6rem)',
                                         fontWeight: 800,
                                         letterSpacing: '0.2em',
                                         opacity: 0.8,
@@ -718,7 +724,7 @@ const FeedbacksView: React.FC = () => {
                                 </div>
                                 <h4 style={{
                                     fontFamily: '"Lobster Two", cursive',
-                                    fontSize: '2.2rem',
+                                    fontSize: 'clamp(1.5rem, 8vw, 2.2rem)',
                                     lineHeight: 1,
                                     textShadow: shareStyle === 'pink-sweet' ? '0 2px 10px rgba(0,0,0,0.1)' : 'none'
                                 }}>
@@ -745,7 +751,7 @@ const FeedbacksView: React.FC = () => {
                                         fontFamily: 'serif'
                                     }}>"</span>
                                     <p style={{
-                                        fontSize: '1.1rem',
+                                        fontSize: 'clamp(0.85rem, 4.5vw, 1.1rem)',
                                         fontWeight: 600,
                                         fontStyle: 'italic',
                                         lineHeight: 1.4,
