@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { toBlob } from 'html-to-image';
 import { supabase } from '../../supabaseClient';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -145,7 +146,9 @@ const FeedbacksView: React.FC = () => {
     // Novas estados para Ação
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [activeFeedback, setActiveFeedback] = useState<Feedback | null>(null);
-    const [shareStyle, setShareStyle] = useState<'pink-sweet' | 'elegant-minimal'>('pink-sweet');
+    const [shareStyle, setShareStyle] = useState<'bubblegum' | 'rose-gold' | 'berry-night' | 'petal-soft'>('bubblegum');
+    const [isSharing, setIsSharing] = useState(false);
+    const cardRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Carrega o script do Lottie Web Component (uma única vez)
@@ -233,6 +236,15 @@ const FeedbacksView: React.FC = () => {
                 @keyframes slideUp { from { transform: translateY(20px) scale(0.95); opacity: 0; } to { transform: none; opacity: 1; } }
                 .share-card { animation: slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
                 .paw-pattern { opacity: 0.1; pointer-events: none; }
+                .sharing-loader {
+                    border: 2px solid rgba(255,255,255,0.3);
+                    border-top-color: white;
+                    border-radius: 50%;
+                    width: 16px;
+                    height: 16px;
+                    animation: spin 0.8s linear infinite;
+                }
+                @keyframes spin { to { transform: rotate(360deg); } }
             `}</style>
 
             {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -612,16 +624,7 @@ const FeedbacksView: React.FC = () => {
                                         </button>
                                     )}
 
-                                    <div className="ml-auto flex items-center gap-2">
-                                        <button
-                                            className="p-2 transition-all hover:bg-gray-100 rounded-full text-gray-400 hover:text-pink-500"
-                                            title="Histórico do Pet"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                            </svg>
-                                        </button>
-                                    </div>
+                                    {/* Botão removido conforme solicitado */}
                                 </div>
                             </div>
                         </div>
@@ -632,43 +635,59 @@ const FeedbacksView: React.FC = () => {
             {/* ── Modal de Compartilhamento (Feedback ⮕ Ação) ────────────────── */}
             {isShareModalOpen && activeFeedback && (
                 <div className="modal-overlay fixed inset-0 z-[100] flex items-start justify-center p-4 bg-black/60 pt-20 pb-10">
-                    <div className="share-card relative w-full h-fit flex flex-col items-center" style={{ maxWidth: 'min(384px, 95vw)' }}>
-                        {/* Seletor de Estilo */}
-                        <div className="absolute -top-14 bg-white/20 backdrop-blur-md rounded-2xl p-1 flex gap-1 border border-white/20 z-20">
-                            <button
-                                onClick={() => setShareStyle('pink-sweet')}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${shareStyle === 'pink-sweet' ? 'bg-white text-pink-600 shadow-lg' : 'text-white hover:bg-white/10'}`}
-                            >
-                                Pink Sweet
-                            </button>
-                            <button
-                                onClick={() => setShareStyle('elegant-minimal')}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${shareStyle === 'elegant-minimal' ? 'bg-white text-gray-800 shadow-lg' : 'text-white hover:bg-white/10'}`}
-                            >
-                                Elegant Minimal
-                            </button>
+                    <div className="share-card relative w-full h-fit flex flex-col items-center" style={{ maxWidth: 'min(380px, 95vw)' }}>
+                        {/* Seletor de Estilo (Tabs) */}
+                        <div className="absolute -top-16 w-full px-2">
+                            <div className="bg-white/10 backdrop-blur-xl rounded-[2rem] p-1.5 flex gap-1 border border-white/20 z-20 overflow-x-auto no-scrollbar shadow-2xl">
+                                {[
+                                    { id: 'bubblegum', label: 'Pop', color: '#ec4899' },
+                                    { id: 'rose-gold', label: 'Luxury', color: '#be185d' },
+                                    { id: 'berry-night', label: 'Berry', color: '#831843' },
+                                    { id: 'petal-soft', label: 'Petal', color: '#fb7185' }
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setShareStyle(tab.id as any)}
+                                        className={`flex-1 min-w-[85px] py-2.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex flex-col items-center gap-1 ${shareStyle === tab.id ? 'bg-white shadow-xl scale-105' : 'text-white/70 hover:bg-white/10'}`}
+                                    >
+                                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: tab.color }} />
+                                        <span style={{ color: shareStyle === tab.id ? tab.color : 'inherit' }}>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* O Card do Instagram */}
                         <div
-                            className="w-full aspect-square rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col p-8 select-none"
-                            style={shareStyle === 'pink-sweet' ? {
-                                background: 'linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%)',
-                                color: 'white',
-                                maxHeight: '70vh'
-                            } : {
-                                background: '#ffffff',
-                                color: '#111827',
-                                border: '1px solid #f3f4f6',
-                                maxHeight: '70vh'
-                            }}
+                            ref={cardRef}
+                            className="w-full aspect-[9/16] rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col p-10 select-none pb-12 transition-all duration-500"
+                            style={
+                                shareStyle === 'bubblegum' ? { background: 'linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%)', color: 'white' } :
+                                shareStyle === 'rose-gold' ? { background: '#fff1f2', color: '#9d174d', border: '1px solid #fecdd3' } :
+                                shareStyle === 'berry-night' ? { background: 'linear-gradient(135deg, #4c0519 0%, #831843 100%)', color: 'white' } :
+                                { background: 'linear-gradient(to bottom, #fdf2f8, #fbcfe8)', color: '#be185d' }
+                            }
                         >
-                            {/* Patinhas Decorativas (Apenas no Pink Sweet) */}
-                            {shareStyle === 'pink-sweet' && (
+                            {/* Elementos Decorativos Específicos por Tema */}
+                            {shareStyle === 'bubblegum' && (
                                 <div className="absolute inset-0 overflow-hidden paw-pattern pointer-events-none">
                                     <span style={{ position: 'absolute', top: '5%', left: '10%', fontSize: '3rem' }}>🐾</span>
                                     <span style={{ position: 'absolute', bottom: '10%', right: '10%', fontSize: '4rem', transform: 'rotate(25deg)' }}>🐾</span>
                                     <span style={{ position: 'absolute', top: '40%', right: '-5%', fontSize: '2.5rem', opacity: 0.2 }}>🐾</span>
+                                </div>
+                            )}
+
+                            {shareStyle === 'berry-night' && (
+                                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+                                    <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-pink-500/20 blur-[100px] rounded-full" />
+                                    <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-magenta-500/20 blur-[100px] rounded-full" />
+                                    <span style={{ position: 'absolute', top: '15%', left: '80%', fontSize: '1rem', filter: 'blur(1px)' }}>✨</span>
+                                    <span style={{ position: 'absolute', top: '65%', left: '15%', fontSize: '1.2rem', filter: 'blur(1px)' }}>✨</span>
+                                </div>
+                            )}
+
+                            {shareStyle === 'rose-gold' && (
+                                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                    <div className="absolute top-[-20%] left-[-20%] w-80 h-80 bg-rose-200/40 blur-[120px] rounded-full" />
                                 </div>
                             )}
 
@@ -693,87 +712,107 @@ const FeedbacksView: React.FC = () => {
                                     </span>
                                 </div>
                                 <div
-                                    className="px-3 py-1 rounded-full text-[10px] font-bold tracking-tighter"
-                                    style={{
-                                        background: shareStyle === 'pink-sweet' ? 'rgba(255,255,255,0.2)' : '#fce7f3',
-                                        color: shareStyle === 'pink-sweet' ? 'white' : '#db2777'
-                                    }}
+                                    className="px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-tighter"
+                                    style={
+                                        shareStyle === 'bubblegum' ? { background: 'rgba(255,255,255,0.2)', color: 'white' } :
+                                        shareStyle === 'berry-night' ? { background: 'rgba(255,255,255,0.1)', color: 'white' } :
+                                        { background: '#fce7f3', color: '#db2777' }
+                                    }
                                 >
                                     Feedback do Mês
                                 </div>
                             </div>
 
-                            {/* Foto e Nome */}
-                            <div className="flex flex-col items-center mb-6 relative z-10">
-                                <div className="relative mb-4">
-                                    <div
-                                        className="absolute inset-0 blur-xl rounded-full"
-                                        style={{ background: shareStyle === 'pink-sweet' ? 'rgba(255,255,255,0.4)' : 'rgba(219,39,119,0.2)' }}
-                                    />
-                                    <SafeImage
-                                        src={activeFeedback.pet_photo_url || ''}
-                                        alt={activeFeedback.pet_name}
-                                        className="w-24 h-24 rounded-full object-cover relative border-4"
-                                        style={{ borderColor: shareStyle === 'pink-sweet' ? 'rgba(255,255,255,0.3)' : '#fce7f3' }}
-                                    />
-                                    <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-white p-1.5 rounded-full shadow-lg border-2 border-white">
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                        </svg>
+                            <div className="flex-1 flex flex-col justify-center gap-12">
+                                {/* Foto e Nome */}
+                                <div className="flex flex-col items-center relative z-10">
+                                    <div className="relative mb-6">
+                                        <div
+                                            className="absolute inset-0 blur-2xl rounded-full"
+                                            style={{
+                                                background:
+                                                    shareStyle === 'bubblegum' ? 'rgba(255,255,255,0.5)' :
+                                                    shareStyle === 'berry-night' ? 'rgba(236,72,153,0.3)' :
+                                                    'rgba(219,39,119,0.3)'
+                                            }}
+                                        />
+                                        <SafeImage
+                                            src={activeFeedback.pet_photo_url || ''}
+                                            alt={activeFeedback.pet_name}
+                                            className="w-32 h-32 rounded-full object-cover relative border-4"
+                                            style={{
+                                                borderColor:
+                                                    shareStyle === 'bubblegum' ? 'rgba(255,255,255,0.4)' :
+                                                    shareStyle === 'berry-night' ? 'rgba(255,255,255,0.2)' :
+                                                    '#fce7f3'
+                                            }}
+                                        />
+                                        <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-white p-2 rounded-full shadow-lg border-2 border-white scale-110">
+                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <h4 style={{
+                                        fontFamily: '"Lobster Two", cursive',
+                                        fontSize: 'clamp(2.1rem, 11vw, 3.2rem)',
+                                        lineHeight: 1,
+                                        textShadow:
+                                            shareStyle === 'bubblegum' ? '0 4px 15px rgba(0,0,0,0.15)' :
+                                            shareStyle === 'berry-night' ? '0 0 20px rgba(255,255,255,0.2)' :
+                                            'none'
+                                    }}>
+                                        {activeFeedback.pet_name}
+                                    </h4>
+                                    <div className="flex gap-1.5 mt-3">
+                                        {[1, 2, 3, 4, 5].map(n => (
+                                            <svg key={n} className="w-5 h-5" fill={n <= activeFeedback.stars ? (
+                                                (shareStyle === 'bubblegum' || shareStyle === 'berry-night') ? '#ffffff' : '#facc15'
+                                            ) : 'rgba(0,0,0,0.1)'} viewBox="0 0 24 24">
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                            </svg>
+                                        ))}
                                     </div>
                                 </div>
-                                <h4 style={{
-                                    fontFamily: '"Lobster Two", cursive',
-                                    fontSize: 'clamp(1.5rem, 8vw, 2.2rem)',
-                                    lineHeight: 1,
-                                    textShadow: shareStyle === 'pink-sweet' ? '0 2px 10px rgba(0,0,0,0.1)' : 'none'
-                                }}>
-                                    {activeFeedback.pet_name}
-                                </h4>
-                                <div className="flex gap-1 mt-2">
-                                    {[1, 2, 3, 4, 5].map(n => (
-                                        <svg key={n} className="w-4 h-4" fill={n <= activeFeedback.stars ? (shareStyle === 'pink-sweet' ? '#ffffff' : '#facc15') : 'rgba(0,0,0,0.1)'} viewBox="0 0 24 24">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                        </svg>
-                                    ))}
-                                </div>
-                            </div>
 
-                            {/* Comentário */}
-                            <div className="flex-1 flex items-center justify-center relative z-10 text-center">
-                                <div className="relative">
-                                    <span style={{
-                                        position: 'absolute',
-                                        top: '-1rem',
-                                        left: '-1.5rem',
-                                        fontSize: '3rem',
-                                        opacity: 0.15,
-                                        fontFamily: 'serif'
-                                    }}>"</span>
-                                    <p style={{
-                                        fontSize: 'clamp(0.85rem, 4.5vw, 1.1rem)',
-                                        fontWeight: 600,
-                                        fontStyle: 'italic',
-                                        lineHeight: 1.4,
-                                        letterSpacing: '-0.01em'
-                                    }}>
-                                        {activeFeedback.comment || "Super recomendo o Sandy's PetShop! Cuidados impecáveis e muito carinho."}
-                                    </p>
-                                    <span style={{
-                                        position: 'absolute',
-                                        bottom: '-2rem',
-                                        right: '-1.5rem',
-                                        fontSize: '3rem',
-                                        opacity: 0.15,
-                                        fontFamily: 'serif'
-                                    }}>"</span>
+                                {/* Comentário */}
+                                <div className="relative z-10 text-center px-4">
+                                    <div className="relative">
+                                        <span style={{
+                                            position: 'absolute',
+                                            top: '-1.5rem',
+                                            left: '-1rem',
+                                            fontSize: '4rem',
+                                            opacity: 0.2,
+                                            fontFamily: 'serif',
+                                            lineHeight: 1
+                                        }}>"</span>
+                                        <p style={{
+                                            fontSize: 'clamp(1.1rem, 5vw, 1.4rem)',
+                                            fontWeight: 600,
+                                            fontStyle: 'italic',
+                                            lineHeight: 1.4,
+                                            letterSpacing: '-0.01em'
+                                        }}>
+                                            {activeFeedback.comment || "Super recomendo o Sandy's PetShop! Cuidados impecáveis e muito carinho."}
+                                        </p>
+                                        <span style={{
+                                            position: 'absolute',
+                                            bottom: '-2.5rem',
+                                            right: '-1rem',
+                                            fontSize: '4rem',
+                                            opacity: 0.2,
+                                            fontFamily: 'serif',
+                                            lineHeight: 1
+                                        }}>"</span>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Footer do Card */}
-                            <div className="mt-6 flex justify-center relative z-10">
-                                <div className="px-4 py-1.5 rounded-full border border-current opacity-60 text-[9px] font-bold uppercase tracking-widest">
-                                    @sandypetshop.oficial
+                            <div className="flex justify-center relative z-10">
+                                <div className="px-6 py-2 rounded-full border border-current opacity-60 text-[11px] font-black uppercase tracking-[0.2em]">
+                                    @sandypetmovelcrechehotel
                                 </div>
                             </div>
                         </div>
@@ -782,17 +821,65 @@ const FeedbacksView: React.FC = () => {
                         <div className="mt-8 flex gap-3 w-full">
                             <button
                                 onClick={() => setIsShareModalOpen(false)}
-                                className="flex-1 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold transition-all border border-white/20"
+                                className="flex-1 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold transition-all border border-white/20 flex items-center justify-center gap-2"
                             >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
                                 Fechar
                             </button>
                             <button
-                                onClick={() => {
-                                    alert('Dica: Tire um print desta tela para postar nos stories! Em breve teremos exportação direta de imagem.');
+                                onClick={async () => {
+                                    if (!cardRef.current || isSharing) return;
+                                    setIsSharing(true);
+                                    try {
+                                        const blob = await toBlob(cardRef.current, {
+                                            cacheBust: true,
+                                            pixelRatio: 2, // Melhor qualidade
+                                        });
+                                        if (!blob) throw new Error('Falha ao gerar imagem');
+
+                                        const file = new File([blob], `feedback-${activeFeedback.pet_name}.png`, { type: 'image/png' });
+
+                                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                            await navigator.share({
+                                                files: [file],
+                                                title: `Feedback do(a) ${activeFeedback.pet_name}`,
+                                                text: `Olha que amor o feedback do(a) ${activeFeedback.pet_name}! 🐾`
+                                            });
+                                        } else {
+                                            // Fallback: Download
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `feedback-${activeFeedback.pet_name}.png`;
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                            alert('Imagem baixada! Agora você pode postar no Instagram.');
+                                        }
+                                    } catch (err) {
+                                        console.error('Erro ao compartilhar:', err);
+                                        alert('Não foi possível gerar a imagem para compartilhamento.');
+                                    } finally {
+                                        setIsSharing(false);
+                                    }
                                 }}
-                                className="flex-[2] py-4 bg-white text-pink-600 rounded-2xl font-bold shadow-xl shadow-pink-900/40 transform hover:scale-105 transition-all"
+                                disabled={isSharing}
+                                className="flex-[2.2] py-4 bg-white text-pink-600 rounded-2xl font-black shadow-xl shadow-pink-900/40 transform active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
                             >
-                                Como postar?
+                                {isSharing ? (
+                                    <>
+                                        <div className="sharing-loader" />
+                                        Gerando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                        </svg>
+                                        Compartilhar
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
