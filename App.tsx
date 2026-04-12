@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { toBlob } from 'html-to-image';
 import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
@@ -47,6 +48,7 @@ const SafeImage: React.FC<{
             className={className}
             loading={loading}
             decoding="async"
+            crossOrigin="anonymous"
             referrerPolicy="no-referrer"
             onClick={onClick}
             onError={() => {
@@ -231,6 +233,69 @@ const AlbumManagementView: React.FC = () => {
     const [photos, setPhotos] = useState<{ id: string; url: string; storage_path: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
+    
+    // Estados para Compartilhamento (Gerar Story)
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [activePhoto, setActivePhoto] = useState<{ url: string } | null>(null);
+    const [shareStyle, setShareStyle] = useState<'classic' | 'luxury' | 'minimal' | 'berry'>('classic');
+    const [isSharing, setIsSharing] = useState(false);
+    const [activeCaption, setActiveCaption] = useState('');
+    const cardRef = useRef<HTMLDivElement>(null);
+
+    const ALBUM_CAPTIONS = [
+        "Mais um dia de alegria! 🐾",
+        "Puro charme e fofura! ✨",
+        "Momento inesquecível aqui na Sandy's",
+        "Amor em cada detalhe ❤️",
+        "Beleza que a gente ama! 🐶",
+        "Dia de muito carinho e cuidado",
+        "Um close especial para vocês! 📸",
+        "Dando um show de fofura hoje",
+        "O coração não aguenta tanta beleza",
+        "A felicidade tem quatro patas! 🐾",
+        "Nossos clientes são os mais lindos!",
+        "Brilhando depois de muito cuidado ✨"
+    ];
+
+    const handleSharePhoto = async () => {
+        if (!cardRef.current || isSharing || !activePhoto) return;
+        setIsSharing(true);
+        try {
+            // Delay para renderização mobile
+            await new Promise(resolve => setTimeout(resolve, 300));
+            // Warm-up pass para iOS
+            await toBlob(cardRef.current, { cacheBust: true });
+            
+            const blob = await toBlob(cardRef.current, {
+                cacheBust: true,
+                pixelRatio: 2,
+            });
+            if (!blob) throw new Error('Falha ao gerar imagem');
+
+            const file = new File([blob], `pet-story-${Date.now()}.png`, { type: 'image/png' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Olha que foto linda!',
+                    text: 'Momentos especiais no Sandy\'s Pet Shop! 🐾'
+                });
+            } else {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sandy-pet-story.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+                alert('Imagem baixada! Agora você pode postar no Instagram.');
+            }
+        } catch (err) {
+            console.error('Erro ao compartilhar:', err);
+            alert('Não foi possível gerar a imagem para compartilhamento.');
+        } finally {
+            setIsSharing(false);
+        }
+    };
 
     const fetchPhotos = useCallback(async () => {
         setLoading(true);
@@ -355,17 +420,153 @@ const AlbumManagementView: React.FC = () => {
                                 alt="Pet no Álbum" 
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-pink-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-gradient-to-t from-pink-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+                                <button
+                                    onClick={() => {
+                                        setActivePhoto(photo);
+                                        setActiveCaption(ALBUM_CAPTIONS[Math.floor(Math.random() * ALBUM_CAPTIONS.length)]);
+                                        setIsShareModalOpen(true);
+                                    }}
+                                    className="p-3 bg-white text-pink-600 rounded-full hover:bg-pink-50 transform scale-90 group-hover:scale-100 transition-all shadow-xl"
+                                    title="Gerar Story"
+                                >
+                                    <SparklesIcon className="w-6 h-6" />
+                                </button>
                                 <button
                                     onClick={() => handleDelete(photo)}
-                                    className="p-4 bg-white/20 backdrop-blur-md text-white rounded-full hover:bg-white/40 border border-white/30 transform scale-90 group-hover:scale-100 transition-all shadow-xl"
+                                    className="p-3 bg-white/20 backdrop-blur-md text-white rounded-full hover:bg-white/40 border border-white/30 transform scale-90 group-hover:scale-100 transition-all shadow-xl"
                                     title="Excluir Foto"
                                 >
-                                    <TrashOutlineIcon className="w-7 h-7" />
+                                    <TrashOutlineIcon className="w-6 h-6" />
                                 </button>
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Modal de Compartilhamento (Álbum ⮕ Story) */}
+            {isShareModalOpen && activePhoto && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+                    <style>{`
+                        @keyframes slideUp { from { transform: translateY(20px) scale(0.95); opacity: 0; } to { transform: none; opacity: 1; } }
+                        .share-card-album { animation: slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+                        .no-scrollbar::-webkit-scrollbar { display: none; }
+                        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                        .sharing-loader {
+                            border: 2px solid rgba(255,255,255,0.3);
+                            border-top-color: white;
+                            border-radius: 50%;
+                            width: 16px;
+                            height: 16px;
+                            animation: spin 0.8s linear infinite;
+                        }
+                        @keyframes spin { to { transform: rotate(360deg); } }
+                    `}</style>
+
+                    <div className="share-card-album relative w-full h-fit max-h-[95vh] flex flex-col items-center gap-4 overflow-y-auto no-scrollbar" style={{ maxWidth: 'min(380px, 95vw)' }}>
+                        
+                        {/* Seletor de Estilo (Tabs) */}
+                        <div className="w-full flex shrink-0 flex-col gap-2">
+                            <div className="flex items-center justify-between px-4">
+                                <span className="text-white/60 text-[9px] font-black uppercase tracking-[0.2em]">Escolha o Design</span>
+                            </div>
+                            <div className="bg-white/10 backdrop-blur-xl rounded-[1.5rem] p-1.5 flex gap-1 border border-white/20 z-20 overflow-x-auto no-scrollbar shadow-2xl">
+                                {[
+                                    { id: 'classic', label: 'Classic', color: '#ec4899' },
+                                    { id: 'luxury', label: 'Luxury', color: '#be185d' },
+                                    { id: 'minimal', label: 'Minimal', color: '#94a3b8' },
+                                    { id: 'berry', label: 'Berry', color: '#831843' }
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setShareStyle(tab.id as any)}
+                                        className={`flex-1 min-w-[85px] py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex flex-col items-center gap-1 ${shareStyle === tab.id ? 'bg-white shadow-xl scale-105' : 'text-white/70 hover:bg-white/10'}`}
+                                    >
+                                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: tab.color }} />
+                                        <span style={{ color: shareStyle === tab.id ? tab.color : 'inherit' }}>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Card Preview 9:16 */}
+                        <div
+                            ref={cardRef}
+                            className="w-full aspect-[9/16] rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col select-none transition-all duration-500 shrink"
+                            style={{
+                                ... (shareStyle === 'classic' ? { background: 'linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%)', color: 'white' } :
+                                    shareStyle === 'luxury' ? { background: '#fff1f2', color: '#9d174d', border: '1px solid #fecdd3' } :
+                                    shareStyle === 'berry' ? { background: 'linear-gradient(135deg, #4c0519 0%, #831843 100%)', color: 'white' } :
+                                    { background: '#f8fafc', color: '#1e293b' }),
+                                maxWidth: 'min(100%, 62vh * 9/16)'
+                            }}
+                        >
+                            {/* Foto em Full Screen */}
+                            <div className="absolute inset-0 z-0">
+                                <SafeImage 
+                                    src={activePhoto.url} 
+                                    alt="Pet Story" 
+                                    className="w-full h-full object-cover" 
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
+                            </div>
+
+                            {/* Molduras por Estilo */}
+                            {shareStyle === 'luxury' && (
+                                <div className="absolute inset-4 border-2 border-white/40 rounded-[2rem] pointer-events-none z-10" />
+                            )}
+                            
+                            {shareStyle === 'classic' && (
+                                <div className="absolute top-10 left-10 opacity-20 pointer-events-none z-10">
+                                    <div className="text-6xl">🐾</div>
+                                </div>
+                            )}
+
+                            {/* Conteúdo */}
+                            <div className="relative z-20 h-full flex flex-col p-10 justify-between">
+                                <div className="flex flex-col items-center">
+                                    <div className="flex flex-col items-center drop-shadow-lg">
+                                        <span style={{ fontFamily: '"Lobster Two", cursive', fontSize: '1.8rem', color: 'white' }}>Sandy's</span>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.3em', color: 'white', marginTop: '-4px' }}>PET SHOP</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col items-center gap-4 text-center">
+                                    <div className="bg-white/20 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/30 shadow-xl">
+                                        <p className="text-white font-bold text-lg leading-tight uppercase tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+                                            {activeCaption}
+                                        </p>
+                                    </div>
+                                    <div className="px-5 py-2 rounded-full border border-white/50 text-white text-[10px] font-black uppercase tracking-[0.2em] backdrop-blur-sm">
+                                        @sandypetmovelcrechehotel
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Botões de Ação */}
+                        <div className="flex shrink-0 gap-3 w-full">
+                            <button
+                                onClick={() => setIsShareModalOpen(false)}
+                                className="flex-1 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold transition-all border border-white/20 flex items-center justify-center gap-2"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                                Fechar
+                            </button>
+                            <button
+                                onClick={handleSharePhoto}
+                                disabled={isSharing}
+                                className="flex-[2.2] py-4 bg-white text-pink-600 rounded-2xl font-black shadow-xl transform active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
+                            >
+                                {isSharing ? (
+                                    <><div className="sharing-loader" /> Gerando...</>
+                                ) : (
+                                    <><ArrowUpTrayIcon className="w-6 h-6" /> Compartilhar</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
