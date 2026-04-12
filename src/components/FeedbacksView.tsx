@@ -120,7 +120,7 @@ function SafeImage({ src, alt, className }: { src: string; alt: string; classNam
             </div>
         );
     }
-    return <img src={src} alt={alt} className={className} onError={() => setErr(true)} referrerPolicy="no-referrer" />;
+    return <img src={src} alt={alt} className={className} onError={() => setErr(true)} crossOrigin="anonymous" referrerPolicy="no-referrer" />;
 }
 
 function timeAgo(dateStr: string): string {
@@ -245,6 +245,8 @@ const FeedbacksView: React.FC = () => {
                     animation: spin 0.8s linear infinite;
                 }
                 @keyframes spin { to { transform: rotate(360deg); } }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
 
             {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -634,11 +636,20 @@ const FeedbacksView: React.FC = () => {
 
             {/* ── Modal de Compartilhamento (Feedback ⮕ Ação) ────────────────── */}
             {isShareModalOpen && activeFeedback && (
-                <div className="modal-overlay fixed inset-0 z-[100] flex items-start justify-center p-4 bg-black/60 pt-20 pb-10">
-                    <div className="share-card relative w-full h-fit flex flex-col items-center" style={{ maxWidth: 'min(380px, 95vw)' }}>
-                        {/* Seletor de Estilo (Tabs) */}
-                        <div className="absolute -top-16 w-full px-2">
-                            <div className="bg-white/10 backdrop-blur-xl rounded-[2rem] p-1.5 flex gap-1 border border-white/20 z-20 overflow-x-auto no-scrollbar shadow-2xl">
+                <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60">
+                    <div className="share-card relative w-full h-fit max-h-[95vh] flex flex-col items-center gap-4 overflow-y-auto no-scrollbar" style={{ maxWidth: 'min(380px, 95vw)' }}>
+                        
+                        {/* Seletor de Estilo (Tabs) - Agora Relativo e Visível */}
+                        <div className="w-full flex shrink-0 flex-col gap-2">
+                            <div className="flex items-center justify-between px-4">
+                                <span className="text-white/60 text-[9px] font-black uppercase tracking-[0.2em]">Escolha seu Estilo</span>
+                                <div className="flex gap-1">
+                                    <div className="w-1 h-1 rounded-full bg-pink-500 animate-pulse" />
+                                    <div className="w-1 h-1 rounded-full bg-pink-400 animate-pulse delay-75" />
+                                    <div className="w-1 h-1 rounded-full bg-pink-300 animate-pulse delay-150" />
+                                </div>
+                            </div>
+                            <div className="bg-white/10 backdrop-blur-xl rounded-[1.5rem] p-1.5 flex gap-1 border border-white/20 z-20 overflow-x-auto no-scrollbar shadow-2xl">
                                 {[
                                     { id: 'bubblegum', label: 'Pop', color: '#ec4899' },
                                     { id: 'rose-gold', label: 'Luxury', color: '#be185d' },
@@ -648,7 +659,7 @@ const FeedbacksView: React.FC = () => {
                                     <button
                                         key={tab.id}
                                         onClick={() => setShareStyle(tab.id as any)}
-                                        className={`flex-1 min-w-[85px] py-2.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex flex-col items-center gap-1 ${shareStyle === tab.id ? 'bg-white shadow-xl scale-105' : 'text-white/70 hover:bg-white/10'}`}
+                                        className={`flex-1 min-w-[85px] py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex flex-col items-center gap-1 ${shareStyle === tab.id ? 'bg-white shadow-xl scale-105' : 'text-white/70 hover:bg-white/10'}`}
                                     >
                                         <div className="w-1.5 h-1.5 rounded-full" style={{ background: tab.color }} />
                                         <span style={{ color: shareStyle === tab.id ? tab.color : 'inherit' }}>{tab.label}</span>
@@ -659,13 +670,14 @@ const FeedbacksView: React.FC = () => {
 
                         <div
                             ref={cardRef}
-                            className="w-full aspect-[9/16] rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col p-10 select-none pb-12 transition-all duration-500"
-                            style={
-                                shareStyle === 'bubblegum' ? { background: 'linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%)', color: 'white' } :
-                                shareStyle === 'rose-gold' ? { background: '#fff1f2', color: '#9d174d', border: '1px solid #fecdd3' } :
-                                shareStyle === 'berry-night' ? { background: 'linear-gradient(135deg, #4c0519 0%, #831843 100%)', color: 'white' } :
-                                { background: 'linear-gradient(to bottom, #fdf2f8, #fbcfe8)', color: '#be185d' }
-                            }
+                            className="w-full aspect-[9/16] rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col p-8 select-none pb-10 transition-all duration-500 shrink"
+                            style={{
+                                ... (shareStyle === 'bubblegum' ? { background: 'linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%)', color: 'white' } :
+                                    shareStyle === 'rose-gold' ? { background: '#fff1f2', color: '#9d174d', border: '1px solid #fecdd3' } :
+                                    shareStyle === 'berry-night' ? { background: 'linear-gradient(135deg, #4c0519 0%, #831843 100%)', color: 'white' } :
+                                    { background: 'linear-gradient(to bottom, #fdf2f8, #fbcfe8)', color: '#be185d' }),
+                                maxWidth: 'min(100%, 62vh * 9/16)' // Garante que o card nunca ultrapasse 62% da altura da tela
+                            }}
                         >
                             {/* Elementos Decorativos Específicos por Tema */}
                             {shareStyle === 'bubblegum' && (
@@ -692,7 +704,7 @@ const FeedbacksView: React.FC = () => {
                             )}
 
                             {/* Logo / Header do Card */}
-                            <div className="flex items-center justify-between mb-8 relative z-10">
+                            <div className="flex items-center justify-between mb-4 relative z-10 shrink-0">
                                 <div className="flex flex-col">
                                     <span style={{
                                         fontFamily: '"Lobster Two", cursive',
@@ -723,10 +735,10 @@ const FeedbacksView: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="flex-1 flex flex-col justify-center gap-12">
+                            <div className="flex-1 flex flex-col justify-center gap-6 min-h-0">
                                 {/* Foto e Nome */}
-                                <div className="flex flex-col items-center relative z-10">
-                                    <div className="relative mb-6">
+                                <div className="flex flex-col items-center relative z-10 shrink-0">
+                                    <div className="relative mb-3">
                                         <div
                                             className="absolute inset-0 blur-2xl rounded-full"
                                             style={{
@@ -810,15 +822,15 @@ const FeedbacksView: React.FC = () => {
                             </div>
 
                             {/* Footer do Card */}
-                            <div className="flex justify-center relative z-10">
-                                <div className="px-6 py-2 rounded-full border border-current opacity-60 text-[11px] font-black uppercase tracking-[0.2em]">
+                            <div className="flex justify-center relative z-10 mt-auto">
+                                <div className="px-5 py-1.5 rounded-full border border-current opacity-60 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
                                     @sandypetmovelcrechehotel
                                 </div>
                             </div>
                         </div>
 
                         {/* Botões de Ação do Modal */}
-                        <div className="mt-8 flex gap-3 w-full">
+                        <div className="mt-4 flex shrink-0 gap-3 w-full">
                             <button
                                 onClick={() => setIsShareModalOpen(false)}
                                 className="flex-1 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold transition-all border border-white/20 flex items-center justify-center gap-2"
