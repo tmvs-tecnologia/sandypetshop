@@ -845,6 +845,12 @@ const FeedbacksView: React.FC = () => {
                                     if (!cardRef.current || isSharing) return;
                                     setIsSharing(true);
                                     try {
+                                        // Aguarda um pouco para o renderizador do mobile processar a foto
+                                        await new Promise(resolve => setTimeout(resolve, 300));
+                                        
+                                        // Warm-up para iOS Safari
+                                        await toBlob(cardRef.current, { cacheBust: true });
+
                                         const blob = await toBlob(cardRef.current, {
                                             cacheBust: true,
                                             pixelRatio: 2, // Melhor qualidade
