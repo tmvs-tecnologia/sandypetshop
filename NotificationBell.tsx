@@ -10,7 +10,8 @@ import {
   Home, 
   Dog,
   Clock,
-  MoreVertical
+  MoreVertical,
+  Star
 } from 'lucide-react';
 
 type NotificationItem = {
@@ -52,6 +53,12 @@ const typeConfig: Record<string, { label: string; icon: string; color: string; b
     color: 'text-indigo-600', 
     bg: 'bg-indigo-50' 
   },
+  feedback: { 
+    label: 'Nova Avaliação', 
+    icon: 'https://cdn-icons-png.flaticon.com/512/11516/11516013.png', 
+    color: 'text-amber-500', 
+    bg: 'bg-amber-50' 
+  },
   default: { 
     label: 'Notificação', 
     icon: 'https://cdn-icons-png.flaticon.com/512/9344/9344449.png', // Ícone de sino genérico da flaticon
@@ -60,7 +67,11 @@ const typeConfig: Record<string, { label: string; icon: string; color: string; b
   }
 };
 
-export const NotificationBell: React.FC = () => {
+export interface NotificationBellProps {
+  onViewFeedbacks?: () => void;
+}
+
+export const NotificationBell: React.FC<NotificationBellProps> = ({ onViewFeedbacks }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -294,6 +305,24 @@ export const NotificationBell: React.FC = () => {
                             <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-pink-700 bg-pink-50/80 inline-flex px-2.5 py-1 rounded-lg border border-pink-100/50">
                               <Calendar className="w-3.5 h-3.5" />
                               {getScheduledDateLabel(item.data)}
+                            </div>
+                          )}
+
+                          {/* Botão de Ação para Avaliações */}
+                          {item.type === 'feedback' && onViewFeedbacks && (
+                            <div className="mt-3">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(item.id);
+                                  onViewFeedbacks();
+                                  setIsOpen(false);
+                                }}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-pink-50 hover:bg-pink-100 text-pink-600 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all border border-pink-100/50 shadow-sm"
+                              >
+                                <Star className="w-3.5 h-3.5 fill-pink-600" />
+                                Visualizar Avaliação
+                              </button>
                             </div>
                           )}
                         </div>

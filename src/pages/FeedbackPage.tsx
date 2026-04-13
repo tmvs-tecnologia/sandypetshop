@@ -295,6 +295,24 @@ export const FeedbackPage: React.FC = () => {
             });
 
             if (dbError) throw dbError;
+
+            // Criar notificação para o admin (silencioso para o cliente se falhar)
+            try {
+                await supabase.from('notifications').insert({
+                    type: 'feedback',
+                    data: {
+                        pet_name: petName,
+                        stars: stars,
+                        service: service,
+                        comment: comment.trim() || null,
+                        owner_name: ownerName
+                    },
+                    read: false
+                });
+            } catch (err) {
+                console.error('Erro ao criar notificação de feedback:', err);
+            }
+
             setSubmitted(true);
         } catch (err: any) {
             setError('Ocorreu um erro ao enviar sua avaliação. Tente novamente.');

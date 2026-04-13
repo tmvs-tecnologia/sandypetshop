@@ -15768,13 +15768,13 @@ const AdminDashboard: React.FC<{
                                 {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
                                 {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                             </button>
-                            <NotificationBell />
+                            <NotificationBell onViewFeedbacks={() => setActiveView('feedbacks')} />
                             <button onClick={onLogout} className="flex items-center gap-3 text-base font-semibold text-gray-600 hover:text-pink-600 bg-gray-50 hover:bg-pink-50 px-5 py-3 rounded-xl transition-all shadow-sm hover:shadow">
                                 <LogoutIcon /> Sair
                             </button>
                         </div>
                         <div className="md:hidden flex items-center gap-2">
-                            <NotificationBell />
+                            <NotificationBell onViewFeedbacks={() => setActiveView('feedbacks')} />
                             {!showMobileMenu && (
                                 <button onClick={openMobileMenu} className="p-3 rounded-xl text-gray-500 hover:bg-pink-50 hover:text-pink-600 transition-colors" aria-label="Menu">
                                     <MenuIcon />
