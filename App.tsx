@@ -548,6 +548,7 @@ const AlbumManagementView: React.FC = () => {
                 <div key="gallery-solo" className="w-full max-w-2xl animate-fadeIn space-y-6">
                     <div className="relative group aspect-square rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white bg-white">
                         <SafeImage 
+                            key={activeSoloIndex}
                             src={photos[activeSoloIndex]?.url} 
                             alt="Visualização Solo" 
                             className="w-full h-full object-cover animate-scaleIn" 
@@ -657,13 +658,17 @@ const AlbumManagementView: React.FC = () => {
                         <>
                             {/* Destaque 1º Lugar */}
                             <div className="relative group">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-pink-500 to-yellow-600 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                                <div className="relative flex flex-col md:flex-row items-center gap-8 bg-white/80 backdrop-blur-md rounded-[2.5rem] p-10 border border-yellow-200 shadow-2xl">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-600 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                                <div className="relative flex flex-col md:flex-row items-center gap-8 bg-white/80 backdrop-blur-md rounded-[2.5rem] p-10 border border-pink-200 shadow-2xl">
                                     <div className="relative">
-                                        <div className="absolute -top-6 -left-6 z-10 bg-yellow-400 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transform -rotate-12 animate-bounce">
-                                            <span className="text-2xl">👑</span>
+                                        <div className="absolute -top-6 -left-6 z-10 bg-pink-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transform -rotate-12 animate-bounce border-2 border-white/50">
+                                            <img 
+                                                src="https://cdn-icons-png.flaticon.com/512/9028/9028075.png" 
+                                                alt="Coroa de Campeão" 
+                                                className="w-8 h-8 drop-shadow-md"
+                                            />
                                         </div>
-                                        <div className="w-48 h-48 rounded-[2rem] overflow-hidden border-4 border-yellow-100 shadow-xl">
+                                        <div className="w-48 h-48 rounded-[2rem] overflow-hidden border-4 border-pink-100 shadow-xl">
                                             <SafeImage 
                                                 src={monthlyRanking[0].photo_url || FALLBACK_IMG} 
                                                 alt={monthlyRanking[0].pet_name} 
@@ -674,7 +679,7 @@ const AlbumManagementView: React.FC = () => {
                                     
                                     <div className="flex-1 text-center md:text-left space-y-3">
                                         <div>
-                                            <span className="inline-block px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-black uppercase tracking-widest mb-2">Pet do Mês</span>
+                                            <span className="inline-block px-4 py-1 bg-pink-100 text-pink-700 rounded-full text-xs font-black uppercase tracking-widest mb-2">Pet do Mês</span>
                                             <h3 className="text-5xl font-black text-gray-900 tracking-tighter" style={{ fontFamily: '"Lobster Two", cursive' }}>{monthlyRanking[0].pet_name}</h3>
                                             <p className="text-gray-500 font-medium">Tutor: {monthlyRanking[0].owner_name.split(' ')[0]}</p>
                                         </div>
@@ -691,7 +696,7 @@ const AlbumManagementView: React.FC = () => {
                                                     setIsShareModalOpen(true);
                                                     setShareStyle('luxury');
                                                 }}
-                                                className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 px-6 py-4 rounded-2xl text-white font-black shadow-lg shadow-yellow-200 hover:scale-105 transition-all text-xs uppercase tracking-wider"
+                                                className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 px-6 py-4 rounded-2xl text-white font-black shadow-lg shadow-pink-200 hover:scale-105 transition-all text-xs uppercase tracking-wider"
                                             >
                                                 <SparklesIcon className="w-5 h-5" />
                                                 Gerar Story de Campeão
