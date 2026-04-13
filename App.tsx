@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { toBlob } from 'html-to-image';
-import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon, UserPlusIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon, UserPlusIcon, Squares2X2Icon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
 import { SERVICES, WORKING_HOURS, BATH_GROOMING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
@@ -60,6 +60,9 @@ const SafeImage: React.FC<{
         />
     );
 };
+
+const LoadingSpinner = () => <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>;
+
 
 
 const planLabels: Record<string, string> = {
@@ -234,6 +237,13 @@ const AlbumManagementView: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     
+    const [activeTab, setActiveTab] = useState<'gallery' | 'fame'>('gallery');
+    const [galleryViewMode, setGalleryViewMode] = useState<'grid' | 'solo'>('grid');
+    const [activeSoloIndex, setActiveSoloIndex] = useState(0);
+    const [rankingDate, setRankingDate] = useState(new Date());
+    const [monthlyRanking, setMonthlyRanking] = useState<{ pet_name: string; owner_name: string; count: number; photo_url: string | null }[]>([]);
+    const [rankingLoading, setRankingLoading] = useState(false);
+    
     // Estados para Compartilhamento (Gerar Story)
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [activePhoto, setActivePhoto] = useState<{ url: string } | null>(null);
@@ -241,6 +251,7 @@ const AlbumManagementView: React.FC = () => {
     const [isSharing, setIsSharing] = useState(false);
     const [activeCaption, setActiveCaption] = useState('');
     const cardRef = useRef<HTMLDivElement>(null);
+    const fameCardRef = useRef<HTMLDivElement>(null);
 
     const ALBUM_CAPTIONS = [
         "Mais um dia de alegria! 🐾",
@@ -313,6 +324,67 @@ const AlbumManagementView: React.FC = () => {
         }
     }, []);
 
+    const fetchMonthlyRanking = useCallback(async () => {
+        setRankingLoading(true);
+        try {
+            const startOfMonth = new Date(rankingDate.getFullYear(), rankingDate.getMonth(), 1, 0, 0, 0);
+            const endOfMonth = new Date(rankingDate.getFullYear(), rankingDate.getMonth() + 1, 0, 23, 59, 59);
+            
+            // Buscar em todas as tabelas de agendamento apenas os CONCLUÍDOS no período
+            const [apps, petMovel, banhoTosa, monthly] = await Promise.all([
+                supabase.from('appointments')
+                    .select('pet_name, owner_name')
+                    .gte('appointment_time', startOfMonth.toISOString())
+                    .lte('appointment_time', endOfMonth.toISOString())
+                    .eq('status', 'CONCLUÍDO'),
+                supabase.from('pet_movel_appointments')
+                    .select('pet_name, owner_name')
+                    .gte('appointment_time', startOfMonth.toISOString())
+                    .lte('appointment_time', endOfMonth.toISOString())
+                    .eq('status', 'CONCLUÍDO'),
+                supabase.from('agendamento_banhotosa')
+                    .select('pet_name, owner_name')
+                    .gte('appointment_time', startOfMonth.toISOString())
+                    .lte('appointment_time', endOfMonth.toISOString())
+                    .eq('status', 'CONCLUÍDO'),
+                supabase.from('monthly_clients').select('pet_name, owner_name, pet_photo_url')
+            ]);
+
+            const counts: Record<string, { count: number; owner: string }> = {};
+            const all = [...(apps.data || []), ...(petMovel.data || []), ...(banhoTosa.data || [])];
+            
+            all.forEach(a => {
+                const key = `${a.pet_name.trim().toUpperCase()}_${a.owner_name.trim().toUpperCase()}`;
+                if (!counts[key]) counts[key] = { count: 0, owner: a.owner_name };
+                counts[key].count++;
+            });
+
+            const ranking = Object.keys(counts).map(key => {
+                const [pet] = key.split('_');
+                const photo = monthly.data?.find(m => m.pet_name.trim().toUpperCase() === pet && m.owner_name.trim().toUpperCase() === counts[key].owner.trim().toUpperCase())?.pet_photo_url;
+                return {
+                    pet_name: pet,
+                    owner_name: counts[key].owner,
+                    count: counts[key].count,
+                    photo_url: photo || null
+                };
+            }).sort((a, b) => b.count - a.count).slice(0, 5);
+
+            setMonthlyRanking(ranking);
+        } catch (err) {
+            console.error('Erro ao calcular ranking:', err);
+        } finally {
+            setRankingLoading(false);
+        }
+    }, [rankingDate]);
+
+    // UseEffect para atualizar ranking quando a data mudar ou aba for ativada
+    useEffect(() => {
+        if (activeTab === 'fame') {
+            fetchMonthlyRanking();
+        }
+    }, [activeTab, rankingDate, fetchMonthlyRanking]);
+
     useEffect(() => {
         fetchPhotos();
     }, [fetchPhotos]);
@@ -383,32 +455,61 @@ const AlbumManagementView: React.FC = () => {
         <div className="animate-fadeIn p-6 flex flex-col items-center text-center">
             <div className="w-full max-w-4xl mb-10">
                 <h2 className="text-4xl font-bold text-pink-600 mb-2" style={{ fontFamily: '"Lobster Two", cursive' }}>Álbum de Fotos</h2>
-                <p className="text-pink-800/60 font-medium tracking-tight">Gerencie as belas fotos que os clientes verão em mosaico</p>
+                <p className="text-pink-800/60 font-medium tracking-tight whitespace-nowrap text-[10px] xs:text-xs sm:text-sm">Gerencie as fotos que os clientes verão em mosaico</p>
             </div>
             
-            <div className="mb-8">
-                <label className={`flex items-center justify-center gap-2 px-8 py-4 bg-pink-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 active:scale-95 ${uploading ? 'opacity-70 cursor-wait' : ''}`}>
-                    <PlusOutlineIcon className="w-5 h-5" />
-                    {uploading ? 'Enviando Fotos...' : 'Adicionar Fotos ao Álbum'}
-                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
-                </label>
+            <div className="w-full max-w-lg mb-8 bg-pink-50/50 p-1.5 rounded-2xl border border-pink-100 flex gap-2">
+                <button
+                    onClick={() => setActiveTab('gallery')}
+                    className={`flex-1 py-3 px-1 sm:px-6 rounded-xl font-bold whitespace-nowrap text-xs sm:text-base transition-all ${activeTab === 'gallery' ? 'bg-white text-pink-600 shadow-md' : 'text-pink-800/50 hover:text-pink-600'}`}
+                >
+                    Galeria de Fotos
+                </button>
+                <button
+                    onClick={() => setActiveTab('fame')}
+                    className={`flex-1 py-3 px-1 sm:px-6 rounded-xl font-bold whitespace-nowrap text-xs sm:text-base transition-all flex items-center justify-center gap-1 sm:gap-2 ${activeTab === 'fame' ? 'bg-white text-pink-600 shadow-md' : 'text-pink-800/50 hover:text-pink-600'}`}
+                >
+                    <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    Mural da Fama
+                </button>
             </div>
 
+            {activeTab === 'gallery' ? (
+                <div key="album-gallery-view" className="w-full flex flex-col items-center">
+                    <div className="mb-8 flex flex-nowrap items-center justify-center gap-3 w-full max-w-lg mx-auto px-2">
+                        <label className={`flex-1 flex items-center justify-center gap-2 px-3 sm:px-8 py-4 bg-pink-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 active:scale-95 ${uploading ? 'opacity-70 cursor-wait' : ''}`}>
+                            <PlusOutlineIcon className="w-5 h-5 flex-shrink-0" />
+                            <span className="truncate text-sm sm:text-base">{uploading ? 'Enviando...' : 'Adicionar Fotos'}</span>
+                            <input type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
+                        </label>
+                        
+                        <button
+                            onClick={() => setGalleryViewMode(prev => prev === 'grid' ? 'solo' : 'grid')}
+                            className="p-4 bg-white text-pink-600 rounded-2xl shadow-lg border border-pink-100 hover:bg-pink-50 transition-all active:scale-95 group flex-shrink-0"
+                            title={galleryViewMode === 'grid' ? 'Modo Foto Solo' : 'Modo Grade'}
+                        >
+                            <div className="relative w-6 h-6">
+                                <Squares2X2Icon className={`w-6 h-6 absolute inset-0 transition-all duration-500 ${galleryViewMode === 'solo' ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'}`} />
+                                <PhotoIcon className={`w-6 h-6 absolute inset-0 transition-all duration-500 ${galleryViewMode === 'grid' ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'}`} />
+                            </div>
+                        </button>
+                    </div>
+
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-4">
+                <div key="gallery-loading" className="flex flex-col items-center justify-center py-24 gap-4">
                     <LoadingSpinner />
                     <p className="text-pink-800/40 font-medium">Carregando seu álbum...</p>
                 </div>
             ) : photos.length === 0 ? (
-                <div className="text-center py-20 bg-white/40 rounded-[2.5rem] border-4 border-dashed border-pink-100 backdrop-blur-sm">
+                <div key="gallery-empty" className="text-center py-20 bg-white/40 rounded-[2.5rem] border-4 border-dashed border-pink-100 backdrop-blur-sm">
                     <div className="w-24 h-24 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
                         <PhotoIcon className="w-12 h-12 text-pink-200" />
                     </div>
                     <h3 className="text-2xl font-bold text-pink-900 mb-2">Seu Álbum está Vazio</h3>
                     <p className="text-pink-800/60 max-w-sm mx-auto">As fotos que você adicionar aqui aparecerão em um mosaico animado na tela inicial dos seus clientes.</p>
                 </div>
-            ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 animate-fadeIn">
+            ) : galleryViewMode === 'grid' ? (
+                <div key="gallery-grid" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 animate-fadeIn">
                     {photos.map((photo, index) => (
                         <div 
                             key={photo.id} 
@@ -442,6 +543,209 @@ const AlbumManagementView: React.FC = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+            ) : (
+                <div key="gallery-solo" className="w-full max-w-2xl animate-fadeIn space-y-6">
+                    <div className="relative group aspect-square rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white bg-white">
+                        <SafeImage 
+                            src={photos[activeSoloIndex]?.url} 
+                            alt="Visualização Solo" 
+                            className="w-full h-full object-cover animate-scaleIn" 
+                        />
+                        
+                        {/* Navegação Overlay */}
+                        <div className="absolute inset-y-0 left-0 w-24 flex items-center justify-center p-2 z-50 pointer-events-none">
+                            <button 
+                                onClick={(e) => { 
+                                    e.preventDefault();
+                                    e.stopPropagation(); 
+                                    setActiveSoloIndex(prev => prev > 0 ? prev - 1 : photos.length - 1); 
+                                }}
+                                className="w-14 h-14 bg-white/95 backdrop-blur-md text-pink-600 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95 pointer-events-auto opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity border-2 border-pink-50"
+                                aria-label="Foto anterior"
+                            >
+                                <ChevronLeftIcon className="w-10 h-10" />
+                            </button>
+                        </div>
+                        <div className="absolute inset-y-0 right-0 w-24 flex items-center justify-center p-2 z-50 pointer-events-none">
+                            <button 
+                                onClick={(e) => { 
+                                    e.preventDefault();
+                                    e.stopPropagation(); 
+                                    setActiveSoloIndex(prev => (prev + 1) % photos.length); 
+                                }}
+                                className="w-14 h-14 bg-white/95 backdrop-blur-md text-pink-600 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95 pointer-events-auto opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity border-2 border-pink-50"
+                                aria-label="Próxima foto"
+                            >
+                                <ChevronRightIcon className="w-10 h-10" />
+                            </button>
+                        </div>
+
+                        {/* Ações Rápidas */}
+                        <div className="absolute top-6 right-6 flex flex-col gap-3">
+                            <button
+                                onClick={() => {
+                                    setActivePhoto(photos[activeSoloIndex]);
+                                    setActiveCaption(ALBUM_CAPTIONS[Math.floor(Math.random() * ALBUM_CAPTIONS.length)]);
+                                    setIsShareModalOpen(true);
+                                }}
+                                className="p-4 bg-white text-pink-600 rounded-2xl shadow-xl hover:bg-pink-50 transition-all transform hover:rotate-3"
+                                title="Gerar Story"
+                            >
+                                <SparklesIcon className="w-6 h-6" />
+                            </button>
+                            <button
+                                onClick={() => handleDelete(photos[activeSoloIndex])}
+                                className="p-4 bg-white/90 backdrop-blur-md text-red-500 rounded-2xl shadow-xl hover:bg-white transition-all transform hover:-rotate-3"
+                                title="Excluir Foto"
+                            >
+                                <TrashOutlineIcon className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between px-8 py-4 bg-pink-50/50 rounded-2xl border border-pink-100">
+                        <span className="text-pink-800/40 font-black tracking-widest text-sm">
+                            {String(activeSoloIndex + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}
+                        </span>
+                        <div className="flex gap-1.5">
+                            {photos.slice(0, 8).map((_, i) => (
+                                <div 
+                                    key={i} 
+                                    className={`h-1.5 rounded-full transition-all duration-300 ${i === activeSoloIndex ? 'w-8 bg-pink-600' : 'w-1.5 bg-pink-200'}`}
+                                />
+                            ))}
+                            {photos.length > 8 && <span className="text-[8px] text-pink-300 font-bold">...</span>}
+                        </div>
+                    </div>
+                </div>
+            )}
+            </div>
+            ) : (
+                <div key="album-fame-view" className="w-full flex flex-col items-center">
+                    {/* Controles de Navegação Mensal */}
+                    <div className="w-full max-w-4xl flex items-center justify-between mb-8 bg-white/60 p-5 rounded-[2.5rem] border border-pink-100 backdrop-blur-sm shadow-sm">
+                        <button 
+                            onClick={() => setRankingDate(new Date(rankingDate.getFullYear(), rankingDate.getMonth() - 1, 1))}
+                            className="p-3 hover:bg-pink-50 rounded-2xl text-pink-500 transition-all active:scale-90 border border-pink-50"
+                            title="Mês Anterior"
+                        >
+                            <ChevronLeftIcon className="w-6 h-6" />
+                        </button>
+                        <div className="text-center">
+                            <h3 className="text-xl font-bold text-pink-800 capitalize">
+                                {rankingDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                            </h3>
+                            <p className="text-[10px] uppercase tracking-widest text-pink-800/40 font-black">Histórico do Mural da Fama</p>
+                        </div>
+                        <button 
+                            onClick={() => setRankingDate(new Date(rankingDate.getFullYear(), rankingDate.getMonth() + 1, 1))}
+                            className="p-3 hover:bg-pink-50 rounded-2xl text-pink-500 transition-all active:scale-90 border border-pink-50"
+                            title="Próximo Mês"
+                        >
+                            <ChevronRightIcon className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    <div className="w-full max-w-4xl animate-fadeIn space-y-10">
+                    {rankingLoading ? (
+                        <div className="flex flex-col items-center justify-center py-24 gap-4">
+                            <LoadingSpinner />
+                            <p className="text-pink-800/40 font-medium">Calculando o Pet do Mês...</p>
+                        </div>
+                    ) : monthlyRanking.length > 0 ? (
+                        <>
+                            {/* Destaque 1º Lugar */}
+                            <div className="relative group">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-pink-500 to-yellow-600 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                                <div className="relative flex flex-col md:flex-row items-center gap-8 bg-white/80 backdrop-blur-md rounded-[2.5rem] p-10 border border-yellow-200 shadow-2xl">
+                                    <div className="relative">
+                                        <div className="absolute -top-6 -left-6 z-10 bg-yellow-400 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transform -rotate-12 animate-bounce">
+                                            <span className="text-2xl">👑</span>
+                                        </div>
+                                        <div className="w-48 h-48 rounded-[2rem] overflow-hidden border-4 border-yellow-100 shadow-xl">
+                                            <SafeImage 
+                                                src={monthlyRanking[0].photo_url || FALLBACK_IMG} 
+                                                alt={monthlyRanking[0].pet_name} 
+                                                className="w-full h-full object-cover" 
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex-1 text-center md:text-left space-y-3">
+                                        <div>
+                                            <span className="inline-block px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-black uppercase tracking-widest mb-2">Pet do Mês</span>
+                                            <h3 className="text-5xl font-black text-gray-900 tracking-tighter" style={{ fontFamily: '"Lobster Two", cursive' }}>{monthlyRanking[0].pet_name}</h3>
+                                            <p className="text-gray-500 font-medium">Tutor: {monthlyRanking[0].owner_name.split(' ')[0]}</p>
+                                        </div>
+                                        
+                                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                                            <div className="bg-pink-50 px-4 py-2 rounded-2xl">
+                                                <span className="block text-xs text-pink-400 font-bold uppercase">Visitas</span>
+                                                <span className="text-2xl font-black text-pink-600">{monthlyRanking[0].count}</span>
+                                            </div>
+                                            <button 
+                                                onClick={() => {
+                                                    setActivePhoto({ url: monthlyRanking[0].photo_url || FALLBACK_IMG });
+                                                    setActiveCaption(`O Pet do Mês é o ${monthlyRanking[0].pet_name}! 🐾🌟`);
+                                                    setIsShareModalOpen(true);
+                                                    setShareStyle('luxury');
+                                                }}
+                                                className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 px-6 py-4 rounded-2xl text-white font-black shadow-lg shadow-yellow-200 hover:scale-105 transition-all text-xs uppercase tracking-wider"
+                                            >
+                                                <SparklesIcon className="w-5 h-5" />
+                                                Gerar Story de Campeão
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Ranking de Seguidores */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+                                {monthlyRanking.slice(1).map((pet, idx) => (
+                                    <div key={`${pet.pet_name}-${pet.owner_name}`} className="bg-white/60 p-5 rounded-[2rem] border border-pink-50 flex items-center justify-between hover:shadow-lg transition-all hover:bg-white group">
+                                        <div className="flex items-center gap-4 min-w-0">
+                                            <div className="relative shrink-0">
+                                                <div className="absolute -top-2 -left-2 bg-pink-100 text-pink-600 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white shadow-sm">
+                                                    {idx + 2}º
+                                                </div>
+                                                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-pink-50">
+                                                    <SafeImage src={pet.photo_url || FALLBACK_IMG} alt={pet.pet_name} className="w-full h-full object-cover" />
+                                                </div>
+                                            </div>
+                                            <div className="min-w-0 text-left">
+                                                <h4 className="font-black text-gray-800 truncate">{pet.pet_name}</h4>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase">{pet.count} Atendimentos</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <button
+                                            onClick={() => {
+                                                setActivePhoto({ url: pet.photo_url || FALLBACK_IMG });
+                                                setActiveCaption(`O ${pet.pet_name} está no TOP 5 da Sandy's! 🐾💖`);
+                                                setIsShareModalOpen(true);
+                                                setShareStyle('luxury');
+                                            }}
+                                            className="p-3 bg-pink-50 text-pink-600 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-pink-600 hover:text-white"
+                                            title="Gerar Story"
+                                        >
+                                            <SparklesIcon className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="text-center py-20 bg-white/40 rounded-[2.5rem] border-4 border-dashed border-pink-100">
+                             <div className="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <SparklesIcon className="w-10 h-10 text-pink-200" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-pink-900 mb-2">O Mural está sendo preparado</h3>
+                            <p className="text-pink-800/60 max-w-sm mx-auto">Assim que os primeiros atendimentos do mês forem registrados, o ranking aparecerá aqui!</p>
+                        </div>
+                    )}
+                </div>
                 </div>
             )}
 
@@ -495,51 +799,109 @@ const AlbumManagementView: React.FC = () => {
                             ref={cardRef}
                             className="w-full aspect-[9/16] rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col select-none transition-all duration-500 shrink"
                             style={{
-                                ... (shareStyle === 'classic' ? { background: 'linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%)', color: 'white' } :
-                                    shareStyle === 'luxury' ? { background: '#fff1f2', color: '#9d174d', border: '1px solid #fecdd3' } :
-                                    shareStyle === 'berry' ? { background: 'linear-gradient(135deg, #4c0519 0%, #831843 100%)', color: 'white' } :
-                                    { background: '#f8fafc', color: '#1e293b' }),
+                                background: shareStyle === 'luxury' ? '#0f172a' : 
+                                            shareStyle === 'classic' ? '#fff9f5' :
+                                            shareStyle === 'minimal' ? '#ffffff' :
+                                            'linear-gradient(135deg, #4c0519 0%, #831843 100%)',
+                                color: shareStyle === 'minimal' ? '#000' : 'white',
                                 maxWidth: 'min(100%, 62vh * 9/16)'
                             }}
                         >
-                            {/* Foto em Full Screen */}
-                            <div className="absolute inset-0 z-0">
-                                <SafeImage 
-                                    src={activePhoto.url} 
-                                    alt="Pet Story" 
-                                    className="w-full h-full object-cover" 
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
+                            {/* Camada de Foto / Enquadramento */}
+                            <div className={`absolute inset-0 z-0 transition-all duration-500 ${
+                                shareStyle === 'classic' ? 'p-6' : 
+                                shareStyle === 'luxury' ? 'p-1' : 
+                                shareStyle === 'minimal' ? 'p-0' : 'p-0'
+                            }`}>
+                                <div className="w-full h-full relative overflow-hidden rounded-[1.5rem] shadow-inner">
+                                    <SafeImage 
+                                        src={activePhoto.url} 
+                                        alt="Pet Story" 
+                                        className={`w-full h-full object-cover transition-transform duration-1000 ${shareStyle === 'luxury' ? 'scale-105' : ''}`} 
+                                    />
+                                    
+                                    {/* Overlays Específicos */}
+                                    {shareStyle === 'luxury' && (
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/60 opacity-80" />
+                                    )}
+                                    {shareStyle === 'classic' && (
+                                        <div className="absolute inset-0 bg-pink-900/10 mix-blend-overlay" />
+                                    )}
+                                    {(shareStyle === 'berry' || shareStyle === 'classic') && (
+                                        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Molduras por Estilo */}
+                            {/* Detalhes Decorativos por Estilo */}
                             {shareStyle === 'luxury' && (
-                                <div className="absolute inset-4 border-2 border-white/40 rounded-[2rem] pointer-events-none z-10" />
+                                <>
+                                    <div className="absolute inset-4 border border-yellow-500/30 rounded-[2rem] pointer-events-none z-10" />
+                                    <div className="absolute inset-5 border border-yellow-500/10 rounded-[1.8rem] pointer-events-none z-10" />
+                                    <SparklesIcon className="absolute top-12 right-12 w-8 h-8 text-yellow-500/40 animate-pulse z-10" />
+                                </>
                             )}
                             
-                            {shareStyle === 'classic' && (
-                                <div className="absolute top-10 left-10 opacity-20 pointer-events-none z-10">
-                                    <div className="text-6xl">🐾</div>
-                                </div>
+                            {shareStyle === 'minimal' && (
+                                <div className="absolute top-0 right-0 w-24 h-full bg-slate-900/5 backdrop-blur-[1px] z-10" />
                             )}
 
-                            {/* Conteúdo */}
-                            <div className="relative z-20 h-full flex flex-col p-10 justify-between">
-                                <div className="flex flex-col items-center">
-                                    <div className="flex flex-col items-center drop-shadow-lg">
-                                        <span style={{ fontFamily: '"Lobster Two", cursive', fontSize: '1.8rem', color: 'white' }}>Sandy's</span>
-                                        <span style={{ fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.3em', color: 'white', marginTop: '-4px' }}>PET SHOP</span>
+                            {/* Conteúdo Editorial */}
+                            <div className="relative z-20 h-full flex flex-col p-10 justify-between items-center text-center">
+                                {/* Header do Story */}
+                                <div className={`flex flex-col items-center transition-all duration-500 ${shareStyle === 'minimal' ? 'items-start w-full' : ''}`}>
+                                    <div className={`flex flex-col items-center drop-shadow-xl ${shareStyle === 'minimal' ? 'items-start' : ''}`}>
+                                        <span style={{ 
+                                            fontFamily: '"Lobster Two", cursive', 
+                                            fontSize: '2.2rem', 
+                                            color: shareStyle === 'minimal' ? '#0f172a' : shareStyle === 'luxury' ? '#fbbf24' : 'white',
+                                            textShadow: shareStyle === 'minimal' ? 'none' : '0 4px 12px rgba(0,0,0,0.3)'
+                                        }}>Sandy's</span>
+                                        <span style={{ 
+                                            fontSize: '0.8rem', 
+                                            fontWeight: 900, 
+                                            letterSpacing: '0.4em', 
+                                            color: shareStyle === 'minimal' ? '#64748b' : 'white',
+                                            marginTop: '-6px',
+                                            opacity: 0.8
+                                        }}>PET SHOP</span>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col items-center gap-4 text-center">
-                                    <div className="bg-white/20 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/30 shadow-xl">
-                                        <p className="text-white font-bold text-lg leading-tight uppercase tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+                                {/* Body do Story */}
+                                <div className={`flex flex-col items-center gap-6 w-full transition-all duration-500 ${shareStyle === 'minimal' ? 'items-end' : ''}`}>
+                                    <div className={`relative px-8 py-5 transition-all duration-500 ${
+                                        shareStyle === 'luxury' ? 'bg-white/5 backdrop-blur-xl border border-yellow-500/20 rounded-[2rem] shadow-2xl' :
+                                        shareStyle === 'classic' ? 'bg-white rounded-2xl shadow-xl' :
+                                        shareStyle === 'minimal' ? 'border-r-8 border-slate-900 pr-6 text-right' :
+                                        'bg-gradient-to-r from-pink-600 to-rose-600 rounded-3xl shadow-xl'
+                                    }`}>
+                                        {shareStyle === 'classic' && (
+                                            <div className="absolute -top-3 -right-3 w-8 h-8 bg-pink-500 text-white rounded-full flex items-center justify-center shadow-lg transform rotate-12">
+                                                <SparklesIcon className="w-5 h-5" />
+                                            </div>
+                                        )}
+                                        <p className={`font-bold text-xl leading-snug uppercase tracking-tight ${
+                                            shareStyle === 'classic' ? 'text-pink-600' :
+                                            shareStyle === 'minimal' ? 'text-slate-900 text-2xl font-black italic' :
+                                            'text-white'
+                                        }`} style={{ textShadow: shareStyle === 'minimal' || shareStyle === 'classic' ? 'none' : '0 2px 8px rgba(0,0,0,0.4)' }}>
                                             {activeCaption}
                                         </p>
                                     </div>
-                                    <div className="px-5 py-2 rounded-full border border-white/50 text-white text-[10px] font-black uppercase tracking-[0.2em] backdrop-blur-sm">
-                                        @sandypetmovelcrechehotel
+
+                                    {/* Footer / @Handle */}
+                                    <div className={`flex flex-col items-center gap-2 ${shareStyle === 'minimal' ? 'items-end' : ''}`}>
+                                        <div className={`px-5 py-2 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] transition-all ${
+                                            shareStyle === 'luxury' ? 'border-yellow-500/30 text-yellow-500 bg-yellow-500/5' :
+                                            shareStyle === 'minimal' ? 'border-slate-200 text-slate-400' :
+                                            'border-white/40 text-white/90 bg-white/10 backdrop-blur-sm'
+                                        }`}>
+                                            @sandypetmovelcrechehotel
+                                        </div>
+                                        {shareStyle === 'luxury' && (
+                                            <span className="text-[8px] text-yellow-500/40 uppercase font-black tracking-widest animate-pulse">Premium Quality Experience</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -965,10 +1327,7 @@ const calculateHotelInvoiceTotal = (registration: HotelRegistration): number => 
 };
 
 
-// --- SVG ICONS ---
-// FIX: Update ChevronLeftIcon and ChevronRightIcon to accept SVG props to allow passing className.
-const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>;
-const ChevronRightIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>;
+
 const Collapsible: React.FC<{ title: string; defaultOpen?: boolean; className?: string }> = ({ title, defaultOpen = true, className, children }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -1135,7 +1494,6 @@ const CameraAddIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 const TagIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/13733/13733507.png" alt="Tag" className="h-5 w-5 mr-1.5" />;
 const CheckCircleSolidIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>;
-const LoadingSpinner = () => <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>;
 const ListSolidIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>;
 const UserPlusSolidIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" /></svg>;
 const EditIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
