@@ -29,6 +29,31 @@ import InsightsDashboard from './src/components/InsightsDashboard';
 import FeedbacksView from './src/components/FeedbacksView';
 import { formatPhoneForWebhook } from './src/lib/utils';
 
+// HELPERS DE IDENTIFICAÇÃO DE SERVIÇO (UNIFICADOS)
+export function isMobileAppointment(appt: any) {
+    if (!appt) return false;
+    const s = String(appt.service || '').toUpperCase();
+    const c = String(appt.condominium || appt.condo || '').toUpperCase();
+    
+    // Identifica por nome do serviço ou por presença de condomínio (exceto fixo)
+    const isMobileServiceStr = s.includes('PET_MOBILE') || s.includes('MÓVEL') || s.includes('MOVEL') || s.includes('MOBILE');
+    const hasCondo = c && c !== 'UNDEFINED' && c !== 'NULL' && !c.includes('NENHUM') && !c.includes('FIXO');
+    
+    return isMobileServiceStr || hasCondo;
+}
+
+export function isVisitAppointment(appt: any) {
+    if (!appt) return false;
+    const s = String(appt.service || '').toUpperCase();
+    return s.includes('VISIT') || s.includes('VISITA') || 
+           appt.service === ServiceType.VISIT_DAYCARE || 
+           appt.service === ServiceType.VISIT_HOTEL;
+}
+
+export function isFixedAppointment(appt: any) {
+    return !isMobileAppointment(appt) && !isVisitAppointment(appt);
+}
+
 
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" fill=\"%23f3f4f6\"/><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-size=\"28\">🐾</text></svg>';
 
@@ -4475,7 +4500,16 @@ const AdminAddAppointmentModal: React.FC<{
             const allExistingAtTime = allReal.filter(a => {
                 const at = new Date(a.appointment_time);
                 const { hour: ah } = getSaoPauloTimeParts(at);
-                return isSameSaoPauloDay(at, selectedDate) && ah === selectedTime;
+                
+                const isSameSlot = isSameSaoPauloDay(at, selectedDate) && ah === selectedTime;
+                if (!isSameSlot) return false;
+                
+                // VISITS DO NOT BLOCK SLOTS
+                if (isVisitAppointment(a)) return false;
+
+                // Differentiate between Mobile and Fixed calendars
+                const appIsMobile = isMobileAppointment(a);
+                return isPetMovelSubmit ? appIsMobile : !appIsMobile;
             });
 
             if (allExistingAtTime.length >= MAX_CAPACITY_PER_SLOT) {
@@ -11402,22 +11436,6 @@ export const TimeSlotPicker: React.FC<{
     const isSameDaySP = (d1: Date, d2: Date) => isSameSaoPauloDay(d1, d2);
 
     // Separate calendars logic
-    const isMobileAppt = (appt: any) => {
-        const s = String(appt.service || '').toUpperCase();
-        const c = String(appt.condominium || '').toUpperCase();
-        
-        const isMobileServiceStr = s.includes('PET_MOBILE') || s.includes('MÓVEL') || s.includes('MOVEL');
-        const hasCondo = c && c !== 'UNDEFINED' && c !== 'NULL' && !c.includes('NENHUM') && !c.includes('FIXO');
-        
-        return isMobileServiceStr || hasCondo;
-    };
-
-    const isVisitAppt = (appt: any) => {
-        const s = String(appt.service || '').toUpperCase();
-        return s.includes('VISIT') || s.includes('VISITA') || 
-               appt.service === ServiceType.VISIT_DAYCARE || 
-               appt.service === ServiceType.VISIT_HOTEL;
-    };
 
     const getAppointmentsAtHour = (hour: number) => {
         return allAppointments.filter(appt => {
@@ -11429,7 +11447,7 @@ export const TimeSlotPicker: React.FC<{
             }
 
             // VISITS DO NOT BLOCK SLOTS
-            if (isVisitAppt(appt)) {
+            if (isVisitAppointment(appt)) {
                 return false;
             }
 
@@ -11439,7 +11457,7 @@ export const TimeSlotPicker: React.FC<{
 
             // A agenda Pet Móvel só é bloqueada por atendimentos Pet Móvel
             // A agenda Fixo só é bloqueada por atendimentos Fixos
-            const apptIsMobile = isMobileAppt(appt);
+            const apptIsMobile = isMobileAppointment(appt);
             if (isPetMovel) {
                 return apptIsMobile;
             } else {
@@ -11995,12 +12013,24 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         const day = selectedDate.getDate();
         const appointmentTime = toSaoPauloUTC(year, month, day, selectedTime);
 
+        const isPetMovelSubmit = !!selectedService && [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
         const relevantAppointments = appointments;
         const appointmentsAtHour = relevantAppointments.filter(app => {
             const appDate = new Date(app.appointmentTime);
-            return isSameSaoPauloDay(appDate, selectedDate) && 
-                   getSaoPauloTimeParts(appDate).hour === selectedTime &&
-                   String(app.status || '').toUpperCase() !== 'CANCELADO';
+            
+            // VISITS DO NOT BLOCK SLOTS and CANCELLED should be ignored
+            if (String(app.status || '').toUpperCase() === 'CANCELADO' || isVisitAppointment(app)) {
+                return false;
+            }
+
+            const isSameSlot = isSameSaoPauloDay(appDate, selectedDate) && 
+                              getSaoPauloTimeParts(appDate).hour === selectedTime;
+            
+            if (!isSameSlot) return false;
+
+            // Differentiate between Mobile and Fixed calendars
+            const appIsMobile = isMobileAppointment(app);
+            return isPetMovelSubmit ? appIsMobile : !appIsMobile;
         });
 
         if (appointmentsAtHour.length >= MAX_CAPACITY_PER_SLOT) {
@@ -12009,7 +12039,6 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             return;
         }
 
-        const isPetMovelSubmit = !!selectedService && [ServiceType.PET_MOBILE_BATH, ServiceType.PET_MOBILE_BATH_AND_GROOMING, ServiceType.PET_MOBILE_GROOMING_ONLY].includes(selectedService);
         if (isPetMovelSubmit && !selectedCondo) {
             alert('Selecione o condomínio para agendar no Pet Móvel.');
             setIsSubmitting(false);
