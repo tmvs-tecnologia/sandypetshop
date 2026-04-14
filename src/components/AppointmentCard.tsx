@@ -68,8 +68,10 @@ interface AppointmentCardProps {
     onRequestCompletion: (id: string, price: number) => void;
     onOpenActionMenu: (appointment: AdminAppointment, e: React.MouseEvent) => void;
     onDeleteObservation: (appointment: AdminAppointment) => void;
+    onAddObservation: () => void;
     isUpdating?: boolean;
     isDeleting?: boolean;
+    onShowLoyalty?: (pet: string, owner: string) => void;
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -79,8 +81,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     onRequestCompletion,
     onOpenActionMenu,
     onDeleteObservation,
+    onAddObservation,
     isUpdating = false,
-    isDeleting = false
+    isDeleting = false,
+    onShowLoyalty
 }) => {
     const {
         id,
@@ -335,6 +339,17 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
                 {/* Footer / Actions */}
                 <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                    {/* Loyalty Link for non-monthly clients */}
+                    {!monthly_client_id && (
+                        <button
+                            onClick={() => onShowLoyalty?.(pet_name, owner_name)}
+                            className="p-2 rounded-full text-pink-500 hover:bg-pink-50 transition-colors"
+                            title="Ver Cartão de Fidelidade"
+                        >
+                            <SparklesIcon className="w-5 h-5" />
+                        </button>
+                    )}
+
                     <button
                         onClick={(e) => onOpenActionMenu(appointment, e)}
                         disabled={isUpdating || isDeleting}

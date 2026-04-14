@@ -28,6 +28,8 @@ import MonthlyReminderModal from './src/components/MonthlyReminderModal';
 import InsightsDashboard from './src/components/InsightsDashboard';
 import FeedbacksView from './src/components/FeedbacksView';
 import { formatPhoneForWebhook } from './src/lib/utils';
+import LoyaltyCardPage from './src/components/LoyaltyCardPage';
+import LoyaltyModal from './src/components/LoyaltyModal';
 
 // HELPERS DE IDENTIFICAÇÃO DE SERVIÇO (UNIFICADOS)
 export function isMobileAppointment(appt: any) {
@@ -5659,6 +5661,7 @@ interface AppointmentsViewProps {
     isAddModalOpen?: boolean;
     onOpenAddModal?: () => void;
     onCloseAddModal?: () => void;
+    onShowLoyalty?: (pet: string, owner: string) => void;
 }
 
 const AppointmentsView: React.FC<AppointmentsViewProps> = ({ 
@@ -5679,7 +5682,8 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     onOpenCloseDay,
     isAddModalOpen: _isAddModalOpen,
     onOpenAddModal,
-    onCloseAddModal 
+    onCloseAddModal,
+    onShowLoyalty
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -5775,6 +5779,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
             onDeleteObservation={() => onDeleteObservation(appt)} 
             onAddObservation={() => onAddObservation(appt)}
             onRequestCompletion={onRequestCompletion} 
+            onShowLoyalty={onShowLoyalty}
         />
     );
 
@@ -6156,6 +6161,7 @@ interface PetMovelViewProps {
     isAddModalOpen?: boolean;
     onOpenAddModal?: () => void;
     onCloseAddModal?: () => void;
+    onShowLoyalty?: (pet: string, owner: string) => void;
 }
 
 const PetMovelView: React.FC<PetMovelViewProps> = ({ 
@@ -6176,7 +6182,8 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
     onOpenCloseDay,
     isAddModalOpen: _isAddModalOpen,
     onOpenAddModal,
-    onCloseAddModal
+    onCloseAddModal,
+    onShowLoyalty
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -6264,6 +6271,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
             onAddObservation={() => onAddObservation(appt)}
             onDeleteObservation={() => onDeleteObservation(appt)}
             onOpenActionMenu={(e) => onOpenActionMenu(appt, e)}
+            onShowLoyalty={onShowLoyalty}
         />
     );
 
@@ -15670,6 +15678,11 @@ const AdminDashboard: React.FC<{
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [loyaltyPreview, setLoyaltyPreview] = useState<{ pet: string; owner: string } | null>(null);
+
+    const handleShowLoyalty = (pet: string, owner: string) => {
+        setLoyaltyPreview({ pet, owner });
+    };
 
     const openMobileMenu = () => {
         setShowMobileMenu(true);
@@ -16056,6 +16069,7 @@ const AdminDashboard: React.FC<{
                 isAddModalOpen={isAddModalOpen}
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
+                onShowLoyalty={handleShowLoyalty}
             />;
             case 'petMovel': return <PetMovelView 
                 key={dataKey} 
@@ -16077,6 +16091,7 @@ const AdminDashboard: React.FC<{
                 isAddModalOpen={isAddModalOpen}
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
+                onShowLoyalty={handleShowLoyalty}
             />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
@@ -16108,6 +16123,7 @@ const AdminDashboard: React.FC<{
                 isAddModalOpen={isAddModalOpen}
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
+                onShowLoyalty={handleShowLoyalty}
             />;
         }
     };
@@ -16362,6 +16378,14 @@ const AdminDashboard: React.FC<{
                     isLoading={deletingAppointmentId === appointmentToDelete.id} 
                 />
             )}
+            {loyaltyPreview && (
+                <LoyaltyModal 
+                    isOpen={!!loyaltyPreview} 
+                    onClose={() => setLoyaltyPreview(null)} 
+                    petName={loyaltyPreview.pet} 
+                    ownerName={loyaltyPreview.owner} 
+                />
+            )}
         </div>
     );
 };
@@ -16442,6 +16466,22 @@ import PriceManagementModal from './src/components/PriceManagementModal';
 const App: React.FC = () => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     const publicDiaryMatch = path.match(/^\/diario\/([^/]+)$/);
+    const [loyaltyData, setLoyaltyData] = useState<{ pet: string; owner: string } | null>(() => {
+        try {
+            const p = new URLSearchParams(window.location.search);
+            const pet = p.get('pet');
+            const owner = p.get('owner');
+            if (p.get('fidelidade') === 'true' && pet && owner) {
+                return { pet, owner };
+            }
+        } catch { }
+        return null;
+    });
+
+    if (loyaltyData) {
+        return <LoyaltyCardPage petName={loyaltyData.pet} ownerName={loyaltyData.owner} />;
+    }
+
     const [publicDiaryEnrollment, setPublicDiaryEnrollment] = useState<DaycareRegistration | null>(null);
     const [publicDiaryLoading, setPublicDiaryLoading] = useState(false);
     const [publicDiaryDate, setPublicDiaryDate] = useState<string>(() => {
