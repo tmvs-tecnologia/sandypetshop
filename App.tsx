@@ -4985,11 +4985,11 @@ const Calendar: React.FC<{
     return (
         <div className="w-full max-w-[25rem] aspect-auto sm:aspect-square mx-auto bg-white/80 backdrop-blur-sm rounded-[1.5rem] border border-pink-100 p-3 sm:p-4 shadow-[0_8px_30px_rgb(244,114,182,0.1)] flex flex-col overflow-hidden">
             <div className="flex justify-between items-center mb-2 px-2 pt-1">
-                <button type="button" onClick={() => changeMonth(-1)} className="p-1.5 sm:p-2 rounded-full hover:bg-pink-100 text-pink-500 transition-colors"><ChevronLeftIcon /></button>
+                <button type="button" onClick={() => changeMonth(-1)} className="p-1.5 sm:p-2 rounded-full hover:bg-pink-100 text-pink-500 transition-colors"><ChevronLeftIcon className="w-5 h-5" /></button>
                 <h3 className="font-extrabold text-lg capitalize text-pink-950 tracking-tight">
                     {currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                 </h3>
-                <button type="button" onClick={() => changeMonth(1)} className="p-1.5 sm:p-2 rounded-full hover:bg-pink-100 text-pink-500 transition-colors"><ChevronRightIcon /></button>
+                <button type="button" onClick={() => changeMonth(1)} className="p-1.5 sm:p-2 rounded-full hover:bg-pink-100 text-pink-500 transition-colors"><ChevronRightIcon className="w-5 h-5" /></button>
             </div>
             <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[10px] sm:text-xs text-pink-800/60 mb-1 font-bold uppercase tracking-wider">
                 {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => <div key={i}>{d}</div>)}
