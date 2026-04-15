@@ -430,43 +430,47 @@ const AppointmentCardWithEditablePrice: React.FC<AppointmentCardWithEditablePric
                 )}
 
                 {/* Footer / Actions */}
-                <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
-                    <button
-                        onClick={(e) => onOpenActionMenu(appointment, e)}
-                        disabled={isUpdating || isDeleting}
-                        className="p-2 rounded-full text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors disabled:opacity-50"
-                        title="Mais ações"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                    </button>
+                <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
+                    {/* Secondary Actions Group (Left) */}
+                    <div className="flex items-center gap-5 sm:gap-6">
+                        <button
+                            onClick={(e) => onOpenActionMenu(appointment, e)}
+                            disabled={isUpdating || isDeleting}
+                            className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50"
+                            title="Mais ações"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                        </button>
 
-                    <button
-                        onClick={() => onEdit(appointment)}
-                        disabled={isUpdating || isDeleting}
-                        className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50"
-                        title="Editar"
-                    >
-                        <EditIcon className="w-5 h-5" />
-                    </button>
+                        <button
+                            onClick={() => onEdit(appointment)}
+                            disabled={isUpdating || isDeleting}
+                            className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50"
+                            title="Editar"
+                        >
+                            <EditIcon className="w-5 h-5" />
+                        </button>
 
-                    <button
-                        onClick={() => onDelete(appointment)}
-                        disabled={isUpdating || isDeleting}
-                        className="p-2 rounded-full text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
-                        title="Excluir"
-                    >
-                        <TrashIcon className="w-5 h-5" />
-                    </button>
+                        <button
+                            onClick={() => onDelete(appointment)}
+                            disabled={isUpdating || isDeleting}
+                            className="p-1 rounded-full text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
+                            title="Excluir"
+                        >
+                            <TrashIcon className="w-5 h-5" />
+                        </button>
+                    </div>
 
+                    {/* Primary Action Group (Right) */}
                     <button
                         onClick={() => {
                             console.log('Requesting completion for appointment:', id, 'with price:', displayPrice);
                             onRequestCompletion(id, displayPrice);
                         }}
                         disabled={isCompleted || isUpdating || isDeleting}
-                        className={`ml-2 px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed ${isCompleted ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700 hover:shadow-green-500/20 hover:-translate-y-0.5'}`}
+                        className={`px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed ${isCompleted ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700 hover:shadow-green-500/20 hover:-translate-y-0.5'}`}
                         title="Concluir serviço"
                     >
                         {isUpdating && !isDeleting ? (

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { toBlob } from 'html-to-image';
-import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon, UserPlusIcon, Squares2X2Icon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon, UserPlusIcon, Squares2X2Icon, ChevronLeftIcon, ChevronRightIcon, GiftIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
 import { SERVICES, WORKING_HOURS, BATH_GROOMING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
@@ -30,6 +30,7 @@ import FeedbacksView from './src/components/FeedbacksView';
 import { formatPhoneForWebhook } from './src/lib/utils';
 import LoyaltyCardPage from './src/components/LoyaltyCardPage';
 import LoyaltyModal from './src/components/LoyaltyModal';
+import LoyaltyDashboardView from './src/components/LoyaltyDashboardView';
 
 // HELPERS DE IDENTIFICAÇÃO DE SERVIÇO (UNIFICADOS)
 export function isMobileAppointment(appt: any) {
@@ -5835,25 +5836,22 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                     <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-200 p-3 max-h-[50vh] overflow-y-auto">
                         {filteredAppointments.length > 0 ? (
                             <div className="space-y-3">
-                                {filteredAppointments.slice(0, 5).map(app => (
+                                {filteredAppointments.map(app => (
                                     <div key={app.id} className="w-full">
-                                        <AppointmentCard
-                                            appointment={app}
-                                            isUpdating={updatingStatusId === app.id}
-                                            onEdit={handleOpenEditModal}
-                                            onDelete={handleRequestDelete}
-                                            isDeleting={deletingAppointmentId === app.id}
-                                            onOpenActionMenu={onOpenActionMenu}
-                                            onDeleteObservation={onDeleteObservation}
-                                            onRequestCompletion={handleRequestCompletion}
-                                        />
+                                <AppointmentCard
+                                    appointment={app}
+                                    isUpdating={updatingStatusId === app.id}
+                                    onEdit={onEdit}
+                                    onDelete={onDelete}
+                                    isDeleting={deletingAppointmentId === app.id}
+                                    onOpenActionMenu={(e) => onOpenActionMenu(app, e)}
+                                    onDeleteObservation={() => onDeleteObservation(app)}
+                                    onAddObservation={() => onAddObservation(app)}
+                                    onRequestCompletion={onRequestCompletion}
+                                    onShowLoyalty={onShowLoyalty}
+                                />
                                     </div>
                                 ))}
-                                {filteredAppointments.length > 5 && (
-                                    <p className="text-center text-xs text-gray-400 mt-2">
-                                        Mostrando apenas os 5 primeiros resultados...
-                                    </p>
-                                )}
                                 {dailyAppointments.length > 0 && dailyAppointments.some(a => !filteredAppointments.some(fa => fa.id === a.id)) && (
                                     <p className="text-center text-xs text-orange-500 mt-1 font-medium italic">
                                         ⚠️ Existem outros agendamentos hoje que não correspondem à sua busca.
@@ -16103,6 +16101,7 @@ const AdminDashboard: React.FC<{
             case 'insights': return <InsightsDashboard key={dataKey} onBack={() => setActiveView('resumo')} />;
             case 'feedbacks': return <FeedbacksView key={dataKey} />;
             case 'album': return <AlbumManagementView />;
+            case 'loyalty': return <LoyaltyDashboardView onBack={() => setActiveView('resumo')} />;
             default: return <AppointmentsView 
                 key={dataKey} 
                 refreshKey={dataKey} 
@@ -16128,8 +16127,8 @@ const AdminDashboard: React.FC<{
         }
     };
 
-    const NavMenu = () => (
-        <Menu ariaLabel="Navegação administrativa">
+    const NavMenu = ({ size = 'default' }: { size?: 'default' | 'compact' }) => (
+        <Menu ariaLabel="Navegação administrativa" className={size === 'compact' ? 'gap-1' : 'gap-1.5'}>
             {menuItems.map(item => (
                 <MenuItem
                     key={item.id}
@@ -16137,6 +16136,7 @@ const AdminDashboard: React.FC<{
                     icon={item.icon}
                     label={item.label}
                     onClick={() => { setActiveView(item.id); closeMobileMenu(); }}
+                    size={size}
                 />
             ))}
         </Menu>
@@ -16201,30 +16201,30 @@ const AdminDashboard: React.FC<{
             )}
 
             {isDrawerVisible && (
-                <div className={`fixed left-0 top-0 h-full w-[75vw] max-w-[20rem] bg-white shadow-[20px_0_40px_rgba(0,0,0,0.1)] z-[9999] md:hidden p-5 rounded-r-3xl transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-pink-100 ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col overflow-y-hidden`}>
-                    <div className={`flex items-center justify-between mb-6 transition-all duration-500 delay-100 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
-                        <h3 className="text-2xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Menu</h3>
+                <div className={`fixed left-0 top-0 h-full w-[75vw] max-w-[20rem] bg-white shadow-[20px_0_40px_rgba(0,0,0,0.1)] z-[9999] md:hidden p-4 rounded-r-3xl transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-pink-100 ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col overflow-y-hidden`}>
+                    <div className={`flex items-center justify-between mb-4 transition-all duration-500 delay-100 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+                        <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Menu</h3>
                         <button onClick={closeMobileMenu} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Fechar menu">
                             <CloseIcon className="w-5 h-5 text-gray-600" />
                         </button>
                     </div>
                     <div className={`flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] transition-all duration-500 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
-                        <NavMenu />
+                        <NavMenu size="compact" />
                     </div>
-                    <div className={`mt-3 space-y-1.5 pt-4 border-t border-pink-100/50 shrink-0 transition-all duration-500 delay-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                        <div className="px-4 pb-2">
+                    <div className={`mt-2 space-y-1 pt-2 border-t border-pink-100/50 shrink-0 transition-all duration-500 delay-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                        <div className="px-4 pb-1">
                             <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
                         </div>
                         <button
                             onClick={() => { setActiveView('insights'); closeMobileMenu(); }}
-                            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'insights' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'insights' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                         >
                             <SparklesIcon className="w-6 h-6" />
                             Insights IA
                         </button>
                         <button
                             onClick={() => { setActiveView('feedbacks'); closeMobileMenu(); }}
-                            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'feedbacks' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'feedbacks' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-6 h-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
@@ -16233,14 +16233,21 @@ const AdminDashboard: React.FC<{
                         </button>
                         <button
                             onClick={() => { setActiveView('album'); closeMobileMenu(); }}
-                            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'album' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'album' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                         >
                             <PhotoIcon className="w-6 h-6" />
                             Álbum de Fotos
                         </button>
                         <button
+                            onClick={() => { setActiveView('loyalty'); closeMobileMenu(); }}
+                            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'loyalty' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                        >
+                            <GiftIcon className="w-6 h-6" />
+                            Fidelidade
+                        </button>
+                        <button
                             onClick={() => { setIsPriceManagementOpen(true); closeMobileMenu(); }}
-                            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors text-pink-700 hover:bg-pink-50"
+                            className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors text-pink-700 hover:bg-pink-50"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500">
                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -16249,7 +16256,7 @@ const AdminDashboard: React.FC<{
                         </button>
                         <button
                             onClick={() => { setIsScheduleOpen(!isScheduleOpen); closeMobileMenu(); }}
-                            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${isScheduleOpen
+                            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${isScheduleOpen
                                 ? 'text-green-700 hover:bg-green-50'
                                 : 'text-red-700 hover:bg-red-50'
                                 }`}
@@ -16257,8 +16264,8 @@ const AdminDashboard: React.FC<{
                             {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
                             {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                         </button>
-                        <div className="pt-2 mt-2 border-t border-gray-100">
-                            <button onClick={() => { onLogout(); closeMobileMenu(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-gray-900 transition-colors hover:bg-gray-50">
+                        <div className="pt-1 mt-1 border-t border-gray-100">
+                            <button onClick={() => { onLogout(); closeMobileMenu(); }} className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium text-gray-600 hover:text-gray-900 transition-colors hover:bg-gray-50">
                                 <LogoutIcon /> Sair
                             </button>
                         </div>
@@ -16300,6 +16307,13 @@ const AdminDashboard: React.FC<{
                             >
                                 <PhotoIcon className="w-6 h-6" />
                                 Álbum de Fotos
+                            </button>
+                            <button
+                                onClick={() => setActiveView('loyalty')}
+                                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'loyalty' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                <GiftIcon className="w-6 h-6" />
+                                Fidelidade
                             </button>
                             <div className="md:hidden space-y-1.5">
                                 <button

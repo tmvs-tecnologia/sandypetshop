@@ -5,7 +5,7 @@ import { twMerge } from "tailwind-merge";
 const menuRootStyles = "flex flex-col gap-1.5";
 
 const menuItemStyles = cva(
-  "w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base transition-colors",
+  "w-full flex items-center gap-4 px-4 rounded-xl text-base transition-colors",
   {
     variants: {
       active: {
@@ -16,9 +16,14 @@ const menuItemStyles = cva(
         default: "",
         subtle: "px-4 py-2 text-sm",
       },
+      size: {
+        default: "py-3",
+        compact: "py-2 gap-3",
+      },
     },
     defaultVariants: {
       tone: "default",
+      size: "default",
     },
   }
 );
@@ -54,13 +59,14 @@ export const MenuItem: React.FC<MenuItemProps> = ({
   className,
   ariaLabel,
   tone,
+  size,
 }) => {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className={twMerge(menuItemStyles({ active, tone }), className)}
+      className={twMerge(menuItemStyles({ active, tone, size }), className)}
     >
       {icon}
       <span className="truncate">{label}</span>

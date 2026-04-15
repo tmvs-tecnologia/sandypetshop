@@ -20,17 +20,25 @@ const LoyaltyModal: React.FC<LoyaltyModalProps> = ({ isOpen, onClose, petName, o
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-x-0 bottom-0 top-20 z-[10000] flex items-start justify-center p-4">
             {/* Backdrop */}
             <div 
-                className="absolute inset-0 bg-pink-900/40 backdrop-blur-sm transition-opacity"
+                className="fixed inset-x-0 bottom-0 top-20 bg-pink-900/10 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
 
             {/* Modal Content */}
-            <div className="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-xl overflow-hidden animate-[scaleIn_0.3s_ease-out]">
+            <div className="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-xl max-h-full overflow-hidden animate-[scaleIn_0.3s_ease-out] flex flex-col">
+                {/* Floating Close Button - Memorable UX */}
+                <button 
+                    onClick={onClose}
+                    className="absolute top-4 right-6 z-[60] p-2.5 bg-white/40 backdrop-blur-md hover:bg-pink-100/60 rounded-full transition-all text-pink-500 hover:text-pink-600 shadow-sm border border-white/20 active:scale-90 group"
+                >
+                    <XMarkIcon className="w-6 h-6 stroke-[2.5px] group-hover:rotate-90 transition-transform duration-300" />
+                </button>
+
                 {/* Header Admin */}
-                <div className="bg-pink-50/80 px-8 py-4 border-b border-pink-100 flex justify-between items-center relative z-20">
+                <div className="bg-pink-50/80 px-8 py-4 border-b border-pink-100 flex items-center relative z-20 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="p-1.5 bg-pink-100 rounded-lg text-pink-600">
                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -40,21 +48,15 @@ const LoyaltyModal: React.FC<LoyaltyModalProps> = ({ isOpen, onClose, petName, o
                         </span>
                         <h2 className="font-outfit font-bold text-pink-900">Prévia do Cartão</h2>
                     </div>
-                    <button 
-                        onClick={onClose}
-                        className="p-2 hover:bg-pink-100 rounded-full transition-colors text-pink-400 hover:text-pink-600"
-                    >
-                        <XMarkIcon className="w-6 h-6" />
-                    </button>
                 </div>
 
-                {/* Loyalty Card Content */}
-                <div className="max-h-[70vh] overflow-y-auto bg-rose-50/30">
+                {/* Loyalty Card Content - Scrollable area */}
+                <div className="flex-1 overflow-y-auto bg-rose-50/30 custom-scrollbar">
                     <LoyaltyCardPage petName={petName} ownerName={ownerName} />
                 </div>
 
-                {/* Footer Admin / Action Area */}
-                <div className="bg-white px-8 py-6 border-t border-pink-100">
+                {/* Footer Admin / Action Area - Fixed at bottom */}
+                <div className="bg-white px-8 py-6 border-t border-pink-100 shrink-0">
                     <p className="text-[10px] font-bold text-pink-400 uppercase tracking-widest mb-3">Link para o Cliente</p>
                     <div className="flex items-center gap-2 bg-pink-50 rounded-2xl p-1.5 border border-pink-100">
                         <input 
@@ -65,7 +67,7 @@ const LoyaltyModal: React.FC<LoyaltyModalProps> = ({ isOpen, onClose, petName, o
                         />
                         <button
                             onClick={handleCopy}
-                            className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95"
+                            className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 whitespace-nowrap shrink-0"
                         >
                             <ClipboardDocumentCheckIcon className="w-4 h-4" />
                             Copiar Link

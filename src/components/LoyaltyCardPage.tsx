@@ -9,7 +9,7 @@ interface LoyaltyCardPageProps {
 }
 
 const LoyaltyCardPage: React.FC<LoyaltyCardPageProps> = ({ petName, ownerName }) => {
-    const [completedAppointments, setCompletedAppointments] = useState(0);
+    const [stampDates, setStampDates] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalSlots, setTotalSlots] = useState(4);
 
@@ -33,21 +33,47 @@ const LoyaltyCardPage: React.FC<LoyaltyCardPageProps> = ({ petName, ownerName })
             const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
 
             try {
-                // Consultas simplificadas para contagem
+                // Buscar agendamentos com as datas
                 const [res1, res2, res3] = await Promise.all([
-                    supabase.from('appointments').select('id', { count: 'exact' })
+                    supabase.from('appointments').select('appointment_time')
                         .eq('pet_name', petName).eq('owner_name', ownerName).eq('status', 'CONCLUÍDO')
+                        .is('monthly_client_id', null)
                         .gte('appointment_time', startOfMonth).lte('appointment_time', endOfMonth),
-                    supabase.from('pet_movel_appointments').select('id', { count: 'exact' })
+                    supabase.from('pet_movel_appointments').select('appointment_time')
                         .eq('pet_name', petName).eq('owner_name', ownerName).eq('status', 'CONCLUÍDO')
+                        .is('monthly_client_id', null)
                         .gte('appointment_time', startOfMonth).lte('appointment_time', endOfMonth),
-                    supabase.from('agendamento_banhotosa').select('id', { count: 'exact' })
+                    supabase.from('agendamento_banhotosa').select('appointment_time')
                         .eq('pet_name', petName).eq('owner_name', ownerName).eq('status', 'CONCLUÍDO')
+                        .is('monthly_client_id', null)
                         .gte('appointment_time', startOfMonth).lte('appointment_time', endOfMonth)
                 ]);
 
-                const total = (res1.count || 0) + (res2.count || 0) + (res3.count || 0);
-                setCompletedAppointments(total);
+                // Buscar mensalistas para filtragem robusta
+                const { data: monthlyClients } = await supabase
+                    .from('monthly_clients')
+                    .select('pet_name, owner_name')
+                    .eq('is_active', true);
+
+                const monthlyKeys = new Set(
+                    (monthlyClients || []).map(mc => 
+                        `${mc.pet_name.trim().toLowerCase()}|${mc.owner_name.trim().toLowerCase()}`
+                    )
+                );
+
+                const currentKey = `${petName.trim().toLowerCase()}|${ownerName.trim().toLowerCase()}`;
+                
+                if (monthlyKeys.has(currentKey)) {
+                    setStampDates([]);
+                } else {
+                    const allDates = [
+                        ...(res1.data || []).map(d => d.appointment_time),
+                        ...(res2.data || []).map(d => d.appointment_time),
+                        ...(res3.data || []).map(d => d.appointment_time)
+                    ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+                    setStampDates(allDates);
+                }
             } catch (err) {
                 console.error('Erro ao buscar dados de fidelidade:', err);
             } finally {
@@ -64,7 +90,7 @@ const LoyaltyCardPage: React.FC<LoyaltyCardPageProps> = ({ petName, ownerName })
         </div>
     );
 
-    const isComplete = completedAppointments >= totalSlots;
+    const isComplete = stampDates.length >= totalSlots;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-pink-50 flex items-center justify-center p-4">
@@ -90,21 +116,32 @@ const LoyaltyCardPage: React.FC<LoyaltyCardPageProps> = ({ petName, ownerName })
                         </div>
 
                         {/* Stamps Grid */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
                             {Array.from({ length: Math.max(4, totalSlots) }).map((_, i) => (
-                                <div key={i} className={`aspect-square rounded-2xl border-2 flex items-center justify-center transition-all duration-500 overflow-hidden ${i < completedAppointments ? 'bg-white border-pink-400 shadow-sm scale-100' : 'bg-pink-100/20 border-pink-100 border-dotted scale-95'}`}>
-                                    {i < completedAppointments ? (
-                                        <div className="animate-[popIn_0.5s_ease-out]">
-                                            <svg viewBox="0 0 24 24" className="w-10 h-10 fill-pink-500">
-                                                <path d="M12,2C10.89,2 10,2.89 10,4C10,5.11 10.89,6 12,6C13.11,6 14,5.11 14,4C14,2.89 13.11,2 12,2M12,8C10.89,8 10,8.89 10,10C10,11.11 10.89,12 12,12C13.11,12 14,11.11 14,10C14,8.89 13.11,8 12,8M18,14C16.89,14 16,14.89 16,16C16,17.11 16.89,18 18,18C19.11,18 20,17.11 20,16C20,14.89 19.11,14 18,14M6,14C4.89,14 4,14.89 4,16C4,17.11 4.89,18 6,18C7.11,18 8,17.11 8,16C8,14.89 7.11,14 6,14M12,14C10.89,14 10,14.89 10,16C10,17.11 10.89,18 12,18C13.11,18 14,17.11 14,16C14,14.89 13.11,14 12,14Z" />
-                                            </svg>
-                                        </div>
-                                    ) : (
-                                        <div className="text-pink-200/50 opacity-20">
-                                            <svg viewBox="0 0 24 24" className="w-8 h-8 fill-current">
-                                                <path d="M12,2C10.89,2 10,2.89 10,4C10,5.11 10.89,6 12,6C13.11,6 14,5.11 14,4C14,2.89 13.11,2 12,2M12,8C10.89,8 10,8.89 10,10C10,11.11 10.89,12 12,12C13.11,12 14,11.11 14,10C14,8.89 13.11,8 12,8M18,14C16.89,14 16,14.89 16,16C16,17.11 16.89,18 18,18C19.11,18 20,17.11 20,16C20,14.89 19.11,14 18,14M6,14C4.89,14 4,14.89 4,16C4,17.11 4.89,18 6,18C7.11,18 8,17.11 8,16C8,14.89 7.11,14 6,14M12,14C10.89,14 10,14.89 10,16C10,17.11 10.89,18 12,18C13.11,18 14,17.11 14,16C14,14.89 13.11,14 12,14Z" />
-                                            </svg>
-                                        </div>
+                                <div key={i} className="flex flex-col items-center gap-2">
+                                    <div className={`aspect-square w-full rounded-2xl border-2 flex items-center justify-center transition-all duration-500 overflow-hidden ${i < stampDates.length ? 'bg-white border-pink-400 shadow-sm scale-100' : 'bg-pink-100/20 border-pink-100 border-dotted scale-95'}`}>
+                                        {i < stampDates.length ? (
+                                            <div className="animate-[popIn_0.5s_ease-out] flex items-center justify-center w-full h-full p-2">
+                                                <img
+                                                    src="https://i.imgur.com/QSe4m8g.png"
+                                                    alt="Carimbo"
+                                                    className="w-14 h-14 object-contain drop-shadow-sm"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="opacity-10 grayscale flex items-center justify-center w-full h-full p-2">
+                                                <img
+                                                    src="https://i.imgur.com/QSe4m8g.png"
+                                                    alt="Carimbo Vazio"
+                                                    className="w-12 h-12 object-contain"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                    {i < stampDates.length && (
+                                        <span className="text-[10px] font-black text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full border border-pink-100 animate-fadeInUp">
+                                            {new Date(stampDates[i]).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                        </span>
                                     )}
                                 </div>
                             ))}
@@ -131,10 +168,10 @@ const LoyaltyCardPage: React.FC<LoyaltyCardPageProps> = ({ petName, ownerName })
                             <div className="w-full bg-pink-100 h-2 rounded-full mt-4 overflow-hidden shadow-inner">
                                 <div 
                                     className="bg-gradient-to-r from-pink-400 to-pink-600 h-full transition-all duration-1000 ease-out"
-                                    style={{ width: `${(completedAppointments / totalSlots) * 100}%` }}
+                                    style={{ width: `${(stampDates.length / totalSlots) * 100}%` }}
                                 ></div>
                             </div>
-                            <p className="text-[10px] text-pink-400 font-bold mt-1 uppercase">{completedAppointments} de {totalSlots} carimbos</p>
+                            <p className="text-[10px] text-pink-400 font-bold mt-1 uppercase">{stampDates.length} de {totalSlots} carimbos</p>
                         </div>
                     )}
 
