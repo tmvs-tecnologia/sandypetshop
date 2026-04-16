@@ -1514,7 +1514,7 @@ const ChartBarIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http:
 const FunnelIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}><path d="M3 4.5A1.5 1.5 0 014.5 3h15a1.5 1.5 0 011.2 2.4l-6.3 8.4v4.2a1.5 1.5 0 01-.9 1.37l-3 1.5A1.5 1.5 0 018 19.5v-5.7L1.3 5.4A1.5 1.5 0 013 4.5z" /></svg>;
 const BreedIcon = () => <SafeImage src="https://static.thenounproject.com/png/pet-icon-7326432-512.png" alt="Breed Icon" className="h-7 w-7 opacity-60" />;
 const AddressIcon = () => <SafeImage src="https://static.thenounproject.com/png/location-icon-7979305-512.png" alt="Address Icon" className="h-7 w-7 opacity-60" />;
-const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V5h10a1 1 0 100-2H3zm12.293 4.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L16.586 13H9a1 1 0 110-2h7.586l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
+const LogoutIcon = () => <SafeImage src="https://cdn-icons-png.flaticon.com/512/15604/15604119.png" alt="Sair" className="h-6 w-6 object-contain inline-block" />;
 const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>;
 const ClockIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 10.586V6z" clipRule="evenodd" /></svg>;
 const CameraAddIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -16219,39 +16219,35 @@ const AdminDashboard: React.FC<{
                                 onClick={() => { setActiveView('insights'); closeMobileMenu(); }}
                                 className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'insights' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                                <SparklesIcon className="w-6 h-6" />
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/16921/16921758.png" alt="Insights" className="w-6 h-6 object-contain" />
                                 Insights IA
                             </button>
                             <button
                                 onClick={() => { setActiveView('feedbacks'); closeMobileMenu(); }}
                                 className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'feedbacks' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-6 h-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
-                                </svg>
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/9715/9715468.png" alt="Avaliações" className="w-6 h-6 object-contain" />
                                 Avaliações
                             </button>
                             <button
                                 onClick={() => { setActiveView('album'); closeMobileMenu(); }}
                                 className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'album' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                                <PhotoIcon className="w-6 h-6" />
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/1829/1829646.png" alt="Álbum" className="w-6 h-6 object-contain" />
                                 Álbum de Fotos
                             </button>
                             <button
                                 onClick={() => { setActiveView('loyalty'); closeMobileMenu(); }}
                                 className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'loyalty' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                                <GiftIcon className="w-6 h-6" />
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/6021/6021962.png" alt="Fidelidade" className="w-6 h-6 object-contain" />
                                 Fidelidade
                             </button>
                             <button
                                 onClick={() => { setIsPriceManagementOpen(true); closeMobileMenu(); }}
                                 className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors text-pink-700 hover:bg-pink-50"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500">
-                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg>
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/8070/8070505.png" alt="Preços" className="w-6 h-6 object-contain" />
                                 Definir Preços
                             </button>
                             <button
@@ -16261,12 +16257,12 @@ const AdminDashboard: React.FC<{
                                     : 'text-red-700 hover:bg-red-50'
                                     }`}
                             >
-                                {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/6360/6360303.png" alt="Agenda" className="w-6 h-6 object-contain" />
                                 {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                             </button>
-                            <div className="pt-1 mt-1 border-t border-gray-100">
+                            <div className="pt-4 mt-14 border-t border-gray-100">
                                 <button onClick={() => { onLogout(); closeMobileMenu(); }} className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium text-gray-600 hover:text-gray-900 transition-colors hover:bg-gray-50">
-                                    <LogoutIcon /> Sair
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/15604/15604119.png" alt="Sair" className="h-6 w-6 object-contain inline-block" /> Sair
                                 </button>
                             </div>
                         </div>
@@ -16290,30 +16286,28 @@ const AdminDashboard: React.FC<{
                                 onClick={() => setActiveView('insights')}
                                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'insights' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                                <SparklesIcon className="w-6 h-6" />
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/16921/16921758.png" alt="Insights" className="w-6 h-6 object-contain" />
                                 Insights IA
                             </button>
                             <button
                                 onClick={() => setActiveView('feedbacks')}
                                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'feedbacks' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-6 h-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
-                                </svg>
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/9715/9715468.png" alt="Avaliações" className="w-6 h-6 object-contain" />
                                 Avaliações
                             </button>
                             <button
                                 onClick={() => setActiveView('album')}
                                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'album' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                                <PhotoIcon className="w-6 h-6" />
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/1829/1829646.png" alt="Álbum" className="w-6 h-6 object-contain" />
                                 Álbum de Fotos
                             </button>
                             <button
                                 onClick={() => setActiveView('loyalty')}
                                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'loyalty' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                                <GiftIcon className="w-6 h-6" />
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/6021/6021962.png" alt="Fidelidade" className="w-6 h-6 object-contain" />
                                 Fidelidade
                             </button>
                             <div className="md:hidden space-y-1.5">
@@ -16321,9 +16315,7 @@ const AdminDashboard: React.FC<{
                                     onClick={() => setIsPriceManagementOpen(true)}
                                 className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors text-pink-700 hover:bg-pink-50"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500">
-                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg>
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/8070/8070505.png" alt="Preços" className="w-6 h-6 object-contain" />
                                 Definir Preços
                             </button>
                             <button
@@ -16333,12 +16325,12 @@ const AdminDashboard: React.FC<{
                                     : 'text-red-700 hover:bg-red-50'
                                     }`}
                             >
-                                {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/6360/6360303.png" alt="Agenda" className="w-6 h-6 object-contain" />
                                 {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                             </button>
-                            <div className="pt-2 mt-2 border-t border-gray-100">
+                            <div className="pt-4 mt-14 border-t border-gray-100">
                                 <button onClick={onLogout} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-gray-900 transition-colors hover:bg-gray-50">
-                                    <LogoutIcon /> Sair
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/15604/15604119.png" alt="Sair" className="h-6 w-6 object-contain inline-block" /> Sair
                                 </button>
                             </div>
                             </div>
