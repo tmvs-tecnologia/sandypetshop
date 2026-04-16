@@ -341,18 +341,20 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
                     {/* Secondary Actions Group (Left) */}
                     <div className="flex items-center gap-5 sm:gap-6">
-                        {/* Loyalty Link */}
-                        <button
-                            onClick={() => onShowLoyalty?.(pet_name, owner_name)}
-                            className="p-1 rounded-full hover:bg-pink-50 transition-colors"
-                            title="Ver Cartão de Fidelidade"
-                        >
-                            <img 
-                                src="https://cdn-icons-png.flaticon.com/512/6021/6021962.png" 
-                                alt="Fidelidade"
-                                className="w-5 h-5 object-contain"
-                            />
-                        </button>
+                        {/* Loyalty Link - Only for non-monthly clients */}
+                        {!monthly_client_id && (
+                            <button
+                                onClick={() => onShowLoyalty?.(pet_name, owner_name)}
+                                className="p-1 rounded-full hover:bg-pink-50 transition-colors"
+                                title="Ver Cartão de Fidelidade"
+                            >
+                                <img 
+                                    src="https://cdn-icons-png.flaticon.com/512/6021/6021962.png" 
+                                    alt="Fidelidade"
+                                    className="w-5 h-5 object-contain"
+                                />
+                            </button>
+                        )}
 
                         <button
                             onClick={(e) => onOpenActionMenu(appointment, e)}
