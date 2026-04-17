@@ -9747,6 +9747,96 @@ const HotelRegistrationForm: React.FC<{
     const [hasAllergies, setHasAllergies] = useState(false);
     const [showContractModal, setShowContractModal] = useState(false);
     const [showCheckinWarning, setShowCheckinWarning] = useState(false);
+    const [lastSearchedPhone, setLastSearchedPhone] = useState<string>('');
+
+    // --- AUTO-FILL LOGIC ---
+    useEffect(() => {
+        const rawPhone = (formData.tutor_phone || '').replace(/\D/g, '');
+        // Dispara a busca quando o telefone tem o tamanho de um celular brasileiro (11 dígitos)
+        // e não foi o último telefone pesquisado para evitar requisições duplicadas.
+        if (rawPhone.length === 11 && rawPhone !== lastSearchedPhone) {
+            const fetchPreviousData = async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('hotel_registrations')
+                        .select('*')
+                        .eq('tutor_phone', formData.tutor_phone)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (data && !error) {
+                        setFormData(prev => ({
+                            ...prev,
+                            // Dados do Pet
+                            pet_name: data.pet_name || prev.pet_name,
+                            pet_sex: data.pet_sex || prev.pet_sex,
+                            pet_breed: data.pet_breed || prev.pet_breed,
+                            is_neutered: data.is_neutered !== null ? data.is_neutered : prev.is_neutered,
+                            pet_age: data.pet_age || prev.pet_age,
+                            pet_weight: data.pet_weight || prev.pet_weight,
+                            pet_photo_url: data.pet_photo_url || prev.pet_photo_url,
+                            last_vaccination_date: data.last_vaccination_date || prev.last_vaccination_date,
+                            
+                            // Dados do Tutor
+                            tutor_name: data.tutor_name || prev.tutor_name,
+                            tutor_rg: data.tutor_rg || prev.tutor_rg,
+                            tutor_address: data.tutor_address || prev.tutor_address,
+                            tutor_email: data.tutor_email || prev.tutor_email,
+                            tutor_social_media: data.tutor_social_media || prev.tutor_social_media,
+                            
+                            // Emergência e Veterinário
+                            veterinarian: data.veterinarian || prev.veterinarian,
+                            vet_phone: data.vet_phone || prev.vet_phone,
+                            emergency_contact_name: data.emergency_contact_name || prev.emergency_contact_name,
+                            emergency_contact_phone: data.emergency_contact_phone || prev.emergency_contact_phone,
+                            emergency_contact_relation: data.emergency_contact_relation || prev.emergency_contact_relation,
+                            
+                            // Documentação e Autorizações
+                            has_rg_document: data.has_rg_document !== null ? data.has_rg_document : prev.has_rg_document,
+                            has_residence_proof: data.has_residence_proof !== null ? data.has_residence_proof : prev.has_residence_proof,
+                            has_vaccination_card: data.has_vaccination_card !== null ? data.has_vaccination_card : prev.has_vaccination_card,
+                            has_vet_certificate: data.has_vet_certificate !== null ? data.has_vet_certificate : prev.has_vet_certificate,
+                            has_flea_tick_remedy: data.has_flea_tick_remedy !== null ? data.has_flea_tick_remedy : prev.has_flea_tick_remedy,
+                            flea_tick_remedy_date: data.flea_tick_remedy_date || prev.flea_tick_remedy_date,
+                            photo_authorization: data.photo_authorization !== null ? data.photo_authorization : prev.photo_authorization,
+                            retrieve_at_checkout: data.retrieve_at_checkout !== null ? data.retrieve_at_checkout : prev.retrieve_at_checkout,
+                            
+                            // Saúde e Comportamento
+                            preexisting_disease: data.preexisting_disease || prev.preexisting_disease,
+                            allergies: data.allergies || prev.allergies,
+                            behavior: data.behavior || prev.behavior,
+                            fears_traumas: data.fears_traumas || prev.fears_traumas,
+                            wounds_marks: data.wounds_marks || prev.wounds_marks,
+                            
+                            // Alimentação
+                            food_brand: data.food_brand || prev.food_brand,
+                            food_quantity: data.food_quantity || prev.food_quantity,
+                            feeding_frequency: data.feeding_frequency || prev.feeding_frequency,
+                            food_observations: data.food_observations || prev.food_observations,
+                            accepts_treats: data.accepts_treats || prev.accepts_treats,
+                            special_food_care: data.special_food_care || prev.special_food_care,
+                        }));
+
+                        // Atualiza os estados booleanos que controlam a visibilidade dos textareas
+                        setHasPreexistingDisease(!!data.preexisting_disease);
+                        setHasBehavior(!!data.behavior);
+                        setHasFearsTraumas(!!data.fears_traumas);
+                        setHasWoundsMarks(!!data.wounds_marks);
+                        setHasAllergies(!!data.allergies);
+                        setNeedsSpecialFoodCare(!!data.special_food_care);
+                    }
+                    setLastSearchedPhone(rawPhone);
+                } catch (err) {
+                    console.error('Erro no preenchimento automático do Hotel Pet:', err);
+                }
+            };
+            fetchPreviousData();
+        } else if (rawPhone.length < 10 && lastSearchedPhone !== '') {
+            // Limpa o registro do último telefone se o campo for limpo significativamente
+            setLastSearchedPhone('');
+        }
+    }, [formData.tutor_phone, lastSearchedPhone]);
 
     const holidaySet = new Set(['12-23', '12-24', '12-25', '12-30', '12-31', '1-1']);
     function addDays(base: Date, days: number) {

@@ -8,7 +8,9 @@ import {
     ArrowTrendingUpIcon,
     CheckBadgeIcon,
     UserIcon,
-    CalendarIcon
+    CalendarIcon,
+    PaperAirplaneIcon,
+    CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { Card, CardContent } from './ui/card';
 import LoyaltyModal from './LoyaltyModal';
@@ -63,6 +65,97 @@ const LoyaltyDashboardView: React.FC<LoyaltyDashboardViewProps> = ({ onBack }) =
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedPet, setSelectedPet] = useState<LoyaltyPet | null>(null);
     const [isLoyaltyModalOpen, setIsLoyaltyModalOpen] = useState(false);
+    const [isSendingCards, setIsSendingCards] = useState(false);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [sentCardsCount, setSentCardsCount] = useState(0);
+
+    const handleSendAllCards = async () => {
+        if (isSendingCards) return;
+        
+        setIsSendingCards(true);
+        const year = selectedDate.getFullYear();
+        const month = selectedDate.getMonth();
+        
+        const startOfMonth = new Date(year, month, 1, 0, 0, 0).toISOString();
+        const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+
+        try {
+            // Buscar telefones de todos os mensalistas para cruzamento
+            const { data: monthlyData } = await supabase.from('monthly_clients').select('whatsapp');
+            const monthlyPhones = new Set((monthlyData || []).map(m => m.whatsapp.trim()));
+
+            // Buscar de todas as 3 tabelas (apenas agendamentos com status 'AGENDADO')
+            const [res1, res2, res3] = await Promise.all([
+                supabase.from('appointments').select('pet_name, owner_name, whatsapp, appointment_time, monthly_client_id, status')
+                    .is('monthly_client_id', null)
+                    .eq('status', 'AGENDADO')
+                    .gte('appointment_time', startOfMonth).lte('appointment_time', endOfMonth),
+                supabase.from('pet_movel_appointments').select('pet_name, owner_name, whatsapp, appointment_time, monthly_client_id, status')
+                    .is('monthly_client_id', null)
+                    .eq('status', 'AGENDADO')
+                    .gte('appointment_time', startOfMonth).lte('appointment_time', endOfMonth),
+                supabase.from('agendamento_banhotosa').select('pet_name, owner_name, whatsapp, appointment_time, monthly_client_id, status')
+                    .is('monthly_client_id', null)
+                    .eq('status', 'AGENDADO')
+                    .gte('appointment_time', startOfMonth).lte('appointment_time', endOfMonth)
+            ]);
+
+            // Combinar e filtrar por telefone (remover quem já é mensalista mas agendou avulso)
+            const allAppts = [
+                ...(res1.data || []),
+                ...(res2.data || []),
+                ...(res3.data || [])
+            ].filter(app => !monthlyPhones.has(app.whatsapp.trim()));
+
+            // Consolidar por Pet + Tutor para não enviar duplicado
+            const uniqueClientsMap = new Map();
+            
+            allAppts.forEach(app => {
+                const key = `${app.pet_name.trim().toLowerCase()}|${app.owner_name.trim().toLowerCase()}`;
+                if (!uniqueClientsMap.has(key)) {
+                    uniqueClientsMap.set(key, {
+                        pet: app.pet_name,
+                        tutor: app.owner_name,
+                        whatsapp: app.whatsapp,
+                        link_fidelidade: `${window.location.origin}/?fidelidade=true&pet=${encodeURIComponent(app.pet_name)}&owner=${encodeURIComponent(app.owner_name)}`
+                    });
+                }
+            });
+
+            const clientes = Array.from(uniqueClientsMap.values());
+
+            if (clientes.length === 0) {
+                alert('Nenhum cliente avulso com status "AGENDADO" para este mês.');
+                setIsSendingCards(false);
+                return;
+            }
+
+            // Disparar Webhook em UM ÚNICO disparo com todos os dados
+            // NOTA: Para que os dados cheguem como "variáveis" no n8n, usamos application/json.
+            // Isso exige que o CORS esteja habilitado no nó de Webhook do seu n8n.
+            const payload = clientes.map(c => ({
+                mes: currentMonthName,
+                ano: year,
+                ...c
+            }));
+
+            const response = await fetch('https://n8n.intelektus.tech/webhook/fidelidade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error('Erro ao enviar para o webhook. Verifique as configurações de CORS no n8n.');
+
+            setSentCardsCount(clientes.length);
+            setIsSuccessModalOpen(true);
+        } catch (error) {
+            console.error('Erro ao enviar cartões:', error);
+            alert('Erro ao enviar cartões. Verifique a conexão e tente novamente.');
+        } finally {
+            setIsSendingCards(false);
+        }
+    };
 
     const handleOpenLoyalty = (pet: LoyaltyPet) => {
         setSelectedPet(pet);
@@ -242,16 +335,8 @@ const LoyaltyDashboardView: React.FC<LoyaltyDashboardViewProps> = ({ onBack }) =
         <div className="p-4 md:p-8 max-w-7xl mx-auto animate-fadeIn">
             {/* Header */}
             <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 mb-12">
-                {/* Left Empty (for centering title on desktop) */}
-                <div className="hidden md:block"></div>
-
-                {/* Center Title */}
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold text-pink-600 capitalize" style={{ fontFamily: 'Lobster Two, cursive' }}>Fidelidade</h1>
-                </div>
-                
-                {/* Right Navigation */}
-                <div className="flex justify-center md:justify-end">
+                {/* Left Navigation/Actions */}
+                <div className="flex flex-row items-center justify-center md:justify-start gap-2 sm:gap-3 flex-wrap order-2 md:order-1">
                     <div className="flex items-center gap-1 bg-pink-50 px-3 py-1.5 rounded-2xl border border-pink-100 shadow-sm backdrop-blur-sm">
                         <button 
                             onClick={handlePrevMonth}
@@ -269,8 +354,109 @@ const LoyaltyDashboardView: React.FC<LoyaltyDashboardViewProps> = ({ onBack }) =
                             <ChevronRightIcon className="w-4 h-4 stroke-[3px]" />
                         </button>
                     </div>
+
+                    <button
+                        onClick={handleSendAllCards}
+                        disabled={isSendingCards}
+                        className="flex items-center gap-2 bg-pink-600 hover:bg-pink-700 disabled:bg-pink-300 text-white px-3 sm:px-4 py-2 rounded-2xl shadow-md hover:shadow-lg active:scale-95 transition-all text-[10px] sm:text-xs font-bold uppercase tracking-wider group whitespace-nowrap"
+                    >
+                        {isSendingCards ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <PaperAirplaneIcon className="w-4 h-4 -rotate-45 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                        )}
+                        {isSendingCards ? 'Enviando...' : 'Enviar Cartões'}
+                    </button>
                 </div>
+
+                {/* Center Title */}
+                <div className="text-center order-1 md:order-2">
+                    <h1 className="text-4xl font-bold text-pink-600 capitalize" style={{ fontFamily: 'Lobster Two, cursive' }}>Fidelidade</h1>
+                </div>
+                
+                {/* Right Space */}
+                <div className="hidden md:block order-3"></div>
             </div>
+
+            {/* Success Confirmation Modal */}
+            {isSuccessModalOpen && (
+                <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div 
+                        className="absolute inset-0 bg-pink-900/10 backdrop-blur-xl animate-fadeIn"
+                        onClick={() => setIsSuccessModalOpen(false)}
+                    />
+                    
+                    {/* Modal Card */}
+                    <div className="relative bg-white/90 backdrop-blur-md rounded-[3rem] shadow-2xl p-8 md:p-12 w-full max-w-sm text-center border border-white/50 animate-[modalScaleIn_0.5s_cubic-bezier(0.16,1,0.3,1)]">
+                        {/* Icon Animation Container */}
+                        <div className="relative h-32 w-32 mx-auto mb-8 flex items-center justify-center">
+                            {/* Paper Airplane Flying Out */}
+                            <div className="absolute animate-[planeFlight_0.8s_ease-in-out_forwards]">
+                                <PaperAirplaneIcon className="w-12 h-12 text-pink-400 -rotate-45" />
+                            </div>
+                            
+                            {/* Success Circle */}
+                            <div className="absolute inset-0 bg-pink-50 rounded-full animate-[pingScale_1s_ease-out_0.6s_forwards] scale-0 blur-xl opacity-50" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-rose-50 rounded-full scale-0 animate-[scalePop_0.5s_cubic-bezier(0.16,1,0.3,1)_0.7s_forwards]" />
+                            
+                            {/* Check Icon */}
+                            <CheckCircleIcon className="relative z-10 w-20 h-20 text-pink-600 scale-0 animate-[scalePop_0.6s_cubic-bezier(0.34,1.56,0.64,1)_0.8s_forwards]" />
+                        </div>
+
+                        {/* Text */}
+                        <div className="space-y-2 mb-10 overflow-hidden">
+                            <h3 className="text-4xl font-bold text-pink-900 font-outfit animate-[slideUp_0.5s_ease-out_1s_both]">
+                                {sentCardsCount}
+                            </h3>
+                            <p className="text-pink-500 font-bold uppercase tracking-[0.2em] text-[10px] animate-[slideUp_0.5s_ease-out_1.1s_both]">
+                                Cartões Enviados
+                            </p>
+                            <div className="h-px w-8 bg-pink-100 mx-auto mt-4 animate-[expandLine_0.8s_ease-out_1.2s_both]" />
+                        </div>
+
+                        {/* CTA */}
+                        <button
+                            onClick={() => setIsSuccessModalOpen(false)}
+                            className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-pink-200 active:scale-95 transition-all text-xs uppercase tracking-widest animate-[fadeIn_0.5s_ease-out_1.4s_both]"
+                        >
+                            Continuar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes modalScaleIn {
+                    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
+                }
+                @keyframes planeFlight {
+                    0% { transform: scale(1) translate(0, 0); opacity: 1; }
+                    40% { transform: scale(1.2) translate(10px, -10px); opacity: 1; }
+                    100% { transform: scale(0.5) translate(100px, -100px); opacity: 0; }
+                }
+                @keyframes scalePop {
+                    from { transform: scale(0); }
+                    to { transform: scale(1); }
+                }
+                @keyframes pingScale {
+                    from { transform: scale(0); opacity: 0.5; }
+                    to { transform: scale(1.5); opacity: 0; }
+                }
+                @keyframes slideUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes expandLine {
+                    from { width: 0; }
+                    to { width: 32px; }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+            `}</style>
 
             {/* Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
