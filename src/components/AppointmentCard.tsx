@@ -398,7 +398,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                                 <button
                                     onClick={() => onEmitNFe(appointment)}
                                     disabled={isEmittingNFe}
-                                    className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-sm whitespace-nowrap ${
+                                    className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs transition-all duration-300 shadow-sm whitespace-nowrap ${
                                         isEmittingNFe 
                                         ? 'bg-pink-100 text-pink-400 cursor-not-allowed border border-pink-200' 
                                         : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700 hover:shadow-md active:scale-95 border border-pink-400/20'
