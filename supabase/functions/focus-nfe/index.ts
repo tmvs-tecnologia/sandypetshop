@@ -35,9 +35,11 @@ serve(async (req) => {
         'agendamento_banhotosa',
         'monthly_clients',
         'hotel_registrations',
-        'daycare_enrollments'
+        'daycare_enrollments',
+        'clients'
     ]
 
+    const searchErrors: string[] = []
     console.log(`[FocusNFe] Buscando ${reference_id} em ${tablesToSearch.join(', ')}...`)
 
     for (const table of tablesToSearch) {
@@ -54,15 +56,15 @@ serve(async (req) => {
                 break
             }
             if (tableError) {
-                console.warn(`[FocusNFe] Aviso ao buscar na tabela ${table}:`, tableError.message)
+                searchErrors.push(`${table}: ${tableError.message}`)
             }
         } catch (err) {
-            console.error(`[FocusNFe] Erro catastrófico na tabela ${table}:`, err.message)
+            searchErrors.push(`${table} (catch): ${err.message}`)
         }
     }
 
     if (!data) {
-        throw new Error(`Registro ${reference_id} não encontrado em nenhuma das tabelas de serviço.`)
+        throw new Error(`Registro ${reference_id} não encontrado. Erros por tabela: ${searchErrors.join(' | ')}`)
     }
 
     step = 'preparando dados do cliente'
@@ -85,7 +87,7 @@ serve(async (req) => {
       ? 'https://api.focusnfe.com.br/v2/nfsen' 
       : 'https://homologacao.focusnfe.com.br/v2/nfsen'
     
-    const focusRef = `${reference_type}-${reference_id}-${Date.now()}`
+    const focusRef = `${reference_type || 'service'}-${reference_id}-${Date.now()}`
     
     const payload = {
         data_emissao: new Date().toISOString(),

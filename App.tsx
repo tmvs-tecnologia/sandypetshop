@@ -16041,6 +16041,7 @@ const AdminDashboard: React.FC<{
     const executeEmitNFe = async () => {
         if (!fiscalModalData || emittingNFeId) return;
         const { item } = fiscalModalData;
+        console.log('Emitting NFe for item:', item);
         
         const isMonthly = 'recurrence_type' in item;
         const reference_type = isMonthly ? 'monthly_client' : 'appointment';
@@ -16061,12 +16062,13 @@ const AdminDashboard: React.FC<{
             if (data.success) {
                 alert('Nota Fiscal enviada com sucesso! Você poderá consultar o status em instantes no painel de Notas Fiscais.');
             } else {
-                const errorMsg = data.error || data.focus_result?.mensagem || 'Erro desconhecido';
-                alert('Erro ao enviar Nota Fiscal: ' + errorMsg);
+                const errorMsg = data.error || data.focus_result?.mensagem || 'Erro interno da função';
+                alert('Erro na função: ' + errorMsg);
             }
         } catch (error: any) {
             console.error('Erro na emissão da NFe:', error);
-            alert('Erro ao processar a emissão: ' + (error.message || 'Erro de conexão com o servidor'));
+            const detail = error.context?.statusText || error.message || 'Erro de rede';
+            alert(`Falha na comunicação: ${detail} (Verifique se o deploy foi concluído e as secrets foram configuradas)`);
         } finally {
             setEmittingNFeId(null);
             setFiscalModalData(null);
