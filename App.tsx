@@ -8585,7 +8585,8 @@ const DaycareEnrollmentCard: React.FC<{
     onRemoveChecklist?: (enrollment: DaycareRegistration, docIndex: number) => void;
     isUploadingChecklist?: boolean;
     onFiscalNote?: (enrollment: DaycareRegistration) => void;
-}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare, onUploadChecklist, onRemoveChecklist, isUploadingChecklist, onFiscalNote }) => {
+    isEmittingNFe?: boolean;
+}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare, onUploadChecklist, onRemoveChecklist, isUploadingChecklist, onFiscalNote, isEmittingNFe }) => {
     const { created_at, pet_name, tutor_name, contracted_plan, status } = enrollment;
     const formatTimeText = (time: string | null | undefined): string => {
         if (!time) return 'Não definido';
@@ -8843,11 +8844,28 @@ const DaycareEnrollmentCard: React.FC<{
                     <div className="mb-4">
                         <button
                             onClick={(e) => { e.stopPropagation(); onFiscalNote(enrollment); }}
-                            className="w-full bg-pink-50 text-pink-700 py-2 px-3 rounded-lg hover:bg-pink-100 transition-colors flex items-center justify-center gap-2 text-sm font-bold border border-pink-100 shadow-sm group-hover:shadow-pink-100"
+                            disabled={isEmittingNFe}
+                            className={`w-full py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-bold border shadow-sm ${
+                                isEmittingNFe 
+                                ? 'bg-pink-100 text-pink-400 border-pink-200 cursor-not-allowed' 
+                                : 'bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-100 group-hover:shadow-pink-100'
+                            }`}
                             title="Emitir Nota Fiscal"
                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" /></svg>
-                            <span>Emitir Nota Fiscal</span>
+                            {isEmittingNFe ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Gerando...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" /></svg>
+                                    <span>Emitir Nota Fiscal</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 )}
@@ -8918,7 +8936,7 @@ const DaycareEnrollmentCard: React.FC<{
                         className="w-full bg-indigo-50 text-indigo-700 py-1.5 px-2 rounded-md hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none"
                         title="Adicionar Serviços Extras"
                     >
-                        <SparklesIcon className="w-4 h-4" />
+                        <PlusOutlineIcon className="w-4 h-4" />
                         <span className="hidden sm:inline">Extras</span>
                     </button>
                     {(sectionId === 'approved' || sectionId === 'inDaycare') && (
@@ -14913,7 +14931,7 @@ const EditHotelRegistrationModal: React.FC<{
     );
 };
 
-const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: DaycareRegistration) => void }> = ({ refreshKey, onFiscalNote }) => {
+const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: DaycareRegistration) => void; emittingNFeId?: string | null }> = ({ refreshKey, onFiscalNote, emittingNFeId }) => {
     const [enrollments, setEnrollments] = useState<DaycareRegistration[]>([]);
     const [petsInDaycareNow, setPetsInDaycareNow] = useState<DaycareRegistration[]>([]);
     const [loading, setLoading] = useState(true);
@@ -15368,6 +15386,7 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
                         onRemoveChecklist={handleDaycareChecklistRemove}
                         isUploadingChecklist={!!isUploadingChecklistMap[enrollment.id!]}
                         onFiscalNote={onFiscalNote}
+                        isEmittingNFe={emittingNFeId === enrollment.id}
                     />
                 ))}
             </div>
@@ -16419,7 +16438,7 @@ const AdminDashboard: React.FC<{
                 onCloseAddModal={handleCloseAddModal}
                 onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId}
             />;
-            case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} onFiscalNote={handleEmitNFe} />;
+            case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} onFiscalNote={handleEmitNFe} emittingNFeId={emittingNFeId} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView 
