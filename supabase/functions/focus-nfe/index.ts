@@ -29,35 +29,50 @@ serve(async (req) => {
     let data = null
     step = 'buscando dados no banco'
 
-    if (reference_type === 'appointment') {
-        const { data: appt } = await supabase.from('appointments').select('*').eq('id', reference_id).single()
-        data = appt
-        if (!data) {
-            const { data: pma } = await supabase.from('pet_movel_appointments').select('*').eq('id', reference_id).single()
-            data = pma
+    const tablesToSearch = [
+        'appointments',
+        'pet_movel_appointments',
+        'agendamento_banhotosa',
+        'monthly_clients',
+        'hotel_registrations',
+        'daycare_enrollments'
+    ]
+
+    console.log(`[FocusNFe] Buscando ${reference_id} em ${tablesToSearch.join(', ')}...`)
+
+    for (const table of tablesToSearch) {
+        try {
+            const { data: record, error: tableError } = await supabase
+                .from(table)
+                .select('*')
+                .eq('id', reference_id)
+                .maybeSingle()
+            
+            if (record) {
+                console.log(`[FocusNFe] Registro encontrado na tabela: ${table}`)
+                data = { ...record, _source_table: table }
+                break
+            }
+            if (tableError) {
+                console.warn(`[FocusNFe] Aviso ao buscar na tabela ${table}:`, tableError.message)
+            }
+        } catch (err) {
+            console.error(`[FocusNFe] Erro catastrófico na tabela ${table}:`, err.message)
         }
-        if (!data) {
-            const { data: abt } = await supabase.from('agendamento_banhotosa').select('*').eq('id', reference_id).single()
-            data = abt
-        }
-    } else if (reference_type === 'monthly_client') {
-        const { data: mc } = await supabase.from('monthly_clients').select('*').eq('id', reference_id).single()
-        data = mc
-    } else if (reference_type === 'hotel') {
-        const { data: hr } = await supabase.from('hotel_registrations').select('*').eq('id', reference_id).single()
-        data = hr
     }
 
-    if (!data) throw new Error(`Registro ${reference_id} não encontrado.`)
+    if (!data) {
+        throw new Error(`Registro ${reference_id} não encontrado em nenhuma das tabelas de serviço.`)
+    }
 
     step = 'preparando dados do cliente'
     const customer = {
-      nome: data.owner_name || data.tutor_name || 'Cliente não identificado',
-      cpf: data.owner_cpf || data.cpf || '',
-      email: data.owner_email || data.tutor_email || data.email || '',
-      endereco: data.owner_address || data.tutor_address || 'Não informado',
-      price: data.price || data.total_services_price || 0,
-      service: data.service || 'Serviço de PetShop'
+      nome: data.owner_name || data.client_name || data.tutor_name || data.name || 'Cliente não identificado',
+      cpf: data.owner_cpf || data.cpf || data.client_cpf || '',
+      email: data.owner_email || data.email || data.client_email || data.tutor_email || '',
+      endereco: data.owner_address || data.address || data.tutor_address || 'Não informado',
+      price: data.price || data.total_price || data.total_services_price || 0,
+      service: data.service || data.plan || (data._source_table === 'hotel_registrations' ? 'Hospedagem Pet' : (data._source_table === 'daycare_enrollments' ? 'Creche Pet' : 'Serviço de PetShop'))
     }
 
     if (!customer.cpf || customer.cpf.replace(/\D/g, '').length < 11) {
