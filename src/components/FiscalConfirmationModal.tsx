@@ -11,6 +11,7 @@ interface FiscalConfirmationModalProps {
     serviceName: string;
     amount: number;
     isMonthly?: boolean;
+    isDaycare?: boolean;
 }
 
 const FiscalConfirmationModal: React.FC<FiscalConfirmationModalProps> = ({ 
@@ -21,7 +22,8 @@ const FiscalConfirmationModal: React.FC<FiscalConfirmationModalProps> = ({
     ownerName, 
     serviceName,
     amount,
-    isMonthly 
+    isMonthly,
+    isDaycare 
 }) => {
     if (!isOpen) return null;
 
@@ -75,13 +77,22 @@ const FiscalConfirmationModal: React.FC<FiscalConfirmationModalProps> = ({
                             <span className="text-xs font-bold text-pink-400 uppercase tracking-widest">Valor do Serviço</span>
                             <span className="text-lg font-black text-rose-500">R$ {amount.toFixed(2).replace('.', ',')}</span>
                         </div>
-                        {isMonthly && (
+                        {isMonthly && !isDaycare && (
                             <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-100 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-tighter">
                                 <span className="relative flex h-2 w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                                 </span>
                                 Plano Mensalista
+                            </div>
+                        )}
+                        {isDaycare && (
+                            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-pink-100 text-pink-600 rounded-full text-[10px] font-black uppercase tracking-tighter">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+                                </span>
+                                Plano Creche Pet
                             </div>
                         )}
                     </div>

@@ -8584,7 +8584,8 @@ const DaycareEnrollmentCard: React.FC<{
     onUploadChecklist?: (enrollment: DaycareRegistration, file: File) => void;
     onRemoveChecklist?: (enrollment: DaycareRegistration, docIndex: number) => void;
     isUploadingChecklist?: boolean;
-}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare, onUploadChecklist, onRemoveChecklist, isUploadingChecklist }) => {
+    onFiscalNote?: (enrollment: DaycareRegistration) => void;
+}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare, onUploadChecklist, onRemoveChecklist, isUploadingChecklist, onFiscalNote }) => {
     const { created_at, pet_name, tutor_name, contracted_plan, status } = enrollment;
     const formatTimeText = (time: string | null | undefined): string => {
         if (!time) return 'Não definido';
@@ -8837,6 +8838,19 @@ const DaycareEnrollmentCard: React.FC<{
                         })()}
                     </div>
                 </div>
+                {/* Emissão de NFe */}
+                {status === 'Aprovado' && onFiscalNote && (
+                    <div className="mb-4">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onFiscalNote(enrollment); }}
+                            className="w-full bg-pink-50 text-pink-700 py-2 px-3 rounded-lg hover:bg-pink-100 transition-colors flex items-center justify-center gap-2 text-sm font-bold border border-pink-100 shadow-sm group-hover:shadow-pink-100"
+                            title="Emitir Nota Fiscal"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" /></svg>
+                            <span>Emitir Nota Fiscal</span>
+                        </button>
+                    </div>
+                )}
 
                 {/* Serviços Extras (Chips) */}
                 {enrollment.extra_services && Object.keys(enrollment.extra_services).length > 0 && (
@@ -9171,7 +9185,7 @@ const EditDaycareEnrollmentModal: React.FC<{
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         const shouldFormat = name === 'contact_phone' || name === 'vet_phone';
-        setFormData(prev => ({ ...prev, [name]: shouldFormat ? formatWhatsapp(value) : value }));
+        setFormData(prev => ({ ...prev, [name]: shouldFormat ? formatWhatsapp(value) : (name === 'owner_cpf' ? formatCPFCNPJ(value) : value) }));
     };
 
     const handleRadioChange = (name: keyof DaycareRegistration, value: any) => {
@@ -9212,6 +9226,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                 has_sibling_discount: formData.has_sibling_discount || false,
                 tutor_name: formData.tutor_name || '',
                 tutor_rg: formData.tutor_rg || '',
+                owner_cpf: formData.owner_cpf?.replace(/\D/g, '') || '',
                 address: formData.address || '',
                 contact_phone: formData.contact_phone || '',
                 emergency_contact_name: formData.emergency_contact_name || '',
@@ -9305,8 +9320,9 @@ const EditDaycareEnrollmentModal: React.FC<{
                         {renderRadioGroup('Castrado (a)', 'is_neutered', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
                         <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Foto do Pet (URL)</label><input type="url" name="pet_photo_url" value={formData.pet_photo_url || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
                         <h3 className="md:col-span-2 text-lg font-semibold text-pink-700 border-b pb-2 mb-2 mt-4">Dados do Tutor</h3>
-                        <div><label className="block text-base font-semibold text-gray-700">Tutor</label><input type="text" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
-                        <div><label className="block text-base font-semibold text-gray-700">RG</label><input type="text" name="tutor_rg" value={formData.tutor_rg} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Tutor</label><input type="text" name="tutor_name" value={formData.tutor_name} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div><label className="block text-base font-semibold text-gray-700">RG</label><input type="text" name="tutor_rg" value={formData.tutor_rg || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div><label className="block text-base font-semibold text-gray-700">CPF (Fiscal)</label><input type="text" name="owner_cpf" value={formData.owner_cpf || ''} onChange={handleInputChange} placeholder="000.000.000-00" className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
                         <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Endereço</label><input type="text" name="address" value={formData.address} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
                         <div><label className="block text-base font-semibold text-gray-700">Telefone</label><input type="tel" name="contact_phone" value={formData.contact_phone} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
                         <div><label className="block text-base font-semibold text-gray-700">Emergência</label><input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
@@ -14897,7 +14913,7 @@ const EditHotelRegistrationModal: React.FC<{
     );
 };
 
-const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
+const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: DaycareRegistration) => void }> = ({ refreshKey, onFiscalNote }) => {
     const [enrollments, setEnrollments] = useState<DaycareRegistration[]>([]);
     const [petsInDaycareNow, setPetsInDaycareNow] = useState<DaycareRegistration[]>([]);
     const [loading, setLoading] = useState(true);
@@ -15351,6 +15367,7 @@ const DaycareView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                         onUploadChecklist={handleDaycareChecklistUpload}
                         onRemoveChecklist={handleDaycareChecklistRemove}
                         isUploadingChecklist={!!isUploadingChecklistMap[enrollment.id!]}
+                        onFiscalNote={onFiscalNote}
                     />
                 ))}
             </div>
@@ -16017,22 +16034,25 @@ const AdminDashboard: React.FC<{
         serviceName: string;
         amount: number;
         isMonthly: boolean;
-        item: AdminAppointment | MonthlyClient;
+        isDaycare?: boolean;
+        item: AdminAppointment | MonthlyClient | DaycareRegistration;
     } | null>(null);
 
-    const handleEmitNFe = (item: AdminAppointment | MonthlyClient) => {
+    const handleEmitNFe = (item: AdminAppointment | MonthlyClient | DaycareRegistration) => {
         if (emittingNFeId) return;
 
-        const isMonthly = !('appointment_time' in item);
-        const amount = item.price || 0;
-        const serviceName = isMonthly ? 'Mensalidade PetShop' : (item as AdminAppointment).service;
+        const isDaycare = 'contracted_plan' in item;
+        const isMonthly = 'recurrence_type' in item;
+        const amount = isDaycare ? calculateDaycareInvoiceTotal(item as DaycareRegistration) : (item as AdminAppointment | MonthlyClient).price || 0;
+        const serviceName = isDaycare ? 'Creche Pet' : (isMonthly ? 'Mensalidade PetShop' : (item as AdminAppointment).service);
 
         setFiscalModalData({
             petName: item.pet_name,
-            ownerName: item.owner_name,
+            ownerName: isDaycare ? (item as DaycareRegistration).tutor_name : (item as any).owner_name,
             serviceName: serviceName,
             amount: amount,
-            isMonthly: isMonthly,
+            isMonthly: isMonthly || isDaycare,
+            isDaycare: isDaycare,
             item: item
         });
         setIsFiscalModalOpen(true);
@@ -16043,8 +16063,9 @@ const AdminDashboard: React.FC<{
         const { item } = fiscalModalData;
         console.log('Emitting NFe for item:', item);
         
+        const isDaycare = 'contracted_plan' in item;
         const isMonthly = 'recurrence_type' in item;
-        const reference_type = isMonthly ? 'monthly_client' : 'appointment';
+        const reference_type = isDaycare ? 'daycare' : (isMonthly ? 'monthly_client' : 'appointment');
 
         setIsFiscalModalOpen(false);
         setEmittingNFeId(item.id);
@@ -16398,7 +16419,7 @@ const AdminDashboard: React.FC<{
                 onCloseAddModal={handleCloseAddModal}
                 onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId}
             />;
-            case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} />;
+            case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} onFiscalNote={handleEmitNFe} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView 
@@ -16716,6 +16737,7 @@ const AdminDashboard: React.FC<{
                     serviceName={fiscalModalData.serviceName}
                     amount={fiscalModalData.amount}
                     isMonthly={fiscalModalData.isMonthly}
+                    isDaycare={fiscalModalData.isDaycare}
                 />
             )}
         </div>
