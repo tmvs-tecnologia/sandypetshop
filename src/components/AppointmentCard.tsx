@@ -72,6 +72,7 @@ interface AppointmentCardProps {
     isUpdating?: boolean;
     isDeleting?: boolean;
     onShowLoyalty?: (pet: string, owner: string) => void;
+    onEmitNFe?: (appointment: AdminAppointment) => void;
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -84,7 +85,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     onAddObservation,
     isUpdating = false,
     isDeleting = false,
-    onShowLoyalty
+    onShowLoyalty,
+    onEmitNFe
 }) => {
     const {
         id,
@@ -387,24 +389,41 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                     </div>
 
                     {/* Primary Action Group (Right) */}
-                    <button
-                        onClick={() => {
-                            console.log('Requesting completion for appointment:', id, 'with price:', displayPrice);
-                            onRequestCompletion(id, displayPrice);
-                        }}
-                        disabled={isCompleted || isUpdating || isDeleting}
-                        className={`px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed ${isCompleted ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700 hover:shadow-green-500/20 hover:-translate-y-0.5'}`}
-                        title="Concluir serviço"
-                    >
-                        {isUpdating && !isDeleting ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="flex items-center gap-2">
+                        {isCompleted ? (
+                            onEmitNFe && (
+                                <button
+                                    onClick={() => onEmitNFe(appointment)}
+                                    className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                                    title="Emitir Nota Fiscal"
+                                >
+                                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <span className="whitespace-nowrap">Nota Fiscal</span>
+                                </button>
+                            )
                         ) : (
-                            <>
-                                <CheckCircleIcon className="w-4 h-4" />
-                                <span>{isCompleted ? 'Concluído' : 'Concluir'}</span>
-                            </>
+                            <button
+                                onClick={() => {
+                                    console.log('Requesting completion for appointment:', id, 'with price:', displayPrice);
+                                    onRequestCompletion(id, displayPrice);
+                                }}
+                                disabled={isUpdating || isDeleting}
+                                className="px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed bg-green-600 hover:bg-green-700 hover:shadow-green-500/20 hover:-translate-y-0.5"
+                                title="Concluir serviço"
+                            >
+                                {isUpdating && !isDeleting ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                ) : (
+                                    <>
+                                        <CheckCircleIcon className="w-4 h-4" />
+                                        <span>Concluir</span>
+                                    </>
+                                )}
+                            </button>
                         )}
-                    </button>
+                    </div>
                 </div>
             </div>
         </div>

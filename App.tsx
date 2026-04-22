@@ -1034,9 +1034,6 @@ const getSaoPauloWeekStart = (date: Date): number => {
     return new Date(d.getTime() - day * 24 * 60 * 60 * 1000).getTime();
 };
 
-
-
-
 const formatWhatsapp = (value: string): string => {
     let digits = value.replace(/\D/g, '');
     if (digits.startsWith('55')) {
@@ -1047,6 +1044,24 @@ const formatWhatsapp = (value: string): string => {
         .replace(/^(\d{2})(\d)/, '($1) $2')
         .replace(/(\d{5})(\d)/, '$1-$2');
     return formatted.slice(0, 15);
+};
+
+const formatCPFCNPJ = (value: string): string => {
+    const val = value.replace(/\D/g, '');
+    if (val.length <= 11) {
+        return val
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+            .replace(/(-\d{2})\d+?$/, '$1');
+    } else {
+        return val
+            .replace(/(\d{2})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1/$2')
+            .replace(/(\d{4})(\d{1,2})/, '$1-$2')
+            .replace(/(-\d{2})\d+?$/, '$1');
+    }
 };
 
 const formatDateToBR = (dateString: string | null): string => {
@@ -1917,7 +1932,7 @@ const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
 const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void; }> = ({ onBack, onSuccess }) => {
     const { getPricesForWeight } = useServicePrices();
     const [isAnimating, setIsAnimating] = useState(false);
-    const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', condominium: '', observation: '' });
+    const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', owner_cpf: '', petBreed: '', ownerAddress: '', condominium: '', observation: '' });
     const [serviceQuantities, setServiceQuantities] = useState<Record<string, number>>({});
     const [selectedWeight, setSelectedWeight] = useState<PetWeight | null>(null);
     const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>({});
@@ -2378,6 +2393,15 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                                 <div className="relative">
                                     <span className="absolute inset-y-0 left-0 flex items-center pl-3.5"><UserIcon /></span>
                                     <input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" placeholder="Ex: João Silva" />
+                                </div>
+                            </div>
+                            <div>
+                                <label htmlFor="owner_cpf" className="block text-sm font-semibold text-gray-700 mb-1.5">CPF/CNPJ (para Nota Fiscal)</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    </span>
+                                    <input type="text" name="owner_cpf" id="owner_cpf" value={formData.owner_cpf} onChange={handleInputChange} className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" placeholder="000.000.000-00" />
                                 </div>
                             </div>
                             <div>
@@ -3775,7 +3799,7 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'whatsapp' ? formatWhatsapp(value) : value
+            [name]: name === 'whatsapp' ? formatWhatsapp(value) : (name === 'owner_cpf' ? formatCPFCNPJ(value) : value)
         }));
     };
 
@@ -3786,7 +3810,7 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
         const [year, month, day] = datePart.split('-').map(Number);
         const newAppointmentTime = toSaoPauloUTC(year, month - 1, day, timePart);
 
-        const { pet_name, owner_name, whatsapp, service, weight, price, status, owner_address, observation } = formData;
+        const { pet_name, owner_name, whatsapp, owner_cpf, service, weight, price, status, owner_address, observation } = formData;
         const normalizedService = service === 'Creche Pet' ? visitDaycareLabel : (service === 'Hotel Pet' ? visitHotelLabel : service);
 
         // Ao salvar, subtraímos os extras novamente para manter a consistência com o AppointmentCard que soma na visualização.
@@ -3798,6 +3822,7 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
             pet_name,
             owner_name,
             whatsapp,
+            owner_cpf,
             service: normalizedService,
             weight,
             price: priceToSave,
@@ -3959,6 +3984,10 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
                                     <label className="text-sm font-medium text-gray-700 ml-1">WhatsApp</label>
                                     <input type="text" name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
                                 </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-gray-700 ml-1">CPF/CNPJ</label>
+                                    <input type="text" name="owner_cpf" value={formData.owner_cpf || ''} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                </div>
                                 <div className="flex flex-col gap-1.5 md:col-span-2">
                                     <label className="text-sm font-medium text-gray-700 ml-1">Endereço</label>
                                     <input type="text" name="owner_address" value={formData.owner_address || ''} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
@@ -4094,6 +4123,7 @@ const AdminAddAppointmentModal: React.FC<{
         petName: '',
         ownerName: '',
         whatsapp: '',
+        owner_cpf: '',
         petBreed: '',
         ownerAddress: '',
         observation: ''
@@ -4176,7 +4206,7 @@ const AdminAddAppointmentModal: React.FC<{
     // Reset form when modal opens/closes
     useEffect(() => {
         if (isOpen) {
-            setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', observation: '' });
+            setFormData({ petName: '', ownerName: '', whatsapp: '', owner_cpf: '', petBreed: '', ownerAddress: '', observation: '' });
             setSelectedService(null);
             setServiceStepView('main');
             setSelectedCondo(null);
@@ -4392,7 +4422,9 @@ const AdminAddAppointmentModal: React.FC<{
 
     const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        const formattedValue = name === 'whatsapp' ? formatWhatsapp(value) : value;
+        let formattedValue = value;
+        if (name === 'whatsapp') formattedValue = formatWhatsapp(value);
+        if (name === 'owner_cpf') formattedValue = formatCPFCNPJ(value);
 
         setFormData(prev => ({ ...prev, [name]: formattedValue }));
 
@@ -4413,6 +4445,7 @@ const AdminAddAppointmentModal: React.FC<{
                         ...prev,
                         ownerName: data.name || prev.ownerName,
                         ownerAddress: data.address || prev.ownerAddress,
+                        owner_cpf: data.owner_cpf || prev.owner_cpf,
                     }));
                     setClientFound(true);
                 } else {
@@ -4533,6 +4566,7 @@ const AdminAddAppointmentModal: React.FC<{
             pet_breed: formData.petBreed,
             owner_name: formData.ownerName,
             whatsapp: formData.whatsapp,
+            owner_cpf: formData.owner_cpf,
             service: SERVICES[selectedService].label,
             weight: isVisitService ? 'N/A' : (selectedWeight ? PET_WEIGHT_OPTIONS[selectedWeight] : 'N/A'),
             addons: isVisitService ? [] : ADDON_SERVICES.filter(addon => selectedAddons[addon.id]).map(addon => addon.label),
@@ -4564,7 +4598,8 @@ const AdminAddAppointmentModal: React.FC<{
                         .from('clients')
                         .insert({
                             name: supabasePayload.owner_name,
-                            phone: supabasePayload.whatsapp
+                            phone: supabasePayload.whatsapp,
+                            owner_cpf: supabasePayload.owner_cpf
                         });
                     if (clientInsertError) {
                         console.error('Failed to auto-register client:', clientInsertError.message);
@@ -4607,6 +4642,7 @@ const AdminAddAppointmentModal: React.FC<{
                 pet_breed: newDbAppointment.pet_breed,
                 condominium: newDbAppointment.condominium,
                 extra_services: newDbAppointment.extra_services,
+                owner_cpf: newDbAppointment.owner_cpf,
             };
             onAppointmentCreated(createdAdminAppointment);
             onClose();
@@ -4702,6 +4738,15 @@ const AdminAddAppointmentModal: React.FC<{
                                     </div>
                                 </div>
                                 <div>
+                                    <label htmlFor="addAppt-owner_cpf" className="block text-sm font-semibold text-gray-700 mb-1.5">CPF/CNPJ</label>
+                                    <div className="relative">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                        </span>
+                                        <input id="addAppt-owner_cpf" type="text" name="owner_cpf" value={formData.owner_cpf} onChange={handleInputChange} placeholder="000.000.000-00" className={`block w-full pl-11 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all ${clientFound ? 'border-green-300 bg-green-50/50' : 'bg-gray-50/50 border-gray-200 focus:bg-white'}`} />
+                                    </div>
+                                </div>
+                                <div>
                                     <label htmlFor="addAppt-whatsapp" className="block text-sm font-semibold text-gray-700 mb-1.5 flex justify-between">
                                         WhatsApp
                                         {clientFound && <span className="text-xs text-green-600 font-normal">Cliente encontrado ✓</span>}
@@ -4717,7 +4762,7 @@ const AdminAddAppointmentModal: React.FC<{
                                     <div className="flex justify-between items-end mb-1.5">
                                         <label htmlFor="addAppt-ownerAddress" className="block text-sm font-semibold text-gray-700">Endereço</label>
                                         {clientFound && (
-                                            <button type="button" onClick={() => { setClientFound(false); setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '' }); }} className="text-xs text-red-500 hover:text-red-700 underline">Limpar e novo cadastro</button>
+                                            <button type="button" onClick={() => { setClientFound(false); setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', owner_cpf: '', observation: '' }); }} className="text-xs text-red-500 hover:text-red-700 underline">Limpar e novo cadastro</button>
                                         )}
                                     </div>
                                     <div className="relative">
@@ -5663,6 +5708,7 @@ interface AppointmentsViewProps {
     onOpenAddModal?: () => void;
     onCloseAddModal?: () => void;
     onShowLoyalty?: (pet: string, owner: string) => void;
+    onEmitNFe?: (appointment: AdminAppointment) => void;
 }
 
 const AppointmentsView: React.FC<AppointmentsViewProps> = ({ 
@@ -5684,7 +5730,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     isAddModalOpen: _isAddModalOpen,
     onOpenAddModal,
     onCloseAddModal,
-    onShowLoyalty
+    onShowLoyalty, onEmitNFe
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -5781,6 +5827,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
             onAddObservation={() => onAddObservation(appt)}
             onRequestCompletion={onRequestCompletion} 
             onShowLoyalty={onShowLoyalty}
+            onEmitNFe={onEmitNFe}
         />
     );
 
@@ -5849,6 +5896,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                                     onAddObservation={() => onAddObservation(app)}
                                     onRequestCompletion={onRequestCompletion}
                                     onShowLoyalty={onShowLoyalty}
+                                    onEmitNFe={onEmitNFe}
                                 />
                                     </div>
                                 ))}
@@ -5997,7 +6045,7 @@ const EditPetMovelAppointmentModal: React.FC<{
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'whatsapp' ? formatWhatsapp(value) : value
+            [name]: name === 'whatsapp' ? formatWhatsapp(value) : (name === 'owner_cpf' ? formatCPFCNPJ(value) : value)
         }));
     };
 
@@ -6008,7 +6056,7 @@ const EditPetMovelAppointmentModal: React.FC<{
         const [year, month, day] = datePart.split('-').map(Number);
         const newAppointmentTime = toSaoPauloUTC(year, month - 1, day, timePart);
 
-        const { pet_name, owner_name, whatsapp, service, weight, price, status, owner_address, condominium } = formData;
+        const { pet_name, owner_name, whatsapp, service, weight, price, status, owner_address, condominium, owner_cpf } = formData;
 
         // Ao salvar, subtraímos os extras novamente para manter a consistência com o AppointmentCard que soma na visualização.
         // Assim, o usuário edita o Total, mas o banco guarda o Base.
@@ -6019,6 +6067,7 @@ const EditPetMovelAppointmentModal: React.FC<{
             pet_name,
             owner_name,
             whatsapp,
+            owner_cpf,
             service,
             weight,
             price: priceToSave,
@@ -6057,6 +6106,7 @@ const EditPetMovelAppointmentModal: React.FC<{
                         <div><label className="font-semibold text-gray-600">Nome do Pet</label><input name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
                         <div><label className="font-semibold text-gray-600">Nome do Dono</label><input name="owner_name" value={formData.owner_name} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
                         <div><label className="font-semibold text-gray-600">WhatsApp</label><input name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
+                        <div><label className="font-semibold text-gray-600">CPF/CNPJ</label><input name="owner_cpf" value={formData.owner_cpf} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
                         <div><label className="font-semibold text-gray-600">Serviço</label><input name="service" value={formData.service} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
                         <div><label className="font-semibold text-gray-600">Endereço (Apto/Casa)</label><input name="owner_address" value={formData.owner_address} onChange={handleInputChange} className="w-full mt-1 px-5 py-4 border rounded-lg" /></div>
                         <div>
@@ -6121,6 +6171,7 @@ const PetMovelAppointmentDetailsModal: React.FC<{
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                         <DetailItem label="Pet" value={appointment.pet_name} />
                         <DetailItem label="Tutor" value={appointment.owner_name} />
+                        <DetailItem label="CPF/CNPJ" value={appointment.owner_cpf} />
                         <DetailItem label="Contato" value={appointment.whatsapp} />
                         <DetailItem label="Condomínio" value={appointment.condominium} />
                         <DetailItem label="Endereço" value={appointment.owner_address} />
@@ -6181,7 +6232,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
     isAddModalOpen: _isAddModalOpen,
     onOpenAddModal,
     onCloseAddModal,
-    onShowLoyalty
+    onShowLoyalty, onEmitNFe
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -6270,6 +6321,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
             onDeleteObservation={() => onDeleteObservation(appt)}
             onOpenActionMenu={(e) => onOpenActionMenu(appt, e)}
             onShowLoyalty={onShowLoyalty}
+            onEmitNFe={onEmitNFe}
         />
     );
 
@@ -6882,6 +6934,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
         petName: client.pet_name,
         ownerName: client.owner_name,
         whatsapp: client.whatsapp,
+        owner_cpf: client.owner_cpf || '',
         petBreed: (client as any).pet_breed || '',
         ownerAddress: (client as any).owner_address || '',
         condominium: (client as any).condominium || '',
@@ -6929,6 +6982,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
             pet_name: 'Nome do Pet',
             pet_breed: 'Raça',
             owner_name: 'Nome do Dono',
+            owner_cpf: 'CPF/CNPJ',
             owner_address: 'Endereço',
             whatsapp: 'WhatsApp',
             condominium: 'Condomínio',
@@ -7023,6 +7077,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
                 pet_name: formData.petName,
                 owner_name: formData.ownerName,
                 whatsapp: formData.whatsapp,
+                owner_cpf: formData.owner_cpf,
                 pet_breed: formData.petBreed,
                 owner_address: formData.ownerAddress,
                 service: selectedService ? SERVICES[selectedService].label : client.service,
@@ -9646,7 +9701,7 @@ const HotelRegistrationForm: React.FC<{
     const [formData, setFormData] = useState<HotelRegistration>({
         pet_name: '', pet_sex: null, pet_breed: '', is_neutered: null, pet_age: '',
         pet_weight: null,
-        tutor_name: '', tutor_rg: '', tutor_address: '', tutor_phone: '', tutor_email: '', tutor_social_media: '',
+        tutor_name: '', tutor_rg: '', owner_cpf: '', tutor_address: '', tutor_phone: '', tutor_email: '', tutor_social_media: '',
         veterinarian: '', vet_phone: '', emergency_contact_name: '', emergency_contact_phone: '', emergency_contact_relation: '',
         has_rg_document: null, has_residence_proof: null, has_vaccination_card: null, has_vet_certificate: null,
         has_flea_tick_remedy: null, flea_tick_remedy_date: '', photo_authorization: null, retrieve_at_checkout: null,
@@ -9960,7 +10015,7 @@ const HotelRegistrationForm: React.FC<{
             setFormData(prev => ({ ...prev, [name]: value }));
         } else {
             const shouldFormat = name === 'tutor_phone' || name === 'emergency_contact_phone' || name === 'vet_phone';
-            setFormData(prev => ({ ...prev, [name]: shouldFormat ? formatWhatsapp(value) : value }));
+            setFormData(prev => ({ ...prev, [name]: shouldFormat ? formatWhatsapp(value) : (name === 'owner_cpf' ? formatCPFCNPJ(value) : value) }));
         }
     };
 
@@ -9987,6 +10042,7 @@ const HotelRegistrationForm: React.FC<{
                 pet_weight: formData.pet_weight || null,
                 tutor_name: formData.tutor_name || '',
                 tutor_rg: formData.tutor_rg || '',
+                owner_cpf: formData.owner_cpf || '',
                 tutor_address: formData.tutor_address || '',
                 tutor_phone: formData.tutor_phone || '',
                 tutor_email: formData.tutor_email || '',
@@ -10752,7 +10808,7 @@ const DaycareRegistrationForm: React.FC<{
 }> = ({ setView, onBack, onSuccess, isAdmin = false }) => {
     const [formData, setFormData] = useState<DaycareRegistration>({
         pet_name: '', pet_breed: '', is_neutered: null, pet_sex: '', pet_age: '', has_sibling_discount: false,
-        tutor_name: '', tutor_rg: '', address: '', contact_phone: '', emergency_contact_name: '', vet_phone: '',
+        tutor_name: '', tutor_rg: '', owner_cpf: '', address: '', contact_phone: '', emergency_contact_name: '', vet_phone: '',
         gets_along_with_others: null, last_vaccine: '', last_deworming: '', last_flea_remedy: '',
         has_allergies: null, allergies_description: '', needs_special_care: null, special_care_description: '',
         delivered_items: { items: [], other: '' }, contracted_plan: null, total_price: undefined, payment_date: '',
@@ -10767,7 +10823,7 @@ const DaycareRegistrationForm: React.FC<{
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         const shouldFormat = name === 'contact_phone' || name === 'vet_phone';
-        setFormData(prev => ({ ...prev, [name]: shouldFormat ? formatWhatsapp(value) : value }));
+        setFormData(prev => ({ ...prev, [name]: shouldFormat ? formatWhatsapp(value) : (name === 'owner_cpf' ? formatCPFCNPJ(value) : value) }));
     };
 
     const handleRadioChange = (name: keyof DaycareRegistration, value: any) => {
@@ -11022,6 +11078,24 @@ const DaycareRegistrationForm: React.FC<{
                                     required
                                     className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">CPF/CNPJ (Fiscal)</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5 text-pink-400">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" />
+                                        </svg>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        name="owner_cpf"
+                                        value={formData.owner_cpf}
+                                        onChange={handleInputChange}
+                                        className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                        placeholder="000.000.000-00"
+                                    />
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Contato de Emergência</label>
@@ -11700,7 +11774,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [banhoTosaOnlyAppointments, setBanhoTosaOnlyAppointments] = useState<Appointment[]>([]);
     const [petMovelOnlyAppointments, setPetMovelOnlyAppointments] = useState<Appointment[]>([]);
-    const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', observation: '' });
+    const [formData, setFormData] = useState({ petName: '', ownerName: '', whatsapp: '', owner_cpf: '', petBreed: '', ownerAddress: '', observation: '' });
     const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
     const [serviceStepView, setServiceStepView] = useState<'main' | 'bath_groom' | 'pet_movel' | 'pet_movel_condo' | 'hotel_pet'>('main');
     const [selectedCondo, setSelectedCondo] = useState<string | null>(null);
@@ -12227,7 +12301,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
             setIsModalOpen(true);
             setTimeout(() => {
                 setIsModalOpen(false);
-                setFormData({ petName: '', ownerName: '', whatsapp: '', petBreed: '', ownerAddress: '', observation: '' });
+                setFormData({ petName: '', ownerName: '', whatsapp: '', owner_cpf: '', petBreed: '', ownerAddress: '', observation: '' });
                 setSelectedService(null); setSelectedWeight(null); setSelectedAddons({}); setSelectedTime(null); setTotalPrice(0); setIsSubmitting(false);
                 setSelectedCondo(null);
                 setServiceStepView('main');
@@ -12486,6 +12560,25 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             <div>
                                 <label htmlFor="ownerName" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">Seu Nome</label>
                                 <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-4"><UserIcon /></span><input type="text" name="ownerName" id="ownerName" value={formData.ownerName} onChange={handleInputChange} required className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all" /></div>
+                            </div>
+                            <div>
+                                <label htmlFor="owner_cpf" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">CPF/CNPJ (Fiscal)</label>
+                                <div className="relative mt-1">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5 text-pink-400">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" />
+                                        </svg>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        name="owner_cpf"
+                                        id="owner_cpf"
+                                        value={formData.owner_cpf}
+                                        onChange={handleInputChange}
+                                        placeholder="000.000.000-00"
+                                        className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                    />
+                                </div>
                             </div>
                             <div>
                                 <label htmlFor="petName" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">Nome do Pet</label>
@@ -15860,6 +15953,40 @@ const AdminDashboard: React.FC<{
         setConfirmingCompletionPrice(price);
     };
 
+    const [emittingNFeId, setEmittingNFeId] = useState<string | null>(null);
+
+    const handleEmitNFe = async (appointment: AdminAppointment) => {
+        if (emittingNFeId) return;
+        
+        if (!window.confirm(`Deseja emitir a Nota Fiscal para ${appointment.pet_name} (${appointment.owner_name})?`)) {
+            return;
+        }
+
+        setEmittingNFeId(appointment.id);
+        try {
+            const { data, error } = await supabase.functions.invoke('focus-nfe', {
+                body: { 
+                    reference_id: appointment.id, 
+                    reference_type: 'appointment' 
+                }
+            });
+
+            if (error) throw error;
+
+            if (data.success) {
+                alert('Nota Fiscal enviada com sucesso! Você poderá consultar o status em instantes no painel de Notas Fiscais.');
+            } else {
+                const errorMsg = data.error || data.focus_result?.mensagem || 'Erro desconhecido';
+                alert('Erro ao enviar Nota Fiscal: ' + errorMsg);
+            }
+        } catch (error: any) {
+            console.error('Erro na emissão da NFe:', error);
+            alert('Erro ao processar a emissão: ' + (error.message || 'Erro de conexão com o servidor'));
+        } finally {
+            setEmittingNFeId(null);
+        }
+    };
+
     const handleConfirmCompletion = (responsible: string) => {
         if (confirmingCompletionId) {
             handleUpdateStatus(confirmingCompletionId, 'CONCLUÍDO', responsible, confirmingCompletionPrice || 0);
@@ -15897,7 +16024,8 @@ const AdminDashboard: React.FC<{
                 monthly_client_id: appointmentToUpdate.monthly_client_id,
                 owner_address: appointmentToUpdate.owner_address || '',
                 pet_breed: appointmentToUpdate.pet_breed || '',
-                condominium: appointmentToUpdate.condominium || ''
+                condominium: appointmentToUpdate.condominium || '',
+                owner_cpf: appointmentToUpdate.owner_cpf || ''
             };
 
             if (tableToInsert === 'appointments') {
@@ -16157,7 +16285,7 @@ const AdminDashboard: React.FC<{
                 isAddModalOpen={isAddModalOpen}
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
-                onShowLoyalty={handleShowLoyalty}
+                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe}
             />;
             case 'petMovel': return <PetMovelView 
                 key={dataKey} 
@@ -16179,7 +16307,7 @@ const AdminDashboard: React.FC<{
                 isAddModalOpen={isAddModalOpen}
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
-                onShowLoyalty={handleShowLoyalty}
+                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe}
             />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
@@ -16212,7 +16340,7 @@ const AdminDashboard: React.FC<{
                 isAddModalOpen={isAddModalOpen}
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
-                onShowLoyalty={handleShowLoyalty}
+                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe}
             />;
         }
     };

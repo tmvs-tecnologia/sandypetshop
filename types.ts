@@ -41,6 +41,7 @@ export interface Appointment {
   monthly_client_id?: string;
   condominium?: string;
   status?: string;
+  owner_cpf?: string;
 }
 
 export interface AdminAppointment {
@@ -61,6 +62,7 @@ export interface AdminAppointment {
   condominium?: string;
   responsible?: string;
   pet_photo_url?: string | null;
+  owner_cpf?: string;
   recurrence_type?: 'weekly' | 'bi-weekly' | 'monthly';
   extra_services?: {
     pernoite: { enabled: boolean; value: number };
@@ -110,6 +112,7 @@ export interface MonthlyClient {
   is_active: boolean;
   payment_status: 'Pendente' | 'Pago';
   condominium?: string;
+  owner_cpf?: string;
   observation?: string;
   pet_photo_url?: string | null;
   extra_services?: {
@@ -138,6 +141,7 @@ export interface DaycareRegistration {
     tutor_rg: string;
     address: string;
     contact_phone: string;
+    owner_cpf?: string;
     emergency_contact_name: string;
     vet_phone: string;
     gets_along_with_others: boolean | null;
@@ -204,6 +208,7 @@ export interface HotelRegistration {
     tutor_address: string;
     tutor_phone: string;
     tutor_email: string;
+    owner_cpf?: string;
     tutor_social_media: string | null;
     vet_phone: string | null;
     emergency_contact_name: string;
