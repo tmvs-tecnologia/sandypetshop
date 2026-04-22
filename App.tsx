@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { toBlob } from 'html-to-image';
-import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon, UserPlusIcon, Squares2X2Icon, ChevronLeftIcon, ChevronRightIcon, GiftIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon, UserPlusIcon, Squares2X2Icon, ChevronLeftIcon, ChevronRightIcon, GiftIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
 import { SERVICES, WORKING_HOURS, BATH_GROOMING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
@@ -8641,7 +8641,7 @@ const DaycareEnrollmentCard: React.FC<{
                                 <div className="relative flex-shrink-0">
                                     <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
                                     <SafeImage 
-                                        src={enrollment.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'} 
+                                        src={enrollment.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/11201/11201086.png'} 
                                         alt={enrollment.pet_name} 
                                         className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform" 
                                         loading="eager" 
@@ -8862,7 +8862,7 @@ const DaycareEnrollmentCard: React.FC<{
                                 </>
                             ) : (
                                 <>
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" /></svg>
+                                    <DocumentTextIcon className="w-5 h-5" />
                                     <span>Emitir Nota Fiscal</span>
                                 </>
                             )}
