@@ -2051,7 +2051,15 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: name === 'whatsapp' ? formatWhatsapp(value) : value }));
+        let finalValue = value;
+        if (name === 'whatsapp') {
+            finalValue = formatWhatsapp(value);
+        } else if (name === 'owner_cpf') {
+            const raw = value.replace(/\D/g, '').slice(0, 11);
+            finalValue = raw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        }
+        setFormData(prev => ({ ...prev, [name]: finalValue }));
+
     };
 
     const handleQuantityChange = (service: ServiceType, change: number) => {
@@ -2241,7 +2249,8 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                 is_active: true,
                 payment_status: 'Pendente',
                 condominium: formData.condominium,
-                observation: formData.observation || null
+                observation: formData.observation || null,
+                owner_cpf: formData.owner_cpf.replace(/\D/g, '')
             }).select().single();
 
             if (clientError || !newClient) throw new Error(clientError?.message || "Falha ao criar o cadastro do mensalista.");
@@ -2290,7 +2299,8 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                     weight: PET_WEIGHT_OPTIONS[selectedWeight!],
                     condominium: formData.condominium,
                     monthly_client_id: newClient.id,
-                    observation: formData.observation || null
+                    observation: formData.observation || null,
+                    owner_cpf: formData.owner_cpf.replace(/\D/g, '')
                 }));
 
             // Check if any of the selected services is a Pet Móvel service
@@ -3822,7 +3832,7 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
             pet_name,
             owner_name,
             whatsapp,
-            owner_cpf,
+            owner_cpf: owner_cpf?.replace(/\D/g, '') || null,
             service: normalizedService,
             weight,
             price: priceToSave,
@@ -4311,6 +4321,11 @@ const AdminAddAppointmentModal: React.FC<{
                     service: serviceKey,
                     appointmentTime: new Date(dateStr),
                     status: dbRecord.status,
+                    weight: dbRecord.weight,
+                    price: dbRecord.price,
+                    owner_address: dbRecord.owner_address,
+                    observation: dbRecord.observation,
+                    owner_cpf: dbRecord.owner_cpf,
                     table: tableName
                 };
             });
@@ -4566,7 +4581,7 @@ const AdminAddAppointmentModal: React.FC<{
             pet_breed: formData.petBreed,
             owner_name: formData.ownerName,
             whatsapp: formData.whatsapp,
-            owner_cpf: formData.owner_cpf,
+            owner_cpf: formData.owner_cpf.replace(/\D/g, ''),
             service: SERVICES[selectedService].label,
             weight: isVisitService ? 'N/A' : (selectedWeight ? PET_WEIGHT_OPTIONS[selectedWeight] : 'N/A'),
             addons: isVisitService ? [] : ADDON_SERVICES.filter(addon => selectedAddons[addon.id]).map(addon => addon.label),
@@ -6965,7 +6980,14 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
             const numeric = Number(value);
             setPrice(Number.isFinite(numeric) ? numeric : 0);
         } else {
-            setFormData(prev => ({ ...prev, [name]: name === 'whatsapp' ? formatWhatsapp(value) : value }));
+            let finalValue = value;
+            if (name === 'whatsapp') {
+                finalValue = formatWhatsapp(value);
+            } else if (name === 'owner_cpf') {
+                const raw = value.replace(/\D/g, '').slice(0, 11);
+                finalValue = raw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            }
+            setFormData(prev => ({ ...prev, [name]: finalValue }));
         }
     };
 
@@ -7058,6 +7080,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
             is_active: isActive,
             payment_status: paymentStatus,
             observation: formData.observation,
+            owner_cpf: formData.owner_cpf.replace(/\D/g, ''),
         };
         const { error: updateError } = await supabase.from('monthly_clients').update(updatePayload).eq('id', client.id);
         if (updateError) {
@@ -7155,6 +7178,10 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-sm font-medium text-gray-700 ml-1">WhatsApp <span className="text-pink-500">*</span></label>
                                         <input type="text" name="whatsapp" placeholder="(00) 00000-0000" value={formData.whatsapp} onChange={handleInputChange} required className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-medium text-gray-700 ml-1">CPF do Tutor</label>
+                                        <input type="text" name="owner_cpf" placeholder="000.000.000-00" value={formData.owner_cpf} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 focus:bg-white transition-all text-gray-700 font-medium placeholder-gray-400" />
                                     </div>
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-sm font-medium text-gray-700 ml-1">Condomínio</label>
@@ -7449,7 +7476,13 @@ const MonthlyClientDetailsModal: React.FC<{ client: MonthlyClient | null; onClos
 
 
 
-const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () => void; onOpenDashboard: () => void; }> = ({ onAddClient, onDataChanged, onOpenDashboard }) => {
+const MonthlyClientsView: React.FC<{ 
+    onAddClient: () => void; 
+    onDataChanged: () => void; 
+    onOpenDashboard: () => void;
+    onEmitNFe: (client: MonthlyClient) => void;
+    emittingNFeId: string | null;
+}> = ({ onAddClient, onDataChanged, onOpenDashboard, onEmitNFe, emittingNFeId }) => {
     const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingClient, setEditingClient] = useState<MonthlyClient | null>(null);
@@ -8282,6 +8315,8 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                             hasActiveDaycare={hasActiveDaycare}
                                             onChangePhoto={(mc) => { setUploadTargetMonthlyClient(mc); setIsUploadMonthlyPhotoModalOpen(true); }}
                                             onView={(mc) => setViewingClient(mc)}
+                                            onEmitNFe={onEmitNFe}
+                                            isEmittingNFe={emittingNFeId === client.id}
                                         />
                                     </div>
                                 );
@@ -8331,6 +8366,8 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                             hasActiveDaycare={hasActiveDaycare}
                                             onChangePhoto={(mc) => { setUploadTargetMonthlyClient(mc); setIsUploadMonthlyPhotoModalOpen(true); }}
                                             onView={(mc) => setViewingClient(mc)}
+                                            onEmitNFe={onEmitNFe}
+                                            isEmittingNFe={emittingNFeId === client.id}
                                         />
                                     </div>
                                 );
@@ -8424,6 +8461,8 @@ const MonthlyClientsView: React.FC<{ onAddClient: () => void; onDataChanged: () 
                                                                     hasActiveDaycare={hasActiveDaycare}
                                                                     onChangePhoto={(mc) => { setUploadTargetMonthlyClient(mc); setIsUploadMonthlyPhotoModalOpen(true); }}
                                                                     onView={(mc) => setViewingClient(mc)}
+                                                                    onEmitNFe={onEmitNFe}
+                                                                    isEmittingNFe={emittingNFeId === client.id}
                                                                 />
                                                             </div>
                                                         );
@@ -12141,7 +12180,14 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: name === 'whatsapp' ? formatWhatsapp(value) : value }));
+        let finalValue = value;
+        if (name === 'whatsapp') {
+            finalValue = formatWhatsapp(value);
+        } else if (name === 'owner_cpf') {
+            const raw = value.replace(/\D/g, '').slice(0, 11);
+            finalValue = raw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        }
+        setFormData(prev => ({ ...prev, [name]: finalValue }));
     };
 
     const handleWeightChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -15963,19 +16009,50 @@ const AdminDashboard: React.FC<{
 
     const [emittingNFeId, setEmittingNFeId] = useState<string | null>(null);
 
-    const handleEmitNFe = async (appointment: AdminAppointment) => {
-        if (emittingNFeId) return;
-        
-        if (!window.confirm(`Deseja emitir a Nota Fiscal para ${appointment.pet_name} (${appointment.owner_name})?`)) {
-            return;
-        }
+    // Estados para Emissão Fiscal (FiscalConfirmationModal)
+    const [isFiscalModalOpen, setIsFiscalModalOpen] = useState(false);
+    const [fiscalModalData, setFiscalModalData] = useState<{
+        petName: string;
+        ownerName: string;
+        serviceName: string;
+        amount: number;
+        isMonthly: boolean;
+        item: AdminAppointment | MonthlyClient;
+    } | null>(null);
 
-        setEmittingNFeId(appointment.id);
+    const handleEmitNFe = (item: AdminAppointment | MonthlyClient) => {
+        if (emittingNFeId) return;
+
+        const isMonthly = !('appointment_time' in item);
+        const amount = item.price || 0;
+        const serviceName = isMonthly ? 'Mensalidade PetShop' : (item as AdminAppointment).service;
+
+        setFiscalModalData({
+            petName: item.pet_name,
+            ownerName: item.owner_name,
+            serviceName: serviceName,
+            amount: amount,
+            isMonthly: isMonthly,
+            item: item
+        });
+        setIsFiscalModalOpen(true);
+    };
+
+    const executeEmitNFe = async () => {
+        if (!fiscalModalData || emittingNFeId) return;
+        const { item } = fiscalModalData;
+        
+        const isMonthly = 'recurrence_type' in item;
+        const reference_type = isMonthly ? 'monthly_client' : 'appointment';
+
+        setIsFiscalModalOpen(false);
+        setEmittingNFeId(item.id);
+        
         try {
             const { data, error } = await supabase.functions.invoke('focus-nfe', {
                 body: { 
-                    reference_id: appointment.id, 
-                    reference_type: 'appointment' 
+                    reference_id: item.id, 
+                    reference_type: reference_type 
                 }
             });
 
@@ -15992,6 +16069,7 @@ const AdminDashboard: React.FC<{
             alert('Erro ao processar a emissão: ' + (error.message || 'Erro de conexão com o servidor'));
         } finally {
             setEmittingNFeId(null);
+            setFiscalModalData(null);
         }
     };
 
@@ -16222,6 +16300,7 @@ const AdminDashboard: React.FC<{
                             pet_photo_url: rec.monthly_clients?.pet_photo_url ?? undefined,
                             recurrence_type: rec.monthly_clients?.recurrence_type ?? undefined,
                             responsible: rec.responsible ?? undefined,
+                            owner_cpf: rec.owner_cpf ?? undefined,
                         };
                     });
                 };
@@ -16320,7 +16399,13 @@ const AdminDashboard: React.FC<{
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
-            case 'monthlyClients': return <MonthlyClientsView onAddClient={handleAddMonthlyClient} onDataChanged={handleDataChanged} onOpenDashboard={() => handleOpenDashboard('monthlyClients')} />;
+            case 'monthlyClients': return <MonthlyClientsView 
+                onAddClient={handleAddMonthlyClient} 
+                onDataChanged={handleDataChanged} 
+                onOpenDashboard={() => handleOpenDashboard('monthlyClients')} 
+                onEmitNFe={handleEmitNFe}
+                emittingNFeId={emittingNFeId}
+            />;
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
             case 'dashboard': return <StatisticsDashboardModal onBack={() => setActiveView(previousView)} />;
             case 'closeDay': return <CloseDayView onBack={() => setActiveView(previousView)} />;
@@ -16619,6 +16704,18 @@ const AdminDashboard: React.FC<{
                     ownerName={loyaltyPreview.owner} 
                 />
             )}
+            {isFiscalModalOpen && fiscalModalData && (
+                <FiscalConfirmationModal
+                    isOpen={isFiscalModalOpen}
+                    onClose={() => setIsFiscalModalOpen(false)}
+                    onConfirm={executeEmitNFe}
+                    petName={fiscalModalData.petName}
+                    ownerName={fiscalModalData.ownerName}
+                    serviceName={fiscalModalData.serviceName}
+                    amount={fiscalModalData.amount}
+                    isMonthly={fiscalModalData.isMonthly}
+                />
+            )}
         </div>
     );
 };
@@ -16695,6 +16792,7 @@ const ScheduleClosedPage: React.FC<{ setView: (view: string) => void }> = ({ set
 
 import MonthlyResetManager from './src/components/MonthlyResetManager';
 import PriceManagementModal from './src/components/PriceManagementModal';
+import FiscalConfirmationModal from './src/components/FiscalConfirmationModal';
 
 const App: React.FC = () => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -17054,6 +17152,7 @@ const App: React.FC = () => {
                         pet_photo_url: rec.monthly_clients?.pet_photo_url ?? undefined,
                         recurrence_type: rec.monthly_clients?.recurrence_type ?? undefined,
                         responsible: rec.responsible ?? undefined,
+                        owner_cpf: rec.owner_cpf ?? undefined,
                         table: tableName,
                     }));
                 };

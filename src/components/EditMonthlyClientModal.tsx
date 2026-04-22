@@ -93,7 +93,12 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        let finalValue = value;
+        if (name === 'owner_cpf') {
+            const raw = value.replace(/\D/g, '').slice(0, 11);
+            finalValue = raw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        }
+        setFormData(prev => ({ ...prev, [name]: finalValue }));
     };
 
     const handleExtraServiceToggle = (key: string) => {
@@ -313,6 +318,7 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                 price: unitPriceUpdate,
                 condominium: (payload as any).condominium,
                 observation: (payload as any).observation,
+                owner_cpf: payload.owner_cpf ? payload.owner_cpf.replace(/\D/g, '') : null,
             };
 
             const tables = ['appointments', 'pet_movel_appointments', 'agendamento_banhotosa'];
@@ -409,6 +415,20 @@ const EditMonthlyClientModal: React.FC<EditMonthlyClientModalProps> = ({ client,
                                         <div>
                                             <Label htmlFor="owner_name">Nome do Tutor</Label>
                                             <Input id="owner_name" name="owner_name" value={formData.owner_name} onChange={handleInputChange} required />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="owner_cpf">CPF do Tutor</Label>
+                                            <Input 
+                                                id="owner_cpf" 
+                                                name="owner_cpf" 
+                                                value={formData.owner_cpf || ''} 
+                                                onChange={(e) => {
+                                                    const raw = e.target.value.replace(/\D/g, '').slice(0, 11);
+                                                    const masked = raw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                                                    handleInputChange({ target: { name: 'owner_cpf', value: raw } } as any);
+                                                }}
+                                                placeholder="000.000.000-00" 
+                                            />
                                         </div>
                                         <div>
                                             <Label htmlFor="whatsapp">WhatsApp</Label>

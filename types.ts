@@ -93,6 +93,7 @@ export interface Client {
   id: string;
   name: string;
   phone: string;
+  cpf?: string;
 }
 
 export interface MonthlyClient {

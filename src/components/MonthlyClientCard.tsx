@@ -4,7 +4,8 @@ import {
     ClockIcon,
     UserIcon,
     PhoneIcon,
-    SparklesIcon
+    SparklesIcon,
+    DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { MonthlyClient } from '../../types';
 import { useServiceValidation } from '../hooks/useServiceValidation';
@@ -200,7 +201,9 @@ const MonthlyClientCard: React.FC<{
     hasActiveDaycare?: boolean;
     onChangePhoto: (client: MonthlyClient) => void;
     onView: (client: MonthlyClient) => void;
-}> = ({ client, onClick, onEdit, onDelete, onAddExtraServices, onTogglePaymentStatus, onChangePhoto, onView }) => {
+    onEmitNFe?: (client: MonthlyClient) => void;
+    isEmittingNFe?: boolean;
+}> = ({ client, onClick, onEdit, onDelete, onAddExtraServices, onTogglePaymentStatus, onChangePhoto, onView, onEmitNFe, isEmittingNFe }) => {
 
     const { hasDaycare, hasHotel } = useServiceValidation(client.whatsapp);
 
@@ -518,42 +521,75 @@ const MonthlyClientCard: React.FC<{
                 </div>
 
                 {/* Footer / Actions */}
-                <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between gap-3">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onTogglePaymentStatus(client, e); }}
-                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${client.payment_status === 'Pendente'
-                            ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200'
-                            : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
-                            }`}
-                    >
-                        {client.payment_status === 'Pendente' ? '⏳ Pendente' : '✅ Pago'}
-                    </button>
+                <div className="mt-auto pt-3 border-t border-gray-100 flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onTogglePaymentStatus(client, e); }}
+                            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${client.payment_status === 'Pendente'
+                                ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200'
+                                : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
+                                }`}
+                        >
+                            {client.payment_status === 'Pendente' ? '⏳ Pendente' : '✅ Pago'}
+                        </button>
 
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onAddExtraServices(client); }}
-                        className="px-3 py-1.5 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-gray-200 text-xs font-medium transition-all"
-                    >
-                        + Extras
-                    </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddExtraServices(client); }}
+                            className="px-3 py-1.5 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-gray-200 text-xs font-medium transition-all"
+                        >
+                            + Extras
+                        </button>
+                    </div>
 
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onEdit(client); }}
-                        className="p-1.5 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        title="Editar"
-                    >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00 2 2h11a2 2 0 00 2-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDelete(client); }}
-                        className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        title="Excluir"
-                    >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>
+                    <div className="flex items-center justify-between gap-2">
+                        {onEmitNFe && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onEmitNFe(client); }}
+                                disabled={isEmittingNFe}
+                                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-sm whitespace-nowrap ${
+                                    isEmittingNFe 
+                                    ? 'bg-pink-100 text-pink-400 cursor-not-allowed border border-pink-200' 
+                                    : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700 hover:shadow-md active:scale-95 border border-pink-400/20'
+                                }`}
+                            >
+                                {isEmittingNFe ? (
+                                    <>
+                                        <svg className="animate-spin h-3.5 w-3.5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Gerando...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <DocumentTextIcon className="w-4 h-4" />
+                                        <span>Nota Fiscal</span>
+                                    </>
+                                )}
+                            </button>
+                        )}
+                        
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onEdit(client); }}
+                                className="p-1.5 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                title="Editar"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00 2 2h11a2 2 0 00 2-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onDelete(client); }}
+                                className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                title="Excluir"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
