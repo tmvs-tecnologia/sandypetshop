@@ -5709,6 +5709,7 @@ interface AppointmentsViewProps {
     onCloseAddModal?: () => void;
     onShowLoyalty?: (pet: string, owner: string) => void;
     onEmitNFe?: (appointment: AdminAppointment) => void;
+    emittingNFeId: string | null;
 }
 
 const AppointmentsView: React.FC<AppointmentsViewProps> = ({ 
@@ -5730,7 +5731,9 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     isAddModalOpen: _isAddModalOpen,
     onOpenAddModal,
     onCloseAddModal,
-    onShowLoyalty, onEmitNFe
+    onShowLoyalty, 
+    onEmitNFe,
+    emittingNFeId
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -5828,6 +5831,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
             onRequestCompletion={onRequestCompletion} 
             onShowLoyalty={onShowLoyalty}
             onEmitNFe={onEmitNFe}
+            isEmittingNFe={emittingNFeId === appt.id}
         />
     );
 
@@ -5897,6 +5901,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                                     onRequestCompletion={onRequestCompletion}
                                     onShowLoyalty={onShowLoyalty}
                                     onEmitNFe={onEmitNFe}
+                                    isEmittingNFe={emittingNFeId === app.id}
                                 />
                                     </div>
                                 ))}
@@ -6211,6 +6216,8 @@ interface PetMovelViewProps {
     onOpenAddModal?: () => void;
     onCloseAddModal?: () => void;
     onShowLoyalty?: (pet: string, owner: string) => void;
+    onEmitNFe: (appointment: AdminAppointment) => void;
+    emittingNFeId: string | null;
 }
 
 const PetMovelView: React.FC<PetMovelViewProps> = ({ 
@@ -6232,7 +6239,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
     isAddModalOpen: _isAddModalOpen,
     onOpenAddModal,
     onCloseAddModal,
-    onShowLoyalty, onEmitNFe
+    onShowLoyalty, onEmitNFe, emittingNFeId
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -6322,6 +6329,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
             onOpenActionMenu={(e) => onOpenActionMenu(appt, e)}
             onShowLoyalty={onShowLoyalty}
             onEmitNFe={onEmitNFe}
+            isEmittingNFe={emittingNFeId === appt.id}
         />
     );
 
@@ -16285,7 +16293,7 @@ const AdminDashboard: React.FC<{
                 isAddModalOpen={isAddModalOpen}
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
-                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe}
+                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId}
             />;
             case 'petMovel': return <PetMovelView 
                 key={dataKey} 
@@ -16307,7 +16315,7 @@ const AdminDashboard: React.FC<{
                 isAddModalOpen={isAddModalOpen}
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
-                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe}
+                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId}
             />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;

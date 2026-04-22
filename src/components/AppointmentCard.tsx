@@ -6,7 +6,8 @@ import {
     CheckCircleIcon,
     TrashIcon,
     PencilSquareIcon as EditIcon,
-    SparklesIcon
+    SparklesIcon,
+    DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { AdminAppointment, ServiceType, PetWeight } from '../../types';
 import { SERVICE_PRICES, PET_WEIGHT_OPTIONS } from '../../constants';
@@ -73,6 +74,7 @@ interface AppointmentCardProps {
     isDeleting?: boolean;
     onShowLoyalty?: (pet: string, owner: string) => void;
     onEmitNFe?: (appointment: AdminAppointment) => void;
+    isEmittingNFe?: boolean;
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -86,7 +88,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     isUpdating = false,
     isDeleting = false,
     onShowLoyalty,
-    onEmitNFe
+    onEmitNFe,
+    isEmittingNFe
 }) => {
     const {
         id,
@@ -394,13 +397,27 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                             onEmitNFe && (
                                 <button
                                     onClick={() => onEmitNFe(appointment)}
-                                    className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
-                                    title="Emitir Nota Fiscal"
+                                    disabled={isEmittingNFe}
+                                    className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-sm whitespace-nowrap ${
+                                        isEmittingNFe 
+                                        ? 'bg-pink-100 text-pink-400 cursor-not-allowed border border-pink-200' 
+                                        : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700 hover:shadow-md active:scale-95 border border-pink-400/20'
+                                    }`}
                                 >
-                                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    <span className="whitespace-nowrap">Nota Fiscal</span>
+                                    {isEmittingNFe ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Processando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <DocumentTextIcon className="w-5 h-5" />
+                                            <span>Nota Fiscal</span>
+                                        </>
+                                    )}
                                 </button>
                             )
                         ) : (
