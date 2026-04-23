@@ -5559,7 +5559,7 @@ const CloseDayView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-pink-900 shadow-sm border border-pink-100/50 backdrop-blur-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer"
                     title="Fechar"
                 >
-                    <XMarkOutlineIcon className="w-6 h-6" strokeWidth={2.5} />
+                    <XMarkIcon className="w-6 h-6" strokeWidth={2.5} />
                 </button>
 
                 <div className="relative z-10 flex items-center justify-between">
