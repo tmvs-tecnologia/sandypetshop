@@ -12,6 +12,7 @@ interface FiscalConfirmationModalProps {
     amount: number;
     isMonthly?: boolean;
     isDaycare?: boolean;
+    isAppointment?: boolean;
 }
 
 const FiscalConfirmationModal: React.FC<FiscalConfirmationModalProps> = ({ 
@@ -23,7 +24,8 @@ const FiscalConfirmationModal: React.FC<FiscalConfirmationModalProps> = ({
     serviceName,
     amount,
     isMonthly,
-    isDaycare 
+    isDaycare,
+    isAppointment
 }) => {
     if (!isOpen) return null;
 
@@ -32,7 +34,7 @@ const FiscalConfirmationModal: React.FC<FiscalConfirmationModalProps> = ({
             <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-scaleIn border border-pink-50">
                 {/* Header com Gradiente Luxury */}
                 <div className="relative h-32 bg-gradient-to-br from-pink-500 to-rose-400 flex items-center justify-center">
-                    <div className="absolute top-0 right-0 p-4">
+                    <div className="absolute top-0 right-0 p-4 z-10">
                         <button 
                             onClick={onClose}
                             className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all backdrop-blur-md"
@@ -45,8 +47,8 @@ const FiscalConfirmationModal: React.FC<FiscalConfirmationModalProps> = ({
                     </div>
                     
                     {/* Elementos Decorativos */}
-                    <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-                    <div className="absolute top-0 -right-4 w-16 h-16 bg-rose-300/20 rounded-full blur-xl"></div>
+                    <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                    <div className="absolute top-0 -right-4 w-16 h-16 bg-rose-300/20 rounded-full blur-xl pointer-events-none"></div>
                 </div>
 
                 {/* Conteúdo */}
@@ -93,6 +95,15 @@ const FiscalConfirmationModal: React.FC<FiscalConfirmationModalProps> = ({
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
                                 </span>
                                 Plano Creche Pet
+                            </div>
+                        )}
+                        {isAppointment && (
+                            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-tighter">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                                </span>
+                                Serviço Avulso
                             </div>
                         )}
                     </div>

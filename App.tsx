@@ -16061,7 +16061,9 @@ const AdminDashboard: React.FC<{
         if (emittingNFeId) return;
 
         const isDaycare = 'contracted_plan' in item;
-        const isMonthly = 'recurrence_type' in item;
+        const isAppointment = 'appointment_time' in item;
+        const isMonthly = !isDaycare && !isAppointment;
+
         const amount = isDaycare ? calculateDaycareInvoiceTotal(item as DaycareRegistration) : (item as AdminAppointment | MonthlyClient).price || 0;
         const serviceName = isDaycare ? 'Creche Pet' : (isMonthly ? 'Mensalidade PetShop' : (item as AdminAppointment).service);
 
@@ -16070,8 +16072,9 @@ const AdminDashboard: React.FC<{
             ownerName: isDaycare ? (item as DaycareRegistration).tutor_name : (item as any).owner_name,
             serviceName: serviceName,
             amount: amount,
-            isMonthly: isMonthly || isDaycare,
+            isMonthly: isMonthly,
             isDaycare: isDaycare,
+            isAppointment: isAppointment,
             item: item
         });
         setIsFiscalModalOpen(true);
