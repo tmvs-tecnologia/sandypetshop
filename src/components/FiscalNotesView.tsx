@@ -18,8 +18,11 @@ interface FiscalNote {
   status: string;
   nfe_url_pdf: string | null;
   focus_nfe_reference: string;
+  reference_id: string;
   error_message: string | null;
   raw_response: any;
+  hydrated_pet_name?: string;
+  hydrated_tutor_name?: string;
 }
 
 const FiscalNotesView: React.FC = () => {
@@ -31,13 +34,67 @@ const FiscalNotesView: React.FC = () => {
   const fetchNotes = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: notesData, error } = await supabase
         .from('fiscal_notes')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setNotes(data || []);
+      
+      const rawNotes = notesData || [];
+      
+      // Lógica de Hidratação para buscar nomes reais
+      // Para notas antigas, o ID pode estar truncado, então faremos um match mais flexível
+      
+      try {
+        // Busca TODOS os registros das tabelas de origem (é seguro até alguns milhares de registros)
+        const [daycareRes, monthlyRes, apptRes, petMovelRes, hotelRes, banhoRes] = await Promise.all([
+          supabase.from('daycare_enrollments').select('id, pet_name, tutor_name'),
+          supabase.from('monthly_clients').select('id, pet_name, owner_name'),
+          supabase.from('appointments').select('id, pet_name, owner_name'),
+          supabase.from('pet_movel_appointments').select('id, pet_name, owner_name'),
+          supabase.from('hotel_registrations').select('id, pet_name, tutor_name'),
+          supabase.from('agendamento_banhotosa').select('id, pet_name, owner_name')
+        ]);
+        
+        const allRecords: { id: string, pet: string, tutor: string }[] = [
+          ...(daycareRes.data?.map(d => ({ id: d.id, pet: d.pet_name, tutor: d.tutor_name })) || []),
+          ...(monthlyRes.data?.map(m => ({ id: m.id, pet: m.pet_name, tutor: m.owner_name })) || []),
+          ...(apptRes.data?.map(a => ({ id: a.id, pet: a.pet_name, tutor: a.owner_name })) || []),
+          ...(petMovelRes.data?.map(p => ({ id: p.id, pet: p.pet_name, tutor: p.owner_name })) || []),
+          ...(hotelRes.data?.map(h => ({ id: h.id, pet: h.pet_name, tutor: h.tutor_name })) || []),
+          ...(banhoRes.data?.map(b => ({ id: b.id, pet: b.pet_name, tutor: b.owner_name })) || [])
+        ];
+        
+        const hydrated = rawNotes.map(note => {
+          // Tenta encontrar o registro original
+          const rawRef = note.reference_id || note.focus_nfe_reference || '';
+          const cleanId = (rawRef.includes('-') && (rawRef.startsWith('daycare') || rawRef.startsWith('monthly') || rawRef.startsWith('appointment') || rawRef.startsWith('hotel')))
+            ? rawRef.split('-').slice(1).join('-')
+            : rawRef;
+            
+          // Match exato ou parcial (se o ID da nota for o início do ID real ou vice-versa)
+          const match = allRecords.find(r => 
+            r.id === cleanId || 
+            (cleanId.length > 5 && r.id.startsWith(cleanId)) ||
+            (r.id.length > 5 && cleanId.startsWith(r.id))
+          );
+
+          if (match) {
+            return {
+              ...note,
+              hydrated_pet_name: match.pet,
+              hydrated_tutor_name: match.tutor
+            };
+          }
+          return note;
+        });
+        
+        setNotes(hydrated);
+      } catch (hydrationErr) {
+        console.error('Erro na hidratação de nomes:', hydrationErr);
+        setNotes(rawNotes);
+      }
     } catch (err) {
       console.error('Erro ao buscar notas fiscais:', err);
     } finally {
@@ -55,16 +112,25 @@ const FiscalNotesView: React.FC = () => {
       (filter === 'authorized' && note.status === 'autorizado') ||
       (filter === 'error' && note.status === 'erro_autorizacao');
     
-    const rawPetName = note.raw_response?.pet_name || 
+    const rawPetName = note.hydrated_pet_name ||
+                       note.raw_response?.pet_name || 
                        note.raw_response?.descricao_servico?.match(/Pet:\s*([^-\n|.]+)/i)?.[1]?.trim() ||
                        note.raw_response?.discriminacao?.match(/Pet:\s*([^-\n|.]+)/i)?.[1]?.trim();
     
     // Fallback: tentar extrair do nome do tomador se estiver no formato "Pet (Tutor)"
-    const tomadorName = note.raw_response?.nome_tomador || note.raw_response?.razao_social_tomador || '';
+    const tomadorName = note.hydrated_tutor_name || 
+                       note.raw_response?.tutor_real_name || 
+                       note.raw_response?.nome_tomador || 
+                       note.raw_response?.razao_social_tomador || 
+                       '';
+                       
     const extractedPetFromTomador = !rawPetName && tomadorName.includes('(') ? tomadorName.split('(')[0].trim() : null;
     
     const petName = rawPetName || extractedPetFromTomador || '';
-    const tutorName = note.raw_response?.tutor_real_name || (tomadorName.includes('(') ? tomadorName.match(/\(([^)]+)\)/)?.[1] : tomadorName) || 'Consumidor';
+    const tutorName = note.hydrated_tutor_name || 
+                     note.raw_response?.tutor_real_name || 
+                     (tomadorName.includes('(') ? tomadorName.match(/\(([^)]+)\)/)?.[1] : tomadorName) || 
+                     'Consumidor';
     
     const customerName = `${petName} ${tutorName}`;
     const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -183,7 +249,8 @@ const FiscalNotesView: React.FC = () => {
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-lg font-black text-gray-800 uppercase tracking-tight truncate">
-                    {note.raw_response?.pet_name || 
+                    {note.hydrated_pet_name ||
+                     note.raw_response?.pet_name || 
                      note.raw_response?.descricao_servico?.match(/Pet:\s*([^-\n|.]+)/i)?.[1]?.trim() ||
                      note.raw_response?.discriminacao?.match(/Pet:\s*([^-\n|.]+)/i)?.[1]?.trim() ||
                      (note.raw_response?.nome_tomador?.includes('(') ? note.raw_response.nome_tomador.split('(')[0].trim() : null) ||
@@ -191,7 +258,8 @@ const FiscalNotesView: React.FC = () => {
                      (note.focus_nfe_reference.startsWith('daycare') ? 'Creche Pet' : 
                       note.focus_nfe_reference.startsWith('monthly_client') ? 'Mensalista' : 'Serviço')}
                     <span className="ml-2 text-sm font-bold text-gray-400 normal-case">
-                      ({note.raw_response?.tutor_real_name || 
+                      ({note.hydrated_tutor_name ||
+                        note.raw_response?.tutor_real_name || 
                         (note.raw_response?.nome_tomador?.includes('(') ? note.raw_response.nome_tomador.match(/\(([^)]+)\)/)?.[1] : note.raw_response?.nome_tomador) || 
                         note.raw_response?.razao_social_tomador || 
                         'Consumidor'})
