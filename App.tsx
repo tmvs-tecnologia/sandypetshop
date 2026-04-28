@@ -31,6 +31,8 @@ import { formatPhoneForWebhook } from './src/lib/utils';
 import LoyaltyCardPage from './src/components/LoyaltyCardPage';
 import LoyaltyModal from './src/components/LoyaltyModal';
 import LoyaltyDashboardView from './src/components/LoyaltyDashboardView';
+import FiscalNotesView from './src/components/FiscalNotesView';
+
 
 // HELPERS DE IDENTIFICAÇÃO DE SERVIÇO (UNIFICADOS)
 export function isMobileAppointment(appt: any) {
@@ -16044,8 +16046,30 @@ const AdminDashboard: React.FC<{
     };
 
     const [emittingNFeId, setEmittingNFeId] = useState<string | null>(null);
+    const [fiscalNotesMap, setFiscalNotesMap] = useState<Record<string, string>>({});
 
-    // Estados para Emissão Fiscal (FiscalConfirmationModal)
+    // Carregar notas fiscais existentes para mapear PDFs
+    useEffect(() => {
+        const fetchFiscalNotes = async () => {
+            const { data, error } = await supabase
+                .from('fiscal_notes')
+                .select('reference_id, nfe_url_pdf')
+                .eq('status', 'autorizado');
+            
+            if (!error && data) {
+                const map: Record<string, string> = {};
+                data.forEach(note => {
+                    if (note.reference_id && note.nfe_url_pdf) {
+                        map[note.reference_id] = note.nfe_url_pdf;
+                    }
+                });
+                setFiscalNotesMap(map);
+            }
+        };
+        fetchFiscalNotes();
+    }, [dataKey]); // Recarregar se os dados mudarem
+
+    // Estados para Emisso Fiscal (FiscalConfirmationModal)
     const [isFiscalModalOpen, setIsFiscalModalOpen] = useState(false);
     const [fiscalModalData, setFiscalModalData] = useState<{
         petName: string;
@@ -16105,9 +16129,14 @@ const AdminDashboard: React.FC<{
             if (data.success) {
                 const pdfUrl = data.pdf_url;
                 if (pdfUrl) {
+                    // Atualizar o mapa local para mudar o boto imediatamente
+                    setFiscalNotesMap(prev => ({
+                        ...prev,
+                        [item.id]: pdfUrl
+                    }));
                     // Abrir PDF em nova aba
                     window.open(pdfUrl, '_blank');
-                    alert('Nota Fiscal emitida com sucesso! O PDF foi aberto em uma nova aba. Status: ' + (data.status || 'Processando'));
+                    alert('Nota Fiscal emitida com sucesso! O PDF foi aberto em uma nova aba.');
                 } else {
                     alert('Nota Fiscal enviada com sucesso! Você poderá consultar o status em instantes no painel de Notas Fiscais.');
                 }
@@ -16424,7 +16453,7 @@ const AdminDashboard: React.FC<{
                 isAddModalOpen={isAddModalOpen}
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
-                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId}
+                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap}
             />;
             case 'petMovel': return <PetMovelView 
                 key={dataKey} 
@@ -16446,9 +16475,9 @@ const AdminDashboard: React.FC<{
                 isAddModalOpen={isAddModalOpen}
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
-                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId}
+                onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap}
             />;
-            case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} onFiscalNote={handleEmitNFe} emittingNFeId={emittingNFeId} />;
+            case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} onFiscalNote={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView 
@@ -16457,11 +16486,14 @@ const AdminDashboard: React.FC<{
                 onOpenDashboard={() => handleOpenDashboard('monthlyClients')} 
                 onEmitNFe={handleEmitNFe}
                 emittingNFeId={emittingNFeId}
+                fiscalNotesMap={fiscalNotesMap}
             />;
             case 'addMonthlyClient': return <AddMonthlyClientView onBack={() => setActiveView('monthlyClients')} onSuccess={() => { handleDataChanged(); setActiveView('monthlyClients'); }} />;
             case 'dashboard': return <StatisticsDashboardModal onBack={() => setActiveView(previousView)} />;
             case 'closeDay': return <CloseDayView onBack={() => setActiveView(previousView)} />;
             case 'insights': return <InsightsDashboard key={dataKey} onBack={() => setActiveView('resumo')} />;
+            case 'fiscalNotes': return <FiscalNotesView />;
+
             case 'feedbacks': return <FeedbacksView key={dataKey} />;
             case 'album': return <AlbumManagementView />;
             case 'loyalty': return <LoyaltyDashboardView onBack={() => setActiveView('resumo')} />;
@@ -16486,6 +16518,7 @@ const AdminDashboard: React.FC<{
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
                 onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe}
+                fiscalNotesMap={fiscalNotesMap}
             />;
         }
     };
@@ -16579,6 +16612,13 @@ const AdminDashboard: React.FC<{
                                 <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
                             </div>
                             <button
+                                onClick={() => { setActiveView('fiscalNotes'); closeMobileMenu(); }}
+                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'fiscalNotes' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/1052/1052856.png" alt="Notas Fiscais" className="w-6 h-6 object-contain" />
+                                Notas Fiscais
+                            </button>
+                            <button
                                 onClick={() => { setActiveView('insights'); closeMobileMenu(); }}
                                 className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'insights' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
@@ -16645,6 +16685,13 @@ const AdminDashboard: React.FC<{
                             <div className="px-4 pb-2">
                                 <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
                             </div>
+                            <button
+                                onClick={() => setActiveView('fiscalNotes')}
+                                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'fiscalNotes' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/1052/1052856.png" alt="Notas Fiscais" className="w-6 h-6 object-contain" />
+                                Notas Fiscais
+                            </button>
                             <button
                                 onClick={() => setActiveView('insights')}
                                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'insights' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}

@@ -7,7 +7,8 @@ import {
     TrashIcon,
     PencilSquareIcon as EditIcon,
     SparklesIcon,
-    DocumentTextIcon
+    DocumentTextIcon,
+    ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline';
 import { AdminAppointment, ServiceType, PetWeight } from '../../types';
 import { SERVICE_PRICES, PET_WEIGHT_OPTIONS } from '../../constants';
@@ -75,6 +76,7 @@ interface AppointmentCardProps {
     onShowLoyalty?: (pet: string, owner: string) => void;
     onEmitNFe?: (appointment: AdminAppointment) => void;
     isEmittingNFe?: boolean;
+    fiscalNotesMap?: Record<string, string>;
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -89,7 +91,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     isDeleting = false,
     onShowLoyalty,
     onEmitNFe,
-    isEmittingNFe
+    isEmittingNFe,
+    fiscalNotesMap
 }) => {
     const {
         id,
@@ -396,11 +399,20 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                         {isCompleted ? (
                             onEmitNFe && (
                                 <button
-                                    onClick={() => onEmitNFe(appointment)}
+                                    onClick={() => {
+                                        const nfeUrl = fiscalNotesMap?.[id];
+                                        if (nfeUrl) {
+                                            window.open(nfeUrl, '_blank');
+                                        } else if (onEmitNFe) {
+                                            onEmitNFe(appointment);
+                                        }
+                                    }}
                                     disabled={isEmittingNFe}
                                     className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs transition-all duration-300 shadow-sm whitespace-nowrap ${
                                         isEmittingNFe 
                                         ? 'bg-pink-100 text-pink-400 cursor-not-allowed border border-pink-200' 
+                                        : fiscalNotesMap?.[id]
+                                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 hover:shadow-md active:scale-95 border border-green-400/20'
                                         : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700 hover:shadow-md active:scale-95 border border-pink-400/20'
                                     }`}
                                 >
@@ -411,6 +423,11 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
                                             <span>Processando...</span>
+                                        </>
+                                    ) : fiscalNotesMap?.[id] ? (
+                                        <>
+                                            <ArrowTopRightOnSquareIcon className="w-5 h-5" />
+                                            <span>Abrir Nota</span>
                                         </>
                                     ) : (
                                         <>
