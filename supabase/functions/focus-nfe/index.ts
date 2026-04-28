@@ -89,31 +89,36 @@ serve(async (req) => {
     
     const focusRef = `${reference_type || 'service'}-${reference_id}-${Date.now()}`
     
+    const now = new Date()
+    const isoDate = now.toISOString().split('.')[0] + 'Z'
+    const dateOnly = now.toISOString().split('T')[0]
+    
     const payload = {
-        data_emissao: new Date().toISOString(),
+        data_emissao: isoDate,
+        data_competencia: dateOnly,
+        emitente_dps: 1, // 1 - Prestador
+        codigo_municipio_emissora: 3513801, // Diadema, SP
         cnpj_prestador: "27859716000103",
-        inscricao_municipal_prestador: "95127",
-        codigo_municipio_emissora: "3513801", // Diadema, SP (IBGE)
-        tomador: {
-            nome: customer.nome,
-            email: customer.email || undefined,
-            cpf: customer.cpf.replace(/\D/g, ''),
-            endereco: {
-                logradouro: customer.endereco,
-                numero: "SN",
-                bairro: "Bairro",
-                codigo_municipio: "3513801", // Diadema, SP
-                uf: "SP",
-                cep: "09900000" // CEP Genérico de Diadema
-            }
-        },
-        servico: {
-            codigo_servico: "07.10", 
-            discriminacao: `${customer.service} - Pet: ${data.pet_name || 'Não informado'}`,
-            valor_servicos: customer.price,
-            optante_simples_nacional: true,
-            regime_especial_tributacao: 0
-        }
+        codigo_opcao_simples_nacional: 2, // 2 - Simples Nacional (ME/EPP)
+        regime_especial_tributacao: "0",
+        
+        // Dados do Tomador (Estrutura Plana conforme doc)
+        cpf_tomador: customer.cpf.replace(/\D/g, ''),
+        nome_tomador: customer.nome,
+        email_tomador: customer.email || undefined,
+        logradouro_tomador: customer.endereco,
+        numero_tomador: "SN",
+        bairro_tomador: "Bairro",
+        codigo_municipio_tomador: 3513801,
+        uf_tomador: "SP",
+        cep_tomador: "09900000",
+        
+        // Dados do Serviço (Estrutura Plana conforme doc)
+        codigo_municipio_prestacao: 3513801,
+        codigo_tributacao_nacional_iss: "071001", // Mapeamento para Veterinária / PetShop (07.10)
+        descricao_servico: `${customer.service} - Pet: ${data.pet_name || 'Não informado'}`,
+        valor_servico: customer.price,
+        tributacao_iss: 1 // 1 - Sim (Tributável)
     }
 
     const response = await fetch(`${baseUrl}?ref=${focusRef}`, {
