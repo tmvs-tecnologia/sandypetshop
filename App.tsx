@@ -16103,7 +16103,14 @@ const AdminDashboard: React.FC<{
             if (error) throw error;
 
             if (data.success) {
-                alert('Nota Fiscal enviada com sucesso! Você poderá consultar o status em instantes no painel de Notas Fiscais.');
+                const pdfUrl = data.pdf_url;
+                if (pdfUrl) {
+                    // Abrir PDF em nova aba
+                    window.open(pdfUrl, '_blank');
+                    alert('Nota Fiscal emitida com sucesso! O PDF foi aberto em uma nova aba. Status: ' + (data.status || 'Processando'));
+                } else {
+                    alert('Nota Fiscal enviada com sucesso! Você poderá consultar o status em instantes no painel de Notas Fiscais.');
+                }
             } else {
                 const errorMsg = data.error || data.focus_result?.mensagem || 'Erro interno da função';
                 alert('Erro na função: ' + errorMsg);

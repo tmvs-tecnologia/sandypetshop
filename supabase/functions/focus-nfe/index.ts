@@ -90,8 +90,15 @@ serve(async (req) => {
     const focusRef = `${reference_type || 'service'}-${reference_id}-${Date.now()}`
     
     const now = new Date()
-    const isoDate = now.toISOString().split('.')[0] + 'Z'
-    const dateOnly = now.toISOString().split('T')[0]
+    // Subtrair 1 hora para evitar erro de "data no futuro"
+    const adjustedNow = new Date(now.getTime() - 60 * 60 * 1000)
+    
+    // Formatação manual para Brasília (-03:00)
+    // Se UTC é 19:35, adjustedNow (UTC) é 18:35. Em BRT (UTC-3) seria 15:35.
+    const brTime = new Date(adjustedNow.getTime() - (3 * 60 * 60 * 1000))
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    const isoDate = `${brTime.getUTCFullYear()}-${pad(brTime.getUTCMonth()+1)}-${pad(brTime.getUTCDate())}T${pad(brTime.getUTCHours())}:${pad(brTime.getUTCMinutes())}:${pad(brTime.getUTCSeconds())}-03:00`
+    const dateOnly = `${brTime.getUTCFullYear()}-${pad(brTime.getUTCMonth()+1)}-${pad(brTime.getUTCDate())}`
     
     const payload = {
         data_emissao: isoDate,
@@ -99,26 +106,27 @@ serve(async (req) => {
         emitente_dps: 1, // 1 - Prestador
         codigo_municipio_emissora: 3513801, // Diadema, SP
         cnpj_prestador: "27859716000103",
-        codigo_opcao_simples_nacional: 2, // 2 - Simples Nacional (ME/EPP)
+        codigo_opcao_simples_nacional: "2", // 2 - MEI (Em string conforme docs)
         regime_especial_tributacao: "0",
         
-        // Dados do Tomador (Estrutura Plana conforme doc)
+        // Dados do Tomador
         cpf_tomador: customer.cpf.replace(/\D/g, ''),
-        nome_tomador: customer.nome,
+        razao_social_tomador: customer.nome || "Consumidor",
         email_tomador: customer.email || undefined,
-        logradouro_tomador: customer.endereco,
+        logradouro_tomador: customer.endereco || "Não informado",
         numero_tomador: "SN",
         bairro_tomador: "Bairro",
         codigo_municipio_tomador: 3513801,
-        uf_tomador: "SP",
-        cep_tomador: "09900000",
+        // uf_tomador removido pois não existe no padrão flat nfsen do FocusNFe
+        cep_tomador: (customer.cep || "09910770").replace(/\D/g, ''),
         
-        // Dados do Serviço (Estrutura Plana conforme doc)
+        // Dados do Serviço
         codigo_municipio_prestacao: 3513801,
-        codigo_tributacao_nacional_iss: "071001", // Mapeamento para Veterinária / PetShop (07.10)
+        codigo_tributacao_nacional_iss: "060201", // Adestramento, embelezamento, alojamento, etc.
         descricao_servico: `${customer.service} - Pet: ${data.pet_name || 'Não informado'}`,
         valor_servico: customer.price,
-        tributacao_iss: 1 // 1 - Sim (Tributável)
+        tributacao_iss: 1, // 1 - Sim (Tributável)
+        tipo_retencao_iss: 1 // 1 - Não Retido
     }
 
     const response = await fetch(`${baseUrl}?ref=${focusRef}`, {
@@ -143,17 +151,65 @@ serve(async (req) => {
       throw new Error(`Erro da FocusNFe: ${errorMsg}`)
     }
 
+    // A URL do PDF para NFS-e Nacional só fica disponível após o processamento.
+    // Vamos fazer um polling (consulta repetida) por alguns segundos para tentar obter o link real.
+    let pdfUrl = null;
+    let finalStatus = result.status;
+    let consultData = result;
+
+    // Tentar consultar por até 5 vezes (total de ~10 segundos)
+    for (let i = 0; i < 5; i++) {
+        // Esperar 2 segundos entre tentativas (o processamento nacional pode levar um tempinho)
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const consultRes = await fetch(`${baseUrl}/${focusRef}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Basic ${btoa(apiKey + ':')}`,
+            }
+        });
+        
+        if (consultRes.ok) {
+            consultData = await consultRes.json();
+            finalStatus = consultData.status;
+            
+            // No padrão nacional, o PDF oficial (DANFSe) vem no campo url_danfse
+            if (consultData.url_danfse) {
+                pdfUrl = consultData.url_danfse;
+                break;
+            }
+            
+            // Caso não tenha url_danfse mas tenha um ID UUID, podemos tentar montar a URL com token
+            if (consultData.id) {
+                pdfUrl = `${baseUrl}/${consultData.id}.pdf?token=${apiKey}`;
+                break;
+            }
+            
+            // Se der erro ou for negada, paramos o polling
+            if (finalStatus === 'erro_autorizacao' || finalStatus === 'negado') {
+                break;
+            }
+        }
+    }
+
     step = 'salvando registro fiscal'
     await supabase.from('fiscal_notes').insert({
         reference_id,
         reference_type,
         focus_nfe_reference: focusRef,
-        focus_nfe_id: result.id,
-        status: 'pending',
-        raw_response: result
+        focus_nfe_id: consultData.id || result.id || null,
+        status: finalStatus || 'pending',
+        nfe_url_pdf: pdfUrl,
+        raw_response: consultData
     })
 
-    return new Response(JSON.stringify({ success: true, reference: focusRef, data: result }), {
+    return new Response(JSON.stringify({ 
+        success: true, 
+        reference: focusRef, 
+        pdf_url: pdfUrl,
+        status: finalStatus,
+        data: consultData 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
