@@ -14,8 +14,8 @@ serve(async (req) => {
 
   let step = 'inicializando'
   try {
-    const { reference_id, reference_type } = await req.json()
-    console.log(`[FocusNFe] Iniciando emissão para ${reference_type}: ${reference_id}`)
+    const { reference_id, reference_type, pet_name: req_pet_name, tutor_name: req_tutor_name } = await req.json()
+    console.log(`[FocusNFe] Iniciando emissão para ${reference_type}: ${reference_id} (Pet: ${req_pet_name})`)
 
     const rawApiKey = Deno.env.get('FOCUS_NFE_API_KEY')
     if (!rawApiKey) throw new Error('A variável FOCUS_NFE_API_KEY não está configurada.')
@@ -68,8 +68,9 @@ serve(async (req) => {
     }
 
     step = 'preparando dados do cliente'
+    const petName = req_pet_name || data.pet_name || data.petName || 'Pet';
     const customer = {
-      nome: data.owner_name || data.client_name || data.tutor_name || data.name || 'Cliente não identificado',
+      nome: req_tutor_name || data.owner_name || data.client_name || data.tutor_name || data.name || 'Cliente não identificado',
       cpf: data.owner_cpf || data.cpf || data.client_cpf || '',
       email: data.owner_email || data.email || data.client_email || data.tutor_email || '',
       endereco: data.owner_address || data.address || data.tutor_address || 'Não informado',
@@ -123,7 +124,7 @@ serve(async (req) => {
         // Dados do Serviço
         codigo_municipio_prestacao: 3513801,
         codigo_tributacao_nacional_iss: "060201", // Adestramento, embelezamento, alojamento, etc.
-        descricao_servico: `${customer.service} - Pet: ${data.pet_name || 'Não informado'}`,
+        descricao_servico: `${customer.service} - Pet: ${petName}`,
         valor_servico: customer.price,
         tributacao_iss: 1, // 1 - Sim (Tributável)
         tipo_retencao_iss: 1 // 1 - Não Retido
@@ -200,7 +201,11 @@ serve(async (req) => {
         focus_nfe_id: consultData.id || result.id || null,
         status: finalStatus || 'pending',
         nfe_url_pdf: pdfUrl,
-        raw_response: consultData
+        raw_response: {
+          ...consultData,
+          pet_name: petName,
+          tutor_real_name: customer.nome
+        }
     })
 
     return new Response(JSON.stringify({ 

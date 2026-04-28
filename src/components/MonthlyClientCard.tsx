@@ -5,7 +5,8 @@ import {
     UserIcon,
     PhoneIcon,
     SparklesIcon,
-    DocumentTextIcon
+    DocumentTextIcon,
+    ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline';
 import { MonthlyClient } from '../../types';
 import { useServiceValidation } from '../hooks/useServiceValidation';
@@ -203,7 +204,8 @@ const MonthlyClientCard: React.FC<{
     onView: (client: MonthlyClient) => void;
     onEmitNFe?: (client: MonthlyClient) => void;
     isEmittingNFe?: boolean;
-}> = ({ client, onClick, onEdit, onDelete, onAddExtraServices, onTogglePaymentStatus, onChangePhoto, onView, onEmitNFe, isEmittingNFe }) => {
+    fiscalNotesMap?: Record<string, string>;
+}> = ({ client, onClick, onEdit, onDelete, onAddExtraServices, onTogglePaymentStatus, onChangePhoto, onView, onEmitNFe, isEmittingNFe, fiscalNotesMap }) => {
 
     const { hasDaycare, hasHotel } = useServiceValidation(client.whatsapp);
 
@@ -544,11 +546,21 @@ const MonthlyClientCard: React.FC<{
                     <div className="flex items-center justify-between gap-2">
                         {onEmitNFe && (
                             <button
-                                onClick={(e) => { e.stopPropagation(); onEmitNFe(client); }}
+                                onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    const nfeUrl = fiscalNotesMap?.[client.id];
+                                    if (nfeUrl) {
+                                        window.open(nfeUrl, '_blank');
+                                    } else {
+                                        onEmitNFe(client); 
+                                    }
+                                }}
                                 disabled={isEmittingNFe}
                                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-sm whitespace-nowrap ${
                                     isEmittingNFe 
                                     ? 'bg-pink-100 text-pink-400 cursor-not-allowed border border-pink-200' 
+                                    : fiscalNotesMap?.[client.id]
+                                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 hover:shadow-md active:scale-95 border border-green-400/20'
                                     : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700 hover:shadow-md active:scale-95 border border-pink-400/20'
                                 }`}
                             >
@@ -559,6 +571,11 @@ const MonthlyClientCard: React.FC<{
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
                                         <span>Gerando...</span>
+                                    </>
+                                ) : fiscalNotesMap?.[client.id] ? (
+                                    <>
+                                        <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                                        <span>Abrir Nota</span>
                                     </>
                                 ) : (
                                     <>

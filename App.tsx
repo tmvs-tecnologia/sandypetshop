@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { toBlob } from 'html-to-image';
-import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon, UserPlusIcon, Squares2X2Icon, ChevronLeftIcon, ChevronRightIcon, GiftIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleOutlineIcon, XCircleIcon as XCircleOutlineIcon, EyeIcon as EyeOutlineIcon, PencilSquareIcon as PencilOutlineIcon, PlusIcon as PlusOutlineIcon, TrashIcon as TrashOutlineIcon, LockClosedIcon as LockClosedOutlineIcon, XMarkIcon, PhoneIcon, SparklesIcon, ChartPieIcon, ChevronUpIcon, ChevronDownIcon as HeroChevronDownIcon, ArrowTrendingUpIcon, PhotoIcon, Cog6ToothIcon, ArrowUpTrayIcon, UserPlusIcon, Squares2X2Icon, ChevronLeftIcon, ChevronRightIcon, GiftIcon, DocumentTextIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 // FIX: Moved AddonService from constants import to types import, as it's a type defined in types.ts.
 import { Appointment, ServiceType, PetWeight, AdminAppointment, Client, MonthlyClient, DaycareRegistration, PetMovelAppointment, AddonService, HotelRegistration } from './types';
 import { SERVICES, WORKING_HOURS, BATH_GROOMING_HOURS, MAX_CAPACITY_PER_SLOT, LUNCH_HOUR, PET_WEIGHT_OPTIONS, SERVICE_PRICES as FALLBACK_PRICES, ADDON_SERVICES, VISIT_WORKING_HOURS, DAYCARE_PLAN_PRICES, DAYCARE_EXTRA_SERVICES_PRICES, HOTEL_BASE_PRICE, HOTEL_EXTRA_SERVICES_PRICES } from './constants';
@@ -5727,6 +5727,7 @@ interface AppointmentsViewProps {
     onShowLoyalty?: (pet: string, owner: string) => void;
     onEmitNFe?: (appointment: AdminAppointment) => void;
     emittingNFeId: string | null;
+    fiscalNotesMap?: Record<string, string>;
 }
 
 const AppointmentsView: React.FC<AppointmentsViewProps> = ({ 
@@ -5750,7 +5751,8 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     onCloseAddModal,
     onShowLoyalty, 
     onEmitNFe,
-    emittingNFeId
+    emittingNFeId,
+    fiscalNotesMap
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -5849,6 +5851,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
             onShowLoyalty={onShowLoyalty}
             onEmitNFe={onEmitNFe}
             isEmittingNFe={emittingNFeId === appt.id}
+            fiscalNotesMap={fiscalNotesMap}
         />
     );
 
@@ -6235,6 +6238,7 @@ interface PetMovelViewProps {
     onShowLoyalty?: (pet: string, owner: string) => void;
     onEmitNFe: (appointment: AdminAppointment) => void;
     emittingNFeId: string | null;
+    fiscalNotesMap?: Record<string, string>;
 }
 
 const PetMovelView: React.FC<PetMovelViewProps> = ({ 
@@ -6256,7 +6260,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
     isAddModalOpen: _isAddModalOpen,
     onOpenAddModal,
     onCloseAddModal,
-    onShowLoyalty, onEmitNFe, emittingNFeId
+    onShowLoyalty, onEmitNFe, emittingNFeId, fiscalNotesMap
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -6347,6 +6351,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
             onShowLoyalty={onShowLoyalty}
             onEmitNFe={onEmitNFe}
             isEmittingNFe={emittingNFeId === appt.id}
+            fiscalNotesMap={fiscalNotesMap}
         />
     );
 
@@ -7484,7 +7489,8 @@ const MonthlyClientsView: React.FC<{
     onOpenDashboard: () => void;
     onEmitNFe: (client: MonthlyClient) => void;
     emittingNFeId: string | null;
-}> = ({ onAddClient, onDataChanged, onOpenDashboard, onEmitNFe, emittingNFeId }) => {
+    fiscalNotesMap?: Record<string, string>;
+}> = ({ onAddClient, onDataChanged, onOpenDashboard, onEmitNFe, emittingNFeId, fiscalNotesMap }) => {
     const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingClient, setEditingClient] = useState<MonthlyClient | null>(null);
@@ -8319,6 +8325,7 @@ const MonthlyClientsView: React.FC<{
                                             onView={(mc) => setViewingClient(mc)}
                                             onEmitNFe={onEmitNFe}
                                             isEmittingNFe={emittingNFeId === client.id}
+                                            fiscalNotesMap={fiscalNotesMap}
                                         />
                                     </div>
                                 );
@@ -8370,6 +8377,7 @@ const MonthlyClientsView: React.FC<{
                                             onView={(mc) => setViewingClient(mc)}
                                             onEmitNFe={onEmitNFe}
                                             isEmittingNFe={emittingNFeId === client.id}
+                                            fiscalNotesMap={fiscalNotesMap}
                                         />
                                     </div>
                                 );
@@ -8588,7 +8596,8 @@ const DaycareEnrollmentCard: React.FC<{
     isUploadingChecklist?: boolean;
     onFiscalNote?: (enrollment: DaycareRegistration) => void;
     isEmittingNFe?: boolean;
-}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare, onUploadChecklist, onRemoveChecklist, isUploadingChecklist, onFiscalNote, isEmittingNFe }) => {
+    fiscalNotesMap?: Record<string, string>;
+}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare, onUploadChecklist, onRemoveChecklist, isUploadingChecklist, onFiscalNote, isEmittingNFe, fiscalNotesMap }) => {
     const { created_at, pet_name, tutor_name, contracted_plan, status } = enrollment;
     const formatTimeText = (time: string | null | undefined): string => {
         if (!time) return 'Não definido';
@@ -8845,14 +8854,24 @@ const DaycareEnrollmentCard: React.FC<{
                 {status === 'Aprovado' && onFiscalNote && (
                     <div className="mb-4">
                         <button
-                            onClick={(e) => { e.stopPropagation(); onFiscalNote(enrollment); }}
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                const nfeUrl = fiscalNotesMap?.[enrollment.id];
+                                if (nfeUrl) {
+                                    window.open(nfeUrl, '_blank');
+                                } else if (onFiscalNote) {
+                                    onFiscalNote(enrollment); 
+                                }
+                            }}
                             disabled={isEmittingNFe}
                             className={`w-full py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-bold border shadow-sm ${
                                 isEmittingNFe 
                                 ? 'bg-pink-100 text-pink-400 border-pink-200 cursor-not-allowed' 
+                                : fiscalNotesMap?.[enrollment.id]
+                                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 border-green-400/20 shadow-md'
                                 : 'bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-100 group-hover:shadow-pink-100'
                             }`}
-                            title="Emitir Nota Fiscal"
+                            title={fiscalNotesMap?.[enrollment.id] ? "Abrir Nota Fiscal" : "Emitir Nota Fiscal"}
                         >
                             {isEmittingNFe ? (
                                 <>
@@ -8861,6 +8880,11 @@ const DaycareEnrollmentCard: React.FC<{
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
                                     <span>Gerando...</span>
+                                </>
+                            ) : fiscalNotesMap?.[enrollment.id] ? (
+                                <>
+                                    <ArrowTopRightOnSquareIcon className="w-5 h-5" />
+                                    <span>Abrir Nota</span>
                                 </>
                             ) : (
                                 <>
@@ -14933,7 +14957,7 @@ const EditHotelRegistrationModal: React.FC<{
     );
 };
 
-const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: DaycareRegistration) => void; emittingNFeId?: string | null }> = ({ refreshKey, onFiscalNote, emittingNFeId }) => {
+const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: DaycareRegistration) => void; emittingNFeId?: string | null; fiscalNotesMap?: Record<string, string> }> = ({ refreshKey, onFiscalNote, emittingNFeId, fiscalNotesMap }) => {
     const [enrollments, setEnrollments] = useState<DaycareRegistration[]>([]);
     const [petsInDaycareNow, setPetsInDaycareNow] = useState<DaycareRegistration[]>([]);
     const [loading, setLoading] = useState(true);
@@ -15389,6 +15413,7 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
                         isUploadingChecklist={!!isUploadingChecklistMap[enrollment.id!]}
                         onFiscalNote={onFiscalNote}
                         isEmittingNFe={emittingNFeId === enrollment.id}
+                        fiscalNotesMap={fiscalNotesMap}
                     />
                 ))}
             </div>
@@ -16120,7 +16145,9 @@ const AdminDashboard: React.FC<{
             const { data, error } = await supabase.functions.invoke('focus-nfe', {
                 body: { 
                     reference_id: item.id, 
-                    reference_type: reference_type 
+                    reference_type: reference_type,
+                    pet_name: fiscalModalData.petName,
+                    tutor_name: fiscalModalData.ownerName
                 }
             });
 
