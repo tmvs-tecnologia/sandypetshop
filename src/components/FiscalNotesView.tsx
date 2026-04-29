@@ -9,7 +9,8 @@ import {
   Clock, 
   Search,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Send
 } from 'lucide-react';
 
 interface FiscalNote {
@@ -31,6 +32,9 @@ const FiscalNotesView: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'authorized' | 'error'>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
+  const [sentItems, setSentItems] = useState<Record<string, boolean>>({});
+  const [sendingIds, setSendingIds] = useState<Record<string, boolean>>({});
+
   const fetchNotes = async () => {
     setLoading(true);
     try {
@@ -43,48 +47,44 @@ const FiscalNotesView: React.FC = () => {
       
       const rawNotes = notesData || [];
       
-      // Lógica de Hidratação para buscar nomes reais
-      // Para notas antigas, o ID pode estar truncado, então faremos um match mais flexível
-      
+      // Lógica de Hidratação para buscar nomes reais e contatos
       try {
-        // Busca TODOS os registros das tabelas de origem (é seguro até alguns milhares de registros)
         const [daycareRes, monthlyRes, apptRes, petMovelRes, hotelRes, banhoRes] = await Promise.all([
-          supabase.from('daycare_enrollments').select('id, pet_name, tutor_name'),
-          supabase.from('monthly_clients').select('id, pet_name, owner_name'),
-          supabase.from('appointments').select('id, pet_name, owner_name'),
-          supabase.from('pet_movel_appointments').select('id, pet_name, owner_name'),
-          supabase.from('hotel_registrations').select('id, pet_name, tutor_name'),
-          supabase.from('agendamento_banhotosa').select('id, pet_name, owner_name')
+          supabase.from('daycare_enrollments').select('id, pet_name, tutor_name, tutor_phone'),
+          supabase.from('monthly_clients').select('id, pet_name, owner_name, tutor_phone'),
+          supabase.from('appointments').select('id, pet_name, owner_name, whatsapp'),
+          supabase.from('pet_movel_appointments').select('id, pet_name, owner_name, whatsapp'),
+          supabase.from('hotel_registrations').select('id, pet_name, tutor_name, tutor_phone'),
+          supabase.from('agendamento_banhotosa').select('id, pet_name, owner_name, whatsapp')
         ]);
         
-        const allRecords: { id: string, pet: string, tutor: string }[] = [
-          ...(daycareRes.data?.map(d => ({ id: d.id, pet: d.pet_name, tutor: d.tutor_name })) || []),
-          ...(monthlyRes.data?.map(m => ({ id: m.id, pet: m.pet_name, tutor: m.owner_name })) || []),
-          ...(apptRes.data?.map(a => ({ id: a.id, pet: a.pet_name, tutor: a.owner_name })) || []),
-          ...(petMovelRes.data?.map(p => ({ id: p.id, pet: p.pet_name, tutor: p.owner_name })) || []),
-          ...(hotelRes.data?.map(h => ({ id: h.id, pet: h.pet_name, tutor: h.tutor_name })) || []),
-          ...(banhoRes.data?.map(b => ({ id: b.id, pet: b.pet_name, tutor: b.owner_name })) || [])
+        const allRecords: { id: string, pet: string, tutor: string, phone: string }[] = [
+          ...(daycareRes.data?.map(d => ({ id: d.id, pet: d.pet_name, tutor: d.tutor_name, phone: d.tutor_phone })) || []),
+          ...(monthlyRes.data?.map(m => ({ id: m.id, pet: m.pet_name, tutor: m.owner_name, phone: m.tutor_phone })) || []),
+          ...(apptRes.data?.map(a => ({ id: a.id, pet: a.pet_name, tutor: a.owner_name, phone: a.whatsapp })) || []),
+          ...(petMovelRes.data?.map(p => ({ id: p.id, pet: p.pet_name, tutor: p.owner_name, phone: p.whatsapp })) || []),
+          ...(hotelRes.data?.map(h => ({ id: h.id, pet: h.pet_name, tutor: h.tutor_name, phone: h.tutor_phone })) || []),
+          ...(banhoRes.data?.map(b => ({ id: b.id, pet: b.pet_name, tutor: b.owner_name, phone: b.whatsapp })) || [])
         ];
         
         const hydrated = rawNotes.map(note => {
-          // Tenta encontrar o registro original
           const rawRef = note.reference_id || note.focus_nfe_reference || '';
           const cleanId = (rawRef.includes('-') && (rawRef.startsWith('daycare') || rawRef.startsWith('monthly') || rawRef.startsWith('appointment') || rawRef.startsWith('hotel')))
             ? rawRef.split('-').slice(1).join('-')
             : rawRef;
             
-          // Match exato ou parcial (se o ID da nota for o início do ID real ou vice-versa)
           const match = allRecords.find(r => 
             r.id === cleanId || 
             (cleanId.length > 5 && r.id.startsWith(cleanId)) ||
             (r.id.length > 5 && cleanId.startsWith(r.id))
           );
-
+ 
           if (match) {
             return {
               ...note,
               hydrated_pet_name: match.pet,
-              hydrated_tutor_name: match.tutor
+              hydrated_tutor_name: match.tutor,
+              hydrated_phone: match.phone
             };
           }
           return note;
@@ -92,13 +92,46 @@ const FiscalNotesView: React.FC = () => {
         
         setNotes(hydrated);
       } catch (hydrationErr) {
-        console.error('Erro na hidratação de nomes:', hydrationErr);
+        console.error('Erro na hidratação:', hydrationErr);
         setNotes(rawNotes);
       }
     } catch (err) {
       console.error('Erro ao buscar notas fiscais:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendWebhook = async (note: FiscalNote) => {
+    if (sendingIds[note.id] || sentItems[note.id]) return;
+
+    setSendingIds(prev => ({ ...prev, [note.id]: true }));
+
+    try {
+      const payload = {
+        url_nota: note.nfe_url_pdf,
+        nome_cliente: note.hydrated_tutor_name || note.raw_response?.nome_tomador || 'Cliente',
+        telefone_cliente: note.hydrated_phone || ''
+      };
+
+      const response = await fetch('https://n8n.intelektus.tech/webhook/notaFiscal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setSentItems(prev => ({ ...prev, [note.id]: true }));
+      } else {
+        throw new Error('Falha ao enviar webhook');
+      }
+    } catch (err) {
+      console.error('Erro ao enviar webhook:', err);
+      alert('Erro ao enviar a nota fiscal. Tente novamente.');
+    } finally {
+      setSendingIds(prev => ({ ...prev, [note.id]: false }));
     }
   };
 
@@ -170,56 +203,67 @@ const FiscalNotesView: React.FC = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      {/* Header Premium */}
-      <div className="flex flex-col items-center justify-center text-center gap-4 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-400 to-purple-500" />
-        <div>
-          <h2 className="text-4xl font-bold text-pink-600" style={{ fontFamily: '"Lobster Two", cursive' }}>
-            Notas Fiscais
-          </h2>
-          <p className="text-gray-400 text-sm font-medium mt-1">Histórico de emissões e status legal</p>
+      {/* Header Estilo Mensalistas */}
+      <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-6 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-gradient-to-br from-pink-50 to-purple-50 rounded-full blur-2xl opacity-70 pointer-events-none"></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4 text-center md:text-left mx-auto md:mx-0">
+            <div>
+              <h2 className="text-4xl font-bold text-pink-600" style={{ fontFamily: '"Lobster Two", cursive' }}>
+                Notas Fiscais
+              </h2>
+              <p className="text-[11px] sm:text-sm text-gray-600 font-medium">Histórico de emissões e status legal</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {/* Botão Atualizar */}
+            <button 
+              onClick={fetchNotes}
+              className="flex items-center gap-2 px-6 py-2.5 bg-pink-50 text-pink-600 rounded-xl hover:bg-pink-100 transition-all font-bold text-sm border border-pink-100 shadow-sm h-11"
+            >
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+              <span>Atualizar</span>
+            </button>
+          </div>
         </div>
-        <button 
-          onClick={fetchNotes}
-          className="flex items-center gap-2 px-6 py-2.5 bg-pink-50 text-pink-600 rounded-xl hover:bg-pink-100 transition-all font-bold text-sm border border-pink-100 shadow-sm"
-        >
-          <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-          Atualizar Lista
-        </button>
-      </div>
 
-      {/* Filtros e Busca */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <button 
-            onClick={() => setFilter('all')}
-            className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${filter === 'all' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
-          >
-            Todas
-          </button>
-          <button 
-            onClick={() => setFilter('authorized')}
-            className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${filter === 'authorized' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
-          >
-            Autorizadas
-          </button>
-          <button 
-            onClick={() => setFilter('error')}
-            className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${filter === 'error' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
-          >
-            Erros
-          </button>
-        </div>
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-          <input 
-            type="text" 
-            placeholder="Buscar por pet, tutor ou referência..." 
+        {/* Busca Integrada */}
+        <div className="mt-6 relative z-10">
+          <input
+            type="text"
+            placeholder="Buscar por pet, tutor ou referência..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none text-gray-700 font-medium"
+            className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white shadow-sm transition-all"
           />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
         </div>
+      </div>
+
+      {/* Filtros Fora do Cabeçalho */}
+      <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm overflow-hidden max-w-md mx-auto md:mx-0">
+        <button 
+          onClick={() => setFilter('all')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${filter === 'all' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
+        >
+          Todas
+        </button>
+        <button 
+          onClick={() => setFilter('authorized')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${filter === 'authorized' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
+        >
+          Autorizadas
+        </button>
+        <button 
+          onClick={() => setFilter('error')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${filter === 'error' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
+        >
+          Erros
+        </button>
       </div>
 
       {/* Lista de Notas */}
@@ -297,24 +341,50 @@ const FiscalNotesView: React.FC = () => {
                 </div>
 
                 <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 w-full sm:w-auto justify-end">
-                  {getStatusBadge(note.status)}
-                  {note.status === 'autorizado' && note.nfe_url_pdf ? (
-                    <a 
-                      href={note.nfe_url_pdf} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 shadow-md hover:shadow-pink-200/50 transition-all font-bold text-sm whitespace-nowrap"
-                    >
-                      Ver PDF <ExternalLink size={14} />
-                    </a>
-                  ) : note.status === 'erro_autorizacao' ? (
+                  {note.status !== 'autorizado' && getStatusBadge(note.status)}
+                  {note.status === 'autorizado' && note.nfe_url_pdf && (
+                    <div className="flex items-center gap-2">
+                      <a 
+                        href={note.nfe_url_pdf} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 shadow-md hover:shadow-pink-200/50 transition-all font-bold text-sm whitespace-nowrap"
+                      >
+                        Ver PDF <ExternalLink size={14} />
+                      </a>
+                      <button
+                        onClick={() => handleSendWebhook(note)}
+                        disabled={sendingIds[note.id] || sentItems[note.id]}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl shadow-md transition-all font-bold text-sm whitespace-nowrap ${
+                          sentItems[note.id] 
+                            ? 'bg-green-500 text-white shadow-green-200/50 cursor-default' 
+                            : 'bg-pink-600 text-white hover:bg-pink-700 shadow-pink-200/50'
+                        } ${sendingIds[note.id] ? 'opacity-70 cursor-wait' : ''}`}
+                      >
+                        {sendingIds[note.id] ? (
+                          <>
+                            Enviando... <RefreshCw size={14} className="animate-spin" />
+                          </>
+                        ) : sentItems[note.id] ? (
+                          <>
+                            Enviado <CheckCircle2 size={14} />
+                          </>
+                        ) : (
+                          <>
+                            Enviar <Send size={14} />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                  {note.status === 'erro_autorizacao' && (
                     <button 
                       onClick={() => alert(`Erro da FocusNFe: ${JSON.stringify(note.raw_response?.erros || note.error_message)}`)}
                       className="flex items-center gap-1 text-red-500 text-[10px] font-black uppercase hover:underline"
                     >
                       <AlertCircle size={12} /> Ver Detalhes
                     </button>
-                  ) : null}
+                  )}
                 </div>
               </div>
             </div>

@@ -123,7 +123,8 @@ serve(async (req) => {
         
         // Dados do Serviço
         codigo_municipio_prestacao: 3513801,
-        codigo_tributacao_nacional_iss: "060401", // Adestramento, embelezamento, alojamento, guarda e cuidados de animais.
+        item_lista_servico: "05.08",
+        codigo_tributacao_nacional_iss: "050801", // Guarda, tratamento, amestramento, embelezamento, alojamento e congêneres, relativos a animais.
         descricao_servico: `${customer.service} - Pet: ${petName}`,
         valor_servico: customer.price,
         tributacao_iss: 1, // 1 - Sim (Tributável)
