@@ -14987,6 +14987,7 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
     const [isCobrancaCrecheModalOpen, setIsCobrancaCrecheModalOpen] = useState(false);
     const [isCobrancaCrecheLoading, setIsCobrancaCrecheLoading] = useState(false);
     const [pendentesCrecheCount, setPendentesCrecheCount] = useState(0);
+    const [pendentesCrecheData, setPendentesCrecheData] = useState<DaycareRegistration[]>([]);
     const [alertCrecheInfo, setAlertCrecheInfo] = useState<{ title: string; message: string; variant: 'success' | 'error' } | null>(null);
 
     useEffect(() => {
@@ -15421,12 +15422,20 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
     };
 
     const handleCobrancaCreche = () => {
-        const pendentes = enrollments.filter(e => e.payment_status === 'Pendente').length;
-        if (pendentes === 0) {
-            alert('Não há matrículas da creche com status pendente para cobrar.');
+        const inDaycareIds = new Set(petsInDaycareNow.map(p => p.id));
+        const toCharge = enrollments.filter(e => 
+            e.status === 'Aprovado' && 
+            e.payment_status === 'Pendente' && 
+            !inDaycareIds.has(e.id)
+        );
+
+        if (toCharge.length === 0) {
+            alert('Não há matrículas ativas com status de pagamento pendente para cobrar.');
             return;
         }
-        setPendentesCrecheCount(pendentes);
+        
+        setPendentesCrecheData(toCharge);
+        setPendentesCrecheCount(toCharge.length);
         setIsCobrancaCrecheModalOpen(true);
     };
 
@@ -15435,7 +15444,21 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
         try {
             await fetch('https://n8n.intelektus.tech/webhook/cobreCreche', {
                 method: 'POST',
-                mode: 'no-cors'
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    data_cobrança: new Date().toISOString(),
+                    total_pets: pendentesCrecheData.length,
+                    pets: pendentesCrecheData.map(p => ({
+                        id: p.id,
+                        pet_name: p.pet_name,
+                        tutor_name: (p as any).tutor_name || '',
+                        whatsapp: (p as any).contact_phone || '',
+                        plan: (p as any).contracted_plan || '',
+                        price: (p as any).total_price || 0
+                    }))
+                })
             });
             setAlertCrecheInfo({ title: 'Sucesso!', message: 'Solicitação de cobrança da creche enviada com sucesso!', variant: 'success' });
         } catch (err) {
@@ -15526,7 +15549,7 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
                 onClose={() => setIsCobrancaCrecheModalOpen(false)}
                 onConfirm={confirmCobrancaCreche}
                 title="Cobrar Creche Pet"
-                message={`Deseja realizar a cobrança de ${pendentesCrecheCount} matrículas da creche com status pendente agora?`}
+                message={`Deseja realizar a cobrança de ${pendentesCrecheCount} matrículas ativas da creche com status de pagamento pendente agora?`}
                 confirmText="Cobrar"
                 cancelText="Cancelar"
                 variant="primary"
