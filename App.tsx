@@ -10,6 +10,7 @@ import { supabase } from './supabaseClient';
 import NotificationBell from './NotificationBell';
 import ExtraServicesModal from './ExtraServicesModal';
 import PriceTableModal from './PriceTableModal';
+import WeeklyScheduleModal from './WeeklyScheduleModal';
 import ActionChooserModal from './src/ActionChooserModal';
 import { Menu, MenuItem } from './src/components/ui/menu';
 import { Button } from './src/components/ui/button';
@@ -11877,6 +11878,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const [showPublicAlbum, setShowPublicAlbum] = useState(false);
     const [selectedPhoto, setSelectedPhoto] = useState<{url: string, filename: string} | null>(null);
     const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+    const [isWeeklyScheduleOpen, setIsWeeklyScheduleOpen] = useState(false);
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [banhoTosaOnlyAppointments, setBanhoTosaOnlyAppointments] = useState<Appointment[]>([]);
@@ -12449,32 +12451,41 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
             <div className="w-full max-w-5xl relative z-10 flex flex-col items-center">
                 <header className="w-full flex flex-col md:flex-row items-center justify-between mb-12 animate-fadeInUp gap-8">
-                    <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-                        <div className="relative group">
+                    <div className="flex flex-row items-center gap-4 text-left w-full md:w-auto">
+                        <div className="relative group flex-shrink-0">
                             <div className="absolute inset-0 bg-pink-300 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500"></div>
-                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-28 w-28 object-contain transform group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl" loading="eager" />
+                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-14 w-14 sm:h-20 sm:w-20 md:h-28 md:w-28 object-contain transform group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl" loading="eager" />
                         </div>
                         <div>
-                            <h1 className="font-brand text-5xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1">Sandy's<br className="hidden md:block"/><span className="text-pink-600 md:ml-0 ml-2">Pet Shop</span></h1>
-                            <p className="text-pink-800/70 text-lg md:text-xl font-medium tracking-wide uppercase mt-2">Agendamento Online</p>
+                            <h1 className="font-brand text-4xl sm:text-5xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1 whitespace-nowrap">Sandy's <span className="text-pink-600">Pet Shop</span></h1>
                         </div>
                     </div>
-                    <div className="flex-shrink-0 flex flex-row gap-3 items-center justify-center w-full md:w-auto">
+                    <div className="flex-shrink-0 flex flex-col gap-3 items-center justify-center w-full md:w-auto">
+                        <div className="flex flex-row gap-3 w-full justify-center md:justify-end">
+                            <button
+                                onClick={() => setIsPriceModalOpen(true)}
+                                className="flex-1 sm:flex-none group relative overflow-hidden px-4 sm:px-8 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center justify-center gap-2 sm:gap-3 transform hover:-translate-y-1"
+                            >
+                                <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
+                                <span className="relative z-10 text-2xl">📋</span>
+                                <span className="relative z-10 uppercase tracking-wider text-sm">Preços</span>
+                            </button>
+                            <button
+                                onClick={() => setShowPublicAlbum(true)}
+                                className="flex-1 sm:flex-none group relative overflow-hidden px-4 sm:px-8 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center justify-center gap-2 sm:gap-3 transform hover:-translate-y-1"
+                            >
+                                <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
+                                <span className="relative z-10 text-2xl">📸</span>
+                                <span className="relative z-10 uppercase tracking-wider text-sm font-black">Álbum</span>
+                            </button>
+                        </div>
                         <button
-                            onClick={() => setIsPriceModalOpen(true)}
-                            className="flex-1 sm:flex-none group relative overflow-hidden px-4 sm:px-8 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center justify-center gap-2 sm:gap-3 transform hover:-translate-y-1"
+                            onClick={() => setIsWeeklyScheduleOpen(true)}
+                            className="w-full group relative overflow-hidden px-4 sm:px-8 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center justify-center gap-2 sm:gap-3 transform hover:-translate-y-1"
                         >
                             <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
-                            <span className="relative z-10 text-2xl">📋</span>
-                            <span className="relative z-10 uppercase tracking-wider text-sm">Preços</span>
-                        </button>
-                        <button
-                            onClick={() => setShowPublicAlbum(true)}
-                            className="flex-1 sm:flex-none group relative overflow-hidden px-4 sm:px-8 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center justify-center gap-2 sm:gap-3 transform hover:-translate-y-1"
-                        >
-                            <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
-                            <span className="relative z-10 text-2xl">📸</span>
-                            <span className="relative z-10 uppercase tracking-wider text-sm font-black">Álbum</span>
+                            <span className="relative z-10 text-2xl">📅</span>
+                            <span className="relative z-10 uppercase tracking-wider text-sm font-black">Confira Agenda Semanal</span>
                         </button>
                     </div>
                 </header>
@@ -12482,6 +12493,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
 
                 <PriceTableModal isOpen={isPriceModalOpen} onClose={() => setIsPriceModalOpen(false)} />
+                <WeeklyScheduleModal isOpen={isWeeklyScheduleOpen} onClose={() => setIsWeeklyScheduleOpen(false)} />
 
                 {/* Estilos de Animação Premium */}
                 <style dangerouslySetInnerHTML={{ __html: `
