@@ -12563,7 +12563,8 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                 Bem-vindo a <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400">Sandy Pet!</span> 🐶💗
                             </h2>
                             <p className="text-pink-900/80 text-lg md:text-xl leading-relaxed">
-                                Estamos muito felizes em receber você e seu pet por aqui! Escolha o serviço ideal para o seu melhor amigo e agende de forma simples.
+                                Ficamos felizes em receber você e seu pet! 🐾<br />
+                                Selecione abaixo o serviço desejado e faça seu agendamento de forma rápida.
                             </p>
                         </div>
 
