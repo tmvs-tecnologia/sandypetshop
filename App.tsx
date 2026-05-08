@@ -18018,15 +18018,24 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                 </section>
                 <section className="bg-white rounded-2xl shadow p-4">
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Socialização</h3>
-                    <div className="overflow-x-auto">
-                        <div className="flex gap-3 min-w-max px-1">
-                            <label className="flex items-center gap-2 shrink-0"><input type="checkbox" checked={social.outros} onChange={(e) => setSocial(s => ({ ...s, outros: e.target.checked }))} /><span>Brincou com outros pets</span></label>
-                            <label className="flex items-center gap-2 shrink-0"><input type="checkbox" checked={social.descanso} onChange={(e) => setSocial(s => ({ ...s, descanso: e.target.checked }))} /><span>Precisou de descanso</span></label>
-                            <label className="flex items-center gap-2 shrink-0"><input type="checkbox" checked={social.quieto} onChange={(e) => setSocial(s => ({ ...s, quieto: e.target.checked }))} /><span>Ficou mais quieto</span></label>
+                    <div className="overflow-x-auto pb-4 snap-x scrollbar-thin">
+                        <div className="grid grid-rows-3 grid-flow-col gap-3 px-1 min-w-max">
+                            <label className="flex items-center gap-3 p-3 bg-pink-50/30 hover:bg-pink-100/30 border border-pink-100/40 rounded-xl cursor-pointer transition-all duration-200 snap-start shrink-0 min-w-[200px] sm:min-w-[240px] select-none">
+                                <input type="checkbox" checked={social.outros} onChange={(e) => setSocial(s => ({ ...s, outros: e.target.checked }))} className="w-4 h-4 text-pink-600 border-pink-300 rounded focus:ring-pink-500 accent-pink-500 shrink-0" />
+                                <span className="text-xs sm:text-sm font-semibold text-pink-950 truncate">Brincou com outros pets</span>
+                            </label>
+                            <label className="flex items-center gap-3 p-3 bg-pink-50/30 hover:bg-pink-100/30 border border-pink-100/40 rounded-xl cursor-pointer transition-all duration-200 snap-start shrink-0 min-w-[200px] sm:min-w-[240px] select-none">
+                                <input type="checkbox" checked={social.descanso} onChange={(e) => setSocial(s => ({ ...s, descanso: e.target.checked }))} className="w-4 h-4 text-pink-600 border-pink-300 rounded focus:ring-pink-500 accent-pink-500 shrink-0" />
+                                <span className="text-xs sm:text-sm font-semibold text-pink-950 truncate">Precisou de descanso</span>
+                            </label>
+                            <label className="flex items-center gap-3 p-3 bg-pink-50/30 hover:bg-pink-100/30 border border-pink-100/40 rounded-xl cursor-pointer transition-all duration-200 snap-start shrink-0 min-w-[200px] sm:min-w-[240px] select-none">
+                                <input type="checkbox" checked={social.quieto} onChange={(e) => setSocial(s => ({ ...s, quieto: e.target.checked }))} className="w-4 h-4 text-pink-600 border-pink-300 rounded focus:ring-pink-500 accent-pink-500 shrink-0" />
+                                <span className="text-xs sm:text-sm font-semibold text-pink-950 truncate">Ficou mais quieto</span>
+                            </label>
                             {socialOptions.map(opt => (
-                                <label key={opt} className="flex items-center gap-2 shrink-0">
-                                    <input type="checkbox" checked={socialNotes.includes(opt)} onChange={(e) => setSocialNotes(prev => e.target.checked ? [...prev, opt] : prev.filter(x => x !== opt))} />
-                                    <span>{opt}</span>
+                                <label key={opt} className="flex items-center gap-3 p-3 bg-pink-50/30 hover:bg-pink-100/30 border border-pink-100/40 rounded-xl cursor-pointer transition-all duration-200 snap-start shrink-0 min-w-[200px] sm:min-w-[240px] select-none">
+                                    <input type="checkbox" checked={socialNotes.includes(opt)} onChange={(e) => setSocialNotes(prev => e.target.checked ? [...prev, opt] : prev.filter(x => x !== opt))} className="w-4 h-4 text-pink-600 border-pink-300 rounded focus:ring-pink-500 accent-pink-500 shrink-0" />
+                                    <span className="text-xs sm:text-sm font-semibold text-pink-950 truncate">{opt}</span>
                                 </label>
                             ))}
                         </div>
@@ -18034,12 +18043,12 @@ const DaycareDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string
                 </section>
                 <section className="bg-white rounded-2xl shadow p-4">
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Bem-estar emocional</h3>
-                    <div className="overflow-x-auto">
-                        <div className="flex gap-3 min-w-max px-1">
+                    <div className="overflow-x-auto pb-4 snap-x scrollbar-thin">
+                        <div className="grid grid-rows-3 grid-flow-col gap-3 px-1 min-w-max">
                             {emotionalOptions.map(opt => (
-                                <label key={opt} className="flex items-center gap-2 shrink-0">
-                                    <input type="checkbox" checked={emotionalNotes.includes(opt)} onChange={(e) => setEmotionalNotes(prev => e.target.checked ? [...prev, opt] : prev.filter(x => x !== opt))} />
-                                    <span>{opt}</span>
+                                <label key={opt} className="flex items-center gap-3 p-3 bg-pink-50/30 hover:bg-pink-100/30 border border-pink-100/40 rounded-xl cursor-pointer transition-all duration-200 snap-start shrink-0 min-w-[200px] sm:min-w-[240px] select-none">
+                                    <input type="checkbox" checked={emotionalNotes.includes(opt)} onChange={(e) => setEmotionalNotes(prev => e.target.checked ? [...prev, opt] : prev.filter(x => x !== opt))} className="w-4 h-4 text-pink-600 border-pink-300 rounded focus:ring-pink-500 accent-pink-500 shrink-0" />
+                                    <span className="text-xs sm:text-sm font-semibold text-pink-950 truncate">{opt}</span>
                                 </label>
                             ))}
                         </div>
@@ -18270,23 +18279,53 @@ const PublicDiaryPage: React.FC<{ enrollment: DaycareRegistration; date: string;
                 </section>
                 <section className="bg-white rounded-2xl shadow p-4">
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Socialização</h3>
-                    {!entry ? (<p className="text-gray-600">Sem registros</p>) : (
-                        <ul className="text-gray-700 text-sm space-y-1">
-                            {entry.social_outros && <li>Brincou com outros pets</li>}
-                            {entry.social_descanso && <li>Precisou de descanso</li>}
-                            {entry.social_quieto && <li>Ficou mais quieto</li>}
-                            {(entry.social_notes || []).map((t: string, i: number) => (<li key={i}>{t}</li>))}
-                            {!entry.social_outros && !entry.social_descanso && !entry.social_quieto && !((entry.social_notes || []).length) && <li>Sem registros</li>}
-                        </ul>
+                    {!entry ? (<p className="text-gray-600 text-sm italic py-2">Sem registros</p>) : (
+                        (() => {
+                            const activeItems: string[] = [];
+                            if (entry.social_outros) activeItems.push("Brincou com outros pets");
+                            if (entry.social_descanso) activeItems.push("Precisou de descanso");
+                            if (entry.social_quieto) activeItems.push("Ficou mais quieto");
+                            (entry.social_notes || []).forEach((t: string) => activeItems.push(t));
+
+                            if (activeItems.length === 0) {
+                                return <p className="text-gray-500 text-sm italic py-2">Sem registros</p>;
+                            }
+
+                            return (
+                                <div className="overflow-x-auto pb-4 snap-x scrollbar-thin">
+                                    <div className="grid grid-rows-3 grid-flow-col gap-3 px-1 min-w-max">
+                                        {activeItems.map((item, i) => (
+                                            <div 
+                                                key={i} 
+                                                className="flex items-center gap-2 px-4 py-2.5 bg-pink-50/40 border border-pink-100/50 rounded-xl snap-start shrink-0 min-w-[200px] sm:min-w-[240px] shadow-sm"
+                                            >
+                                                <span className="text-base">✨</span>
+                                                <span className="text-xs sm:text-sm font-semibold text-pink-950 truncate">{item}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()
                     )}
                 </section>
                 <section className="bg-white rounded-2xl shadow p-4">
                     <h3 className="text-lg font-semibold text-white mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-3 py-2">Bem-estar emocional</h3>
                     {entry?.emotional_notes?.length ? (
-                        <ul className="text-gray-700 text-sm space-y-1">
-                            {entry.emotional_notes.map((t: string, i: number) => (<li key={i}>{t}</li>))}
-                        </ul>
-                    ) : (<p className="text-gray-600">Sem registros</p>)}
+                        <div className="overflow-x-auto pb-4 snap-x scrollbar-thin">
+                            <div className="grid grid-rows-3 grid-flow-col gap-3 px-1 min-w-max">
+                                {entry.emotional_notes.map((t: string, i: number) => (
+                                    <div 
+                                        key={i} 
+                                        className="flex items-center gap-2 px-4 py-2.5 bg-pink-50/40 border border-pink-100/50 rounded-xl snap-start shrink-0 min-w-[200px] sm:min-w-[240px] shadow-sm"
+                                    >
+                                        <span className="text-base">💖</span>
+                                        <span className="text-xs sm:text-sm font-semibold text-pink-950 truncate">{t}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (<p className="text-gray-600 text-sm italic py-2">Sem registros</p>)}
                 </section>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <section className="bg-white rounded-2xl shadow p-4">
