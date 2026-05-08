@@ -12451,12 +12451,12 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
             <div className="w-full max-w-5xl relative z-10 flex flex-col items-center">
                 <header className="w-full flex flex-col md:flex-row items-center justify-between mb-12 animate-fadeInUp gap-8">
-                    <div className="flex flex-row items-center gap-4 text-left w-full md:w-auto">
+                    <div className="flex flex-row items-center text-left w-full md:w-auto">
                         <div className="relative group flex-shrink-0">
                             <div className="absolute inset-0 bg-pink-300 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500"></div>
                             <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 object-contain transform group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl" loading="eager" />
                         </div>
-                        <div>
+                        <div className="flex-1 flex justify-center min-w-0">
                             <h1 className="font-brand text-5xl sm:text-6xl md:text-8xl text-pink-900 tracking-tight leading-none mb-1 whitespace-nowrap">Sandy's <span className="text-pink-600">Pet Shop</span></h1>
                         </div>
                     </div>
