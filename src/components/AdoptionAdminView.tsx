@@ -14,6 +14,9 @@ export const AdoptionAdminView: React.FC = () => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [contactPhone, setContactPhone] = useState('');
+    const [age, setAge] = useState('Adulto');
+    const [size, setSize] = useState('Médio');
+    const [gender, setGender] = useState('Macho');
     const [photoFile, setPhotoFile] = useState<File | null>(null);
 
     const fetchPets = async () => {
@@ -39,8 +42,6 @@ export const AdoptionAdminView: React.FC = () => {
     const handleDelete = async (id: string, photoUrl: string) => {
         if (!confirm('Tem certeza que deseja remover este pet? (Ex: ele já foi adotado)')) return;
         try {
-            // Se houver uma foto e ela estiver no storage, tentamos deletar (opcional)
-            // Para manter simples, só apagamos o registro do banco
             const { error } = await supabase.from('adoption_pets').delete().eq('id', id);
             if (error) throw error;
             setPets(prev => prev.filter(p => p.id !== id));
@@ -74,16 +75,16 @@ export const AdoptionAdminView: React.FC = () => {
                 name,
                 description,
                 contact_phone: contactPhone,
-                photo_url
+                photo_url,
+                age,
+                size,
+                gender
             }]);
 
             if (dbError) throw dbError;
 
             setIsAddModalOpen(false);
-            setName('');
-            setDescription('');
-            setContactPhone('');
-            setPhotoFile(null);
+            resetForm();
             fetchPets();
         } catch (err: any) {
             console.error(err);
@@ -91,6 +92,16 @@ export const AdoptionAdminView: React.FC = () => {
         } finally {
             setUploading(false);
         }
+    };
+
+    const resetForm = () => {
+        setName('');
+        setDescription('');
+        setContactPhone('');
+        setAge('Adulto');
+        setSize('Médio');
+        setGender('Macho');
+        setPhotoFile(null);
     };
 
     return (
@@ -141,8 +152,15 @@ export const AdoptionAdminView: React.FC = () => {
                                 </div>
                             </div>
                             <div className="p-5 flex-1 flex flex-col">
-                                <h3 className="text-xl font-bold text-gray-800">{pet.name}</h3>
-                                <p className="text-xs text-gray-500 mt-1 mb-3">WhatsApp: {pet.contact_phone}</p>
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="text-xl font-bold text-gray-800">{pet.name}</h3>
+                                    <span className="bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide">{pet.gender || 'Macho'}</span>
+                                </div>
+                                <p className="text-xs text-gray-500 mb-2">WhatsApp: {pet.contact_phone}</p>
+                                <div className="flex gap-1.5 mb-3 flex-wrap">
+                                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px] font-medium">{pet.age || 'Adulto'}</span>
+                                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px] font-medium">{pet.size || 'Médio'}</span>
+                                </div>
                                 <p className="text-sm text-gray-600 flex-1 line-clamp-3">{pet.description}</p>
                             </div>
                         </div>
@@ -151,27 +169,56 @@ export const AdoptionAdminView: React.FC = () => {
             )}
 
             {isAddModalOpen && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl">
-                        <h2 className="text-2xl font-bold text-orange-600 mb-6" style={{ fontFamily: '"Lobster Two", cursive' }}>Novo Pet</h2>
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+                    <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl my-8">
+                        <h2 className="text-2xl font-bold text-orange-600 mb-6" style={{ fontFamily: '"Lobster Two", cursive' }}>Novo Pet para Adoção</h2>
                         <form onSubmit={handleAddPet} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Nome do Pet</label>
-                                <input type="text" required value={name} onChange={e => setName(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Ex: Bob" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nome do Pet</label>
+                                    <input type="text" required value={name} onChange={e => setName(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Ex: Bob" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">WhatsApp</label>
+                                    <input type="text" required value={contactPhone} onChange={e => setContactPhone(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" placeholder="(XX) 9XXXX-XXXX" />
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Contato (WhatsApp)</label>
-                                <input type="text" required value={contactPhone} onChange={e => setContactPhone(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" placeholder="(XX) 9XXXX-XXXX" />
+
+                            <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Idade</label>
+                                    <select value={age} onChange={e => setAge(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+                                        <option value="Filhote">Filhote</option>
+                                        <option value="Adulto">Adulto</option>
+                                        <option value="Idoso">Idoso</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Porte</label>
+                                    <select value={size} onChange={e => setSize(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+                                        <option value="Pequeno">Pequeno</option>
+                                        <option value="Médio">Médio</option>
+                                        <option value="Grande">Grande</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Sexo</label>
+                                    <select value={gender} onChange={e => setGender(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+                                        <option value="Macho">Macho</option>
+                                        <option value="Fêmea">Fêmea</option>
+                                    </select>
+                                </div>
                             </div>
+
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">História / Descrição</label>
-                                <textarea required value={description} onChange={e => setDescription(e.target.value)} rows={4} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none resize-none" placeholder="Conte um pouco sobre a personalidade dele..." />
+                                <textarea required value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none resize-none" placeholder="Conte um pouco sobre a personalidade dele..." />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Foto (Opcional)</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Foto Principal</label>
                                 <label className="flex items-center justify-center gap-2 p-3 bg-orange-50 text-orange-600 border border-orange-200 border-dashed rounded-xl cursor-pointer hover:bg-orange-100 transition-colors">
                                     <PhotoIcon className="w-5 h-5" />
-                                    <span className="text-sm font-medium">{photoFile ? photoFile.name : 'Escolher Arquivo'}</span>
+                                    <span className="text-sm font-medium truncate max-w-[200px]">{photoFile ? photoFile.name : 'Escolher Arquivo'}</span>
                                     <input type="file" accept="image/*" className="hidden" onChange={e => setPhotoFile(e.target.files?.[0] || null)} />
                                 </label>
                             </div>
@@ -179,7 +226,7 @@ export const AdoptionAdminView: React.FC = () => {
                             <div className="flex gap-3 pt-4 border-t border-gray-100">
                                 <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200">Cancelar</button>
                                 <button type="submit" disabled={uploading} className="flex-1 py-3 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 disabled:opacity-50 flex justify-center items-center">
-                                    {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Salvar'}
+                                    {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Salvar Pet'}
                                 </button>
                             </div>
                         </form>

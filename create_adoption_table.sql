@@ -6,8 +6,16 @@ CREATE TABLE IF NOT EXISTS public.adoption_pets (
     contact_phone text NOT NULL,
     photo_url text,
     video_url text,
+    age text, -- Filhote, Adulto, Idoso
+    size text, -- Pequeno, Médio, Grande
+    gender text, -- Macho, Fêmea
     CONSTRAINT adoption_pets_pkey PRIMARY KEY (id)
 );
+
+-- SE VOCÊ JÁ CRIOU A TABELA, EXECUTE O SCRIPT ABAIXO NO SQL EDITOR DO SUPABASE:
+-- ALTER TABLE public.adoption_pets ADD COLUMN IF NOT EXISTS age text;
+-- ALTER TABLE public.adoption_pets ADD COLUMN IF NOT EXISTS size text;
+-- ALTER TABLE public.adoption_pets ADD COLUMN IF NOT EXISTS gender text;
 
 -- Habilitando RLS básico e permissões públicas para leitura e administração interna
 ALTER TABLE public.adoption_pets ENABLE ROW LEVEL SECURITY;

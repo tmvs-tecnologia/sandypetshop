@@ -11968,6 +11968,16 @@ const AlbumGrid = ({ onPhotoClick }: { onPhotoClick: (photo: {url: string, filen
     );
 };
 
+const POPULAR_BREEDS = [
+    "Akita", "Basset Hound", "Beagle", "Bichon Frisé", "Border Collie", "Boston Terrier", 
+    "Boxer", "Buldogue Francês", "Buldogue Inglês", "Chihuahua", "Chow Chow", "Cocker Spaniel", 
+    "Dachshund (Salsicha)", "Dálmata", "Doberman", "Fox Paulistinha", "Golden Retriever", 
+    "Husky Siberiano", "Jack Russell Terrier", "Labrador Retriever", "Lhasa Apso", "Maltês", 
+    "Pastor Alemão", "Pastor Australiano", "Pastor Belga", "Pinscher", "Pitbull", "Poodle", 
+    "Pug", "Rottweiler", "Schnauzer", "Shar Pei", "Shiba Inu", "Shih Tzu", "Spitz Alemão (Lulu)", 
+    "SRD (Sem Raça Definida)", "Weimaraner", "Yorkshire Terrier"
+];
+
 // --- MAIN APP COMPONENT ---
 const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegistration' | 'hotelRegistration') => void }> = ({ setView }) => {
     const { getPricesForWeight } = useServicePrices();
@@ -12023,6 +12033,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     const [disabledBathGroomDates, setDisabledBathGroomDates] = useState<string[]>([]);
     const [disabledPetMovelDates, setDisabledPetMovelDates] = useState<string[]>([]);
     const [foundPets, setFoundPets] = useState<any[]>([]);
+    const [isOtherBreed, setIsOtherBreed] = useState(false);
 
     const isVisitService = useMemo(() =>
         selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
@@ -12727,19 +12738,19 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             <button 
                                 type="button" 
                                 onClick={() => { setServiceStepView('pet_movel'); setSelectedService(null); setSelectedCondo(null); }} 
-                                className="group relative col-span-1 md:col-span-5 overflow-hidden rounded-2xl md:rounded-[2rem] bg-gradient-to-br from-pink-500 via-rose-500 to-pink-600 p-5 md:p-10 text-center md:text-left transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(236,72,153,0.5)] border border-pink-400/30 flex flex-col items-center md:items-start justify-center md:justify-between min-h-[140px] md:min-h-[280px] hover:-translate-y-2 active:scale-[0.97]"
+                                className="group relative col-span-1 md:col-span-5 overflow-hidden rounded-2xl md:rounded-[2rem] bg-white/70 backdrop-blur-md p-5 md:p-10 text-center md:text-left transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(236,72,153,0.3)] border border-pink-100/60 flex flex-col items-center md:items-start justify-center md:justify-between min-h-[140px] md:min-h-[280px] hover:-translate-y-2 active:scale-[0.97]"
                                 style={{ transformStyle: 'preserve-3d' }}
                             >
-                                <div className="absolute top-0 right-0 w-32 md:w-56 h-32 md:h-56 bg-white/10 rounded-full blur-2xl -translate-y-1/3 translate-x-1/4"></div>
+                                <div className="absolute top-0 right-0 w-32 md:w-56 h-32 md:h-56 bg-gradient-to-bl from-pink-100/80 via-rose-50/40 to-transparent rounded-full blur-2xl -translate-y-1/3 translate-x-1/4 group-hover:from-pink-200/90 transition-all duration-700"></div>
                                 <div className="relative z-10 mb-2 md:mb-6">
                                     <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-11 h-11 md:w-16 md:h-16 object-contain drop-shadow-lg transform group-hover:rotate-12 group-hover:scale-115 transition-all duration-500" loading="lazy" />
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-lg md:text-4xl font-extrabold text-white mb-0.5 md:mb-1.5 tracking-tight leading-tight">Pet Móvel</h3>
-                                    <p className="text-white/60 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-[8px] md:text-xs">Condomínios</p>
+                                    <h3 className="text-lg md:text-4xl font-extrabold text-pink-950 mb-0.5 md:mb-1.5 tracking-tight leading-tight">Pet Móvel</h3>
+                                    <p className="text-pink-700/50 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-[8px] md:text-xs">Condomínios</p>
                                 </div>
                                 <div className="hidden md:block absolute bottom-4 right-5 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-400">
-                                    <span className="text-white/80 text-sm font-bold tracking-wide">Agendar →</span>
+                                    <span className="text-pink-400 text-sm font-bold tracking-wide">Agendar →</span>
                                 </div>
                             </button>
 
@@ -12769,21 +12780,21 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             <button 
                                 type="button" 
                                 onClick={() => { setView('visitSelector'); }} 
-                                className="group relative col-span-1 md:col-span-7 overflow-hidden rounded-2xl md:rounded-[2rem] bg-gradient-to-br from-rose-400 via-pink-500 to-rose-600 p-5 md:p-8 text-center md:text-left transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(236,72,153,0.5)] border border-pink-400/30 flex flex-col items-center md:flex-row md:items-center md:justify-between gap-2 md:gap-4 justify-center min-h-[140px] md:min-h-[170px] hover:-translate-y-2 active:scale-[0.97]"
+                                className="group relative col-span-1 md:col-span-7 overflow-hidden rounded-2xl md:rounded-[2rem] bg-white/70 backdrop-blur-md p-5 md:p-8 text-center md:text-left transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(236,72,153,0.3)] border border-pink-100/60 flex flex-col items-center md:flex-row md:items-center md:justify-between gap-2 md:gap-4 justify-center min-h-[140px] md:min-h-[170px] hover:-translate-y-2 active:scale-[0.97]"
                             >
-                                <div className="absolute bottom-0 right-0 w-32 md:w-48 h-32 md:h-48 bg-white/10 rounded-full blur-2xl translate-y-1/3 translate-x-1/4"></div>
+                                <div className="absolute bottom-0 right-0 w-32 md:w-48 h-32 md:h-48 bg-gradient-to-br from-rose-50/80 to-transparent rounded-full blur-2xl translate-y-1/3 translate-x-1/4"></div>
                                 <div className="relative z-10 md:hidden mb-2">
                                     <SafeImage src="https://cdn-icons-png.flaticon.com/512/2196/2196747.png" alt="Visita" className="w-12 h-12" loading="lazy" />
                                 </div>
                                 <div className="relative z-10 flex flex-col items-center md:items-start">
-                                    <h3 className="text-lg md:text-4xl font-extrabold text-white mb-0.5 md:mb-1.5 tracking-tight leading-tight">Visita</h3>
-                                    <p className="text-white/60 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-[8px] md:text-xs">Agendar Tour</p>
+                                    <h3 className="text-lg md:text-4xl font-extrabold text-pink-950 mb-0.5 md:mb-1.5 tracking-tight leading-tight">Visita</h3>
+                                    <p className="text-pink-700/50 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-[8px] md:text-xs">Agendar Tour</p>
                                 </div>
-                                <div className="relative z-10 bg-white/15 backdrop-blur-sm p-4 sm:p-5 rounded-2xl group-hover:bg-white/25 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3 hidden md:flex">
+                                <div className="relative z-10 bg-pink-50/80 backdrop-blur-sm p-4 sm:p-5 rounded-2xl group-hover:bg-pink-100/80 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3 hidden md:flex">
                                     <SafeImage src="https://cdn-icons-png.flaticon.com/512/2196/2196747.png" alt="Visita" className="w-12 h-12 sm:w-14 sm:h-14" loading="lazy" />
                                 </div>
                                 <div className="hidden md:block absolute bottom-3 right-5 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-400">
-                                    <span className="text-white/80 text-sm font-bold tracking-wide">Agendar →</span>
+                                    <span className="text-pink-400 text-sm font-bold tracking-wide">Agendar →</span>
                                 </div>
                             </button>
 
@@ -12804,24 +12815,26 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-gradient-to-bl from-pink-200/40 via-rose-100/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
                     <div className="absolute bottom-[-10%] left-[-5%] w-[300px] h-[300px] bg-gradient-to-tr from-orange-100/30 via-pink-100/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
 
-                    {/* Botão voltar premium (agora fixo na tela externa que não rola) */}
-                    <button
-                        type="button"
-                        onClick={() => setServiceStepView('main')}
-                        className="absolute top-5 left-5 z-[110] flex items-center gap-2 px-4 py-2.5 bg-white/70 backdrop-blur-xl text-pink-700 font-bold rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                        </svg>
-                        <span className="text-xs uppercase tracking-wider font-black hidden sm:inline">Voltar</span>
-                    </button>
+                    {/* Botão voltar antigo removido */}
 
                     {/* Área de rolagem isolada */}
-                    <div className="absolute inset-0 overflow-y-auto pt-20 pb-8">
+                    <div className="absolute inset-0 overflow-y-auto pt-2 sm:pt-4 pb-8">
                         <main className="relative w-full max-w-3xl mx-auto px-4 sm:px-6">
-                            <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(236,72,153,0.15)] overflow-hidden border border-pink-100/60">
+                            <div className="bg-white/60 backdrop-blur-xl rounded-t-[0] sm:rounded-t-[2rem] rounded-b-[2rem] shadow-[0_20px_60px_-15px_rgba(236,72,153,0.15)] overflow-hidden border border-pink-100/60 min-h-screen sm:min-h-0">
 
                                 <form onSubmit={handleSubmit} className={`relative p-6 sm:p-8 transition-all duration-300 ${isAnimating ? 'animate-slideOutToLeft' : 'animate-slideInFromRight'}`}>
+                                    {/* Botão voltar premium movido para dentro do form */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setServiceStepView('main')}
+                                        className="absolute top-6 left-2 sm:top-8 sm:left-4 z-[110] flex items-center justify-center w-10 h-10 bg-pink-50 text-pink-700 font-bold rounded-full shadow-sm hover:bg-pink-100 hover:shadow-md transition-all duration-300"
+                                        title="Voltar"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                                        </svg>
+                                    </button>
+
                                     <div className="mb-6 flex items-center justify-center min-h-[48px]">
                                         {serviceStepView === 'bath_groom' && (
                                             <div className="flex items-center gap-3 animate-fadeIn">
@@ -12886,7 +12899,47 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             </div>
                             <div>
                                 <label htmlFor="petBreed" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">Raça do Pet</label>
-                                <div className="relative mt-1"><span className="absolute inset-y-0 left-0 flex items-center pl-4"><BreedIcon /></span><input type="text" name="petBreed" id="petBreed" value={formData.petBreed} onChange={handleInputChange} required className="block w-full pl-12 pr-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all" /></div>
+                                <div className="relative mt-1">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none"><BreedIcon /></span>
+                                    <select 
+                                        id="petBreedSelect"
+                                        value={isOtherBreed ? "Outra" : formData.petBreed}
+                                        onChange={(e) => {
+                                            if (e.target.value === "Outra") {
+                                                setIsOtherBreed(true);
+                                                setFormData(prev => ({ ...prev, petBreed: '' }));
+                                            } else {
+                                                setIsOtherBreed(false);
+                                                setFormData(prev => ({ ...prev, petBreed: e.target.value }));
+                                            }
+                                        }}
+                                        className="block w-full pl-12 pr-10 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all appearance-none cursor-pointer"
+                                    >
+                                        <option value="">Selecione a Raça</option>
+                                        {POPULAR_BREEDS.map(breed => (
+                                            <option key={breed} value={breed}>{breed}</option>
+                                        ))}
+                                        <option value="Outra">Outra raça...</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-pink-400">
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                {isOtherBreed && (
+                                    <div className="relative mt-3 animate-fadeIn">
+                                        <input
+                                            type="text"
+                                            name="petBreed"
+                                            placeholder="Digite a raça do seu pet"
+                                            value={formData.petBreed}
+                                            onChange={handleInputChange}
+                                            required
+                                            className="block w-full px-5 py-3 bg-white border-2 border-pink-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-pink-200 text-pink-950 font-medium transition-all"
+                                        />
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label htmlFor="ownerAddress" className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2">Seu Endereço</label>
@@ -12966,27 +13019,27 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             {serviceStepView === 'bath_groom' && (
                                 <div className="space-y-6">
                                     <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">1. Serviço Principal</h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <button type="button" onClick={() => setSelectedService(ServiceType.BATH)} className={`group relative overflow-hidden rounded-[2rem] p-6 text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-between items-center min-h-[160px] hover:-translate-y-1 ${selectedService === ServiceType.BATH ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
-                                            <div className="relative z-10 flex items-center justify-center mb-4">
-                                                <div className={`p-4 rounded-full transition-colors duration-300 ${selectedService === ServiceType.BATH ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
-                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho" className="w-10 h-10 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.BATH)} className={`group relative overflow-hidden rounded-[2rem] p-4 aspect-square text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-center items-center hover:-translate-y-1 ${selectedService === ServiceType.BATH ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
+                                            <div className="relative z-10 flex items-center justify-center mb-3">
+                                                <div className={`p-3.5 rounded-full transition-colors duration-300 ${selectedService === ServiceType.BATH ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
+                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho" className="w-9 h-9 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                                                 </div>
                                             </div>
-                                            <div className="relative z-10 text-center">
-                                                <h4 className="text-2xl font-bold tracking-tight mb-1">{SERVICES[ServiceType.BATH].label}</h4>
-                                                <p className="text-sm font-semibold uppercase tracking-[0.1em] opacity-70">Tosa Higiênica inclusa</p>
+                                            <div className="relative z-10 text-center w-full px-1">
+                                                <h4 className="text-[14px] xs:text-base sm:text-lg md:text-xl font-extrabold tracking-tighter mb-0.5 whitespace-nowrap">{SERVICES[ServiceType.BATH].label}</h4>
+                                                <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider opacity-70">Tosa Higiênica</p>
                                             </div>
                                         </button>
-                                        <button type="button" onClick={() => setSelectedService(ServiceType.BATH_AND_GROOMING)} className={`group relative overflow-hidden rounded-[2rem] p-6 text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-between items-center min-h-[160px] hover:-translate-y-1 ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
-                                            <div className="relative z-10 flex items-center justify-center mb-4">
-                                                <div className={`p-4 rounded-full transition-colors duration-300 ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
-                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-10 h-10 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.BATH_AND_GROOMING)} className={`group relative overflow-hidden rounded-[2rem] p-4 aspect-square text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-center items-center hover:-translate-y-1 ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
+                                            <div className="relative z-10 flex items-center justify-center mb-3">
+                                                <div className={`p-3.5 rounded-full transition-colors duration-300 ${selectedService === ServiceType.BATH_AND_GROOMING ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
+                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-9 h-9 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                                                 </div>
                                             </div>
-                                            <div className="relative z-10 text-center">
-                                                <h4 className="text-2xl font-bold tracking-tight mb-1">{SERVICES[ServiceType.BATH_AND_GROOMING].label}</h4>
-                                                <p className="text-sm font-semibold uppercase tracking-[0.1em] opacity-70">Serviço Completo</p>
+                                            <div className="relative z-10 text-center w-full px-1">
+                                                <h4 className="text-[14px] xs:text-base sm:text-lg md:text-xl font-extrabold tracking-tighter mb-0.5 whitespace-nowrap">{SERVICES[ServiceType.BATH_AND_GROOMING].label}</h4>
+                                                <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider opacity-70">Serviço Completo</p>
                                             </div>
                                         </button>
                                     </div>
@@ -13015,27 +13068,27 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                                         ))}
                                     </div>
                                     <h3 className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-2 mt-8">2. Serviço Principal (Pet Móvel)</h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH)} className={`group relative overflow-hidden rounded-[2rem] p-6 text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-between items-center min-h-[160px] hover:-translate-y-1 ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
-                                            <div className="relative z-10 flex items-center justify-center mb-4">
-                                                <div className={`p-4 rounded-full transition-colors duration-300 ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
-                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Banho Pet Móvel" className="w-10 h-10 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH)} className={`group relative overflow-hidden rounded-[2rem] p-4 aspect-square text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-center items-center hover:-translate-y-1 ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
+                                            <div className="relative z-10 flex items-center justify-center mb-3">
+                                                <div className={`p-3.5 rounded-full transition-colors duration-300 ${selectedService === ServiceType.PET_MOBILE_BATH ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
+                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Banho Pet Móvel" className="w-9 h-9 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                                                 </div>
                                             </div>
-                                            <div className="relative z-10 text-center">
-                                                <h4 className="text-2xl font-bold tracking-tight mb-1">Banho</h4>
-                                                <p className="text-sm font-semibold uppercase tracking-[0.1em] opacity-70">Tosa Higiênica inclusa</p>
+                                            <div className="relative z-10 text-center w-full px-1">
+                                                <h4 className="text-[14px] xs:text-base sm:text-lg md:text-xl font-extrabold tracking-tighter mb-0.5 whitespace-nowrap">Banho</h4>
+                                                <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider opacity-70">Tosa Higiênica</p>
                                             </div>
                                         </button>
-                                        <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH_AND_GROOMING)} className={`group relative overflow-hidden rounded-[2rem] p-6 text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-between items-center min-h-[160px] hover:-translate-y-1 ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
-                                            <div className="relative z-10 flex items-center justify-center mb-4">
-                                                <div className={`p-4 rounded-full transition-colors duration-300 ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
-                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Banho & Tosa Pet Móvel" className="w-10 h-10 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                        <button type="button" onClick={() => setSelectedService(ServiceType.PET_MOBILE_BATH_AND_GROOMING)} className={`group relative overflow-hidden rounded-[2rem] p-4 aspect-square text-center transition-all duration-500 hover:shadow-xl flex flex-col justify-center items-center hover:-translate-y-1 ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-pink-100 border-2 border-pink-500 shadow-lg text-pink-950' : 'bg-pink-50 hover:bg-pink-100 border border-pink-100/80 text-pink-950'}`}>
+                                            <div className="relative z-10 flex items-center justify-center mb-3">
+                                                <div className={`p-3.5 rounded-full transition-colors duration-300 ${selectedService === ServiceType.PET_MOBILE_BATH_AND_GROOMING ? 'bg-white/80' : 'bg-white/70 group-hover:bg-white/90'}`}>
+                                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Banho & Tosa Pet Móvel" className="w-9 h-9 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                                                 </div>
                                             </div>
-                                            <div className="relative z-10 text-center">
-                                                <h4 className="text-2xl font-bold tracking-tight mb-1">Banho & Tosa</h4>
-                                                <p className="text-sm font-semibold uppercase tracking-[0.1em] opacity-70">Serviço Completo</p>
+                                            <div className="relative z-10 text-center w-full px-1">
+                                                <h4 className="text-[14px] xs:text-base sm:text-lg md:text-xl font-extrabold tracking-tighter mb-0.5 whitespace-nowrap">Banho & Tosa</h4>
+                                                <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider opacity-70">Serviço Completo</p>
                                             </div>
                                         </button>
                                     </div>
