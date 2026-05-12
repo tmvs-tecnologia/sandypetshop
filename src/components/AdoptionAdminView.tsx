@@ -26,6 +26,33 @@ export const AdoptionAdminView: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [selectedPet, setSelectedPet] = useState<any | null>(null);
+    const modalRef = useRef<HTMLDivElement>(null);
+
+    const isAnyModalOpen = isAddModalOpen || selectedPet !== null;
+
+    useEffect(() => {
+        if (isAnyModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isAnyModalOpen]);
+
+    useEffect(() => {
+        if (isAddModalOpen && modalRef.current) {
+            modalRef.current.focus();
+        }
+    }, [isAddModalOpen]);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            setIsAddModalOpen(false);
+            setSelectedPet(null);
+        }
+    };
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -292,8 +319,21 @@ export const AdoptionAdminView: React.FC = () => {
 
                 {/* ADD PET MODAL */}
                 {isAddModalOpen && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#4A0D2B]/40 backdrop-blur-md overflow-y-auto">
-                        <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl shadow-pink-200 my-8 overflow-hidden relative">
+                    <div 
+                        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#4A0D2B]/60 backdrop-blur-md"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setIsAddModalOpen(false);
+                            }
+                        }}
+                        onKeyDown={handleKeyDown}
+                    >
+                        <div 
+                            ref={modalRef}
+                            tabIndex={-1}
+                            className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl shadow-pink-200 my-8 overflow-hidden relative outline-none"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             {/* Modal Header */}
                             <div className="bg-gradient-to-r from-[#FF9A44] via-[#E93D8E] to-[#D91A77] p-6 text-white relative overflow-hidden">
                                 <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
@@ -490,8 +530,16 @@ export const AdoptionAdminView: React.FC = () => {
 
                 {/* PET DETAIL MODAL */}
                 {selectedPet && (
-                    <div className="fixed inset-0 z-[250] bg-[#4A0D2B]/40 backdrop-blur-md flex items-center justify-center p-4">
-                        <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl shadow-pink-200 overflow-hidden max-h-[90vh] overflow-y-auto">
+                    <div 
+                        className="fixed inset-0 z-[250] bg-[#4A0D2B]/60 backdrop-blur-md flex items-center justify-center p-4"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setSelectedPet(null);
+                            }
+                        }}
+                        onKeyDown={handleKeyDown}
+                    >
+                        <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl shadow-pink-200 overflow-hidden max-h-[90vh] overflow-y-auto outline-none">
                             {/* Header with Photo */}
                             <div className="relative h-64">
                                 <img 
