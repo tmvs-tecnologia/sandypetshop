@@ -9,9 +9,21 @@ import {
     MapPin, 
     ChevronRight,
     Sparkles,
-    Info
+    Info,
+    HeartHandshake,
+    Home,
+    Smile
 } from 'lucide-react';
 import { PetDetailView } from './PetDetailView';
+
+const ADOPTION_MESSAGES = [
+    { icon: HeartHandshake, text: "Adotar um pet é dar uma segunda chance a uma vida.", color: "from-rose-400 to-pink-500" },
+    { icon: Home, text: "Um pet adotado traz amor genuino para seu lar.", color: "from-amber-400 to-orange-500" },
+    { icon: Smile, text: "Pets são a fonte de alegria mais pura que existe.", color: "from-pink-400 to-rose-500" },
+    { icon: Heart, text: "Adoção salva duas vidas: a do pet e a sua.", color: "from-fuchsia-400 to-pink-500" },
+    { icon: PawPrint, text: "Cada pet merece um lar quente e acolhedor.", color: "from-orange-400 to-amber-500" },
+    { icon: Sparkles, text: "O amor de um pet é incondicional e eterno.", color: "from-rose-400 to-red-500" },
+];
 
 const FallbackImage = 'https://images.unsplash.com/photo-1517849845537-4d257902454a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
 
@@ -23,7 +35,15 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
     const [favorites, setFavorites] = useState<string[]>([]);
     const [selectedPet, setSelectedPet] = useState<any | null>(null);
+    const [currentMessage, setCurrentMessage] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentMessage(prev => (prev + 1) % ADOPTION_MESSAGES.length);
+        }, 4000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         const fetchPets = async () => {
@@ -146,27 +166,63 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
                     </div>
                 </header>
 
-                {/* INSPIRATIONAL BANNER */}
-                <div className="relative bg-gradient-to-br from-[#FF9A44] via-[#E93D8E] to-[#D91A77] rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl shadow-pink-200 mb-12 overflow-hidden group animate-slideUp transform-gpu perspective-1000">
+                {/* ANIMATED MOTIVATIONAL CARD */}
+                <div className="relative overflow-hidden rounded-3xl mb-6 group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#FF9A44] via-[#E93D8E] to-[#D91A77] opacity-90"></div>
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
                     
-                    {/* Decorative Shapes */}
-                    <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/20 rounded-full blur-2xl group-hover:scale-125 transition-all duration-700"></div>
-                    
-                    <div className="relative z-10 max-w-lg">
-                        <h2 className="text-2xl md:text-3xl font-extrabold leading-tight mb-3 drop-shadow-sm">
-                            Adotar é transformar vidas — inclusive a sua 💖
-                        </h2>
-                        <p className="text-white/90 font-medium text-sm md:text-base">
-                            Encontre um melhor amigo esperando por você na Sandy's PetShop.
-                        </p>
+                    {/* Floating particles */}
+                    <div className="absolute inset-0 overflow-hidden">
+                        <div className="absolute top-2 left-4 w-2 h-2 bg-white/30 rounded-full animate-pulse"></div>
+                        <div className="absolute top-8 right-8 w-3 h-3 bg-white/20 rounded-full animate-pulse" style={{ animationDelay: '500ms' }}></div>
+                        <div className="absolute bottom-4 left-1/3 w-2 h-2 bg-white/25 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
                     </div>
                     
-                    <img 
-                        src="https://cdn-icons-png.flaticon.com/512/2171/2171991.png" 
-                        alt="Fofo" 
-                        className="hidden md:block absolute right-10 bottom-0 w-48 h-48 object-contain opacity-90 translate-y-4 group-hover:-translate-y-2 transition-all duration-700" 
-                    />
+                    {/* Message content with animation */}
+                    <div className="relative z-10 px-6 py-5 flex items-center gap-4">
+                        <div className="relative flex-shrink-0">
+                            <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg">
+                                {React.createElement(ADOPTION_MESSAGES[currentMessage].icon, { 
+                                    className: "w-7 h-7 text-white" 
+                                })}
+                            </div>
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full animate-ping"></div>
+                        </div>
+                        
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Sparkles className="w-3 h-3 text-white/80 animate-spin-slow" />
+                                <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Motivo para Adotar</span>
+                            </div>
+                            <div className="overflow-hidden">
+                                <p 
+                                    key={currentMessage}
+                                    className="text-white font-bold text-sm leading-snug transition-all duration-500 ease-out"
+                                    style={{
+                                        animation: 'slideIn 0.5s ease-out'
+                                    }}
+                                >
+                                    {ADOPTION_MESSAGES[currentMessage].text}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        {/* Progress dots */}
+                        <div className="flex gap-1.5 flex-shrink-0">
+                            {ADOPTION_MESSAGES.map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setCurrentMessage(idx)}
+                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                        idx === currentMessage 
+                                            ? 'bg-white w-6' 
+                                            : 'bg-white/40 hover:bg-white/60'
+                                    }`}
+                                    aria-label={`Ver mensagem ${idx + 1}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 {/* FILTERS AREA */}
