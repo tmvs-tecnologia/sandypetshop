@@ -112,23 +112,7 @@ export const AvailableTimesPage: React.FC = () => {
 
     const handleTimeClick = (hour: number, type: 'fixed' | 'mobile', condo?: string) => {
         if (!isAvailable(hour, type, condo)) return;
-        
-        const dateTime = `${selectedDate}T${hour.toString().padStart(2, '0')}:00:00`;
-        const formattedDate = new Date(dateTime).toLocaleDateString('pt-BR', {
-            weekday: 'long',
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-        });
-        
-        const serviceType = type === 'fixed' ? 'Banho & Tosa' : 'Pet Móvel';
-        const location = type === 'fixed' ? 'Sandy\'s PetShop (Av. Paulista)' : `Pet Móvel - ${condo}`;
-        
-        const message = encodeURIComponent(
-            `Olá! Gostaria de agendar um ${serviceType} para o dia ${formattedDate} às ${hour}:00.\n\nLocal: ${location}\n\nPor favor, confirme a disponibilidade.`
-        );
-        
-        window.location.href = `https://wa.me/5511999999999?text=${message}`;
+        window.location.href = '/';
     };
 
     const getDayName = (dateStr: string) => {
