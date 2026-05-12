@@ -5,6 +5,7 @@ import App from './App';
 import { ToastProvider } from '@/src/components/ui/toast';
 import MobileUiDemo from '@/src/pages/MobileUiDemo';
 import FeedbackPage from '@/src/pages/FeedbackPage';
+import { AvailableTimesPage } from '@/src/pages/AvailableTimesPage';
 
 // Proactively remove any existing service workers to avoid stale caches in preview/dev
 if ('serviceWorker' in navigator) {
@@ -38,11 +39,12 @@ function renderApp() {
   const hash = window.location.hash;
   const useMobileDemo = hash === '#mobile-ui-demo';
   const useFeedback = hash.startsWith('#feedback');
+  const useAvailableTimes = hash.startsWith('#horarios');
 
   root.render(
     <React.StrictMode>
       <ToastProvider>
-        {useFeedback ? <FeedbackPage /> : useMobileDemo ? <MobileUiDemo /> : <App />}
+        {useFeedback ? <FeedbackPage /> : useMobileDemo ? <MobileUiDemo /> : useAvailableTimes ? <AvailableTimesPage /> : <App />}
       </ToastProvider>
     </React.StrictMode>
   );
