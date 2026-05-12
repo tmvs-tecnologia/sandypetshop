@@ -40,11 +40,15 @@ function renderApp() {
   const useMobileDemo = hash === '#mobile-ui-demo';
   const useFeedback = hash.startsWith('#feedback');
   const useAvailableTimes = hash.startsWith('#horarios');
+  const searchParams = new URLSearchParams(window.location.search);
+  const prefillService = searchParams.get('service');
+  const prefillDate = searchParams.get('date');
+  const prefillTime = searchParams.get('time');
 
   root.render(
     <React.StrictMode>
       <ToastProvider>
-        {useFeedback ? <FeedbackPage /> : useMobileDemo ? <MobileUiDemo /> : useAvailableTimes ? <AvailableTimesPage /> : <App />}
+        {useFeedback ? <FeedbackPage /> : useMobileDemo ? <MobileUiDemo /> : useAvailableTimes ? <AvailableTimesPage /> : <App prefillService={prefillService} prefillDate={prefillDate} prefillTime={prefillTime} />}
       </ToastProvider>
     </React.StrictMode>
   );

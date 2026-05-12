@@ -11983,7 +11983,14 @@ const POPULAR_BREEDS = [
 ];
 
 // --- MAIN APP COMPONENT ---
-const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegistration' | 'hotelRegistration') => void }> = ({ setView }) => {
+interface SchedulerProps {
+  setView: (view: 'scheduler' | 'login' | 'daycareRegistration' | 'hotelRegistration') => void;
+  prefillService?: string | null;
+  prefillDate?: string | null;
+  prefillTime?: string | null;
+}
+
+const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillDate, prefillTime }) => {
     const { getPricesForWeight } = useServicePrices();
 
     const [isAdoptionOpen, setIsAdoptionOpen] = useState(false);
@@ -12043,6 +12050,26 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
         selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
         [selectedService]
     );
+
+    useEffect(() => {
+        if (prefillService === 'banho_tosa') {
+            setServiceStepView('bath_groom');
+        } else if (prefillService === 'pet_movel') {
+            setServiceStepView('pet_movel');
+        }
+        if (prefillDate) {
+            const date = new Date(prefillDate + 'T00:00:00');
+            if (!isNaN(date.getTime())) {
+                setSelectedDate(date);
+            }
+        }
+        if (prefillTime) {
+            const time = parseInt(prefillTime, 10);
+            if (!isNaN(time)) {
+                setSelectedTime(time);
+            }
+        }
+    }, [prefillService, prefillDate, prefillTime]);
 
     const isPetMovel = useMemo(() => serviceStepView === 'pet_movel', [serviceStepView]);
     // State to store appointments for validation
@@ -17190,7 +17217,13 @@ import MonthlyResetManager from './src/components/MonthlyResetManager';
 import PriceManagementModal from './src/components/PriceManagementModal';
 import FiscalConfirmationModal from './src/components/FiscalConfirmationModal';
 
-const App: React.FC = () => {
+interface AppProps {
+  prefillService?: string | null;
+  prefillDate?: string | null;
+  prefillTime?: string | null;
+}
+
+const App: React.FC<AppProps> = ({ prefillService, prefillDate, prefillTime }) => {
 
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     const publicDiaryMatch = path.match(/^\/diario\/([^/]+)$/);
@@ -17709,7 +17742,7 @@ const App: React.FC = () => {
         return <ScheduleClosedPage setView={setViewWithLog} />;
     }
 
-    return <Scheduler setView={setViewWithLog} />;
+    return <Scheduler setView={setViewWithLog} prefillService={prefillService} prefillDate={prefillDate} prefillTime={prefillTime} />;
 };
 
 // Observation Modal Component

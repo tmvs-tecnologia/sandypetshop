@@ -112,7 +112,10 @@ export const AvailableTimesPage: React.FC = () => {
 
     const handleTimeClick = (hour: number, type: 'fixed' | 'mobile', condo?: string) => {
         if (!isAvailable(hour, type, condo)) return;
-        window.location.href = '/';
+        const serviceType = type === 'fixed' ? 'banho_tosa' : 'pet_movel';
+        const dateParam = selectedDate;
+        const timeParam = hour.toString().padStart(2, '0');
+        window.location.href = `/?service=${serviceType}&date=${dateParam}&time=${timeParam}`;
     };
 
     const getDayName = (dateStr: string) => {
