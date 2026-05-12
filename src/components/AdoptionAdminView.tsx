@@ -306,24 +306,30 @@ export const AdoptionAdminView: React.FC = () => {
                         <div 
                             ref={modalRef}
                             tabIndex={-1}
-                            className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl shadow-pink-200 my-8 overflow-hidden relative outline-none"
+                            className="bg-white w-full max-w-2xl rounded-[2.5rem] md:rounded-[2.5rem] shadow-2xl shadow-pink-200 md:my-8 h-full md:h-auto max-md:fixed max-md:inset-0 max-md:rounded-none max-md:top-16 overflow-hidden relative outline-none"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Modal Header */}
-                            <div className="bg-gradient-to-r from-[#FF9A44] via-[#E93D8E] to-[#D91A77] p-6 text-white relative overflow-hidden">
-                                <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                            {/* Modal Header - Elegante */}
+                            <div className="bg-gradient-to-r from-[#FF9A44] via-[#E93D8E] to-[#D91A77] px-4 py-5 sm:px-6 sm:py-6 text-white relative overflow-hidden flex-shrink-0">
+                                <div className="absolute right-0 top-0 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
+                                <div className="absolute -left-4 -bottom-4 w-20 h-20 bg-[#FF9A44]/30 rounded-full blur-2xl"></div>
                                 <div className="relative z-10 flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-2xl font-black" style={{ fontFamily: '"Lobster Two", cursive' }}>
-                                            Novo Pet para Adoção
-                                        </h2>
-                                        <p className="text-white/80 text-sm font-medium mt-1">
-                                            Preencha as informações que aparecerão na página pública
-                                        </p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg">
+                                            <PawPrint className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+                                                Novo Pet
+                                            </h2>
+                                            <p className="text-white/70 text-xs font-medium">
+                                                Cadastro para adoção
+                                            </p>
+                                        </div>
                                     </div>
                                     <button
                                         onClick={() => setIsAddModalOpen(false)}
-                                        className="p-3 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 transition-colors"
+                                        className="w-10 h-10 bg-white/15 backdrop-blur-md rounded-xl hover:bg-white/25 transition-all flex items-center justify-center shadow-md"
                                     >
                                         <X className="w-5 h-5" />
                                     </button>
@@ -331,7 +337,7 @@ export const AdoptionAdminView: React.FC = () => {
                             </div>
 
                             {/* Modal Content */}
-                            <div className="p-6 sm:p-8 max-h-[70vh] overflow-y-auto no-scrollbar">
+                            <div className="p-4 sm:p-8 h-[calc(100vh-180px)] md:h-auto md:max-h-[70vh] overflow-y-auto no-scrollbar pb-24 md:pb-6">
                                 <form onSubmit={handleAddPet} className="space-y-6">
                                     {/* Photo Upload */}
                                     <div className="flex flex-col items-center">
@@ -474,7 +480,7 @@ export const AdoptionAdminView: React.FC = () => {
                                     </div>
 
                                     {/* Action Buttons */}
-                                    <div className="flex gap-3 pt-4 border-t border-pink-100">
+                                    <div className="flex gap-3 pt-4 border-t border-pink-100 flex-shrink-0 pb-safe">
                                         <button 
                                             type="button" 
                                             onClick={() => setIsAddModalOpen(false)}
