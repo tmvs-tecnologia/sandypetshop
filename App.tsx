@@ -1822,11 +1822,12 @@ const ViewHotelRegistrationModal: React.FC<{
     );
 };
 
-const AdminLogin: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }) => {
+const AdminLogin: React.FC<{ onLoginSuccess: () => void; onBack?: () => void }> = ({ onLoginSuccess, onBack }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -1842,28 +1843,111 @@ const AdminLogin: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
-            <header className="text-center mb-6">
-                <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-20 w-20 mx-auto mb-2" loading="eager" />
-                <h1 className="font-brand text-5xl text-pink-800">Sandy's Pet Shop</h1>
-                <p className="text-gray-600 text-lg">Admin Login</p>
-            </header>
-            <main className="w-full max-w-full sm:max-w-sm bg-white p-8 rounded-2xl shadow-lg">
-                <form onSubmit={handleLogin} className="space-y-6">
-                    <div>
-                        <label htmlFor="email" className="block text-base font-semibold text-gray-700">Email</label>
-                        <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500" />
+        <div className="min-h-screen bg-[#fff0f5] flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden selection:bg-pink-200">
+            {/* Orbs de fundo animados */}
+            <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-gradient-to-bl from-pink-200/60 via-rose-100/40 to-transparent rounded-full blur-3xl animate-pulse-slow pointer-events-none"></div>
+            <div className="absolute bottom-[-15%] left-[-10%] w-[400px] h-[400px] bg-gradient-to-tr from-orange-100/50 via-pink-100/30 to-transparent rounded-full blur-3xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '2s' }}></div>
+
+            {/* Botão voltar */}
+            {onBack && (
+                <button
+                    onClick={onBack}
+                    className="absolute top-5 left-5 z-50 flex items-center gap-2 px-4 py-2.5 bg-white/60 backdrop-blur-xl text-pink-700 font-bold rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                    </svg>
+                    <span className="text-xs uppercase tracking-wider font-black hidden sm:inline">Voltar</span>
+                </button>
+            )}
+
+            {/* Card de login com glassmorphism */}
+            <div className="relative z-10 w-full max-w-sm sm:max-w-md animate-fadeInUp">
+                {/* Header com logo */}
+                <div className="flex flex-col items-center mb-8">
+                    <div className="relative group mb-5">
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-400 via-rose-300 to-orange-200 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-700 scale-150 animate-pulse-slow"></div>
+                        <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-24 w-24 sm:h-28 sm:w-28 object-contain transform group-hover:scale-110 transition-transform duration-700 drop-shadow-2xl" loading="eager" />
                     </div>
-                    <div>
-                        <label htmlFor="password" className="block text-base font-semibold text-gray-700">Senha</label>
-                        <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1 block w-full px-5 py-4 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500" />
-                    </div>
-                    {error && <p className="text-red-500 text-sm">{error}</p>}
-                    <button type="submit" disabled={loading} className="w-full flex justify-center py-3.5 px-6 border border-transparent rounded-md shadow-sm text-base font-semibold text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:bg-gray-400 min-h-[56px]">
-                        {loading ? 'Entrando...' : 'Entrar'}
-                    </button>
-                </form>
-            </main>
+                    <h1 className="font-brand text-4xl sm:text-5xl text-pink-900 tracking-tight leading-none mb-2">Sandy's <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400">Pet Shop</span></h1>
+                    <p className="text-pink-600/50 text-xs font-bold uppercase tracking-[0.3em]">Painel Administrativo</p>
+                </div>
+
+                {/* Formulário glassmorphism */}
+                <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-7 sm:p-9 shadow-[0_20px_60px_-15px_rgba(236,72,153,0.2)] border border-pink-100/60">
+                    <form onSubmit={handleLogin} className="space-y-5">
+                        <div>
+                            <label htmlFor="login-email" className="block text-[10px] sm:text-xs font-black text-pink-800 uppercase tracking-[0.2em] mb-2">E-mail</label>
+                            <div className="relative">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-pink-300">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                                    </svg>
+                                </span>
+                                <input type="email" id="login-email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="seu@email.com" className="block w-full pl-12 pr-5 py-4 bg-white/70 backdrop-blur-sm border-2 border-pink-100/80 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200/50 focus:border-pink-400 text-pink-950 font-medium transition-all placeholder:text-pink-300/60" />
+                            </div>
+                        </div>
+                        <div>
+                            <label htmlFor="login-password" className="block text-[10px] sm:text-xs font-black text-pink-800 uppercase tracking-[0.2em] mb-2">Senha</label>
+                            <div className="relative">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-pink-300">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                    </svg>
+                                </span>
+                                <input type={showPassword ? "text" : "password"} id="login-password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" className="block w-full pl-12 pr-14 py-4 bg-white/70 backdrop-blur-sm border-2 border-pink-100/80 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200/50 focus:border-pink-400 text-pink-950 font-medium transition-all placeholder:text-pink-300/60" />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-4 text-pink-400 hover:text-pink-600 transition-colors">
+                                    {showPassword ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Erro */}
+                        {error && (
+                            <div className="bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                                <span className="text-red-500 text-lg">⚠️</span>
+                                <p className="text-red-600 text-sm font-medium">{error}</p>
+                            </div>
+                        )}
+
+                        {/* Botão de entrar */}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white font-black uppercase tracking-wider text-xs sm:text-sm rounded-2xl shadow-[0_10px_40px_-10px_rgba(236,72,153,0.5)] hover:shadow-[0_15px_50px_-10px_rgba(236,72,153,0.6)] hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 min-h-[56px]"
+                        >
+                            {loading ? (
+                                <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+                            ) : (
+                                <>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                                    </svg>
+                                    Entrar
+                                </>
+                            )}
+                        </button>
+                    </form>
+                </div>
+
+                {/* Rodapé sutil */}
+                <p className="text-center mt-6 text-pink-600/30 text-[10px] font-medium uppercase tracking-[0.3em]">Acesso restrito</p>
+            </div>
+
+            {/* Animações inline */}
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes pulseSlow {
+                    0%, 100% { opacity: 0.5; transform: scale(1.5); }
+                    50% { opacity: 0.8; transform: scale(1.7); }
+                }
+                .animate-pulse-slow {
+                    animation: pulseSlow 4s ease-in-out infinite;
+                }
+            `}} />
         </div>
     );
 };
@@ -12490,53 +12574,36 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
             <div className="w-full max-w-7xl relative z-10 flex flex-col items-center">
-                <header className="w-full flex flex-col lg:flex-row items-center justify-between mb-12 animate-fadeInUp gap-8 lg:gap-4">
-                    <div className="flex flex-col sm:flex-row items-center text-center sm:text-left w-full lg:w-auto gap-4 sm:gap-6">
-                        <div className="relative group flex-shrink-0">
-                            <div className="absolute inset-0 bg-pink-300 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500"></div>
-                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-20 w-20 sm:h-24 sm:w-24 md:h-32 object-contain transform group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl" loading="eager" />
-                        </div>
-                        <div className="flex-1 flex justify-center sm:justify-start min-w-0">
-                            <h1 className="font-brand text-5xl sm:text-6xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1 whitespace-nowrap">Sandy's <span className="text-pink-600">Pet Shop</span></h1>
-                        </div>
+                {/* ═══ HERO SECTION — Petal Luxe ═══ */}
+                <header className="w-full flex flex-col items-center text-center mb-10 md:mb-16 animate-fadeInUp">
+                    {/* Logo com glow pulsante */}
+                    <div className="relative group mb-6">
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-400 via-rose-300 to-orange-200 rounded-full blur-2xl opacity-60 group-hover:opacity-90 transition-opacity duration-700 animate-pulse-slow scale-150"></div>
+                        <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-28 w-28 sm:h-36 sm:w-36 md:h-40 md:w-40 object-contain transform group-hover:scale-110 transition-transform duration-700 drop-shadow-2xl" loading="eager" />
                     </div>
-                    <div className="flex-shrink-0 flex flex-col gap-3 items-center justify-center w-full lg:w-auto ml-auto">
-                        <div className="flex flex-row gap-3 w-full">
-                            <button
-                                onClick={() => setIsPriceModalOpen(true)}
-                                className="flex-1 group relative overflow-hidden px-2 sm:px-4 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex flex-col items-center justify-center gap-1 sm:gap-2 transform hover:-translate-y-1"
-                            >
-                                <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
-                                <span className="relative z-10 text-2xl">📋</span>
-                                <span className="relative z-10 uppercase tracking-wider text-xs sm:text-sm font-black text-center leading-tight">Preços</span>
-                            </button>
-                            <button
-                                onClick={() => setShowPublicAlbum(true)}
-                                className="flex-1 group relative overflow-hidden px-2 sm:px-4 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex flex-col items-center justify-center gap-1 sm:gap-2 transform hover:-translate-y-1"
-                            >
-                                <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
-                                <span className="relative z-10 text-2xl">📸</span>
-                                <span className="relative z-10 uppercase tracking-wider text-xs sm:text-sm font-black text-center leading-tight">Álbum</span>
-                            </button>
-                        </div>
-                        <div className="flex flex-row gap-3 w-full">
-                            <button
-                                onClick={() => setIsWeeklyScheduleOpen(true)}
-                                className="flex-1 group relative overflow-hidden px-2 sm:px-4 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex flex-col items-center justify-center gap-1 sm:gap-2 transform hover:-translate-y-1"
-                            >
-                                <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
-                                <span className="relative z-10 text-2xl">📅</span>
-                                <span className="relative z-10 uppercase tracking-wider text-xs sm:text-sm font-black text-center leading-tight">Agenda Semanal</span>
-                            </button>
-                            <button
-                                onClick={openAdoption}
-                                className="flex-1 group relative overflow-hidden px-2 sm:px-4 py-3 sm:py-4 bg-gradient-to-r from-orange-400 to-pink-500 text-white font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.3)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.5)] transition-all duration-300 border border-pink-200 flex flex-col items-center justify-center gap-1 sm:gap-2 transform hover:-translate-y-1"
-                            >
-                                <span className="absolute inset-0 bg-white/20 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
-                                <span className="relative z-10 text-2xl">🏠</span>
-                                <span className="relative z-10 uppercase tracking-wider text-xs sm:text-sm font-black text-center leading-tight">Adote um Pet</span>
-                            </button>
-                        </div>
+                    {/* Título com fonte brand preservada */}
+                    <h1 className="font-brand text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-pink-900 tracking-tight leading-none mb-3">Sandy's <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400">Pet Shop</span></h1>
+                    {/* Subtítulo emocional */}
+                    <p className="text-pink-700/70 text-sm sm:text-base md:text-lg font-medium tracking-wide max-w-md" style={{ fontFamily: '"Lobster Two", cursive' }}>Onde cada patinha é tratada com amor 🐾</p>
+
+                    {/* Chips de ação rápida — glassmorphism */}
+                    <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-8 w-full max-w-2xl px-2">
+                        <button onClick={() => setIsPriceModalOpen(true)} className="group flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-white/60 backdrop-blur-xl text-pink-800 font-bold rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:shadow-pink-300/40 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-lg sm:text-xl">📋</span>
+                            <span className="uppercase tracking-wider text-[10px] sm:text-xs font-black">Preços</span>
+                        </button>
+                        <button onClick={() => setShowPublicAlbum(true)} className="group flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-white/60 backdrop-blur-xl text-pink-800 font-bold rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:shadow-pink-300/40 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-lg sm:text-xl">📸</span>
+                            <span className="uppercase tracking-wider text-[10px] sm:text-xs font-black">Álbum</span>
+                        </button>
+                        <button onClick={() => setIsWeeklyScheduleOpen(true)} className="group flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-white/60 backdrop-blur-xl text-pink-800 font-bold rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:shadow-pink-300/40 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-lg sm:text-xl">📅</span>
+                            <span className="uppercase tracking-wider text-[10px] sm:text-xs font-black">Agenda</span>
+                        </button>
+                        <button onClick={openAdoption} className="group flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-orange-400 to-pink-500 text-white font-bold rounded-full shadow-lg shadow-pink-300/40 border border-pink-300/50 hover:shadow-xl hover:shadow-pink-400/50 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-lg sm:text-xl">🏠</span>
+                            <span className="uppercase tracking-wider text-[10px] sm:text-xs font-black">Adote um Pet</span>
+                        </button>
                     </div>
                 </header>
 
@@ -12563,6 +12630,20 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                     }
                     .animate-slideDown {
                         animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    }
+                    @keyframes pulseSlow {
+                        0%, 100% { opacity: 0.5; transform: scale(1.5); }
+                        50% { opacity: 0.8; transform: scale(1.7); }
+                    }
+                    .animate-pulse-slow {
+                        animation: pulseSlow 4s ease-in-out infinite;
+                    }
+                    @keyframes slideUpFull {
+                        from { transform: translateY(100vh); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
+                    }
+                    .animate-slideUpFull {
+                        animation: slideUpFull 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                     }
                 `}} />
 
@@ -12609,112 +12690,153 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
                 {serviceStepView === 'main' && (
                     <section className="w-full animate-fadeIn">
-                        <div className="mb-10 text-center md:text-left max-w-2xl mx-auto md:mx-0">
-                            <h2 className="text-[6vw] sm:text-3xl md:text-5xl font-extrabold text-pink-950 mb-4 tracking-tight whitespace-nowrap">
-                                Bem-vindo a <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400">Sandy Pet!</span> 🐶💗
+                        {/* Saudação refinada */}
+                        <div className="mb-10 text-center max-w-2xl mx-auto">
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-pink-950 mb-3 tracking-tight">
+                                Escolha o serviço ideal para seu <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400">melhor amigo</span>
                             </h2>
-                            <p className="text-pink-900/80 text-lg md:text-xl leading-relaxed">
-                                Ficamos felizes em receber você e seu pet! 🐾<br />
-                                Selecione abaixo o serviço desejado e faça seu agendamento de forma rápida.
+                            <p className="text-pink-800/60 text-sm sm:text-base leading-relaxed">
+                                Agende com carinho em poucos toques 💗
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 auto-rows-fr">
-                            {/* Bento Grid Layout */}
+                        {/* ═══ BENTO GRID — Compact Mobile / Bento Desktop ═══ */}
+                        <div className="grid grid-cols-2 md:grid-cols-12 gap-3 md:gap-5" style={{ perspective: '1200px' }}>
                             
+                            {/* BANHO & TOSA */}
                             <button 
                                 type="button" 
                                 onClick={() => { setServiceStepView('bath_groom'); setSelectedService(null); }} 
-                                className="group relative col-span-1 md:col-span-8 overflow-hidden rounded-[2.5rem] bg-white p-8 md:p-10 text-left transition-all duration-500 hover:shadow-2xl hover:shadow-pink-200/50 border border-pink-100/50 flex flex-col justify-between min-h-[260px] hover:-translate-y-1"
+                                className="group relative col-span-1 md:col-span-7 overflow-hidden rounded-2xl md:rounded-[2rem] bg-white/70 backdrop-blur-md p-5 md:p-10 text-center md:text-left transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(236,72,153,0.3)] border border-pink-100/60 flex flex-col items-center md:items-start justify-center md:justify-between min-h-[140px] md:min-h-[280px] hover:-translate-y-2 active:scale-[0.97]"
+                                style={{ transformStyle: 'preserve-3d' }}
                             >
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 group-hover:bg-pink-100 transition-colors duration-500"></div>
-                                <div className="relative z-10">
-                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-20 h-20 mb-6 transform group-hover:scale-110 transition-transform duration-500" loading="eager" />
+                                <div className="absolute top-0 right-0 w-40 md:w-72 h-40 md:h-72 bg-gradient-to-bl from-pink-100/80 via-rose-50/40 to-transparent rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 group-hover:from-pink-200/90 transition-all duration-700"></div>
+                                <div className="relative z-10 mb-2 md:mb-6">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-12 h-12 md:w-20 md:h-20 transform group-hover:scale-115 group-hover:-rotate-3 transition-all duration-500 drop-shadow-lg" loading="eager" />
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-4xl font-extrabold text-pink-950 mb-2 tracking-tight">Banho & Tosa</h3>
-                                    <p className="text-pink-800/60 font-bold uppercase tracking-[0.2em] text-xs">Atendimento Fixo</p>
+                                    <h3 className="text-lg md:text-4xl font-extrabold text-pink-950 mb-0.5 md:mb-1.5 tracking-tight leading-tight">Banho & Tosa</h3>
+                                    <p className="text-pink-700/50 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-[8px] md:text-xs">Atendimento Fixo</p>
+                                </div>
+                                <div className="hidden md:block absolute bottom-4 right-5 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-400">
+                                    <span className="text-pink-400 text-sm font-bold tracking-wide">Agendar →</span>
                                 </div>
                             </button>
 
+                            {/* PET MÓVEL */}
                             <button 
                                 type="button" 
                                 onClick={() => { setServiceStepView('pet_movel'); setSelectedService(null); setSelectedCondo(null); }} 
-                                className="group relative col-span-1 md:col-span-4 overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-pink-500 to-rose-500 p-8 md:p-10 text-left transition-all duration-500 hover:shadow-2xl hover:shadow-rose-300/50 border border-transparent flex flex-col justify-between min-h-[260px] hover:-translate-y-1"
+                                className="group relative col-span-1 md:col-span-5 overflow-hidden rounded-2xl md:rounded-[2rem] bg-gradient-to-br from-pink-500 via-rose-500 to-pink-600 p-5 md:p-10 text-center md:text-left transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(236,72,153,0.5)] border border-pink-400/30 flex flex-col items-center md:items-start justify-center md:justify-between min-h-[140px] md:min-h-[280px] hover:-translate-y-2 active:scale-[0.97]"
+                                style={{ transformStyle: 'preserve-3d' }}
                             >
-                                <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
-                                <div className="relative z-10">
-                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-16 h-16 mb-6 object-contain drop-shadow-md transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500" loading="lazy" />
+                                <div className="absolute top-0 right-0 w-32 md:w-56 h-32 md:h-56 bg-white/10 rounded-full blur-2xl -translate-y-1/3 translate-x-1/4"></div>
+                                <div className="relative z-10 mb-2 md:mb-6">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-11 h-11 md:w-16 md:h-16 object-contain drop-shadow-lg transform group-hover:rotate-12 group-hover:scale-115 transition-all duration-500" loading="lazy" />
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Pet Móvel</h3>
-                                    <p className="text-white/80 font-bold uppercase tracking-[0.2em] text-xs">Condomínios</p>
+                                    <h3 className="text-lg md:text-4xl font-extrabold text-white mb-0.5 md:mb-1.5 tracking-tight leading-tight">Pet Móvel</h3>
+                                    <p className="text-white/60 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-[8px] md:text-xs">Condomínios</p>
+                                </div>
+                                <div className="hidden md:block absolute bottom-4 right-5 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-400">
+                                    <span className="text-white/80 text-sm font-bold tracking-wide">Agendar →</span>
                                 </div>
                             </button>
 
+                            {/* CRECHE PET */}
                             <button 
                                 type="button" 
                                 onClick={() => { setSelectedService(null); setView('daycareRegistration'); }} 
-                                className="group relative col-span-1 md:col-span-6 overflow-hidden rounded-[2rem] bg-white p-8 text-left transition-all duration-500 hover:shadow-2xl hover:shadow-pink-200/50 border border-pink-100/50 flex items-center justify-between min-h-[160px] hover:-translate-y-1"
+                                className="group relative col-span-1 md:col-span-5 overflow-hidden rounded-2xl md:rounded-[2rem] bg-white/70 backdrop-blur-md p-5 md:p-8 text-center md:text-left transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(236,72,153,0.3)] border border-pink-100/60 flex flex-col items-center md:flex-row md:items-center md:justify-between gap-2 md:gap-4 justify-center min-h-[140px] md:min-h-[170px] hover:-translate-y-2 active:scale-[0.97]"
                             >
-                                <div className="relative z-10 flex flex-col">
-                                    <h3 className="text-4xl font-extrabold text-pink-950 mb-2 tracking-tight">Creche Pet</h3>
-                                    <p className="text-pink-800/60 font-bold uppercase tracking-[0.2em] text-xs">Matrícula</p>
+                                <div className="absolute top-0 left-0 w-28 md:w-40 h-28 md:h-40 bg-gradient-to-br from-rose-50/80 to-transparent rounded-full blur-2xl -translate-y-1/2 -translate-x-1/4"></div>
+                                <div className="relative z-10 md:hidden mb-2">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-12 h-12" loading="lazy" />
                                 </div>
-                                <div className="relative z-10 bg-pink-50 p-5 rounded-full group-hover:bg-pink-100 transition-colors duration-300">
-                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-14 h-14 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                <div className="relative z-10 flex flex-col items-center md:items-start">
+                                    <h3 className="text-lg md:text-4xl font-extrabold text-pink-950 mb-0.5 md:mb-1.5 tracking-tight leading-tight">Creche Pet</h3>
+                                    <p className="text-pink-700/50 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-[8px] md:text-xs">Matrícula</p>
+                                </div>
+                                <div className="relative z-10 bg-pink-50/80 backdrop-blur-sm p-4 sm:p-5 rounded-2xl group-hover:bg-pink-100/80 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 hidden md:flex">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-12 h-12 sm:w-14 sm:h-14" loading="lazy" />
+                                </div>
+                                <div className="hidden md:block absolute bottom-3 right-5 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-400">
+                                    <span className="text-pink-400 text-sm font-bold tracking-wide">Agendar →</span>
                                 </div>
                             </button>
 
+                            {/* VISITA */}
                             <button 
                                 type="button" 
                                 onClick={() => { setView('visitSelector'); }} 
-                                className="group relative col-span-1 md:col-span-6 overflow-hidden rounded-[2rem] bg-gradient-to-br from-pink-500 to-rose-500 p-8 text-left transition-all duration-500 hover:shadow-2xl hover:shadow-rose-300/50 border border-transparent flex items-center justify-between min-h-[160px] hover:-translate-y-1"
+                                className="group relative col-span-1 md:col-span-7 overflow-hidden rounded-2xl md:rounded-[2rem] bg-gradient-to-br from-rose-400 via-pink-500 to-rose-600 p-5 md:p-8 text-center md:text-left transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(236,72,153,0.5)] border border-pink-400/30 flex flex-col items-center md:flex-row md:items-center md:justify-between gap-2 md:gap-4 justify-center min-h-[140px] md:min-h-[170px] hover:-translate-y-2 active:scale-[0.97]"
                             >
-                                <div className="relative z-10 flex flex-col">
-                                    <h3 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Visita</h3>
-                                    <p className="text-white/80 font-bold uppercase tracking-[0.2em] text-xs">Agendar Tour</p>
+                                <div className="absolute bottom-0 right-0 w-32 md:w-48 h-32 md:h-48 bg-white/10 rounded-full blur-2xl translate-y-1/3 translate-x-1/4"></div>
+                                <div className="relative z-10 md:hidden mb-2">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/2196/2196747.png" alt="Visita" className="w-12 h-12" loading="lazy" />
                                 </div>
-                                <div className="relative z-10 bg-white/20 p-5 rounded-full group-hover:bg-white/30 transition-colors duration-300">
-                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/2196/2196747.png" alt="Visita" className="w-14 h-14 transform group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                                <div className="relative z-10 flex flex-col items-center md:items-start">
+                                    <h3 className="text-lg md:text-4xl font-extrabold text-white mb-0.5 md:mb-1.5 tracking-tight leading-tight">Visita</h3>
+                                    <p className="text-white/60 font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-[8px] md:text-xs">Agendar Tour</p>
+                                </div>
+                                <div className="relative z-10 bg-white/15 backdrop-blur-sm p-4 sm:p-5 rounded-2xl group-hover:bg-white/25 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3 hidden md:flex">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/2196/2196747.png" alt="Visita" className="w-12 h-12 sm:w-14 sm:h-14" loading="lazy" />
+                                </div>
+                                <div className="hidden md:block absolute bottom-3 right-5 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-400">
+                                    <span className="text-white/80 text-sm font-bold tracking-wide">Agendar →</span>
                                 </div>
                             </button>
 
+                        </div>
+
+                        {/* ═══ FOOTER EMOCIONAL ═══ */}
+                        <div className="mt-12 md:mt-16 text-center pb-4">
+                            <p className="text-pink-700/40 text-xs sm:text-sm font-medium tracking-wide">
+                                Cuidamos do seu melhor amigo como se fosse nosso 🐾
+                            </p>
                         </div>
                     </section>
                 )}
 
                 {serviceStepView !== 'main' && (
-                    <main className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/40 backdrop-blur-sm mx-auto mt-8">
-                    {/* Progress Bar Removed as Requested */}
+                    <div className="fixed inset-0 z-[100] bg-[#fff0f5] animate-slideUpFull">
+                    {/* Orbs decorativos */}
+                    <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-gradient-to-bl from-pink-200/40 via-rose-100/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+                    <div className="absolute bottom-[-10%] left-[-5%] w-[300px] h-[300px] bg-gradient-to-tr from-orange-100/30 via-pink-100/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
 
-                    <form onSubmit={handleSubmit} className={`relative p-6 sm:p-8 transition-all duration-300 ${isAnimating ? 'animate-slideOutToLeft' : 'animate-slideInFromRight'}`}>
-                        <div className="mb-4 relative flex items-center justify-center min-h-[48px]">
-                            <button
-                                type="button"
-                                onClick={() => setServiceStepView('main')}
-                                className="absolute left-0 p-2 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-sm border border-pink-100 transition-all z-10"
-                                title="Voltar"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                                </svg>
-                            </button>
+                    {/* Botão voltar premium (agora fixo na tela externa que não rola) */}
+                    <button
+                        type="button"
+                        onClick={() => setServiceStepView('main')}
+                        className="absolute top-5 left-5 z-[110] flex items-center gap-2 px-4 py-2.5 bg-white/70 backdrop-blur-xl text-pink-700 font-bold rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                        </svg>
+                        <span className="text-xs uppercase tracking-wider font-black hidden sm:inline">Voltar</span>
+                    </button>
 
-                            {serviceStepView === 'bath_groom' && (
-                                <div className="flex items-center gap-3 animate-fadeIn">
-                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-10 h-10 rounded-full object-contain" />
-                                    <span className="text-xl font-bold text-gray-800">Banho & Tosa</span>
-                                </div>
-                            )}
+                    {/* Área de rolagem isolada */}
+                    <div className="absolute inset-0 overflow-y-auto pt-20 pb-8">
+                        <main className="relative w-full max-w-3xl mx-auto px-4 sm:px-6">
+                            <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(236,72,153,0.15)] overflow-hidden border border-pink-100/60">
 
-                            {(serviceStepView === 'pet_movel_condo' || serviceStepView === 'pet_movel') && (
-                                <div className="flex items-center gap-3 animate-fadeIn">
-                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-10 h-10 rounded-full object-contain" />
-                                    <span className="text-xl font-bold text-gray-800">Pet Móvel</span>
-                                </div>
-                            )}
-                        </div>
+                                <form onSubmit={handleSubmit} className={`relative p-6 sm:p-8 transition-all duration-300 ${isAnimating ? 'animate-slideOutToLeft' : 'animate-slideInFromRight'}`}>
+                                    <div className="mb-6 flex items-center justify-center min-h-[48px]">
+                                        {serviceStepView === 'bath_groom' && (
+                                            <div className="flex items-center gap-3 animate-fadeIn">
+                                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-10 h-10 rounded-full object-contain" />
+                                                <span className="text-xl font-bold text-pink-950">Banho & Tosa</span>
+                                            </div>
+                                        )}
+
+                                        {(serviceStepView === 'pet_movel_condo' || serviceStepView === 'pet_movel') && (
+                                            <div className="flex items-center gap-3 animate-fadeIn">
+                                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-10 h-10 rounded-full object-contain" />
+                                                <span className="text-xl font-bold text-pink-950">Pet Móvel</span>
+                                            </div>
+                                        )}
+                                    </div>
                         {/* SECTION 1: DADOS */}
                         <div className="space-y-7 border-b border-gray-100 pb-8">
                             <h2 className="text-3xl font-extrabold text-pink-950 whitespace-nowrap leading-none tracking-tight">Informações</h2>
@@ -13136,8 +13258,11 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
                             </div>
                         )}
                     </form>
-                </main>
-            )}
+                    </div>
+                    </main>
+                    </div>
+                    </div>
+                )}
 
             <footer className="text-center mt-12 text-base relative z-10">
                 <button onClick={() => setView('login')} className="text-pink-400 hover:text-pink-600 font-bold uppercase tracking-widest text-xs transition-colors underline-offset-8 hover:underline">Acesso Administrativo</button>
@@ -17483,7 +17608,7 @@ const App: React.FC = () => {
     }
 
     if (view === 'login') {
-        return <AdminLogin onLoginSuccess={() => { setIsAuthenticated(true); setViewWithLog('splash'); }} />;
+        return <AdminLogin onLoginSuccess={() => { setIsAuthenticated(true); setViewWithLog('splash'); }} onBack={() => setViewWithLog('scheduler')} />;
     }
 
     if (view === 'daycareRegistration') {
