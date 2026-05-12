@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       host: '0.0.0.0',
       allowedHosts: true,
+      historyApiFallback: true,
       proxy: {
         '/api/n8n': {
           target: 'https://n8n.intelektus.tech',
