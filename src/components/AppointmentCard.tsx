@@ -114,6 +114,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     } = appointment;
 
     const isCompleted = status === 'CONCLUÍDO';
+    const isCancelledByClient = status === 'cancelled' || status === 'cancelled_by_client' || (status && typeof status === 'string' && status.toLowerCase().includes('cancelado'));
     const isVisitService = (service === 'Creche Pet' || service === 'Hotel Pet' || (service && typeof service === 'string' && service.toLowerCase().includes('visita')));
     const isVisit = isVisitService && !monthly_client_id;
 
@@ -189,10 +190,20 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 
     return (
-        <div className={`group relative bg-white rounded-3xl shadow-sm hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 overflow-hidden flex flex-col h-full font-jakarta ${isDeleting ? 'opacity-40 animate-pulse' : ''}`}>
+        <div className={`group relative bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 transform border overflow-hidden flex flex-col h-full font-jakarta ${
+            isCancelledByClient 
+                ? 'opacity-60 border-red-100' 
+                : 'hover:shadow-pink-500/10 border-gray-100'
+        } ${isDeleting ? 'opacity-40 animate-pulse' : ''}`}>
 
             {/* --- Status Bar --- */}
-            <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${status === 'CONCLUÍDO' ? 'from-green-400 to-emerald-500' : 'from-pink-400 to-purple-500'}`} />
+            <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${
+                isCancelledByClient 
+                    ? 'from-red-500 to-red-600' 
+                    : status === 'CONCLUÍDO' 
+                        ? 'from-green-400 to-emerald-500' 
+                        : 'from-pink-400 to-purple-500'
+            }`} />
 
             {/* VISITA BANNER VIP */}
             {isVisit && (
@@ -229,9 +240,15 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                                 {pet_name}
                             </h3>
                             <div className="flex flex-wrap gap-1 mt-1.5">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${statusStyles[status] || 'bg-gray-100 text-gray-800'}`}>
-                                    {status === 'pending' ? 'AGENDADO' : status}
-                                </span>
+                                {isCancelledByClient ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide bg-red-100 text-red-600 border border-red-200">
+                                        Cancelado pelo cliente
+                                    </span>
+                                ) : (
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${statusStyles[status] || 'bg-gray-100 text-gray-800'}`}>
+                                        {status === 'pending' ? 'AGENDADO' : status}
+                                    </span>
+                                )}
                                 {monthly_client_id && recurrenceLabel && (
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200 uppercase tracking-wide">
                                         {recurrenceLabel}

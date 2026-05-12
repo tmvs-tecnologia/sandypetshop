@@ -305,21 +305,45 @@ export const ManageAppointmentPage: React.FC = () => {
         setActionLoading(true);
 
         try {
-            const { error } = await supabase
-                .from(selectedAppointment.table)
-                .update({ 
-                    cancelled_by_client: true, 
-                    cancelled_at: new Date().toISOString() 
-                })
-                .eq('id', selectedAppointment.id);
+            const targetTable = selectedAppointment.table;
+            const appointmentId = selectedAppointment.id;
+            
+            console.log('Cancelando - ID:', appointmentId, 'Tabela:', targetTable);
+            
+            let updateData: Record<string, any> = {};
+            
+            if (targetTable === 'pet_movel_appointments') {
+                updateData = { status: 'cancelled' };
+            } else if (targetTable === 'agendamento_banhotosa') {
+                updateData = { status: 'cancelled' };
+            } else {
+                updateData = { status: 'cancelled' };
+            }
+            
+            const { data, error } = await supabase
+                .from(targetTable)
+                .update(updateData)
+                .eq('id', appointmentId)
+                .select()
+                .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Erro no cancelamento:', error);
+                setSuccessMessage('Erro ao atualizar. Tente novamente.');
+                setActionLoading(false);
+                return;
+            }
 
-            setAppointments(prev => prev.filter(apt => apt.id !== selectedAppointment.id));
+            console.log('Cancelado com sucesso:', data);
+
+            setAppointments(prev => prev.map(apt => 
+                apt.id === appointmentId ? { ...apt, status: 'cancelled' } : apt
+            ));
             setShowCancelModal(false);
             setSuccessMessage('Agendamento cancelado com sucesso!');
             setTimeout(() => setSuccessMessage(''), 5000);
         } catch (err) {
+            console.error('Erro ao cancelar:', err);
             setError('Erro ao cancelar agendamento');
         } finally {
             setActionLoading(false);
@@ -504,7 +528,7 @@ export const ManageAppointmentPage: React.FC = () => {
                                             </div>
                                         )}
 
-                                        {!apt.cancelled_by_client && (
+                                        {!apt.cancelled_by_client && apt.status !== 'cancelled' && (
                                             <div className="flex gap-3 mt-4 pt-4 border-t border-gray-100">
                                                 <button
                                                     onClick={() => openRescheduleModal(apt)}
@@ -523,11 +547,11 @@ export const ManageAppointmentPage: React.FC = () => {
                                             </div>
                                         )}
 
-                                        {apt.cancelled_by_client && (
+                                        {(apt.cancelled_by_client || apt.status === 'cancelled') && (
                                             <div className="mt-4 pt-4 border-t border-gray-100">
                                                 <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl">
                                                     <XCircle className="w-5 h-5 text-red-500" />
-                                                    <span className="text-red-600 font-medium">Cancelado pelo cliente</span>
+                                                    <span className="text-red-600 font-bold text-sm">Cancelado pelo cliente</span>
                                                 </div>
                                             </div>
                                         )}

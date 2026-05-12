@@ -11821,7 +11821,8 @@ export const TimeSlotPicker: React.FC<{
             const apptTime = new Date(appt.appointmentTime);
             const { hour: apptHour } = getSaoPauloTimeParts(apptTime);
 
-            if (String(appt.status || '').toUpperCase() === 'CANCELADO') {
+            const statusUpper = String(appt.status || '').toUpperCase();
+            if (statusUpper === 'CANCELADO' || statusUpper === 'CANCELLED' || appt.status === 'cancelled' || appt.status === 'cancelled_by_client') {
                 return false;
             }
 

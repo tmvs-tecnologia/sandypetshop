@@ -63,15 +63,15 @@ export const AvailableTimesPage: React.FC = () => {
                 const endOfDay = `${selectedDate}T23:59:59`;
 
                 const [bathGroomData, petMobileData, regularData] = await Promise.all([
-                    supabase.from('agendamento_banhotosa').select('appointment_time').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
-                    supabase.from('pet_movel_appointments').select('appointment_time, condominium').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
-                    supabase.from('appointments').select('appointment_time, condominium').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay)
+                    supabase.from('agendamento_banhotosa').select('appointment_time, status').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+                    supabase.from('pet_movel_appointments').select('appointment_time, condominium, status').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+                    supabase.from('appointments').select('appointment_time, condominium, status').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay)
                 ]);
 
                 const allAppointments = [
-                    ...(bathGroomData.data || []),
-                    ...(petMobileData.data || []),
-                    ...(regularData.data || [])
+                    ...(bathGroomData.data || []).map(a => ({ ...a, source: 'bath' })),
+                    ...(petMobileData.data || []).map(a => ({ ...a, source: 'movel' })),
+                    ...(regularData.data || []).map(a => ({ ...a, source: 'regular' }))
                 ];
                 setAppointments(allAppointments);
             } catch (err) {
@@ -83,8 +83,11 @@ export const AvailableTimesPage: React.FC = () => {
         fetchAppointments();
     }, [selectedDate]);
 
+    const isCancelled = (apt: any) => apt.status === 'cancelled' || apt.status === 'cancelled_by_client';
+
     const getBookedHours = (type: 'fixed' | 'mobile', condo?: string) => {
         return appointments
+            .filter(apt => !isCancelled(apt))
             .filter(apt => {
                 const aptHour = new Date(apt.appointment_time).getHours();
                 if (type === 'fixed') {
