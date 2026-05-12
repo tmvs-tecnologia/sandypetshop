@@ -11180,51 +11180,58 @@ const DaycareRegistrationForm: React.FC<{
     }
 
     
-    const formContent = (
-        <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto pb-10">
-            {isAdmin && (
-                <div className="flex justify-between items-center mb-6">
-                    <Button 
-                        type="button" 
-                        variant="ghost" 
-                        onClick={onBack}
-                        className="text-pink-600 hover:text-pink-700 hover:bg-pink-50 font-semibold flex items-center gap-2"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                        </svg>
-                        Voltar para Creche
-                    </Button>
-                    <Badge variant="secondary">Admin Mode</Badge>
-                </div>
-            )}
+    return (
+        <div className="fixed inset-0 z-[100] bg-[#fff0f5] animate-slideUpFull">
+            {/* Orbs decorativos */}
+            <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-gradient-to-bl from-pink-200/40 via-rose-100/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-[-10%] left-[-5%] w-[300px] h-[300px] bg-gradient-to-tr from-orange-100/30 via-pink-100/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
 
-            <div className="bg-white/95 backdrop-blur-md shadow-xl border border-pink-100/50 rounded-3xl overflow-hidden relative animate-fadeIn">
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-pink-300 via-pink-400 to-pink-500"></div>
-                
-                <div className="p-6 sm:p-8 space-y-8">
-                    
-                    <div className="mb-4 relative flex items-center justify-center min-h-[48px]">
-                        {!isAdmin && (
-                            <button
-                                type="button"
-                                onClick={() => onBack ? onBack() : (setView ? setView('scheduler') : null)}
-                                className="absolute left-0 p-2 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-sm border border-pink-100 transition-all z-10"
-                                title="Voltar"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                                </svg>
-                            </button>
-                        )}
-                        <div className="flex flex-col items-center animate-fadeIn">
-                            <div className="flex items-center gap-3">
-                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-10 h-10 rounded-full object-contain" />
-                                <span className="text-xl font-bold text-gray-800">Creche Pet</span>
+            {/* Área de rolagem isolada */}
+            <div className="absolute inset-0 overflow-y-auto pt-2 sm:pt-4 pb-8">
+                <main className="relative w-full max-w-4xl mx-auto px-4 sm:px-6">
+                    <div className="bg-white/60 backdrop-blur-xl rounded-t-[0] sm:rounded-[2rem] rounded-b-[2rem] shadow-[0_20px_60px_-15px_rgba(236,72,153,0.15)] overflow-hidden border border-pink-100/60 min-h-screen sm:min-h-0">
+                        <form onSubmit={handleSubmit} className="relative p-6 sm:p-8 transition-all duration-300 animate-slideInFromRight">
+                            
+                            {isAdmin && (
+                                <div className="flex justify-between items-center mb-6 border-b border-pink-100 pb-4">
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        onClick={onBack}
+                                        className="text-pink-600 hover:text-pink-700 hover:bg-pink-50 font-semibold flex items-center gap-2"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                                        </svg>
+                                        Voltar para Creche
+                                    </Button>
+                                    <Badge variant="secondary">Admin Mode</Badge>
+                                </div>
+                            )}
+
+                            {/* Botão voltar premium */}
+                            {!isAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={() => onBack ? onBack() : (setView ? setView('scheduler') : null)}
+                                    className="absolute top-6 left-2 sm:top-8 sm:left-4 z-[110] flex items-center justify-center w-10 h-10 bg-pink-50 text-pink-700 font-bold rounded-full shadow-sm hover:bg-pink-100 hover:shadow-md transition-all duration-300"
+                                    title="Voltar"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                                    </svg>
+                                </button>
+                            )}
+
+                            <div className="mb-8 flex flex-col items-center justify-center min-h-[48px] animate-fadeIn">
+                                <div className="flex items-center gap-3">
+                                    <SafeImage src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-10 h-10 rounded-full object-contain" />
+                                    <span className="text-2xl font-extrabold text-pink-950">Creche Pet</span>
+                                </div>
+                                <span className="text-sm font-bold text-pink-600 uppercase tracking-widest mt-1">Formulário de Matrícula</span>
                             </div>
-                            <span className="text-sm font-medium text-pink-600 uppercase tracking-widest mt-1">Formulário de Matrícula</span>
-                        </div>
-                    </div>
+
+                            <div className="space-y-10">
 
                     {/* DADOS DO TUTOR */}
                     <div className="space-y-8 border-b border-pink-50 pb-12">
@@ -11774,14 +11781,11 @@ const DaycareRegistrationForm: React.FC<{
                             </span>
                         </button>
                     </div>
-                </div>
+                            </div>
+                        </form>
+                    </div>
+                </main>
             </div>
-        </form>
-    );
-
-    return (
-        <div className="min-h-screen bg-gray-50/50 py-10 px-4 sm:px-6 flex justify-center">
-            {formContent}
         </div>
     );
 };
