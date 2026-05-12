@@ -173,27 +173,6 @@ export const AdoptionAdminView: React.FC = () => {
 
     return (
         <div className="w-full min-h-screen bg-[#F8ECEF] p-4 sm:p-6 overflow-y-auto">
-            <style>{`
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                @keyframes bloom {
-                    0% { opacity: 0; transform: scale(0.95) translateY(20px); }
-                    100% { opacity: 1; transform: scale(1) translateY(0px); }
-                }
-                @keyframes blob {
-                    0% { transform: translate(0px, 0px) scale(1); }
-                    33% { transform: translate(30px, -50px) scale(1.1); }
-                    66% { transform: translate(-20px, 20px) scale(0.9); }
-                    100% { transform: translate(0px, 0px) scale(1); }
-                }
-                .animate-blob { animation: blob 7s infinite; }
-                @keyframes float {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-10px); }
-                }
-                .animate-float { animation: float 3s ease-in-out infinite; }
-            `}</style>
-
             {/* Ambient Background */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-30 z-0">
                 <div className="absolute -top-24 -left-24 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
@@ -252,15 +231,11 @@ export const AdoptionAdminView: React.FC = () => {
                 ) : (
                     /* Pet Grid */
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-16">
-                        {pets.map((pet, idx) => (
+                        {pets.map((pet) => (
                             <div 
                                 key={pet.id}
                                 onClick={() => setSelectedPet(pet)}
                                 className="group bg-white rounded-[2.5rem] p-4 shadow-xl shadow-pink-100/50 border border-white flex flex-col cursor-pointer transform-gpu hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-pink-200/60"
-                                style={{ 
-                                    animation: 'bloom 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards',
-                                    animationDelay: `${idx * 100}ms`
-                                }}
                             >
                                 {/* Photo Container */}
                                 <div className="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden bg-gray-100 mb-4">

@@ -288,37 +288,6 @@ export const PetDetailView: React.FC<PetDetailProps> = ({ pet, onClose, isFavori
                     </button>
                 </div>
             </div>
-
-            <style>{`
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                @keyframes slideUp {
-                    0% { opacity: 0; transform: translateY(30px); }
-                    100% { opacity: 1; transform: translateY(0); }
-                }
-                .animate-slideUp {
-                    animation: slideUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-                }
-                .animate-in {
-                    animation-duration: 500ms;
-                    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-                    animation-fill-mode: backwards;
-                }
-                .slide-in-from-right {
-                    animation-name: slideInFromRight;
-                }
-                .slide-in-from-bottom {
-                    animation-name: slideInFromBottom;
-                }
-                @keyframes slideInFromRight {
-                    from { transform: translateX(100%); }
-                    to { transform: translateX(0); }
-                }
-                @keyframes slideInFromBottom {
-                    from { transform: translateY(100%); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-            `}</style>
         </div>
     );
 };
