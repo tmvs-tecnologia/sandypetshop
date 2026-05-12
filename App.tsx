@@ -33,6 +33,8 @@ import LoyaltyCardPage from './src/components/LoyaltyCardPage';
 import LoyaltyModal from './src/components/LoyaltyModal';
 import LoyaltyDashboardView from './src/components/LoyaltyDashboardView';
 import FiscalNotesView from './src/components/FiscalNotesView';
+import { AdoptionPublicView } from './src/components/AdoptionPublicView';
+import { AdoptionAdminView } from './src/components/AdoptionAdminView';
 
 
 // HELPERS DE IDENTIFICAÇÃO DE SERVIÇO (UNIFICADOS)
@@ -268,7 +270,7 @@ const AlbumManagementView: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     
-    const [activeTab, setActiveTab] = useState<'gallery' | 'fame'>('gallery');
+    const [activeTab, setActiveTab] = useState<'gallery' | 'fame' | 'adocao'>('gallery');
     const [galleryViewMode, setGalleryViewMode] = useState<'grid' | 'solo'>('grid');
     const [activeSoloIndex, setActiveSoloIndex] = useState(0);
     const [rankingDate, setRankingDate] = useState(new Date());
@@ -503,6 +505,13 @@ const AlbumManagementView: React.FC = () => {
                     <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                     Mural da Fama
                 </button>
+                <button
+                    onClick={() => setActiveTab('adocao')}
+                    className={`flex-1 py-3 px-1 sm:px-6 rounded-xl font-bold whitespace-nowrap text-xs sm:text-base transition-all flex items-center justify-center gap-1 sm:gap-2 ${activeTab === 'adocao' ? 'bg-white text-pink-600 shadow-md' : 'text-pink-800/50 hover:text-pink-600'}`}
+                >
+                    <span className="text-base sm:text-xl leading-none">🐾</span>
+                    Adoção
+                </button>
             </div>
 
             {activeTab === 'gallery' ? (
@@ -653,7 +662,7 @@ const AlbumManagementView: React.FC = () => {
                 </div>
             )}
             </div>
-            ) : (
+            ) : activeTab === 'fame' ? (
                 <div key="album-fame-view" className="w-full flex flex-col items-center">
                     {/* Controles de Navegação Mensal */}
                     <div className="w-full max-w-4xl flex items-center justify-between mb-8 bg-white/60 p-5 rounded-[2.5rem] border border-pink-100 backdrop-blur-sm shadow-sm">
@@ -783,7 +792,11 @@ const AlbumManagementView: React.FC = () => {
                     )}
                 </div>
                 </div>
-            )}
+            ) : activeTab === 'adocao' ? (
+                <div key="album-adocao-view" className="w-full flex flex-col items-center">
+                    <AdoptionAdminView />
+                </div>
+            ) : null}
 
             {/* Modal de Compartilhamento (Álbum ⮕ Story) */}
             {isShareModalOpen && activePhoto && (
@@ -11875,6 +11888,33 @@ const AlbumGrid = ({ onPhotoClick }: { onPhotoClick: (photo: {url: string, filen
 const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegistration' | 'hotelRegistration') => void }> = ({ setView }) => {
     const { getPricesForWeight } = useServicePrices();
 
+    const [isAdoptionOpen, setIsAdoptionOpen] = useState(false);
+
+    // Efeito para sincronizar a URL com a Adoção
+    useEffect(() => {
+        const handlePop = () => {
+            const currentPath = window.location.pathname;
+            if (currentPath === '/adocao' || currentPath === '/adocao/') {
+                setIsAdoptionOpen(true);
+            } else {
+                setIsAdoptionOpen(false);
+            }
+        };
+        handlePop(); // Check on mount
+        window.addEventListener('popstate', handlePop);
+        return () => window.removeEventListener('popstate', handlePop);
+    }, []);
+
+    const openAdoption = () => {
+        window.history.pushState({}, '', '/adocao');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+    };
+
+    const closeAdoption = () => {
+        window.history.pushState({}, '', '/');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+    };
+
     const [showPublicAlbum, setShowPublicAlbum] = useState(false);
     const [selectedPhoto, setSelectedPhoto] = useState<{url: string, filename: string} | null>(null);
     const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
@@ -12449,44 +12489,54 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-[#fff0f5] font-sans selection:bg-pink-200">
-            <div className="w-full max-w-5xl relative z-10 flex flex-col items-center">
-                <header className="w-full flex flex-col md:flex-row items-center justify-between mb-12 animate-fadeInUp gap-8">
-                    <div className="flex flex-row items-center text-left w-full md:w-auto">
+            <div className="w-full max-w-7xl relative z-10 flex flex-col items-center">
+                <header className="w-full flex flex-col lg:flex-row items-center justify-between mb-12 animate-fadeInUp gap-8 lg:gap-4">
+                    <div className="flex flex-col sm:flex-row items-center text-center sm:text-left w-full lg:w-auto gap-4 sm:gap-6">
                         <div className="relative group flex-shrink-0">
                             <div className="absolute inset-0 bg-pink-300 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500"></div>
-                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 object-contain transform group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl" loading="eager" />
+                            <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="relative h-20 w-20 sm:h-24 sm:w-24 md:h-32 object-contain transform group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl" loading="eager" />
                         </div>
-                        <div className="flex-1 flex justify-center min-w-0">
-                            <h1 className="font-brand text-5xl sm:text-6xl md:text-8xl text-pink-900 tracking-tight leading-none mb-1 whitespace-nowrap">Sandy's <span className="text-pink-600">Pet Shop</span></h1>
+                        <div className="flex-1 flex justify-center sm:justify-start min-w-0">
+                            <h1 className="font-brand text-5xl sm:text-6xl md:text-7xl text-pink-900 tracking-tight leading-none mb-1 whitespace-nowrap">Sandy's <span className="text-pink-600">Pet Shop</span></h1>
                         </div>
                     </div>
-                    <div className="flex-shrink-0 flex flex-col gap-3 items-center justify-center w-full md:w-auto">
-                        <div className="flex flex-row gap-3 w-full justify-center md:justify-end">
+                    <div className="flex-shrink-0 flex flex-col gap-3 items-center justify-center w-full lg:w-auto ml-auto">
+                        <div className="flex flex-row gap-3 w-full">
                             <button
                                 onClick={() => setIsPriceModalOpen(true)}
-                                className="flex-1 sm:flex-none group relative overflow-hidden px-4 sm:px-8 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center justify-center gap-2 sm:gap-3 transform hover:-translate-y-1"
+                                className="flex-1 group relative overflow-hidden px-2 sm:px-4 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex flex-col items-center justify-center gap-1 sm:gap-2 transform hover:-translate-y-1"
                             >
                                 <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
                                 <span className="relative z-10 text-2xl">📋</span>
-                                <span className="relative z-10 uppercase tracking-wider text-sm">Preços</span>
+                                <span className="relative z-10 uppercase tracking-wider text-xs sm:text-sm font-black text-center leading-tight">Preços</span>
                             </button>
                             <button
                                 onClick={() => setShowPublicAlbum(true)}
-                                className="flex-1 sm:flex-none group relative overflow-hidden px-4 sm:px-8 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center justify-center gap-2 sm:gap-3 transform hover:-translate-y-1"
+                                className="flex-1 group relative overflow-hidden px-2 sm:px-4 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex flex-col items-center justify-center gap-1 sm:gap-2 transform hover:-translate-y-1"
                             >
                                 <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
                                 <span className="relative z-10 text-2xl">📸</span>
-                                <span className="relative z-10 uppercase tracking-wider text-sm font-black">Álbum</span>
+                                <span className="relative z-10 uppercase tracking-wider text-xs sm:text-sm font-black text-center leading-tight">Álbum</span>
                             </button>
                         </div>
-                        <button
-                            onClick={() => setIsWeeklyScheduleOpen(true)}
-                            className="w-full group relative overflow-hidden px-4 sm:px-8 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex items-center justify-center gap-2 sm:gap-3 transform hover:-translate-y-1"
-                        >
-                            <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
-                            <span className="relative z-10 text-2xl">📅</span>
-                            <span className="relative z-10 uppercase tracking-wider text-sm font-black">Confira Agenda Semanal</span>
-                        </button>
+                        <div className="flex flex-row gap-3 w-full">
+                            <button
+                                onClick={() => setIsWeeklyScheduleOpen(true)}
+                                className="flex-1 group relative overflow-hidden px-2 sm:px-4 py-3 sm:py-4 bg-white text-pink-700 font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.2)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.4)] transition-all duration-300 border border-pink-100 flex flex-col items-center justify-center gap-1 sm:gap-2 transform hover:-translate-y-1"
+                            >
+                                <span className="absolute inset-0 bg-pink-50 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
+                                <span className="relative z-10 text-2xl">📅</span>
+                                <span className="relative z-10 uppercase tracking-wider text-xs sm:text-sm font-black text-center leading-tight">Agenda Semanal</span>
+                            </button>
+                            <button
+                                onClick={openAdoption}
+                                className="flex-1 group relative overflow-hidden px-2 sm:px-4 py-3 sm:py-4 bg-gradient-to-r from-orange-400 to-pink-500 text-white font-bold rounded-2xl shadow-[0_8px_30px_rgb(244,114,182,0.3)] hover:shadow-[0_8px_30px_rgb(244,114,182,0.5)] transition-all duration-300 border border-pink-200 flex flex-col items-center justify-center gap-1 sm:gap-2 transform hover:-translate-y-1"
+                            >
+                                <span className="absolute inset-0 bg-white/20 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
+                                <span className="relative z-10 text-2xl">🏠</span>
+                                <span className="relative z-10 uppercase tracking-wider text-xs sm:text-sm font-black text-center leading-tight">Adote um Pet</span>
+                            </button>
+                        </div>
                     </div>
                 </header>
 
@@ -12494,6 +12544,7 @@ const Scheduler: React.FC<{ setView: (view: 'scheduler' | 'login' | 'daycareRegi
 
                 <PriceTableModal isOpen={isPriceModalOpen} onClose={() => setIsPriceModalOpen(false)} />
                 <WeeklyScheduleModal isOpen={isWeeklyScheduleOpen} onClose={() => setIsWeeklyScheduleOpen(false)} />
+                {isAdoptionOpen && <AdoptionPublicView onClose={closeAdoption} />}
 
                 {/* Estilos de Animação Premium */}
                 <style dangerouslySetInnerHTML={{ __html: `
@@ -16958,6 +17009,7 @@ import PriceManagementModal from './src/components/PriceManagementModal';
 import FiscalConfirmationModal from './src/components/FiscalConfirmationModal';
 
 const App: React.FC = () => {
+
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     const publicDiaryMatch = path.match(/^\/diario\/([^/]+)$/);
     const [loyaltyData, setLoyaltyData] = useState<{ pet: string; owner: string } | null>(() => {
