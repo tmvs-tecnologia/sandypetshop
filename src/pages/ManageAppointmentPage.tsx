@@ -69,6 +69,17 @@ export const ManageAppointmentPage: React.FC = () => {
         if (inputRef.current) inputRef.current.focus();
     }, []);
 
+    const getSaoPauloDateString = () => {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-CA', { 
+            timeZone: 'America/Sao_Paulo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        return formatter.format(now);
+    };
+
     useEffect(() => {
         const generateDates = () => {
             const today = new Date();
@@ -336,6 +347,29 @@ export const ManageAppointmentPage: React.FC = () => {
 
             console.log('Cancelado com sucesso:', data);
 
+            // Enviar webhook para notificar cancelamento
+            try {
+                const webhookPayload = {
+                    action: 'cancel',
+                    appointment_id: appointmentId,
+                    pet_name: selectedAppointment.pet_name,
+                    owner_name: selectedAppointment.owner_name,
+                    whatsapp: selectedAppointment.whatsapp,
+                    service: selectedAppointment.service,
+                    appointment_time: selectedAppointment.appointment_time,
+                    table: targetTable
+                };
+                
+                await fetch('https://n8n.intelektus.tech/webhook/gerenciar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(webhookPayload)
+                });
+                console.log('Webhook enviado com sucesso');
+            } catch (webhookError) {
+                console.error('Erro ao enviar webhook:', webhookError);
+            }
+
             setAppointments(prev => prev.map(apt => 
                 apt.id === appointmentId ? { ...apt, status: 'cancelled' } : apt
             ));
@@ -355,7 +389,7 @@ export const ManageAppointmentPage: React.FC = () => {
         setActionLoading(true);
 
         try {
-            const newDateTime = `${rescheduleDate}T${rescheduleTime}:00:00`;
+            const newDateTime = `${rescheduleDate}T${rescheduleTime}:00:00-03:00`;
 
             const { error } = await supabase
                 .from(selectedAppointment.table)
@@ -363,6 +397,24 @@ export const ManageAppointmentPage: React.FC = () => {
                 .eq('id', selectedAppointment.id);
 
             if (error) throw error;
+
+            try {
+                const webhookUrl = 'https://n8n.intelektus.tech/webhook/reagendar';
+                const webhookData = {
+                    cliente: selectedAppointment.owner_name,
+                    pet: selectedAppointment.pet_name,
+                    telefone: selectedAppointment.whatsapp,
+                    nova_data: newDateTime,
+                };
+                
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(webhookData),
+                });
+            } catch (webhookErr) {
+                console.error('Erro ao enviar webhook de reagendamento:', webhookErr);
+            }
 
             const updatedAppointment = { ...selectedAppointment, appointment_time: newDateTime };
             setAppointments(prev => prev.map(apt => apt.id === selectedAppointment.id ? updatedAppointment : apt));
@@ -635,7 +687,7 @@ export const ManageAppointmentPage: React.FC = () => {
                                         <p className="text-gray-400 text-sm py-4">Nenhuma data disponível para este serviço</p>
                                     ) : (
                                         filteredDates.map((date) => {
-                                            const isToday = date === new Date().toISOString().split('T')[0];
+                                            const isToday = date === getSaoPauloDateString();
                                             return (
                                                 <button
                                                     key={date}

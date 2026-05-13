@@ -18,7 +18,18 @@ interface WeeklyAppointment {
   type: 'Banho & Tosa' | 'Pet Móvel';
 }
 
-const WeeklyScheduleModal: React.FC<WeeklyScheduleModalProps> = ({ isOpen, onClose }) => {
+const getSaoPauloDateString = () => {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-CA', { 
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    return formatter.format(now);
+  };
+
+  const WeeklyScheduleModal: React.FC<WeeklyScheduleModalProps> = ({ isOpen, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [appointments, setAppointments] = useState<WeeklyAppointment[]>([]);
@@ -270,7 +281,7 @@ const WeeklyScheduleModal: React.FC<WeeklyScheduleModalProps> = ({ isOpen, onClo
             <div className="space-y-6 max-w-5xl mx-auto">
               {weekDays.map(day => {
                 const dayAppointments = groupedAppointments[day.isoDateStr] || [];
-                const isToday = new Date().toISOString().split('T')[0] === day.isoDateStr;
+                const isToday = getSaoPauloDateString() === day.isoDateStr;
 
                 return (
                   <div 
