@@ -35,6 +35,7 @@ import LoyaltyDashboardView from './src/components/LoyaltyDashboardView';
 import FiscalNotesView from './src/components/FiscalNotesView';
 import { AdoptionPublicView } from './src/components/AdoptionPublicView';
 import { AdoptionAdminView } from './src/components/AdoptionAdminView';
+import TestimonialsCarousel from './src/components/TestimonialsCarousel';
 
 
 // HELPERS DE IDENTIFICAÇÃO DE SERVIÇO (UNIFICADOS)
@@ -12838,6 +12839,7 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
                                 Cuidamos do seu melhor amigo como se fosse nosso 🐾
                             </p>
                         </div>
+                        <TestimonialsCarousel />
                     </section>
                 )}
 

@@ -182,7 +182,8 @@ export const AdoptionAdminView: React.FC = () => {
 
             <div className="relative z-10 max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                {/* Header */}
+                <div className="flex flex-col items-start gap-4">
                     <div>
                         <h1 className="text-3xl sm:text-4xl font-black text-[#4A0D2B] tracking-tight" style={{ fontFamily: '"Lobster Two", cursive' }}>
                             Gestão de Adoção
@@ -192,6 +193,9 @@ export const AdoptionAdminView: React.FC = () => {
                             <PawPrint className="w-4 h-4" /> Cadastre os pets que aparecerão na página de adoção
                         </p>
                     </div>
+                </div>
+                {/* Centered Cadastrar Pet button */}
+                <div className="flex justify-center w-full mb-8">
                     <button
                         onClick={openAddModal}
                         className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-[#FF9A44] via-[#E93D8E] to-[#D91A77] text-white rounded-2xl font-bold hover:brightness-110 transition-all shadow-xl shadow-pink-200 active:scale-95"
