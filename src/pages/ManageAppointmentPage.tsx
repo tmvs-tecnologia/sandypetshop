@@ -21,6 +21,7 @@ import {
     PhoneOutgoing,
     Ban
 } from 'lucide-react';
+import { useRealtime } from '../hooks/useRealtime';
 
 const LOGO_URL = 'https://i.imgur.com/M3Gt3OA.png';
 
@@ -249,6 +250,7 @@ export const ManageAppointmentPage: React.FC = () => {
     };
 
     const searchAppointments = async () => {
+
         if (phone.length < 10) {
             setError('Digite um número de telefone completo');
             return;
@@ -306,6 +308,17 @@ export const ManageAppointmentPage: React.FC = () => {
             setLoading(false);
         }
     };
+
+    // Realtime: refresh the current search results when any appointment record changes.
+    useRealtime(
+      ['appointments', 'pet_movel_appointments', 'agendamento_banhotosa'],
+      () => {
+        if (searched) {
+          // re‑run the same search using the current phone value
+          searchAppointments();
+        }
+      }
+    );
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') searchAppointments();

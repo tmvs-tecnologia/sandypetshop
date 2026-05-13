@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useRealtime } from '../hooks/useRealtime';
 import { supabase } from '../../supabaseClient';
 import { 
     PlusIcon, 
@@ -67,6 +68,8 @@ export const AdoptionAdminView: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchPets = async () => {
+  // This function is also used by the realtime listener below
+
         setLoading(true);
         try {
             const { data, error } = await supabase
@@ -85,6 +88,9 @@ export const AdoptionAdminView: React.FC = () => {
     useEffect(() => {
         fetchPets();
     }, []);
+
+    // Realtime: refresh list whenever any adoption pet record changes
+    useRealtime(['adoption_pets'], fetchPets);
 
     const handleDelete = async (id: string) => {
         if (!confirm('Tem certeza que deseja remover este pet? (Ex: ele já foi adotado)')) return;
