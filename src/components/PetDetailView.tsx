@@ -100,7 +100,7 @@ export const PetDetailView: React.FC<PetDetailProps> = ({ pet, onClose, isFavori
                     </button>
                     <button 
                         onClick={(e) => onToggleFavorite(pet.id, e)}
-                        className={`p-3 rounded-2xl backdrop-blur-md transition-all shadow-sm ${
+                        className={`hidden sm:inline-flex p-3 rounded-2xl backdrop-blur-md transition-all shadow-sm ${
                             isFavorited ? 'bg-[#E93D8E] text-white' : (isScrolled ? 'bg-white text-[#4A0D2B] border border-pink-100' : 'bg-white/80 text-[#4A0D2B]')
                         }`}
                     >
@@ -119,7 +119,7 @@ export const PetDetailView: React.FC<PetDetailProps> = ({ pet, onClose, isFavori
                         <img 
                             src={images[currentImageIndex]} 
                             alt={pet.name} 
-                            className="w-full h-full object-cover transform scale-105 group-hover:scale-100 transition-transform duration-[2s] ease-out"
+                            className="w-full h-full object-cover"
                         />
 
                         {/* Pagination Dots Over the image */}
@@ -275,11 +275,11 @@ export const PetDetailView: React.FC<PetDetailProps> = ({ pet, onClose, isFavori
             </div>
 
             {/* BOTTOM STICKY CTA BAR */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-pink-100 p-4 px-6 pb-8 flex justify-center items-center shadow-[0_-10px_30px_rgba(233,61,142,0.05)] animate-in slide-in-from-bottom duration-700">
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-pink-100 py-2 px-4 flex justify-center items-center shadow-[0_-10px_30px_rgba(233,61,142,0.05)] animate-in slide-in-from-bottom duration-700">
                 <div className="w-full max-w-xl">
                     <button 
                         onClick={handleAdoptClick}
-                        className="w-full group/btn relative bg-gradient-to-r from-[#FF9A44] via-[#E93D8E] to-[#E93D8E] hover:brightness-110 text-white font-black py-5 rounded-[1.75rem] shadow-2xl shadow-pink-300/50 flex items-center justify-center gap-3 transition-all active:scale-[0.98] transform-gpu overflow-hidden"
+                        className="w-full group/btn relative bg-gradient-to-r from-[#FF9A44] via-[#E93D8E] to-[#E93D8E] hover:brightness-110 text-white font-black py-3 rounded-[1.75rem] shadow-2xl shadow-pink-300/50 flex items-center justify-center gap-3 transition-all active:scale-[0.98] transform-gpu overflow-hidden"
                     >
                         <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000 ease-out"></div>
                         <Heart className="w-6 h-6 animate-pulse" fill="currentColor" />

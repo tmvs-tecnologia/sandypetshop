@@ -140,31 +140,24 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
 
             <div className="relative z-10 w-full max-w-5xl mx-auto px-5 py-6 flex flex-col flex-1">
                 {/* HEADER */}
-                <header className="flex flex-col gap-5 mb-10 animate-fadeIn">
-                    <div className="flex items-center justify-between">
+                <header className="flex flex-col gap-2 mb-8 animate-fadeIn">
+                    <div className="relative w-full flex items-center justify-center pl-12 sm:pl-0">
                         <button 
                             onClick={onClose}
-                            className="p-3 bg-white/80 backdrop-blur-md text-[#4A0D2B] rounded-2xl shadow-sm border border-white hover:bg-[#E93D8E] hover:text-white hover:shadow-pink-300/50 transition-all duration-300 active:scale-95 group"
+                            className="absolute left-4 p-3 bg-white/80 backdrop-blur-md text-[#4A0D2B] rounded-2xl shadow-sm border border-white hover:bg-[#E93D8E] hover:text-white hover:shadow-pink-300/50 transition-all duration-300 active:scale-95 group"
                         >
                             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                         </button>
-                        
-                        <div className="flex items-center gap-1 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/80">
-                            <PawPrint className="w-4 h-4 text-[#E93D8E]" />
-                            <span className="text-xs font-bold text-[#4A0D2B] tracking-widest uppercase">Adoção Consciente</span>
-                        </div>
-                    </div>
-
-                    <div className="text-center mt-2 flex flex-col items-center">
-                        <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-[#4A0D2B] mb-2 relative inline-block" style={{ fontFamily: '"Lobster Two", cursive' }}>
-                            Sandy's Adoção
-                            <Sparkles className="absolute -top-4 -right-8 w-6 h-6 text-[#FF9A44] animate-bounce" />
+                        <h1 className="text-4xl sm:text-5xl font-black tracking-tighter mb-0 relative inline-block flex items-center" style={{ fontFamily: '"Lobster Two", cursive' }}>
+                            <span className="font-brand text-pink-900">Sandy's</span>
+                            <span className="ml-2 text-[#4A0D2B]">adoção</span>
+                            <HeartHandshake className="inline-block w-4 h-4 text-[#FF9A44] animate-bounce -mt-0.5 ml-1" />
                         </h1>
-                        <p className="text-[#D98AA8] font-medium text-sm sm:text-base tracking-wide flex items-center gap-2">
-                            Todo pet merece um lar cheio de amor <PawPrint className="w-4 h-4 inline" fill="currentColor" />
-                        </p>
                     </div>
                 </header>
+                <p className="text-center text-[#D98AA8] font-medium text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 mt-8 sm:mt-0">
+                    Todo pet merece um lar cheio de amor <PawPrint className="w-4 h-4 inline" fill="currentColor" />
+                </p>
 
                 {/* ANIMATED MOTIVATIONAL CARD */}
                 <div className="relative overflow-hidden rounded-3xl mb-6 group">
@@ -194,10 +187,10 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
                                 <Sparkles className="w-3 h-3 text-white/80 animate-spin-slow" />
                                 <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Motivo para Adotar</span>
                             </div>
-                            <div className="overflow-hidden">
+                            <div className="overflow-hidden min-h-[4rem]">
                                 <p 
                                     key={currentMessage}
-                                    className="text-white font-bold text-sm leading-snug transition-all duration-500 ease-out"
+                                    className="text-white font-bold text-sm leading-snug whitespace-normal break-words transition-all duration-500 ease-out"
                                     style={{
                                         animation: 'slideIn 0.5s ease-out'
                                     }}
@@ -205,22 +198,21 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
                                     {ADOPTION_MESSAGES[currentMessage].text}
                                 </p>
                             </div>
-                        </div>
-                        
-                        {/* Progress dots */}
-                        <div className="flex gap-1.5 flex-shrink-0">
-                            {ADOPTION_MESSAGES.map((_, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => setCurrentMessage(idx)}
-                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                                        idx === currentMessage 
-                                            ? 'bg-white w-6' 
-                                            : 'bg-white/40 hover:bg-white/60'
-                                    }`}
-                                    aria-label={`Ver mensagem ${idx + 1}`}
-                                />
-                            ))}
+                            {/* Progress dots - moved below text and made more discreet */}
+                            <div className="flex gap-1.5 flex-shrink-0 mt-2">
+                                {ADOPTION_MESSAGES.map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setCurrentMessage(idx)}
+                                        className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                                            idx === currentMessage 
+                                                ? 'bg-white w-3' 
+                                                : 'bg-white/30 hover:bg-white/50'
+                                        }`}
+                                        aria-label={`Ver mensagem ${idx + 1}`}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -286,19 +278,19 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
                                         <img 
                                             src={pet.photo_url || FallbackImage} 
                                             alt={pet.name} 
-                                            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000 ease-out"
+                                            className="w-full h-full object-cover transition-transform duration-1000 ease-out md:group-hover:scale-110"
                                             loading="lazy"
                                         />
                                         {/* Overlay Shadow for readable tags */}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-80 pointer-events-none"></div>
 
                                         {/* Favorite Action */}
-                                        <button 
-                                            onClick={(e) => toggleFavorite(pet.id, e)}
-                                            className={`absolute top-4 right-4 p-3 rounded-full backdrop-blur-md transition-all duration-300 z-20 active:scale-90 shadow-md ${
-                                                isFavorited ? 'bg-[#E93D8E] text-white' : 'bg-white/80 text-[#4A0D2B] hover:bg-[#E93D8E] hover:text-white'
-                                            }`}
-                                        >
+<button 
+                    onClick={(e) => toggleFavorite(pet.id, e)}
+                    className={`absolute top-4 right-4 hidden sm:inline-flex p-3 rounded-full backdrop-blur-md transition-all duration-300 z-20 active:scale-90 shadow-md ${
+                        isFavorited ? 'bg-[#E93D8E] text-white' : 'bg-white/80 text-[#4A0D2B] hover:bg-[#E93D8E] hover:text-white'
+                    }`}
+                >
                                             <Heart className="w-5 h-5" fill={isFavorited ? "currentColor" : "none"} />
                                         </button>
 

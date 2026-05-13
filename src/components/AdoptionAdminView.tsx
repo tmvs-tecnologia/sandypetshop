@@ -242,7 +242,7 @@ export const AdoptionAdminView: React.FC = () => {
                                     <img 
                                         src={pet.photo_url || FallbackImage} 
                                         alt={pet.name} 
-                                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000 ease-out"
+                                        className="w-full h-full object-cover transition-transform duration-1000 ease-out md:group-hover:scale-110"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-80 pointer-events-none"></div>
                                     
