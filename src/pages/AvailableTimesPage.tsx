@@ -37,18 +37,25 @@ export const AvailableTimesPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'fixed' | 'mobile'>('fixed');
 
     useEffect(() => {
+        const toYMD = (date: Date) => {
+            // format date in Brazil (São Paulo) timezone as YYYY‑MM‑DD
+            return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(date);
+        };
         const generateDates = () => {
-            const today = new Date();
+            // Get "today" in São Paulo timezone
+            const now = new Date();
+            const saoNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
             const dateList: string[] = [];
             for (let i = 0; i < 14; i++) {
-                const date = new Date(today);
-                date.setDate(today.getDate() + i);
-                const dayOfWeek = date.getDay();
+                const date = new Date(saoNow);
+                date.setDate(saoNow.getDate() + i);
+                const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
                 if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-                    dateList.push(date.toISOString().split('T')[0]);
+                    dateList.push(toYMD(date));
                 }
             }
             setDates(dateList);
+            // set default selected date to the first weekday (today if it is not weekend)
             setSelectedDate(dateList[0] || '');
         };
         generateDates();
