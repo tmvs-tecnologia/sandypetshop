@@ -694,13 +694,16 @@ const FinancialDashboardView: React.FC = () => {
     const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
 
     // Semana corrente: domingo a sábado
-    const diaSemana = hoje.getDay(); // 0=Dom, 6=Sab
-    const inicioDaSemana = new Date(hoje);
-    inicioDaSemana.setDate(hoje.getDate() - diaSemana);
-    inicioDaSemana.setHours(0, 0, 0, 0);
-    const fimDaSemana = new Date(inicioDaSemana);
-    fimDaSemana.setDate(inicioDaSemana.getDate() + 6);
-    fimDaSemana.setHours(23, 59, 59, 999);
+// Week boundaries – Monday as first day (Monday‑Saturday inclusive)
+let diaSemana = hoje.getDay(); // 0=Dom, 1=Seg, … 6=Sáb
+// Treat Sunday as the last day of the previous week
+if (diaSemana === 0) diaSemana = 6; else diaSemana -= 1;
+const inicioDaSemana = new Date(hoje);
+inicioDaSemana.setDate(hoje.getDate() - diaSemana);
+inicioDaSemana.setHours(0, 0, 0, 0);
+const fimDaSemana = new Date(inicioDaSemana);
+fimDaSemana.setDate(inicioDaSemana.getDate() + 6);
+fimDaSemana.setHours(23, 59, 59, 999);
 
     // HOJE – soma dos concluídos cujo appointment_time é hoje (data real)
     const banhoTosaHoje = realBanhoTosaConcluido
@@ -800,7 +803,10 @@ const FinancialDashboardView: React.FC = () => {
       })),
       ...dbData.appointments.filter(d => {
         const s = String(d.service || '').toUpperCase();
-        return s.includes('MÓVEL') || s.includes('MOVEL') || s.includes('MOBILE') || s.includes('PET_MOBILE');
+        const isServiceMobile = s.includes('MÓVEL') || s.includes('MOVEL') || s.includes('MOBILE') || s.includes('PET_MOBILE');
+        const condo = String(d.condominium || '').trim();
+        const isCondoMobile = condo && condo !== 'Nenhum Condomínio' && condo !== 'UNDEFINED' && condo !== 'NULL';
+        return isServiceMobile || isCondoMobile;
       }).map(d => ({
         price: Number(d.price || 0),
         date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
@@ -828,6 +834,8 @@ const petMovelOntem = realPetMovelConcluido
 const petMovelSemana = realPetMovelConcluido
   .filter(d => d.date >= inicioDaSemana && d.date <= fimDaSemana)
   .reduce((sum, d) => sum + d.price, 0);
+// Debug: log week range and total for Pet Móvel
+console.log('Pet Móvel semana:', inicioDaSemana.toISOString().slice(0,10), '→', fimDaSemana.toISOString().slice(0,10), 'valor =', petMovelSemana);
 
 const petMovelSemanaAnterior = realPetMovelConcluido
   .filter(d => d.date >= inicioSemanaAnterior && d.date <= fimSemanaAnterior)

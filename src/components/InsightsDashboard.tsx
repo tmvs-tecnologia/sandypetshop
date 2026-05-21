@@ -123,8 +123,10 @@ const InsightsDashboard: React.FC = () => {
                 supabase.from('clients').select('*')
             ]);
 
-            const appts: AdminAppointment[] = apptsRes.data || [];
-            const petMovelAppts: PetMovelAppointment[] = petMovelRes.data || [];
+            // Filter out appointments for inactive monthly clients
+            const inactiveMonthlyIds = new Set((monthlyRes.data || []).filter((m: any) => !m.is_active).map((m: any) => m.id));
+            const appts: AdminAppointment[] = (apptsRes.data || []).filter((a: any) => !(a.monthly_client_id && inactiveMonthlyIds.has(a.monthly_client_id)));
+            const petMovelAppts: PetMovelAppointment[] = (petMovelRes.data || []).filter((a: any) => !(a.monthly_client_id && inactiveMonthlyIds.has(a.monthly_client_id)));
             const allAppts = [...appts, ...petMovelAppts];
 
             // 1. Top 3 Clientes Avulsos Loja (Banho & Tosa)

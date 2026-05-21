@@ -365,9 +365,12 @@ const MonthlyClientCard: React.FC<{
                             )}
                         </div>
                         <div className="min-w-0 flex-1">
-                            <h3 className="font-outfit font-bold text-lg sm:text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors truncate">
-                                {client.pet_name}
-                            </h3>
+<h3 className="font-outfit font-bold text-lg sm:text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors truncate">
+                                            {client.pet_name}
+                                            {!client.is_active && (
+                                                <span className="ml-2 text-xs font-medium text-gray-500 bg-gray-200 rounded-full px-2 py-0.5">Pausado</span>
+                                            )}
+                                        </h3>
                             <div className="flex items-center gap-1.5 mt-1 flex-nowrap overflow-x-auto custom-scrollbar-hide">
                                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-100 uppercase tracking-wide flex-shrink-0">
                                     {getRecurrenceText(client)}
@@ -524,6 +527,30 @@ const MonthlyClientCard: React.FC<{
 
                 {/* Footer / Actions */}
                 <div className="mt-auto pt-3 border-t border-gray-100 flex flex-col gap-3">
+                    {/* Pause/Unpause Button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // Toggle active status
+                            const toggleActive = async () => {
+                                try {
+                                    const { error } = await supabase.from('monthly_clients')
+                                        .update({ is_active: !client.is_active })
+                                        .eq('id', client.id);
+                                    if (error) throw error;
+                                    // Reload to reflect changes
+                                    window.location.reload();
+                                } catch (err) {
+                                    console.error('Failed to toggle active status:', err);
+                                }
+                            };
+                            toggleActive();
+                        }}
+                        className={client.is_active ? "px-3 py-1.5 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200" : "px-3 py-1.5 rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 border border-gray-300"}
+                        title={client.is_active ? "Pausar cliente" : "Reativar cliente"}
+                    >
+                        {client.is_active ? "⏸ Pausar" : "▶ Ativar"}
+                    </button>
                     <div className="flex items-center justify-between gap-3">
                         <button
                             onClick={(e) => { e.stopPropagation(); onTogglePaymentStatus(client, e); }}

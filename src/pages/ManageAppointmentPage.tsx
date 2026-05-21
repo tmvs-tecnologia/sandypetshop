@@ -278,15 +278,19 @@ export const ManageAppointmentPage: React.FC = () => {
                 supabase.from('agendamento_banhotosa').select('*').or(`whatsapp.ilike.%${last4}%,whatsapp.ilike.%${last5}%,whatsapp.ilike.%${last8}%,whatsapp.ilike.%${digits}%`).order('appointment_time', { ascending: true })
             ]);
 
+            // Fetch inactive monthly client IDs to exclude their future appointments
+            const monthlyRes = await supabase.from('monthly_clients').select('id, is_active');
+            const inactiveMonthlyIds = new Set((monthlyRes.data || []).filter((c: any) => !c.is_active).map((c: any) => c.id));
+
             console.log('appointments:', appointmentsData.data?.length || 0);
             console.log('pet_movel:', petMovelData.data?.length || 0);
             console.log('banho_tosa:', bathGroomData.data?.length || 0);
             console.log('dados appointments:', appointmentsData.data);
 
             const allAppointments: Appointment[] = [
-                ...(appointmentsData.data || []).map(r => ({ ...r, table: 'appointments' as const })),
-                ...(petMovelData.data || []).map(r => ({ ...r, table: 'pet_movel_appointments' as const })),
-                ...(bathGroomData.data || []).map(r => ({ ...r, table: 'agendamento_banhotosa' as const }))
+                ...(appointmentsData.data || []).filter(r => !(r.monthly_client_id && inactiveMonthlyIds.has(r.monthly_client_id))).map(r => ({ ...r, table: 'appointments' as const })),
+                ...(petMovelData.data || []).filter(r => !(r.monthly_client_id && inactiveMonthlyIds.has(r.monthly_client_id))).map(r => ({ ...r, table: 'pet_movel_appointments' as const })),
+                ...(bathGroomData.data || []).filter(r => !(r.monthly_client_id && inactiveMonthlyIds.has(r.monthly_client_id))).map(r => ({ ...r, table: 'agendamento_banhotosa' as const }))
             ];
 
             const now = new Date();

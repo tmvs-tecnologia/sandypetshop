@@ -37,6 +37,7 @@ import { AdoptionPublicView } from './src/components/AdoptionPublicView';
 import { AdoptionAdminView } from './src/components/AdoptionAdminView';
 import TestimonialsCarousel from './src/components/TestimonialsCarousel';
 import FinancialDashboardView from './src/components/FinancialDashboardView';
+import FinancialDashboardProtected from './src/components/FinancialDashboardProtected';
 
 
 // HELPERS DE IDENTIFICAÇÃO DE SERVIÇO (UNIFICADOS)
@@ -7046,7 +7047,7 @@ const ClientsView: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
                                                                     ))}
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             <div className="pt-6 border-t border-gray-100 flex justify-end">
                                                                  <a 
                                                                     href={`https://wa.me/${normalizePhone(client.phone)}`} 
@@ -16941,7 +16942,7 @@ const AdminDashboard: React.FC<{
             case 'closeDay': return <CloseDayView onBack={() => setActiveView(previousView)} />;
             case 'insights': return <InsightsDashboard key={dataKey} onBack={() => setActiveView('resumo')} />;
             case 'fiscalNotes': return <FiscalNotesView />;
-            case 'financial': return <FinancialDashboardView />;
+            case 'financial': return <FinancialDashboardProtected />;
 
             case 'feedbacks': return <FeedbacksView key={dataKey} />;
             case 'album': return <AlbumManagementView />;

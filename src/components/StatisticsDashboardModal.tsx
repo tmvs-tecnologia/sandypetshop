@@ -473,7 +473,7 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ onB
         const nameToIdMap: Record<string, string> = {};
 
         // Initialize with all monthly clients (even if no services yet)
-        rawData.monthly.forEach(mc => {
+        rawData.monthly.filter((mc:any) => mc.is_active).forEach(mc => {
             // Index by ID for reliability
             monthlyStats[mc.id] = {
                 id: mc.id,
