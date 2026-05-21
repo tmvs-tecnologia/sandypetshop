@@ -225,11 +225,11 @@ const FinancialDashboardView: React.FC = () => {
     else setRefreshing(true);
 
     try {
-      const banhoRes = await supabase.from('agendamento_banhotosa').select('price, appointment_time, status');
-      const apptRes = await supabase.from('appointments').select('price, appointment_time, status, service');
-      const pmRes = await supabase.from('pet_movel_appointments').select('price, appointment_time, status');
-      const daycareRes = await supabase.from('daycare_enrollments').select('total_price, enrollment_date, status, payment_status');
-      const hotelRes = await supabase.from('hotel_registrations').select('total_services_price, check_in_date, check_out_date, status, payment_status');
+      const banhoRes = await supabase.from('agendamento_banhotosa').select('price, appointment_time, status, pet_name');
+      const apptRes = await supabase.from('appointments').select('price, appointment_time, status, service, pet_name');
+      const pmRes = await supabase.from('pet_movel_appointments').select('price, appointment_time, status, pet_name');
+      const daycareRes = await supabase.from('daycare_enrollments').select('total_price, created_at, status, pet_name, pet_breed');
+      const hotelRes = await supabase.from('hotel_registrations').select('total_services_price, check_in_date, check_out_date, status, pet_name, pet_breed, tutor_name');
 
       setDbData({
         banhoTosa: banhoRes.data || [],
@@ -679,7 +679,7 @@ const FinancialDashboardView: React.FC = () => {
     // ── BANHO & TOSA: apenas agendamentos com status CONCLUÍDO ─────────────────
     const isConcluido = (s: string) => {
       const up = String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      return up === 'CONCLUIDO' || up === 'CONCLUIDO' || up === 'COMPLETED' || up === 'DONE' || up === 'FINALIZADO';
+      return up === 'CONCLUIDO' || up === 'COMPLETED' || up === 'DONE' || up === 'FINALIZADO' || up === 'APROVADO' || up === 'APPROVED';
     };
 
     const realBanhoTosaConcluido = dbData.banhoTosa
@@ -720,7 +720,7 @@ fimDaSemana.setHours(23, 59, 59, 999);
 
     // MÊS – soma dos concluídos do mês e ano selecionados
     const banhoTosaMes = realBanhoTosaConcluido
-      .filter(d => d.date.getMonth() === currentMonth && d.date.getFullYear() === currentYear)
+      .filter(d => d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear)
       .reduce((sum, d) => sum + d.price, 0);
 
     // ANUAL – soma dos concluídos do ano selecionado
@@ -801,13 +801,7 @@ fimDaSemana.setHours(23, 59, 59, 999);
         date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
         status: d.status
       })),
-      ...dbData.appointments.filter(d => {
-        const s = String(d.service || '').toUpperCase();
-        const isServiceMobile = s.includes('MÓVEL') || s.includes('MOVEL') || s.includes('MOBILE') || s.includes('PET_MOBILE');
-        const condo = String(d.condominium || '').trim();
-        const isCondoMobile = condo && condo !== 'Nenhum Condomínio' && condo !== 'UNDEFINED' && condo !== 'NULL';
-        return isServiceMobile || isCondoMobile;
-      }).map(d => ({
+      ...dbData.appointments.map(d => ({
         price: Number(d.price || 0),
         date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
         status: d.status
@@ -818,31 +812,40 @@ fimDaSemana.setHours(23, 59, 59, 999);
 
 // Calculations for Pet Móvel (similar to Banho & Tosa)
 const petMovelHoje = realPetMovelConcluido
-  .filter(d => {
-    const ds = `${d.date.getFullYear()}-${String(d.date.getMonth() + 1).padStart(2, '0')}-${String(d.date.getDate()).padStart(2, '0')}`;
-    return ds === hojeStr;
-  })
+  .filter(d => d.date.toISOString().slice(0, 10) === hojeStr)
   .reduce((sum, d) => sum + d.price, 0);
 
 const petMovelOntem = realPetMovelConcluido
-  .filter(d => {
-    const ds = `${d.date.getFullYear()}-${String(d.date.getMonth() + 1).padStart(2, '0')}-${String(d.date.getDate()).padStart(2, '0')}`;
-    return ds === ontemStr;
-  })
+  .filter(d => d.date.toISOString().slice(0, 10) === ontemStr)
   .reduce((sum, d) => sum + d.price, 0);
 
 const petMovelSemana = realPetMovelConcluido
-  .filter(d => d.date >= inicioDaSemana && d.date <= fimDaSemana)
+  .filter(d => {
+    const ds = d.date.toISOString().slice(0, 10);
+    const startStr = `${inicioDaSemana.getFullYear()}-${String(inicioDaSemana.getMonth() + 1).padStart(2, '0')}-${String(inicioDaSemana.getDate()).padStart(2, '0')}`;
+    const endStr = `${fimDaSemana.getFullYear()}-${String(fimDaSemana.getMonth() + 1).padStart(2, '0')}-${String(fimDaSemana.getDate()).padStart(2, '0')}`;
+    return ds >= startStr && ds <= endStr;
+  })
   .reduce((sum, d) => sum + d.price, 0);
 // Debug: log week range and total for Pet Móvel
 console.log('Pet Móvel semana:', inicioDaSemana.toISOString().slice(0,10), '→', fimDaSemana.toISOString().slice(0,10), 'valor =', petMovelSemana);
 
 const petMovelSemanaAnterior = realPetMovelConcluido
-  .filter(d => d.date >= inicioSemanaAnterior && d.date <= fimSemanaAnterior)
+  .filter(d => {
+    const ds = d.date.toISOString().slice(0, 10);
+    const startStr = `${inicioSemanaAnterior.getFullYear()}-${String(inicioSemanaAnterior.getMonth() + 1).padStart(2, '0')}-${String(inicioSemanaAnterior.getDate()).padStart(2, '0')}`;
+    const endStr = `${fimSemanaAnterior.getFullYear()}-${String(fimSemanaAnterior.getMonth() + 1).padStart(2, '0')}-${String(fimSemanaAnterior.getDate()).padStart(2, '0')}`;
+    return ds >= startStr && ds <= endStr;
+  })
   .reduce((sum, d) => sum + d.price, 0);
 
+// Total do mês (conforme query SQL) – usando UTC para evitar deslocamento de fuso
+const monthKeyTarget = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
 const petMovelMes = realPetMovelConcluido
-  .filter(d => d.date.getMonth() === currentMonth && d.date.getFullYear() === currentYear)
+  .filter(d => {
+    const monthKey = `${d.date.getUTCFullYear()}-${String(d.date.getUTCMonth() + 1).padStart(2, '0')}`;
+    return monthKey === monthKeyTarget;
+  })
   .reduce((sum, d) => sum + d.price, 0);
 
 const petMovelAnual = realPetMovelConcluido
@@ -853,19 +856,46 @@ const petMovelAnoAnterior = realPetMovelConcluido
   .filter(d => d.date.getFullYear() === currentYear - 1)
   .reduce((sum, d) => sum + d.price, 0);
 
-const realCreche = dbData.daycare.map(d => ({
-      price: Number(d.total_price || 0),
-      date: d.enrollment_date ? new Date(d.enrollment_date) : new Date(),
-      status: d.status,
-      paid: d.payment_status === 'Pago' || d.payment_status === 'Concluído'
-    }));
+    const realCreche = dbData.daycare.map(d => ({
+        price: Number(d.total_price || 0),
+        date: d.created_at ? new Date(d.created_at) : new Date(),
+        status: d.status,
+        paid: d.status === 'Aprovado'
+      }));
+      // Total de matrículas aprovadas (sem filtro de data)
+      const totalCrecheAprovado = dbData.daycare
+        .filter(d => d.status === 'Aprovado')
+        .reduce((sum, d) => sum + Number(d.total_price || 0), 0);
+
+      const approvedCrechePets = dbData.daycare
+        .filter(d => d.status === 'Aprovado')
+        .map(d => ({
+          petName: d.pet_name || 'Pet sem nome',
+          petBreed: d.pet_breed || 'Sem raça definida',
+          price: Number(d.total_price || 0)
+        }))
+        .sort((a, b) => a.petName.localeCompare(b.petName));
 
     const realHotel = dbData.hotel.map(d => ({
       price: Number(d.total_services_price || 0),
       date: d.check_in_date ? new Date(d.check_in_date) : new Date(),
       status: d.status,
-      paid: d.payment_status === 'Pago' || d.payment_status === 'Concluído'
+      paid: d.status === 'approved'
     }));
+
+    const totalHotelAprovado = dbData.hotel
+      .filter(d => d.status === 'approved')
+      .reduce((sum, d) => sum + Number(d.total_services_price || 0), 0);
+
+    const approvedHotelPets = dbData.hotel
+      .filter(d => d.status === 'approved')
+      .map(d => ({
+        petName: d.pet_name || 'Pet sem nome',
+        petBreed: d.pet_breed || 'Sem raça definida',
+        tutorName: d.tutor_name || 'Tutor sem nome',
+        price: Number(d.total_services_price || 0)
+      }))
+      .sort((a, b) => a.petName.localeCompare(b.petName));
 
     const getMonthlyChartData = (serviceKey: string, realData: { price: number; date: Date }[], seedBase: number) => {
       const data: number[] = [];
@@ -925,8 +955,24 @@ metricsPetMovel = {
   percentMes: percentPetMes,
   percentAno: percentPetAno
 };
-    const metricsCreche = getServiceMetrics(chartCreche, selectedMonth);
-    const metricsHotel = getServiceMetrics(chartHotel, selectedMonth);
+    // Faturamento real de Creche no mês e ano ativos (UTC)
+    const crecheMes = realCreche
+      .filter(d => isConcluido(d.status) && d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear)
+      .reduce((sum, d) => sum + d.price, 0);
+
+    // Faturamento real de Hotel no mês e ano ativos (UTC)
+    const hotelMes = realHotel
+      .filter(d => isConcluido(d.status) && d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear)
+      .reduce((sum, d) => sum + d.price, 0);
+
+    const metricsCreche = {
+      ...getServiceMetrics(chartCreche, selectedMonth),
+      month: crecheMes
+    };
+    const metricsHotel = {
+      ...getServiceMetrics(chartHotel, selectedMonth),
+      month: hotelMes
+    };
 
     const totalMonth = metricsBanhoTosa.month + metricsPetMovel.month + metricsCreche.month + metricsHotel.month;
     const totalPrevMonth = 
@@ -968,44 +1014,81 @@ metricsPetMovel = {
     const countHotel = Math.round(metricsHotel.month / ticketMedium.hotel);
     const totalAppointmentsCount = countBanho + countMovel + countCreche + countHotel;
 
+    const countBanhoReal = dbData.banhoTosa.filter(d => isConcluido(d.status) && d.appointment_time && new Date(d.appointment_time).getUTCMonth() === currentMonth && new Date(d.appointment_time).getUTCFullYear() === currentYear).length;
+    const countPetMovelReal = realPetMovelConcluido.filter(d => d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear).length;
+    const countCrecheReal = realCreche.filter(d => isConcluido(d.status) && d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear).length;
+    const countHotelReal = realHotel.filter(d => isConcluido(d.status) && d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear).length;
+    const totalServicesCountReal = countBanhoReal + countPetMovelReal + countCrecheReal + countHotelReal;
+
     const seedDay = (selectedMonth * 7 + selectedYear) % 28 + 1;
     const maiorDiaFaturamento = `${seedDay} de ${months[selectedMonth]}`;
     const projection = totalMonth * 1.08;
 
-    const operationalTimeline = (() => {
-      const times = ['08:00', '09:30', '11:00', '13:30', '15:00', '16:30', '17:30'];
-      const timeline: { time: string; banhoVal: number; movelVal: number; banhoClient: string; movelClient: string; isCompleted: boolean }[] = [];
-      const namesA = ['Bella (Yorkshire)', 'Thor (Golden)', 'Mel (Poodle)', 'Amora (Spitz)', 'Luke (Shih Tzu)', 'Pipoca (Pug)', 'Max (Bulldog)'];
-      const namesB = ['Fred (Beagle)', 'Nina (Maltês)', 'Zeus (Rottweiler)', 'Gaia (Border)', 'Bidu (Schnauzer)', 'Chico (Dachshund)', 'Luna (Lhasa)'];
+    const realTimelineItems = (() => {
+      const items: { origem: string; pet_name: string; valor: number; date: Date; timeStr: string }[] = [];
 
-      times.forEach((t, i) => {
-        const banhoVal = Math.round(90 + (i * 12) % 60);
-        const movelVal = Math.round(120 + (i * 18) % 80);
-        timeline.push({
-          time: t,
-          banhoVal,
-          movelVal,
-          banhoClient: namesA[i % namesA.length],
-          movelClient: namesB[i % namesB.length],
-          isCompleted: i < 5
-        });
+      dbData.banhoTosa.forEach(d => {
+        if (isConcluido(d.status)) {
+          const date = d.appointment_time ? new Date(d.appointment_time) : new Date();
+          const matchUTC = date.getUTCMonth() === currentMonth && date.getUTCFullYear() === currentYear;
+          if (matchUTC) {
+            items.push({
+              origem: 'Banho & Tosa',
+              pet_name: d.pet_name || 'Pet sem nome',
+              valor: Number(d.price || 0),
+              date,
+              timeStr: d.appointment_time ? new Date(d.appointment_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'
+            });
+          }
+        }
       });
-      return timeline;
+
+      dbData.appointments.forEach(d => {
+        if (isConcluido(d.status)) {
+          const date = d.appointment_time ? new Date(d.appointment_time) : new Date();
+          const matchUTC = date.getUTCMonth() === currentMonth && date.getUTCFullYear() === currentYear;
+          if (matchUTC) {
+            items.push({
+              origem: 'Pet Móvel',
+              pet_name: d.pet_name || 'Pet sem nome',
+              valor: Number(d.price || 0),
+              date,
+              timeStr: d.appointment_time ? new Date(d.appointment_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'
+            });
+          }
+        }
+      });
+
+      dbData.petMovel.forEach(d => {
+        if (isConcluido(d.status)) {
+          const date = d.appointment_time ? new Date(d.appointment_time) : new Date();
+          const matchUTC = date.getUTCMonth() === currentMonth && date.getUTCFullYear() === currentYear;
+          if (matchUTC) {
+            items.push({
+              origem: 'Pet Móvel',
+              pet_name: d.pet_name || 'Pet sem nome',
+              valor: Number(d.price || 0),
+              date,
+              timeStr: d.appointment_time ? new Date(d.appointment_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'
+            });
+          }
+        }
+      });
+
+      return items.sort((a, b) => b.date.getTime() - a.date.getTime());
     })();
 
-    const dailyAccumulated = operationalTimeline.map((item, index) => {
-      const sum = operationalTimeline.slice(0, index + 1).reduce((tot, current) => tot + current.banhoVal + current.movelVal, 0);
-      return {
-        time: item.time,
-        amount: sum
-      };
-    });
+    const valorTotalGeral = realTimelineItems.reduce((sum, item) => sum + item.valor, 0);
 
     return {
       banhotosa: metricsBanhoTosa,
       petmovel: metricsPetMovel,
       creche: metricsCreche,
       hotel: metricsHotel,
+      totalCrecheAprovado,
+      approvedCrechePets,
+      totalHotelAprovado,
+      approvedHotelPets,
       chart: {
         banhotosa: chartBanhoTosa,
         petmovel: chartPetMovel,
@@ -1021,18 +1104,23 @@ metricsPetMovel = {
           banhotosa: shareBanhoTosa,
           petmovel: sharePetMovel,
           creche: shareCreche,
-          hotel: shareHotel
+          hotel: shareHotel,
+          valBanhoTosa: metricsBanhoTosa.month,
+          valPetMovel: metricsPetMovel.month,
+          valCreche: crecheMes,
+          valHotel: hotelMes
         },
         topService,
         serviceLucrativo,
         ticketMedium,
         totalAppointmentsCount,
+        totalServicesCountReal,
         maiorDiaFaturamento,
         projection
       },
       timeline: {
-        operational: operationalTimeline,
-        accumulated: dailyAccumulated
+        operational: realTimelineItems,
+        totalGeral: valorTotalGeral
       }
     };
   }, [dbData, selectedMonth, selectedYear]);
@@ -1104,8 +1192,8 @@ metricsPetMovel = {
     const shareCreche = total > 0 ? (expCreche / total) * 100 : 0;
     const shareBanhoTosa = total > 0 ? (expBanhoTosa / total) * 100 : 0;
 
-    // Saldo Líquido e Lucro Estimado (Somando Hotel Pet no Faturamento da Visão Geral)
-    const faturamentoGeral = consolidatedMetrics.summary.monthTotal;
+    // Saldo Líquido e Lucro Estimado baseados no faturamento real de Banho & Tosa e Pet Shop (timeline totalGeral)
+    const faturamentoGeral = consolidatedMetrics.timeline.totalGeral;
     const saldoLiquido = faturamentoGeral - total;
     const lucroEstimado = faturamentoGeral > 0 ? (saldoLiquido / faturamentoGeral) * 100 : 0;
 
@@ -1122,7 +1210,9 @@ metricsPetMovel = {
       const data: number[] = [];
       const baseSeedGasto = total || 8000;
       for (let m = 0; m < 12; m++) {
-        if (m === selectedMonth) {
+        if (m < 4) { // Janeiro, Fevereiro, Março e Abril são 0
+          data.push(0);
+        } else if (m === selectedMonth) {
           data.push(total);
         } else {
           // Preencher determinístico baseado no mês ativo
@@ -1158,7 +1248,7 @@ metricsPetMovel = {
       projecao: projecaoGastos,
       chartEvolucao: getEvolucaoGastosMensal()
     };
-  }, [expenses, consolidatedMetrics]);
+  }, [expensesToShow, consolidatedMetrics]);
 
   // --- RENDERIZADORES DE GRÁFICOS SVG ---
 
@@ -1207,18 +1297,29 @@ metricsPetMovel = {
 
           {points.map((pt, idx) => (
             <g key={idx} className="cursor-pointer group/dot">
+              {/* Círculo visível */}
               <circle 
                 cx={pt.x} 
                 cy={pt.y} 
-                r="3.5" 
+                r="4" 
                 fill="#ffffff" 
                 stroke={color} 
-                strokeWidth="2.5"
-                className="transition-all duration-300 hover:scale-150 hover:stroke-[3.5px] transform-gpu origin-center cursor-pointer"
+                strokeWidth="2"
+                className="transition-all duration-200 group-hover/dot:stroke-[4px]"
               />
-              <g className="opacity-0 pointer-events-none group-hover/dot:opacity-100 transition-opacity duration-300">
-                <rect x={pt.x - 35} y={pt.y - 30} width="70" height="22" rx="6" fill="#1f2937" className="shadow-md" />
-                <text x={pt.x} y={pt.y - 16} fill="#ffffff" fontSize="8.5" fontWeight="bold" textAnchor="middle">
+              {/* Área de detecção estável ampliada (invisível, evita flicker) */}
+              <circle 
+                cx={pt.x} 
+                cy={pt.y} 
+                r="14" 
+                fill="transparent" 
+                className="cursor-pointer"
+              />
+              {/* Tooltip com setinha elegante */}
+              <g className="opacity-0 pointer-events-none group-hover/dot:opacity-100 transition-opacity duration-200">
+                <path d={`M ${pt.x - 4} ${pt.y - 12} L ${pt.x} ${pt.y - 8} L ${pt.x + 4} ${pt.y - 12} Z`} fill="#1f2937" />
+                <rect x={pt.x - 40} y={pt.y - 32} width="80" height="20" rx="5" fill="#1f2937" className="shadow-lg" />
+                <text x={pt.x} y={pt.y - 19} fill="#ffffff" fontSize="8" fontWeight="bold" textAnchor="middle">
                   R$ {pt.val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                 </text>
               </g>
@@ -1304,18 +1405,29 @@ metricsPetMovel = {
 
           {points.map((pt, idx) => (
             <g key={idx} className="cursor-pointer group/ev">
+              {/* Círculo visível */}
               <circle 
                 cx={pt.x} 
                 cy={pt.y} 
-                r="4.5" 
+                r="5" 
                 fill="#ffffff" 
                 stroke="#db2777" 
-                strokeWidth="3.5"
-                className="transition-all duration-300 hover:scale-150 hover:stroke-[4.5px] transform-gpu origin-center cursor-pointer shadow-md"
+                strokeWidth="3"
+                className="transition-all duration-200 group-hover/ev:stroke-[5px]"
               />
-              <g className="opacity-0 pointer-events-none group-hover/ev:opacity-100 transition-opacity duration-300">
-                <rect x={pt.x - 50} y={pt.y - 32} width="100" height="24" rx="8" fill="#030712" className="shadow-2xl" />
-                <text x={pt.x} y={pt.y - 16} fill="#ffffff" fontSize="9.5" fontWeight="black" textAnchor="middle">
+              {/* Área de detecção estável ampliada (invisível, evita flicker) */}
+              <circle 
+                cx={pt.x} 
+                cy={pt.y} 
+                r="16" 
+                fill="transparent" 
+                className="cursor-pointer"
+              />
+              {/* Tooltip com setinha elegante */}
+              <g className="opacity-0 pointer-events-none group-hover/ev:opacity-100 transition-opacity duration-200">
+                <path d={`M ${pt.x - 4} ${pt.y - 12} L ${pt.x} ${pt.y - 8} L ${pt.x + 4} ${pt.y - 12} Z`} fill="#030712" />
+                <rect x={pt.x - 55} y={pt.y - 34} width="110" height="22" rx="6" fill="#030712" className="shadow-2xl" />
+                <text x={pt.x} y={pt.y - 20} fill="#ffffff" fontSize="9" fontWeight="black" textAnchor="middle">
                   R$ {pt.val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                 </text>
               </g>
@@ -1333,12 +1445,15 @@ metricsPetMovel = {
   // Gráfico Donut para Distribuição Financeira (Faturamento)
   const renderDonutChart = () => {
     const shares = consolidatedMetrics.summary.share;
-    const data = [
-      { name: 'Banho & Tosa', value: shares.banhotosa, color: '#ec4899' },
-      { name: 'Pet Móvel', value: shares.petmovel, color: '#06b6d4' },
-      { name: 'Creche Pet', value: shares.creche, color: '#8b5cf6' },
-      { name: 'Hotel Pet', value: shares.hotel, color: '#f59e0b' }
-    ].filter(item => item.value > 0);
+    const allServices = [
+      { name: 'Banho & Tosa', value: shares.banhotosa, color: '#ec4899', amount: shares.valBanhoTosa },
+      { name: 'Pet Móvel', value: shares.petmovel, color: '#06b6d4', amount: shares.valPetMovel },
+      { name: 'Creche Pet', value: shares.creche, color: '#8b5cf6', amount: shares.valCreche },
+      { name: 'Hotel Pet', value: shares.hotel, color: '#f59e0b', amount: shares.valHotel }
+    ];
+
+    // Fatias do donut apenas para valores maiores que zero
+    const slices = allServices.filter(item => item.value > 0);
 
     let cumulativePercent = 0;
     const getCoordinatesForPercent = (percent: number) => {
@@ -1355,11 +1470,16 @@ metricsPetMovel = {
       <div className="flex flex-col md:flex-row items-center gap-6 justify-center w-full">
         <div className="relative w-[160px] h-[160px] flex-shrink-0 animate-fadeIn">
           <svg viewBox={`0 0 ${width} ${width}`} className="w-full h-full overflow-visible">
-            {data.map((slice, idx) => {
+            {slices.map((slice, idx) => {
               const startPercent = cumulativePercent;
               cumulativePercent += slice.value / 100;
+              // Se a fatia tem quase 100%, faz uma aproximação extremamente sutil (0.99999) para evitar
+              // que o ponto inicial seja igual ao ponto final, o que faria o SVG sumir.
+              const isFullCircle = slice.value >= 99.9;
+              const adjustedEndPercent = isFullCircle ? 0.99999 : cumulativePercent;
+
               const [startX, startY] = getCoordinatesForPercent(startPercent);
-              const [endX, endY] = getCoordinatesForPercent(cumulativePercent);
+              const [endX, endY] = getCoordinatesForPercent(adjustedEndPercent);
               const largeArcFlag = slice.value > 50 ? 1 : 0;
               
               const sx = center + startX * radius;
@@ -1392,13 +1512,13 @@ metricsPetMovel = {
         </div>
 
         <div className="flex-1 space-y-2.5 w-full">
-          {data.map((item, idx) => (
+          {allServices.map((item, idx) => (
             <div key={idx} className="flex justify-between items-center bg-white/40 p-2.5 rounded-2xl border border-gray-100 hover:bg-white/80 transition-colors shadow-sm">
               <div className="flex items-center gap-2">
                 <span className="w-3.5 h-3.5 rounded-full block border border-white" style={{ backgroundColor: item.color }} />
                 <span className="text-xs font-black text-gray-700">{item.name}</span>
               </div>
-              <span className="text-xs font-black text-gray-600">{item.value.toFixed(1)}%</span>
+              <span className="text-xs font-black text-pink-600">R$ {item.amount.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} ({item.value.toFixed(1)}%)</span>
             </div>
           ))}
         </div>
@@ -1435,8 +1555,13 @@ metricsPetMovel = {
             {data.map((slice, idx) => {
               const startPercent = cumulativePercent;
               cumulativePercent += slice.value / 100;
+              // Se a fatia de gasto tem quase 100%, faz uma aproximação sutil (0.99999) para evitar
+              // que o ponto inicial seja igual ao ponto final, o que faria o SVG sumir.
+              const isFullCircle = slice.value >= 99.9;
+              const adjustedEndPercent = isFullCircle ? 0.99999 : cumulativePercent;
+
               const [startX, startY] = getCoordinatesForPercent(startPercent);
-              const [endX, endY] = getCoordinatesForPercent(cumulativePercent);
+              const [endX, endY] = getCoordinatesForPercent(adjustedEndPercent);
               const largeArcFlag = slice.value > 50 ? 1 : 0;
               
               const sx = center + startX * radius;
@@ -1483,36 +1608,27 @@ metricsPetMovel = {
     );
   };
 
-  // Evolução Mensal dos Gastos (Gráfico de Área SVG)
+  // Evolução Mensal dos Gastos (Gráfico de Barras SVG Premium)
   const renderExpensesEvolucaoChart = () => {
     const width = 800;
     const height = 180;
     const data = expensesMetrics.chartEvolucao;
 
-    const maxVal = Math.max(...data) * 1.1 || 5000;
-    const minVal = Math.min(...data) * 0.9 || 0;
+    const maxVal = Math.max(...data) * 1.25 || 5000;
+    const barWidth = 44; // Barras maiores e mais robustas!
+    const spacing = (width - 60) / 11;
 
-    const points = data.map((val, i) => {
-      const x = (i * (width - 60)) / 11 + 30;
-      const y = height - ((val - minVal) * (height - 40)) / (maxVal - minVal) - 20;
-      return { x, y, val };
+    const bars = data.map((val, i) => {
+      const xCenter = 30 + i * spacing;
+      const x = xCenter - barWidth / 2;
+      const usableHeight = height - 65; // Ajustado para dar mais folga vertical
+      const barHeight = (val / maxVal) * usableHeight;
+      const y = height - 20 - barHeight;
+      return { x, y, barWidth, barHeight, val, xCenter, monthIndex: i };
     });
 
-    let pathD = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const curr = points[i];
-      const next = points[i + 1];
-      const cpX1 = curr.x + (next.x - curr.x) / 3;
-      const cpY1 = curr.y;
-      const cpX2 = curr.x + (2 * (next.x - curr.x)) / 3;
-      const cpY2 = next.y;
-      pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${next.x} ${next.y}`;
-    }
-
-    const areaPathD = `${pathD} L ${points[points.length - 1].x} ${height - 10} L ${points[0].x} ${height - 10} Z`;
-
     return (
-      <div className="relative group w-full h-[220px] backdrop-blur-md bg-white/20 rounded-3xl p-5 border border-pink-100/30 shadow-xl overflow-hidden">
+      <div className="relative group w-full h-full min-h-[270px] backdrop-blur-md bg-white/20 rounded-3xl p-5 border border-pink-100/30 shadow-xl flex flex-col justify-between animate-fadeIn">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-red-300 rounded-full blur-3xl opacity-10 pointer-events-none"></div>
         <div className="flex justify-between items-center mb-3">
           <div>
@@ -1529,42 +1645,102 @@ metricsPetMovel = {
 
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-[140px] overflow-visible">
           <defs>
-            <linearGradient id="grad-evolucao-gastos" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#f87171" stopOpacity="0.0" />
+            <linearGradient id="grad-bar-normal" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#f43f5e" />
+              <stop offset="100%" stopColor="#e11d48" />
             </linearGradient>
+            <linearGradient id="grad-bar-active" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#db2777" />
+              <stop offset="100%" stopColor="#be185d" />
+            </linearGradient>
+            <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#f43f5e" floodOpacity="0.15" />
+            </filter>
+            <filter id="shadow-active" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#db2777" floodOpacity="0.3" />
+            </filter>
           </defs>
 
-          <line x1="30" y1={height - 10} x2={width - 30} y2={height - 10} stroke="rgba(239,68,68,0.08)" strokeDasharray="3,3" />
-          <line x1="30" y1={height / 2} x2={width - 30} y2={height / 2} stroke="rgba(239,68,68,0.08)" strokeDasharray="3,3" />
-          <line x1="30" y1="20" x2={width - 30} y2="20" stroke="rgba(239,68,68,0.08)" strokeDasharray="3,3" />
+          {/* Linhas de grade horizontais de fundo */}
+          <line x1="30" y1={height - 20} x2={width - 30} y2={height - 20} stroke="rgba(239,68,68,0.06)" strokeWidth="1.5" />
+          <line x1="30" y1={(height - 20) / 2 + 10} x2={width - 30} y2={(height - 20) / 2 + 10} stroke="rgba(239,68,68,0.06)" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1="30" y1="40" x2={width - 30} y2="40" stroke="rgba(239,68,68,0.06)" strokeWidth="1" strokeDasharray="4,4" />
 
-          <path d={areaPathD} fill="url(#grad-evolucao-gastos)" />
-          <path d={pathD} fill="none" stroke="#ef4444" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+          {bars.map((bar, idx) => {
+            const isActive = bar.monthIndex === selectedMonth;
+            
+            // Omitir renderização de colunas e textos para meses sem despesas (valor = 0)
+            if (bar.val === 0) return null;
 
-          {points.map((pt, idx) => (
-            <g key={idx} className="cursor-pointer group/ev">
-              <circle 
-                cx={pt.x} 
-                cy={pt.y} 
-                r="4.5" 
-                fill="#ffffff" 
-                stroke="#ef4444" 
-                strokeWidth="3.5"
-                className="transition-all duration-300 hover:scale-150 hover:stroke-[4.5px] transform-gpu origin-center cursor-pointer shadow-md"
-              />
-              <g className="opacity-0 pointer-events-none group-hover/ev:opacity-100 transition-opacity duration-300">
-                <rect x={pt.x - 50} y={pt.y - 32} width="100" height="24" rx="8" fill="#030712" className="shadow-2xl" />
-                <text x={pt.x} y={pt.y - 16} fill="#ffffff" fontSize="9.5" fontWeight="black" textAnchor="middle">
-                  R$ {pt.val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+            return (
+              <g key={idx} className="cursor-pointer group/bar">
+                {/* Valor textual fixo acima de cada barra para legibilidade imediata (fonte maior e em negrito de alta legibilidade) */}
+                <text
+                  x={bar.xCenter}
+                  y={bar.y - 8}
+                  fill={isActive ? '#be185d' : '#e11d48'}
+                  fontSize="12" // Fonte aumentada de 9 para 12 para excelente legibilidade!
+                  fontWeight="900" // Peso black
+                  textAnchor="middle"
+                  className="transition-all duration-200 group-hover/bar:fill-gray-900 group-hover/bar:scale-105 origin-center font-sans tracking-tight"
+                >
+                  R$ {Math.round(bar.val).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                 </text>
+
+                {/* Retângulo da Barra */}
+                <rect
+                  x={bar.x}
+                  y={bar.y}
+                  width={bar.barWidth}
+                  height={bar.barHeight}
+                  rx="7"
+                  ry="7"
+                  fill={isActive ? 'url(#grad-bar-active)' : 'url(#grad-bar-normal)'}
+                  filter={isActive ? 'url(#shadow-active)' : 'url(#shadow)'}
+                  className="transition-all duration-300 group-hover/bar:brightness-110 group-hover/bar:y-[-2px] hover:scale-x-105 origin-bottom"
+                  style={{ transformOrigin: `${bar.xCenter}px ${height - 20}px` }}
+                />
+
+                {/* Área de detecção estável ampliada (invisível) para o tooltip */}
+                <rect
+                  x={bar.xCenter - spacing / 2}
+                  y="10"
+                  width={spacing}
+                  height={height - 30}
+                  fill="transparent"
+                />
+
+                {/* Tooltip com setinha elegante (ativado em hover) */}
+                <g className="opacity-0 pointer-events-none group-hover/bar:opacity-100 transition-opacity duration-200">
+                  <path d={`M ${bar.xCenter - 4} ${bar.y - 25} L ${bar.xCenter} ${bar.y - 21} L ${bar.xCenter + 4} ${bar.y - 25} Z`} fill="#030712" />
+                  <rect x={bar.xCenter - 65} y={bar.y - 49} width="130" height="24" rx="6" fill="#030712" className="shadow-2xl" />
+                  <text x={bar.xCenter} y={bar.y - 34} fill="#ffffff" fontSize="9" fontWeight="black" textAnchor="middle">
+                    Gasto: R$ {bar.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </text>
+                </g>
               </g>
-            </g>
-          ))}
+            );
+          })}
         </svg>
 
         <div className="flex justify-between text-[10px] font-black text-gray-400 mt-2 px-6">
-          {months.map(m => <span key={m}>{m.substring(0, 3)}</span>)}
+          {months.map((m, idx) => {
+            const isZero = data[idx] === 0;
+            return (
+              <span 
+                key={m} 
+                className={`transition-colors ${
+                  idx === selectedMonth 
+                    ? 'text-pink-600 font-extrabold scale-110' 
+                    : isZero 
+                      ? 'text-gray-300 font-medium' // deixa os meses de 0 mais discretos
+                      : 'text-gray-500'
+                }`}
+              >
+                {m.substring(0, 3)}
+              </span>
+            );
+          })}
         </div>
       </div>
     );
@@ -1572,41 +1748,54 @@ metricsPetMovel = {
 
   // Renderizador da Timeline Operacional
   const renderOperationalTimeline = () => {
+    const items = consolidatedMetrics.timeline.operational;
+
+    if (items.length === 0) {
+      return (
+        <div className="text-center py-12 text-sm font-bold text-gray-400">
+          Nenhum atendimento concluído registrado para este mês.
+        </div>
+      );
+    }
+
     return (
-      <div className="space-y-4">
-        {consolidatedMetrics.timeline.operational.map((item, idx) => (
-          <div key={idx} className="relative flex gap-4">
-            {idx < consolidatedMetrics.timeline.operational.length - 1 && (
-              <div className="absolute left-[17px] top-[30px] bottom-0 w-0.5 border-l border-dashed border-pink-300"></div>
-            )}
-            
-            <div className={`w-9 h-9 rounded-2xl flex items-center justify-center font-bold text-xs shrink-0 ${
-              item.isCompleted 
-                ? 'bg-green-100 text-green-700 border border-green-200' 
-                : 'bg-pink-50 text-pink-500 border border-pink-100'
-            }`}>
-              {item.time}
-            </div>
-
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 bg-white/60 p-3 rounded-2xl border border-pink-50/50 hover:bg-white transition-all shadow-sm">
-              <div className="flex justify-between items-center border-b md:border-b-0 md:border-r border-gray-100 pb-2 md:pb-0 md:pr-4">
-                <div>
-                  <span className="text-[10px] font-black text-pink-500 uppercase tracking-wider block">Banho & Tosa</span>
-                  <span className="text-xs font-black text-gray-800">{item.banhoClient}</span>
-                </div>
-                <span className="text-xs font-black text-gray-600">R$ {item.banhoVal}</span>
+      <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1 scrollbar-purple">
+        {items.map((item, idx) => {
+          const isBanho = item.origem === 'Banho & Tosa';
+          
+          return (
+            <div key={idx} className="relative flex gap-4">
+              {idx < items.length - 1 && (
+                <div className="absolute left-[17px] top-[30px] bottom-0 w-0.5 border-l border-dashed border-pink-300"></div>
+              )}
+              
+              <div className={`w-9 h-9 rounded-2xl flex flex-col items-center justify-center font-bold text-[9px] shrink-0 border bg-pink-50 text-pink-500 border-pink-100`}>
+                <span className="leading-none font-black">{item.timeStr}</span>
+                <span className="text-[7px] opacity-70 mt-0.5">{item.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
               </div>
 
-              <div className="flex justify-between items-center md:pl-2">
-                <div>
-                  <span className="text-[10px] font-black text-cyan-500 uppercase tracking-wider block">Pet Móvel</span>
-                  <span className="text-xs font-black text-gray-800">{item.movelClient}</span>
+              <div className="flex-1 flex justify-between items-center bg-white/60 p-3 rounded-2xl border border-pink-50/50 hover:bg-white transition-all shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{isBanho ? '🧼' : '🚐'}</span>
+                  <div>
+                    <span className={`text-[10px] font-black uppercase tracking-wider block ${
+                      isBanho ? 'text-pink-500' : 'text-cyan-500'
+                    }`}>
+                      {item.origem}
+                    </span>
+                    <span className="text-xs font-black text-gray-800">{item.pet_name}</span>
+                  </div>
                 </div>
-                <span className="text-xs font-black text-gray-600">R$ {item.movelVal}</span>
+                
+                <div className="text-right">
+                  <span className="text-xs font-black text-gray-700">
+                    R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -1736,6 +1925,53 @@ metricsPetMovel = {
         // RENDER 1: ABA DE VISÃO GERAL (FATURAMENTO)
         // ==========================================
         <>
+          {/* SESSÃO DE CARDS DE KPI DE VISÃO GERAL */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-fadeIn">
+            {/* Card Entradas */}
+            <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
+              <div className="absolute -top-3 -right-3 w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-lg">💰</div>
+              <div className="flex flex-col items-center w-full">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Entradas</span>
+                <span className="text-2xl font-black text-green-600 leading-snug">
+                  R$ <AnimatedCounter value={consolidatedMetrics.summary.monthTotal} decimals={0} />
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-gray-400 block mt-2">
+                {consolidatedMetrics.summary.totalServicesCountReal} Serviços Concluídos
+              </span>
+            </div>
+
+            {/* Card Saídas (Gastos) */}
+            <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
+              <div className="absolute -top-3 -right-3 w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-lg">💸</div>
+              <div className="flex flex-col items-center w-full">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Saídas</span>
+                <span className="text-2xl font-black text-red-500 leading-snug">
+                  R$ <AnimatedCounter value={expensesMetrics.total} decimals={0} />
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-gray-400 block mt-2">
+                Custo operacional mensal
+              </span>
+            </div>
+
+            {/* Card Líquido */}
+            <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
+              <div className="absolute -top-3 -right-3 w-12 h-12 bg-cyan-50 rounded-full flex items-center justify-center text-lg">⚖️</div>
+              <div className="flex flex-col items-center w-full">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Líquido</span>
+                <span className={`text-2xl font-black leading-snug ${
+                  (consolidatedMetrics.summary.monthTotal - expensesMetrics.total) >= 0 ? 'text-cyan-600' : 'text-red-600'
+                }`}>
+                  R$ <AnimatedCounter value={consolidatedMetrics.summary.monthTotal - expensesMetrics.total} decimals={0} />
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-gray-400 block mt-2">
+                {(consolidatedMetrics.summary.monthTotal - expensesMetrics.total) >= 0 ? 'Saldo positivo no mês' : 'Saldo negativo no mês'}
+              </span>
+            </div>
+          </div>
+
           <div className="space-y-4 animate-fadeIn">
             <h3 className="text-xl font-extrabold text-pink-700 flex items-center gap-2">
               <Layers className="w-5 h-5" />
@@ -1841,81 +2077,122 @@ metricsPetMovel = {
                 {renderLineChart(consolidatedMetrics.chart.petmovel, '#06b6d4', 'petmovel')}
               </div>
 
-              {/* Card Creche Pet */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-6 border border-pink-100/60 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-purple-200">
+              {/* Card Creche Pet – Total de Aprovações */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-6 border border-pink-100/60 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-purple-200 flex flex-col justify-between min-h-[380px]">
                 <div className="absolute top-0 right-0 -mt-6 -mr-6 w-20 h-20 bg-purple-400 rounded-full blur-2xl opacity-20"></div>
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-extrabold text-purple-600 flex items-center gap-2">
-                    <img src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-6 h-6 object-contain" /> Creche Pet
-                  </h4>
-                  <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
-                    consolidatedMetrics.creche.growth >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                  }`}>
-                    {consolidatedMetrics.creche.growth >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                    <span>{consolidatedMetrics.creche.growth.toFixed(1)}%</span>
+                
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-extrabold text-purple-600 flex items-center gap-2">
+                      <img src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche Pet" className="w-6 h-6 object-contain" /> Creche Pet
+                    </h4>
+                    <span className="text-[10px] font-black bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full border border-purple-100">
+                      {consolidatedMetrics.approvedCrechePets.length} Ativos
+                    </span>
+                  </div>
+
+                  {/* Destaque Elegante do Total Aprovado (Centralizado) */}
+                  <div className="flex flex-col items-center justify-center text-center p-4 mb-4 rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50/40 border border-purple-100/60 shadow-sm relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.1),transparent_40%)]"></div>
+                    <span className="text-[9px] text-purple-500 font-black tracking-widest uppercase mb-1 flex items-center gap-1.5 z-10">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-ping"></span>
+                      Faturamento Aprovado
+                    </span>
+                    <span className="text-3xl font-black text-purple-700 tracking-tight flex items-baseline z-10 transform transition-transform duration-300 group-hover:scale-105">
+                      <span className="text-base font-extrabold mr-1 text-purple-500">R$</span>
+                      <AnimatedCounter value={consolidatedMetrics.totalCrecheAprovado} decimals={0} />
+                    </span>
+                  </div>
+
+                  {/* Lista de Pets Matriculados (Com Rolagem Interna) */}
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block px-1">Pets Matriculados</span>
+                    <div className="max-h-[160px] overflow-y-auto pr-1 space-y-1.5 scrollbar-purple">
+                      {consolidatedMetrics.approvedCrechePets.length === 0 ? (
+                        <div className="text-center py-6 text-xs font-bold text-gray-400">
+                          Nenhum pet matriculado ativo
+                        </div>
+                      ) : (
+                        consolidatedMetrics.approvedCrechePets.map((pet, idx) => (
+                          <div key={idx} className="flex justify-between items-center bg-purple-50/20 hover:bg-purple-50/50 p-2 rounded-xl border border-purple-50/30 transition-all">
+                            <div className="flex items-center gap-2">
+                              <span className="text-base">🐾</span>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-black text-gray-800">{pet.petName}</span>
+                                <span className="text-[9px] font-bold text-gray-400 uppercase">{pet.petBreed}</span>
+                              </div>
+                            </div>
+                            <span className="text-xs font-black text-purple-600">
+                              R$ {pet.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-                  <div className="bg-purple-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold block uppercase mb-1">Hoje</span>
-                    <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.creche.today} decimals={0} /></span>
-                  </div>
-                  <div className="bg-purple-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold block uppercase mb-1">Semana</span>
-                    <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.creche.week} decimals={0} /></span>
-                  </div>
-                  <div className="bg-purple-100/50 p-3 rounded-2xl border border-purple-200/50">
-                    <span className="text-[10px] text-purple-500 font-extrabold block uppercase mb-1">Mês</span>
-                    <span className="text-base font-black text-purple-600">R$ <AnimatedCounter value={consolidatedMetrics.creche.month} decimals={0} /></span>
-                  </div>
-                  <div className="bg-purple-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold block uppercase mb-1">Anual</span>
-                    <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.creche.year} decimals={0} /></span>
-                  </div>
-                </div>
-
-                {renderLineChart(consolidatedMetrics.chart.creche, '#8b5cf6', 'creche')}
               </div>
 
-              {/* Card Hotel Pet */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-6 border border-pink-100/60 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-amber-200">
+              {/* Card Hotel Pet – Total de Hospedagens */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-6 border border-pink-100/60 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-amber-200 flex flex-col justify-between min-h-[380px]">
                 <div className="absolute top-0 right-0 -mt-6 -mr-6 w-20 h-20 bg-amber-400 rounded-full blur-2xl opacity-20"></div>
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-extrabold text-amber-600 flex items-center gap-2">
-                    <img src="https://cdn-icons-png.flaticon.com/512/1131/1131938.png" alt="Hotel Pet" className="w-6 h-6 object-contain" /> Hotel Pet
-                  </h4>
-                  <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
-                    consolidatedMetrics.hotel.growth >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                  }`}>
-                    {consolidatedMetrics.hotel.growth >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                    <span>{consolidatedMetrics.hotel.growth.toFixed(1)}%</span>
+                
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-extrabold text-amber-600 flex items-center gap-2">
+                      <img src="https://cdn-icons-png.flaticon.com/512/2984/2984025.png" alt="Hotel Pet" className="w-6 h-6 object-contain" /> Hotel Pet
+                    </h4>
+                    <span className="text-[10px] font-black bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full border border-amber-100">
+                      {consolidatedMetrics.approvedHotelPets.length} Hóspedes
+                    </span>
+                  </div>
+
+                  {/* Destaque Elegante do Total Aprovado (Centralizado) */}
+                  <div className="flex flex-col items-center justify-center text-center p-4 mb-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/40 border border-amber-100/60 shadow-sm relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.1),transparent_40%)]"></div>
+                    <span className="text-[9px] text-amber-500 font-black tracking-widest uppercase mb-1 flex items-center gap-1.5 z-10">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
+                      Faturamento Aprovado
+                    </span>
+                    <span className="text-3xl font-black text-amber-700 tracking-tight flex items-baseline z-10 transform transition-transform duration-300 group-hover:scale-105">
+                      <span className="text-base font-extrabold mr-1 text-amber-500">R$</span>
+                      <AnimatedCounter value={consolidatedMetrics.totalHotelAprovado} decimals={0} />
+                    </span>
+                  </div>
+
+                  {/* Lista de Hóspedes (Com Rolagem Interna) */}
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block px-1">Hóspedes Ativos</span>
+                    <div className="max-h-[160px] overflow-y-auto pr-1 space-y-1.5 scrollbar-amber">
+                      {consolidatedMetrics.approvedHotelPets.length === 0 ? (
+                        <div className="text-center py-6 text-xs font-bold text-gray-400">
+                          Nenhum pet hospedado ativo
+                        </div>
+                      ) : (
+                        consolidatedMetrics.approvedHotelPets.map((pet, idx) => (
+                          <div key={idx} className="flex justify-between items-center bg-amber-50/20 hover:bg-amber-50/50 p-2 rounded-xl border border-amber-50/30 transition-all">
+                            <div className="flex items-center gap-2">
+                              <span className="text-base">🏨</span>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-black text-gray-800">{pet.petName}</span>
+                                <span className="text-[9px] font-bold text-gray-400 uppercase">
+                                  {pet.petBreed} • {pet.tutorName}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-xs font-black text-amber-600">
+                              R$ {pet.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-                  <div className="bg-amber-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold block uppercase mb-1">Hoje</span>
-                    <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.hotel.today} decimals={0} /></span>
-                  </div>
-                  <div className="bg-amber-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold block uppercase mb-1">Semana</span>
-                    <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.hotel.week} decimals={0} /></span>
-                  </div>
-                  <div className="bg-amber-100/50 p-3 rounded-2xl border border-amber-200/50">
-                    <span className="text-[10px] text-amber-500 font-extrabold block uppercase mb-1">Mês</span>
-                    <span className="text-base font-black text-amber-600">R$ <AnimatedCounter value={consolidatedMetrics.hotel.month} decimals={0} /></span>
-                  </div>
-                  <div className="bg-amber-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold block uppercase mb-1">Anual</span>
-                    <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.hotel.year} decimals={0} /></span>
-                  </div>
-                </div>
-
-                {renderLineChart(consolidatedMetrics.chart.hotel, '#f59e0b', 'hotel')}
               </div>
             </div>
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
             <div className="lg:col-span-2 bg-white/70 backdrop-blur-md rounded-3xl p-6 border border-pink-100 shadow-xl space-y-4">
@@ -1923,13 +2200,13 @@ metricsPetMovel = {
                 <div>
                   <h3 className="text-lg font-black text-pink-700 flex items-center gap-1.5">
                     <Clock className="w-5 h-5" />
-                    Fluxo Operacional Diário (Hoje)
+                    Fluxo Operacional Mês
                   </h3>
-                  <p className="text-[10px] text-gray-400 font-bold">Timeline por horário de atendimentos realizados</p>
+                  <p className="text-[10px] text-gray-400 font-bold">Histórico de atendimentos concluídos no período</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Receita Acumulada</span>
-                  <span className="text-sm font-black text-pink-600">R$ <AnimatedCounter value={consolidatedMetrics.timeline.accumulated[consolidatedMetrics.timeline.accumulated.length - 1].amount} decimals={0} /></span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Valor Total Geral</span>
+                  <span className="text-sm font-black text-pink-600">R$ <AnimatedCounter value={consolidatedMetrics.timeline.totalGeral} decimals={0} /></span>
                 </div>
               </div>
               {renderOperationalTimeline()}
@@ -1981,108 +2258,7 @@ metricsPetMovel = {
             </div>
           </div>
 
-          <div className="space-y-4 animate-fadeIn">
-            <h3 className="text-xl font-extrabold text-pink-700 flex items-center gap-2">
-              <Award className="w-5 h-5" />
-              Cards de Análise Executiva
-            </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-lg">💰</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Serviço mais Lucrativo</span>
-                  <span className="text-base font-black text-gray-800 leading-snug">{consolidatedMetrics.summary.serviceLucrativo}</span>
-                </div>
-                <span className="text-[10px] font-bold text-pink-600 block mt-2">Destaque do mês</span>
-              </div>
-
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-lg">🔥</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Maior Dia Faturamento</span>
-                  <span className="text-base font-black text-gray-800 leading-snug">{consolidatedMetrics.summary.maiorDiaFaturamento}</span>
-                </div>
-                <span className="text-[10px] font-bold text-pink-600 block mt-2">Pico de faturamento</span>
-              </div>
-
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-lg">🎫</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Ticket Médio Creche</span>
-                  <span className="text-lg font-black text-purple-600 leading-snug">R$ {consolidatedMetrics.summary.ticketMedium.creche}</span>
-                </div>
-                <span className="text-[10px] font-bold text-gray-400 block mt-2">Maior ticket recorrente</span>
-              </div>
-
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-lg">🐾</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Atendimentos no Mês</span>
-                  <span className="text-2xl font-black text-gray-800 leading-snug"><AnimatedCounter value={consolidatedMetrics.summary.totalAppointmentsCount} decimals={0} /></span>
-                </div>
-                <span className="text-[10px] font-bold text-pink-600 block mt-2">Volume operacional</span>
-              </div>
-
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-lg">📈</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Acumulado {selectedYear}</span>
-                  <span className="text-base font-black text-gray-800 leading-snug">R$ <AnimatedCounter value={consolidatedMetrics.summary.yearTotal} decimals={0} /></span>
-                </div>
-                <span className="text-[10px] font-bold text-pink-600 block mt-2">Resultado consolidado</span>
-              </div>
-
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-lg">⚖️</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Vs. Mês Anterior</span>
-                  <span className={`text-base font-black leading-snug ${consolidatedMetrics.summary.monthGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {consolidatedMetrics.summary.monthGrowth >= 0 ? '+' : ''}{consolidatedMetrics.summary.monthGrowth.toFixed(1)}%
-                  </span>
-                </div>
-                <span className="text-[10px] font-bold text-gray-400 block mt-2">
-                  R$ {Math.abs(consolidatedMetrics.summary.monthGrowthAbs).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} {consolidatedMetrics.summary.monthGrowthAbs >= 0 ? 'a mais' : 'a menos'}
-                </span>
-              </div>
-
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-lg">📅</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Média Diária</span>
-                  <span className="text-lg font-black text-gray-800 leading-snug">R$ <AnimatedCounter value={consolidatedMetrics.summary.monthTotal / 30} decimals={0} /></span>
-                </div>
-                <span className="text-[10px] font-bold text-pink-600 block mt-2">Média real do período</span>
-              </div>
-
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-lg">🔮</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Projeção Próximo Mês</span>
-                  <span className="text-base font-black text-gray-800 leading-snug">R$ <AnimatedCounter value={consolidatedMetrics.summary.projection} decimals={0} /></span>
-                </div>
-                <span className="text-[10px] font-bold text-pink-600 block mt-2">Crescimento de 8% est.</span>
-              </div>
-
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-lg">🥧</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Fatia de Maior Peso</span>
-                  <span className="text-base font-black text-cyan-600 leading-snug">Pet Móvel ({consolidatedMetrics.summary.share.petmovel.toFixed(0)}%)</span>
-                </div>
-                <span className="text-[10px] font-bold text-gray-400 block mt-2">Alta demanda domiciliar</span>
-              </div>
-
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-lg">🏆</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Top Serviço Geral</span>
-                  <span className="text-base font-black text-gray-800 leading-snug">{consolidatedMetrics.summary.topService}</span>
-                </div>
-                <span className="text-[10px] font-bold text-pink-600 block mt-2">Campeão em faturamento</span>
-              </div>
-            </div>
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
             <div className="bg-white/70 backdrop-blur-md rounded-[2.25rem] p-6 border border-pink-100 shadow-xl space-y-4">
@@ -2110,14 +2286,14 @@ metricsPetMovel = {
           <div className="space-y-4 animate-fadeIn">
             <h3 className="text-xl font-extrabold text-pink-700 flex items-center gap-2">
               <Layers className="w-5 h-5" />
-              Resultado dos Gastos no Período
+              Gastos no Período
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {/* Total de Gastos */}
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
                 <div className="absolute -top-3 -right-3 w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-lg">💸</div>
-                <div>
+                <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Total de Gastos</span>
                   <span className="text-2xl font-black text-red-500 leading-snug">R$ <AnimatedCounter value={expensesMetrics.total} decimals={0} /></span>
                 </div>
@@ -2125,46 +2301,70 @@ metricsPetMovel = {
               </div>
 
               {/* Fixos */}
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
                 <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-50 rounded-full flex items-center justify-center text-lg">🔒</div>
-                <div>
+                <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Gastos Fixos</span>
-                  <span className="text-lg font-black text-gray-800 leading-snug">R$ <AnimatedCounter value={expensesMetrics.fixos} decimals={0} /></span>
+                  <span className="text-2xl font-black text-gray-800 leading-snug">R$ <AnimatedCounter value={expensesMetrics.fixos} decimals={0} /></span>
                 </div>
                 <span className="text-[10px] font-bold text-pink-600 block mt-2">Estáveis e estruturais</span>
               </div>
 
               {/* Variáveis */}
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
                 <div className="absolute -top-3 -right-3 w-12 h-12 bg-cyan-50 rounded-full flex items-center justify-center text-lg">⚡</div>
-                <div>
+                <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Gastos Variáveis</span>
-                  <span className="text-lg font-black text-gray-800 leading-snug">R$ <AnimatedCounter value={expensesMetrics.variaveis} decimals={0} /></span>
+                  <span className="text-2xl font-black text-gray-800 leading-snug">R$ <AnimatedCounter value={expensesMetrics.variaveis} decimals={0} /></span>
                 </div>
                 <span className="text-[10px] font-bold text-cyan-600 block mt-2">Insumos e consumo</span>
               </div>
 
-              {/* Maior Categoria */}
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
+              {/* Maior Gasto */}
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
                 <div className="absolute -top-3 -right-3 w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center text-lg">🔺</div>
-                <div>
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Maior Categoria</span>
+                <div className="flex flex-col items-center w-full">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Maior Gasto</span>
                   <span className="text-base font-black text-purple-600 leading-snug truncate block max-w-[130px]">{expensesMetrics.maiorCategoria.name}</span>
                 </div>
                 <span className="text-[10px] font-bold text-gray-400 block mt-2">R$ {expensesMetrics.maiorCategoria.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
               </div>
 
               {/* Saldo Líquido e Margem de Lucro */}
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-lg transition-shadow">
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
                 <div className="absolute -top-3 -right-3 w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-lg">⚖️</div>
-                <div>
+                <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Saldo Líquido</span>
-                  <span className={`text-lg font-black leading-none block ${expensesMetrics.saldoLiquido >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                    R$ <AnimatedCounter value={expensesMetrics.saldoLiquido} decimals={0} />
+                  <span className={`text-2xl font-black leading-snug block ${(consolidatedMetrics.timeline.totalGeral - expensesMetrics.total) >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                    R$ <AnimatedCounter value={consolidatedMetrics.timeline.totalGeral - expensesMetrics.total} decimals={0} />
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-gray-400 block mt-1">Margem: {expensesMetrics.lucroEstimado.toFixed(0)}%</span>
+                <span className="text-[10px] font-bold text-gray-400 block mt-1">
+                  Margem: {consolidatedMetrics.timeline.totalGeral > 0
+                    ? (((consolidatedMetrics.timeline.totalGeral - expensesMetrics.total) / consolidatedMetrics.timeline.totalGeral) * 100).toFixed(0)
+                    : '0'}%
+                </span>
               </div>
+            </div>
+          </div>
+
+          {/* SESSÃO 4: GRÁFICOS DE BI GASTOS */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn items-stretch">
+            <div className="bg-white/70 backdrop-blur-md rounded-[2.25rem] p-6 border border-pink-100 shadow-xl flex flex-col justify-between min-h-[270px]">
+              <div>
+                <h3 className="text-lg font-black text-pink-700 flex items-center gap-1.5">
+                  <PieChart className="w-5 h-5" />
+                  Distribuição de Despesas
+                </h3>
+                <p className="text-[10px] text-gray-400 font-bold">Participação operacional de cada serviço nos gastos</p>
+              </div>
+              <div className="flex-1 flex items-center justify-center">
+                {renderExpensesDonutChart()}
+              </div>
+            </div>
+
+            <div className="lg:col-span-2 flex flex-col">
+              {renderExpensesEvolucaoChart()}
             </div>
           </div>
 
@@ -2484,62 +2684,6 @@ metricsPetMovel = {
             {/* 3. SEÇÃO BANHO & TOSA FIXO */}
             {(selectedServiceFilter === 'all' || selectedServiceFilter === 'banhotosa') && (
               <div className="bg-white/60 backdrop-blur-md rounded-[2.25rem] p-6 border border-pink-100/60 shadow-xl space-y-6 animate-fadeIn">
-                {/* CARD DE MÉTRICAS DE ENTRADAS - Semelhante à Visão Geral */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-5 border border-pink-100/60 shadow-lg">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-extrabold text-pink-600 flex items-center gap-2">
-                      <img src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-5 h-5 object-contain" /> Entradas Banho & Tosa
-                    </h4>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-pink-50/40 p-2.5 rounded-xl">
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-[9px] text-gray-400 font-bold uppercase">Hoje</span>
-                        {consolidatedMetrics.banhotosa.percentHoje !== 0 && (
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${consolidatedMetrics.banhotosa.percentHoje >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                            {consolidatedMetrics.banhotosa.percentHoje >= 0 ? '+' : ''}{consolidatedMetrics.banhotosa.percentHoje.toFixed(0)}%
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.banhotosa.today} decimals={0} /></span>
-                    </div>
-                    <div className="bg-pink-50/40 p-2.5 rounded-xl">
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-[9px] text-gray-400 font-bold uppercase">Semana</span>
-                        {consolidatedMetrics.banhotosa.percentSemana !== 0 && (
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${consolidatedMetrics.banhotosa.percentSemana >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                            {consolidatedMetrics.banhotosa.percentSemana >= 0 ? '+' : ''}{consolidatedMetrics.banhotosa.percentSemana.toFixed(0)}%
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.banhotosa.week} decimals={0} /></span>
-                    </div>
-                    <div className="bg-pink-100/50 p-2.5 rounded-xl border border-pink-200/50">
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-[9px] text-pink-500 font-extrabold uppercase">Mês</span>
-                        {consolidatedMetrics.banhotosa.percentMes !== 0 && (
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${consolidatedMetrics.banhotosa.percentMes >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                            {consolidatedMetrics.banhotosa.percentMes >= 0 ? '+' : ''}{consolidatedMetrics.banhotosa.percentMes.toFixed(0)}%
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm font-black text-pink-600">R$ <AnimatedCounter value={consolidatedMetrics.banhotosa.month} decimals={0} /></span>
-                    </div>
-                    <div className="bg-pink-50/40 p-2.5 rounded-xl">
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-[9px] text-gray-400 font-bold uppercase">Anual</span>
-                        {consolidatedMetrics.banhotosa.percentAno !== 0 && (
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${consolidatedMetrics.banhotosa.percentAno >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                            {consolidatedMetrics.banhotosa.percentAno >= 0 ? '+' : ''}{consolidatedMetrics.banhotosa.percentAno.toFixed(0)}%
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.banhotosa.year} decimals={0} /></span>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-3">
                   <h4 className="text-lg font-black text-pink-600 flex items-center gap-2">
                     <img src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-6 h-6 object-contain" /> Banho & Tosa Fixo
@@ -2668,24 +2812,6 @@ metricsPetMovel = {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* SESSÃO 4: GRÁFICOS DE BI GASTOS */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
-            <div className="bg-white/70 backdrop-blur-md rounded-[2.25rem] p-6 border border-pink-100 shadow-xl space-y-4">
-              <div>
-                <h3 className="text-lg font-black text-pink-700 flex items-center gap-1.5">
-                  <PieChart className="w-5 h-5" />
-                  Distribuição de Despesas
-                </h3>
-                <p className="text-[10px] text-gray-400 font-bold">Participação operacional de cada serviço nos gastos</p>
-              </div>
-              {renderExpensesDonutChart()}
-            </div>
-
-            <div className="lg:col-span-2">
-              {renderExpensesEvolucaoChart()}
-            </div>
           </div>
         </>
       )}

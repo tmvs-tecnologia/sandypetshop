@@ -34,6 +34,47 @@
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@700&family=Poppins:wght@400;500;600;700&family=Rochester&family=Lobster+Two:wght@700&family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Rubik:wght@400;500;600;700&display=swap');
       
+      /* Barra de rolagem (scrollbar) elegante e premium do sistema */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(219, 39, 119, 0.22); /* Rosa suave translúcido combinando com a cor de destaque #DB2777 */
+        border-radius: 9999px;
+        border: 1px solid transparent;
+        background-clip: padding-box;
+        transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(219, 39, 119, 0.48); /* Rosa mais nítido ao passar o mouse */
+        border-radius: 9999px;
+      }
+
+      /* Customizações temáticas para seções específicas */
+      .scrollbar-purple::-webkit-scrollbar-thumb {
+        background: rgba(139, 92, 246, 0.25); /* Roxo translúcido */
+      }
+      .scrollbar-purple::-webkit-scrollbar-thumb:hover {
+        background: rgba(139, 92, 246, 0.5);
+      }
+
+      .scrollbar-amber::-webkit-scrollbar-thumb {
+        background: rgba(245, 158, 11, 0.25); /* Âmbar translúcido */
+      }
+      .scrollbar-amber::-webkit-scrollbar-thumb:hover {
+        background: rgba(245, 158, 11, 0.5);
+      }
+
+      /* Estilização para o Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(219, 39, 119, 0.22) transparent;
+      }
+
       body {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
