@@ -1,19 +1,19 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  Calendar, 
-  Clock, 
-  Award, 
-  Percent, 
-  BarChart3, 
-  PieChart, 
-  ChevronDown, 
-  RefreshCw, 
-  Activity, 
-  Target, 
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Calendar,
+  Clock,
+  Award,
+  Percent,
+  BarChart3,
+  PieChart,
+  ChevronDown,
+  RefreshCw,
+  Activity,
+  Target,
   Layers,
   MapPin,
   CalendarCheck,
@@ -33,11 +33,11 @@ interface BaseAppointment {
 }
 
 // Componente para Animação de Números
-const AnimatedCounter: React.FC<{ value: number; prefix?: string; suffix?: string; decimals?: number }> = ({ 
-  value, 
-  prefix = '', 
-  suffix = '', 
-  decimals = 2 
+const AnimatedCounter: React.FC<{ value: number; prefix?: string; suffix?: string; decimals?: number }> = ({
+  value,
+  prefix = '',
+  suffix = '',
+  decimals = 2
 }) => {
   const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
   const [count, setCount] = useState(0);
@@ -73,9 +73,9 @@ const AnimatedCounter: React.FC<{ value: number; prefix?: string; suffix?: strin
   return (
     <span>
       {prefix}
-      {(count || 0).toLocaleString('pt-BR', { 
-        minimumFractionDigits: decimals, 
-        maximumFractionDigits: decimals 
+      {(count || 0).toLocaleString('pt-BR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
       })}
       {suffix}
     </span>
@@ -100,7 +100,7 @@ const deserializeExpense = (item: any) => {
   const match = obs.match(/\[META:(.*?)\]/);
   let metadata: ExpenseMetadata = {};
   let observacoesLimpa = obs;
-  
+
   if (match) {
     try {
       metadata = JSON.parse(match[1]);
@@ -109,7 +109,7 @@ const deserializeExpense = (item: any) => {
       console.warn('Erro ao parsear metadados do gasto:', e);
     }
   }
-  
+
   return {
     ...item,
     observacoesLimpa,
@@ -180,7 +180,7 @@ const FinancialDashboardView: React.FC = () => {
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
-  
+
   const years = [2024, 2025, 2026];
 
   // Limpeza única e reativa de gastos padrão inseridos em sessões anteriores
@@ -229,7 +229,7 @@ const FinancialDashboardView: React.FC = () => {
       const apptRes = await supabase.from('appointments').select('price, appointment_time, status, service, pet_name');
       const pmRes = await supabase.from('pet_movel_appointments').select('price, appointment_time, status, pet_name');
       const daycareRes = await supabase.from('daycare_enrollments').select('total_price, created_at, status, pet_name, pet_breed');
-      const hotelRes = await supabase.from('hotel_registrations').select('total_services_price, check_in_date, check_out_date, status, pet_name, pet_breed, tutor_name');
+      const hotelRes = await supabase.from('hotel_registrations').select('total_services_price, check_in_date, check_out_date, status, pet_name, pet_breed, tutor_name, registration_date');
 
       setDbData({
         banhoTosa: banhoRes.data || [],
@@ -249,7 +249,7 @@ const FinancialDashboardView: React.FC = () => {
   // 2. Carregar despesas operacionais (Gastos) filtrado por Mês e Ano
   const loadExpenses = async (isSilent = false) => {
     if (!isSilent) setLoadingExpenses(true);
-    
+
     // Se estiver usando o fallback local (localStorage)
     if (useLocalFallback) {
       loadLocalFallback();
@@ -287,7 +287,7 @@ const FinancialDashboardView: React.FC = () => {
   const loadLocalFallback = () => {
     const allExpenses: any[] = [];
     const idsVistos = new Set<string>();
-    
+
     for (let y of years) {
       for (let m = 0; m < 12; m++) {
         const key = `expenses_${m}_${y}`;
@@ -309,7 +309,7 @@ const FinancialDashboardView: React.FC = () => {
         }
       }
     }
-    
+
     setExpenses(allExpenses);
   };
 
@@ -407,7 +407,7 @@ const FinancialDashboardView: React.FC = () => {
   const handleDeleteExpenseClick = (id: string) => {
     const rawItem = expenses.find(x => x.id === id);
     if (!rawItem) return;
-    
+
     const deserialized = deserializeExpense(rawItem);
     if (deserialized.recorrente) {
       setExpenseToDelete(deserialized);
@@ -419,10 +419,10 @@ const FinancialDashboardView: React.FC = () => {
 
   const handleDeleteExpenseDirect = async (id: string) => {
     if (!confirm('Deseja realmente excluir este gasto operacional?')) return;
-    
+
     const rawItem = expenses.find(x => x.id === id);
     if (!rawItem) return;
-    
+
     const deserialized = deserializeExpense(rawItem);
     await deleteExpenseFromDatabase(id, deserialized.mes, deserialized.ano);
   };
@@ -433,7 +433,7 @@ const FinancialDashboardView: React.FC = () => {
     if (!metadata.exclusoes.includes(activePeriodStr)) {
       metadata.exclusoes.push(activePeriodStr);
     }
-    
+
     const updatedPayload = {
       observacoes: serializeExpense(item, metadata)
     };
@@ -453,17 +453,17 @@ const FinancialDashboardView: React.FC = () => {
       const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
       const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
       const prevPeriodStr = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}`;
-      
+
       const metadata = { ...item.metadata };
       metadata.fim_recorrencia = prevPeriodStr;
-      
+
       const updatedPayload = {
         observacoes: serializeExpense(item, metadata)
       };
-      
+
       await saveUpdatedExpense(item, updatedPayload);
     }
-    
+
     setIsDeleteConfirmOpen(false);
     setExpenseToDelete(null);
   };
@@ -476,7 +476,7 @@ const FinancialDashboardView: React.FC = () => {
         }
         return x;
       });
-      
+
       const originKey = `expenses_${item.mes}_${item.ano}`;
       const localData = localStorage.getItem(originKey);
       if (localData) {
@@ -487,7 +487,7 @@ const FinancialDashboardView: React.FC = () => {
           localStorage.setItem(originKey, JSON.stringify(parsed));
         }
       }
-      
+
       setExpenses(updatedList);
       return;
     }
@@ -508,7 +508,7 @@ const FinancialDashboardView: React.FC = () => {
   const deleteExpenseFromDatabase = async (id: string, mesOrigem: number, anoOrigem: number) => {
     if (useLocalFallback) {
       const updatedList = expenses.filter(x => x.id !== id);
-      
+
       const originKey = `expenses_${mesOrigem}_${anoOrigem}`;
       const localData = localStorage.getItem(originKey);
       if (localData) {
@@ -516,7 +516,7 @@ const FinancialDashboardView: React.FC = () => {
         const filtered = parsed.filter((x: any) => x.id !== id);
         localStorage.setItem(originKey, JSON.stringify(filtered));
       }
-      
+
       setExpenses(updatedList);
       return;
     }
@@ -537,10 +537,10 @@ const FinancialDashboardView: React.FC = () => {
   // Deletar todas as despesas de um serviço específico no mês e ano ativos
   const handleDeleteAllExpenses = async (servico: 'petmovel' | 'creche' | 'banhotosa') => {
     const monthName = months[selectedMonth];
-    const serviceName = servico === 'petmovel' 
-      ? 'Pet Móvel' 
-      : servico === 'creche' 
-        ? 'Creche Pet' 
+    const serviceName = servico === 'petmovel'
+      ? 'Pet Móvel'
+      : servico === 'creche'
+        ? 'Creche Pet'
         : 'Banho & Tosa';
 
     if (!confirm(`ATENÇÃO! Deseja REALMENTE excluir TODOS os gastos do serviço "${serviceName}" do mês de ${monthName} de ${selectedYear}? Esta ação é irreversível.`)) return;
@@ -576,14 +576,14 @@ const FinancialDashboardView: React.FC = () => {
 
     const deserialized = deserializeExpense(rawItem);
     const nextStatus = item.status_pagamento === 'pago' ? 'pendente' : 'pago';
-    
+
     let updatedPayload: any = {};
 
     if (deserialized.recorrente) {
       const metadata = { ...deserialized.metadata };
       if (!metadata.status_mes) metadata.status_mes = {};
       metadata.status_mes[activePeriodStr] = nextStatus;
-      
+
       updatedPayload = {
         observacoes: serializeExpense(deserialized, metadata)
       };
@@ -600,7 +600,7 @@ const FinancialDashboardView: React.FC = () => {
         }
         return x;
       });
-      
+
       const originKey = `expenses_${deserialized.mes}_${deserialized.ano}`;
       const localData = localStorage.getItem(originKey);
       if (localData) {
@@ -611,7 +611,7 @@ const FinancialDashboardView: React.FC = () => {
           localStorage.setItem(originKey, JSON.stringify(parsed));
         }
       }
-      
+
       setExpenses(updatedList);
       return;
     }
@@ -682,11 +682,42 @@ const FinancialDashboardView: React.FC = () => {
       return up === 'CONCLUIDO' || up === 'COMPLETED' || up === 'DONE' || up === 'FINALIZADO' || up === 'APROVADO' || up === 'APPROVED';
     };
 
+    const parseYearMonth = (dateStr?: string) => {
+      if (!dateStr) return { year: -1, month: -1 };
+      const cleanStr = String(dateStr).trim();
+      const parts = cleanStr.slice(0, 10).split('-');
+      if (parts.length >= 2) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        if (!isNaN(year) && !isNaN(month)) {
+          return { year, month };
+        }
+      }
+      return { year: -1, month: -1 };
+    };
+
+    const getMonthlyChartData = (realData: { price: number; dateStr?: string; status: string }[]) => {
+      const data: number[] = [];
+      for (let m = 0; m < 12; m++) {
+        const dbMonthSum = realData
+          .filter(d => {
+            if (!isConcluido(d.status)) return false;
+            const { year, month } = parseYearMonth(d.dateStr);
+            return year === currentYear && month === m;
+          })
+          .reduce((sum, d) => sum + d.price, 0);
+        data.push(dbMonthSum);
+      }
+      return data;
+    };
+
     const realBanhoTosaConcluido = dbData.banhoTosa
       .filter(d => isConcluido(d.status))
       .map(d => ({
         price: Number(d.price || 0),
-        date: d.appointment_time ? new Date(d.appointment_time) : new Date()
+        date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
+        appointment_time: d.appointment_time,
+        status: d.status
       }));
 
     // Datas de referência para Hoje e Semana (sempre baseadas na data REAL do sistema)
@@ -694,16 +725,16 @@ const FinancialDashboardView: React.FC = () => {
     const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
 
     // Semana corrente: domingo a sábado
-// Week boundaries – Monday as first day (Monday‑Saturday inclusive)
-let diaSemana = hoje.getDay(); // 0=Dom, 1=Seg, … 6=Sáb
-// Treat Sunday as the last day of the previous week
-if (diaSemana === 0) diaSemana = 6; else diaSemana -= 1;
-const inicioDaSemana = new Date(hoje);
-inicioDaSemana.setDate(hoje.getDate() - diaSemana);
-inicioDaSemana.setHours(0, 0, 0, 0);
-const fimDaSemana = new Date(inicioDaSemana);
-fimDaSemana.setDate(inicioDaSemana.getDate() + 6);
-fimDaSemana.setHours(23, 59, 59, 999);
+    // Week boundaries – Monday as first day (Monday‑Saturday inclusive)
+    let diaSemana = hoje.getDay(); // 0=Dom, 1=Seg, … 6=Sáb
+    // Treat Sunday as the last day of the previous week
+    if (diaSemana === 0) diaSemana = 6; else diaSemana -= 1;
+    const inicioDaSemana = new Date(hoje);
+    inicioDaSemana.setDate(hoje.getDate() - diaSemana);
+    inicioDaSemana.setHours(0, 0, 0, 0);
+    const fimDaSemana = new Date(inicioDaSemana);
+    fimDaSemana.setDate(inicioDaSemana.getDate() + 6);
+    fimDaSemana.setHours(23, 59, 59, 999);
 
     // HOJE – soma dos concluídos cujo appointment_time é hoje (data real)
     const banhoTosaHoje = realBanhoTosaConcluido
@@ -718,23 +749,19 @@ fimDaSemana.setHours(23, 59, 59, 999);
       .filter(d => d.date >= inicioDaSemana && d.date <= fimDaSemana)
       .reduce((sum, d) => sum + d.price, 0);
 
-    // MÊS – soma dos concluídos do mês e ano selecionados
-    const banhoTosaMes = realBanhoTosaConcluido
-      .filter(d => d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear)
-      .reduce((sum, d) => sum + d.price, 0);
-
     // ANUAL – soma dos concluídos do ano selecionado
     const banhoTosaAnual = realBanhoTosaConcluido
-      .filter(d => d.date.getFullYear() === currentYear)
+      .filter(d => {
+        const { year } = parseYearMonth(d.appointment_time);
+        return year === currentYear;
+      })
       .reduce((sum, d) => sum + d.price, 0);
 
-    // CHART BANHO & TOSA – usa dados reais mês a mês; fallback para seed quando zerado
-    const chartBanhoTosa = Array.from({ length: 12 }, (_, m) => {
-      const real = realBanhoTosaConcluido
-        .filter(d => d.date.getMonth() === m && d.date.getFullYear() === currentYear)
-        .reduce((sum, d) => sum + d.price, 0);
-      return real > 0 ? real : getSeedValue('banho_tosa', m, currentYear, 42);
-    });
+    // CHART BANHO & TOSA – usa dados reais mês a mês
+    const chartBanhoTosa = getMonthlyChartData(realBanhoTosaConcluido.map(d => ({ price: d.price, dateStr: d.appointment_time, status: d.status })));
+
+    // MÊS – soma dos concluídos do mês e ano selecionados
+    const banhoTosaMes = chartBanhoTosa[currentMonth];
 
     // Calculando valores para comparação percentual
     // Ontem
@@ -759,7 +786,10 @@ fimDaSemana.setHours(23, 59, 59, 999);
 
     // Ano anterior
     const banhoTosaAnoAnterior = realBanhoTosaConcluido
-      .filter(d => d.date.getFullYear() === currentYear - 1)
+      .filter(d => {
+        const { year } = parseYearMonth(d.appointment_time);
+        return year === currentYear - 1;
+      })
       .reduce((sum, d) => sum + d.price, 0);
 
     const prevMonthBanhoTosa = chartBanhoTosa[currentMonth === 0 ? 11 : currentMonth - 1];
@@ -768,17 +798,17 @@ fimDaSemana.setHours(23, 59, 59, 999);
       : 0;
 
     // Percentuais de comparação para entradas
-    const percentHoje = banhoTosaOntem > 0 
-      ? ((banhoTosaHoje - banhoTosaOntem) / banhoTosaOntem) * 100 
+    const percentHoje = banhoTosaOntem > 0
+      ? ((banhoTosaHoje - banhoTosaOntem) / banhoTosaOntem) * 100
       : 0;
-    const percentSemana = banhoTosaSemanaAnterior > 0 
-      ? ((banhoTosaSemana - banhoTosaSemanaAnterior) / banhoTosaSemanaAnterior) * 100 
+    const percentSemana = banhoTosaSemanaAnterior > 0
+      ? ((banhoTosaSemana - banhoTosaSemanaAnterior) / banhoTosaSemanaAnterior) * 100
       : 0;
-    const percentMes = prevMonthBanhoTosa > 0 
-      ? ((banhoTosaMes - prevMonthBanhoTosa) / prevMonthBanhoTosa) * 100 
+    const percentMes = prevMonthBanhoTosa > 0
+      ? ((banhoTosaMes - prevMonthBanhoTosa) / prevMonthBanhoTosa) * 100
       : 0;
-    const percentAno = banhoTosaAnoAnterior > 0 
-      ? ((banhoTosaAnual - banhoTosaAnoAnterior) / banhoTosaAnoAnterior) * 100 
+    const percentAno = banhoTosaAnoAnterior > 0
+      ? ((banhoTosaAnual - banhoTosaAnoAnterior) / banhoTosaAnoAnterior) * 100
       : 0;
 
     const metricsBanhoTosa = {
@@ -799,131 +829,113 @@ fimDaSemana.setHours(23, 59, 59, 999);
       ...dbData.petMovel.map(d => ({
         price: Number(d.price || d.total_price || 0),
         date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
-        status: d.status
+        status: d.status,
+        appointment_time: d.appointment_time
       })),
       ...dbData.appointments.map(d => ({
         price: Number(d.price || 0),
         date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
-        status: d.status
+        status: d.status,
+        appointment_time: d.appointment_time
       }))
     ];
 
     const realPetMovelConcluido = realPetMovel.filter(d => isConcluido(d.status));
 
-// Calculations for Pet Móvel (similar to Banho & Tosa)
-const petMovelHoje = realPetMovelConcluido
-  .filter(d => d.date.toISOString().slice(0, 10) === hojeStr)
-  .reduce((sum, d) => sum + d.price, 0);
+    const chartPetMovel = getMonthlyChartData(realPetMovelConcluido.map(d => ({ price: d.price, dateStr: d.appointment_time, status: d.status })));
+    const petMovelMes = chartPetMovel[currentMonth];
 
-const petMovelOntem = realPetMovelConcluido
-  .filter(d => d.date.toISOString().slice(0, 10) === ontemStr)
-  .reduce((sum, d) => sum + d.price, 0);
+    // Calculations for Pet Móvel (similar to Banho & Tosa)
+    const petMovelHoje = realPetMovelConcluido
+      .filter(d => d.date.toISOString().slice(0, 10) === hojeStr)
+      .reduce((sum, d) => sum + d.price, 0);
 
-const petMovelSemana = realPetMovelConcluido
-  .filter(d => {
-    const ds = d.date.toISOString().slice(0, 10);
-    const startStr = `${inicioDaSemana.getFullYear()}-${String(inicioDaSemana.getMonth() + 1).padStart(2, '0')}-${String(inicioDaSemana.getDate()).padStart(2, '0')}`;
-    const endStr = `${fimDaSemana.getFullYear()}-${String(fimDaSemana.getMonth() + 1).padStart(2, '0')}-${String(fimDaSemana.getDate()).padStart(2, '0')}`;
-    return ds >= startStr && ds <= endStr;
-  })
-  .reduce((sum, d) => sum + d.price, 0);
-// Debug: log week range and total for Pet Móvel
-console.log('Pet Móvel semana:', inicioDaSemana.toISOString().slice(0,10), '→', fimDaSemana.toISOString().slice(0,10), 'valor =', petMovelSemana);
+    const petMovelOntem = realPetMovelConcluido
+      .filter(d => d.date.toISOString().slice(0, 10) === ontemStr)
+      .reduce((sum, d) => sum + d.price, 0);
 
-const petMovelSemanaAnterior = realPetMovelConcluido
-  .filter(d => {
-    const ds = d.date.toISOString().slice(0, 10);
-    const startStr = `${inicioSemanaAnterior.getFullYear()}-${String(inicioSemanaAnterior.getMonth() + 1).padStart(2, '0')}-${String(inicioSemanaAnterior.getDate()).padStart(2, '0')}`;
-    const endStr = `${fimSemanaAnterior.getFullYear()}-${String(fimSemanaAnterior.getMonth() + 1).padStart(2, '0')}-${String(fimSemanaAnterior.getDate()).padStart(2, '0')}`;
-    return ds >= startStr && ds <= endStr;
-  })
-  .reduce((sum, d) => sum + d.price, 0);
+    const petMovelSemana = realPetMovelConcluido
+      .filter(d => {
+        const ds = d.date.toISOString().slice(0, 10);
+        const startStr = `${inicioDaSemana.getFullYear()}-${String(inicioDaSemana.getMonth() + 1).padStart(2, '0')}-${String(inicioDaSemana.getDate()).padStart(2, '0')}`;
+        const endStr = `${fimDaSemana.getFullYear()}-${String(fimDaSemana.getMonth() + 1).padStart(2, '0')}-${String(fimDaSemana.getDate()).padStart(2, '0')}`;
+        return ds >= startStr && ds <= endStr;
+      })
+      .reduce((sum, d) => sum + d.price, 0);
+    // Debug: log week range and total for Pet Móvel
+    console.log('Pet Móvel semana:', inicioDaSemana.toISOString().slice(0, 10), '→', fimDaSemana.toISOString().slice(0, 10), 'valor =', petMovelSemana);
 
-// Total do mês (conforme query SQL) – usando UTC para evitar deslocamento de fuso
-const monthKeyTarget = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-const petMovelMes = realPetMovelConcluido
-  .filter(d => {
-    const monthKey = `${d.date.getUTCFullYear()}-${String(d.date.getUTCMonth() + 1).padStart(2, '0')}`;
-    return monthKey === monthKeyTarget;
-  })
-  .reduce((sum, d) => sum + d.price, 0);
+    const petMovelSemanaAnterior = realPetMovelConcluido
+      .filter(d => {
+        const ds = d.date.toISOString().slice(0, 10);
+        const startStr = `${inicioSemanaAnterior.getFullYear()}-${String(inicioSemanaAnterior.getMonth() + 1).padStart(2, '0')}-${String(inicioSemanaAnterior.getDate()).padStart(2, '0')}`;
+        const endStr = `${fimSemanaAnterior.getFullYear()}-${String(fimSemanaAnterior.getMonth() + 1).padStart(2, '0')}-${String(fimSemanaAnterior.getDate()).padStart(2, '0')}`;
+        return ds >= startStr && ds <= endStr;
+      })
+      .reduce((sum, d) => sum + d.price, 0);
 
-const petMovelAnual = realPetMovelConcluido
-  .filter(d => d.date.getFullYear() === currentYear)
-  .reduce((sum, d) => sum + d.price, 0);
+    const petMovelAnual = realPetMovelConcluido
+      .filter(d => {
+        const { year } = parseYearMonth(d.appointment_time);
+        return year === currentYear;
+      })
+      .reduce((sum, d) => sum + d.price, 0);
 
-const petMovelAnoAnterior = realPetMovelConcluido
-  .filter(d => d.date.getFullYear() === currentYear - 1)
-  .reduce((sum, d) => sum + d.price, 0);
+    const petMovelAnoAnterior = realPetMovelConcluido
+      .filter(d => {
+        const { year } = parseYearMonth(d.appointment_time);
+        return year === currentYear - 1;
+      })
+      .reduce((sum, d) => sum + d.price, 0);
 
     const realCreche = dbData.daycare.map(d => ({
-        price: Number(d.total_price || 0),
-        date: d.created_at ? new Date(d.created_at) : new Date(),
-        status: d.status,
-        paid: d.status === 'Aprovado'
-      }));
-      // Total de matrículas aprovadas (sem filtro de data)
-      const totalCrecheAprovado = dbData.daycare
-        .filter(d => d.status === 'Aprovado')
-        .reduce((sum, d) => sum + Number(d.total_price || 0), 0);
-
-      const approvedCrechePets = dbData.daycare
-        .filter(d => d.status === 'Aprovado')
-        .map(d => ({
-          petName: d.pet_name || 'Pet sem nome',
-          petBreed: d.pet_breed || 'Sem raça definida',
-          price: Number(d.total_price || 0)
-        }))
-        .sort((a, b) => a.petName.localeCompare(b.petName));
-
-    const realHotel = dbData.hotel.map(d => ({
-      price: Number(d.total_services_price || 0),
-      date: d.check_in_date ? new Date(d.check_in_date) : new Date(),
+      price: Number(d.total_price || 0),
+      date: d.created_at ? new Date(d.created_at) : new Date(),
       status: d.status,
-      paid: d.status === 'approved'
+      paid: isConcluido(d.status),
+      created_at: d.created_at
     }));
 
-    const totalHotelAprovado = dbData.hotel
-      .filter(d => d.status === 'approved')
-      .reduce((sum, d) => sum + Number(d.total_services_price || 0), 0);
+    // Total de matrículas aprovadas (sem filtro de data)
+    const totalCrecheAprovado = dbData.daycare
+      .filter(d => isConcluido(d.status))
+      .reduce((sum, d) => sum + Number(d.total_price || 0), 0);
 
-    const approvedHotelPets = dbData.hotel
-      .filter(d => d.status === 'approved')
+    const approvedCrechePets = dbData.daycare
+      .filter(d => isConcluido(d.status))
       .map(d => ({
         petName: d.pet_name || 'Pet sem nome',
         petBreed: d.pet_breed || 'Sem raça definida',
-        tutorName: d.tutor_name || 'Tutor sem nome',
-        price: Number(d.total_services_price || 0)
+        price: Number(d.total_price || 0)
       }))
       .sort((a, b) => a.petName.localeCompare(b.petName));
 
-    const getMonthlyChartData = (serviceKey: string, realData: { price: number; date: Date }[], seedBase: number) => {
-      const data: number[] = [];
-      for (let m = 0; m < 12; m++) {
-        const dbMonthSum = realData
-          .filter(d => d.date.getMonth() === m && d.date.getFullYear() === currentYear)
-          .reduce((sum, d) => sum + d.price, 0);
+    const realHotel: any[] = [];
 
-        if (dbMonthSum > 0) {
-          data.push(dbMonthSum);
-        } else {
-          data.push(getSeedValue(serviceKey, m, currentYear, seedBase));
-        }
-      }
-      return data;
-    };
+    const totalHotelAprovado = 0;
 
-    const chartPetMovel = getMonthlyChartData('pet_movel', realPetMovel, 78);
-    const chartCreche = getMonthlyChartData('creche', realCreche, 99);
-    const chartHotel = getMonthlyChartData('hotel', realHotel, 12);
+    const approvedHotelPets: any[] = [];
+
+    // Séries Temporais de Creche: matrícula recorrente — o total aprovado é lançado no mês selecionado
+    // (não filtra por created_at pois matrículas podem ter sido criadas em anos anteriores)
+    const chartCreche = Array.from({ length: 12 }, (_, m) => {
+      // Só mostra valor no mês corrente do ano selecionado; demais meses ficam 0
+      if (m === currentMonth) return totalCrecheAprovado;
+      return 0;
+    });
+
+    const chartHotel = getMonthlyChartData(realHotel.map(d => ({ price: d.price, dateStr: d.registration_date, status: d.status })));
+
+    const crecheMes = chartCreche[currentMonth];
+    const hotelMes = chartHotel[currentMonth];
 
     const prevMonthPetMovel = chartPetMovel[currentMonth === 0 ? 11 : currentMonth - 1];
-const percentPetHoje = petMovelOntem > 0 ? ((petMovelHoje - petMovelOntem) / petMovelOntem) * 100 : 0;
-const percentPetSemana = petMovelSemanaAnterior > 0 ? ((petMovelSemana - petMovelSemanaAnterior) / petMovelSemanaAnterior) * 100 : 0;
-const percentPetMes = prevMonthPetMovel > 0 ? ((petMovelMes - prevMonthPetMovel) / prevMonthPetMovel) * 100 : 0;
-const percentPetAno = petMovelAnoAnterior > 0 ? ((petMovelAnual - petMovelAnoAnterior) / petMovelAnoAnterior) * 100 : 0;
+    const percentPetHoje = petMovelOntem > 0 ? ((petMovelHoje - petMovelOntem) / petMovelOntem) * 100 : 0;
+    const percentPetSemana = petMovelSemanaAnterior > 0 ? ((petMovelSemana - petMovelSemanaAnterior) / petMovelSemanaAnterior) * 100 : 0;
+    const percentPetMes = prevMonthPetMovel > 0 ? ((petMovelMes - prevMonthPetMovel) / prevMonthPetMovel) * 100 : 0;
+    const percentPetAno = petMovelAnoAnterior > 0 ? ((petMovelAnual - petMovelAnoAnterior) / petMovelAnoAnterior) * 100 : 0;
 
-const getServiceMetrics = (chartData: number[], mIndex: number) => {
+    const getServiceMetrics = (chartData: number[], mIndex: number) => {
       const currentMonthValue = chartData[mIndex];
       const prevMonthValue = chartData[mIndex === 0 ? 11 : mIndex - 1];
       const difference = currentMonthValue - prevMonthValue;
@@ -944,26 +956,17 @@ const getServiceMetrics = (chartData: number[], mIndex: number) => {
     };
 
     let metricsPetMovel = getServiceMetrics(chartPetMovel, selectedMonth);
-metricsPetMovel = {
-  ...metricsPetMovel,
-  today: petMovelHoje,
-  week: petMovelSemana,
-  month: petMovelMes,
-  year: petMovelAnual,
-  percentHoje: percentPetHoje,
-  percentSemana: percentPetSemana,
-  percentMes: percentPetMes,
-  percentAno: percentPetAno
-};
-    // Faturamento real de Creche no mês e ano ativos (UTC)
-    const crecheMes = realCreche
-      .filter(d => isConcluido(d.status) && d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear)
-      .reduce((sum, d) => sum + d.price, 0);
-
-    // Faturamento real de Hotel no mês e ano ativos (UTC)
-    const hotelMes = realHotel
-      .filter(d => isConcluido(d.status) && d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear)
-      .reduce((sum, d) => sum + d.price, 0);
+    metricsPetMovel = {
+      ...metricsPetMovel,
+      today: petMovelHoje,
+      week: petMovelSemana,
+      month: petMovelMes,
+      year: petMovelAnual,
+      percentHoje: percentPetHoje,
+      percentSemana: percentPetSemana,
+      percentMes: percentPetMes,
+      percentAno: percentPetAno
+    };
 
     const metricsCreche = {
       ...getServiceMetrics(chartCreche, selectedMonth),
@@ -974,22 +977,21 @@ metricsPetMovel = {
       month: hotelMes
     };
 
-    const totalMonth = metricsBanhoTosa.month + metricsPetMovel.month + metricsCreche.month + metricsHotel.month;
-    const totalPrevMonth = 
-      chartBanhoTosa[selectedMonth === 0 ? 11 : selectedMonth - 1] + 
-      chartPetMovel[selectedMonth === 0 ? 11 : selectedMonth - 1] + 
-      chartCreche[selectedMonth === 0 ? 11 : selectedMonth - 1] + 
-      chartHotel[selectedMonth === 0 ? 11 : selectedMonth - 1];
-    
+    const totalMonth = metricsBanhoTosa.month + metricsPetMovel.month + metricsCreche.month;
+    const totalPrevMonth =
+      chartBanhoTosa[selectedMonth === 0 ? 11 : selectedMonth - 1] +
+      chartPetMovel[selectedMonth === 0 ? 11 : selectedMonth - 1] +
+      chartCreche[selectedMonth === 0 ? 11 : selectedMonth - 1];
+
     const overallDifference = totalMonth - totalPrevMonth;
     const overallPercentage = totalPrevMonth > 0 ? (overallDifference / totalPrevMonth) * 100 : 0;
 
-    const totalYear = metricsBanhoTosa.year + metricsPetMovel.year + metricsCreche.year + metricsHotel.year;
+    const totalYear = metricsBanhoTosa.year + metricsPetMovel.year + metricsCreche.year;
 
     const shareBanhoTosa = totalMonth > 0 ? (metricsBanhoTosa.month / totalMonth) * 100 : 0;
     const sharePetMovel = totalMonth > 0 ? (metricsPetMovel.month / totalMonth) * 100 : 0;
     const shareCreche = totalMonth > 0 ? (metricsCreche.month / totalMonth) * 100 : 0;
-    const shareHotel = totalMonth > 0 ? (metricsHotel.month / totalMonth) * 100 : 0;
+    const shareHotel = 0;
 
     const servicesList = [
       { name: 'Banho & Tosa', value: metricsBanhoTosa.month, key: 'banhotosa' },
@@ -1014,10 +1016,25 @@ metricsPetMovel = {
     const countHotel = Math.round(metricsHotel.month / ticketMedium.hotel);
     const totalAppointmentsCount = countBanho + countMovel + countCreche + countHotel;
 
-    const countBanhoReal = dbData.banhoTosa.filter(d => isConcluido(d.status) && d.appointment_time && new Date(d.appointment_time).getUTCMonth() === currentMonth && new Date(d.appointment_time).getUTCFullYear() === currentYear).length;
-    const countPetMovelReal = realPetMovelConcluido.filter(d => d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear).length;
-    const countCrecheReal = realCreche.filter(d => isConcluido(d.status) && d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear).length;
-    const countHotelReal = realHotel.filter(d => isConcluido(d.status) && d.date.getUTCMonth() === currentMonth && d.date.getUTCFullYear() === currentYear).length;
+    const countBanhoReal = dbData.banhoTosa.filter(d => {
+      if (!isConcluido(d.status)) return false;
+      const { year, month } = parseYearMonth(d.appointment_time);
+      return year === currentYear && month === currentMonth;
+    }).length;
+    const countPetMovelReal = realPetMovelConcluido.filter(d => {
+      const { year, month } = parseYearMonth(d.appointment_time);
+      return year === currentYear && month === currentMonth;
+    }).length;
+    const countCrecheReal = realCreche.filter(d => {
+      if (!isConcluido(d.status)) return false;
+      const { year, month } = parseYearMonth(d.created_at);
+      return year === currentYear && month === currentMonth;
+    }).length;
+    const countHotelReal = realHotel.filter(d => {
+      if (!isConcluido(d.status)) return false;
+      const { year, month } = parseYearMonth(d.check_in_date);
+      return year === currentYear && month === currentMonth;
+    }).length;
     const totalServicesCountReal = countBanhoReal + countPetMovelReal + countCrecheReal + countHotelReal;
 
     const seedDay = (selectedMonth * 7 + selectedYear) % 28 + 1;
@@ -1132,26 +1149,26 @@ metricsPetMovel = {
     return expenses.map(rawItem => {
       const item = deserializeExpense(rawItem);
       const itemPeriodVal = item.ano * 12 + item.mes;
-      
+
       const isDirectMonth = item.mes === selectedMonth && item.ano === selectedYear;
       if (!isDirectMonth && !item.recorrente) return null;
       if (item.recorrente && itemPeriodVal > activePeriodVal) return null;
       if (item.metadata?.exclusoes?.includes(activePeriodStr)) return null;
-      
+
       if (item.metadata?.fim_recorrencia) {
         const [fY, fM] = item.metadata.fim_recorrencia.split('-').map(Number);
         const fimVal = fY * 12 + (fM - 1);
         if (activePeriodVal > fimVal) return null;
       }
-      
+
       const valor = item.metadata?.valor_mes?.[activePeriodStr] !== undefined
         ? item.metadata.valor_mes[activePeriodStr]
         : item.valor;
-        
+
       const status_pagamento = item.metadata?.status_mes?.[activePeriodStr] !== undefined
         ? item.metadata.status_mes[activePeriodStr]
         : item.status_pagamento;
-        
+
       return {
         ...item,
         valor,
@@ -1173,7 +1190,7 @@ metricsPetMovel = {
       const name = String(item.nome_gasto || '').toUpperCase();
       categoryTotals[name] = (categoryTotals[name] || 0) + Number(item.valor || 0);
     });
-    
+
     let topGastoName = 'Nenhum';
     let topGastoVal = 0;
     Object.keys(categoryTotals).forEach(name => {
@@ -1192,8 +1209,8 @@ metricsPetMovel = {
     const shareCreche = total > 0 ? (expCreche / total) * 100 : 0;
     const shareBanhoTosa = total > 0 ? (expBanhoTosa / total) * 100 : 0;
 
-    // Saldo Líquido e Lucro Estimado baseados no faturamento real de Banho & Tosa e Pet Shop (timeline totalGeral)
-    const faturamentoGeral = consolidatedMetrics.timeline.totalGeral;
+    // Saldo Líquido e Lucro Estimado baseados no faturamento consolidado de todos os serviços
+    const faturamentoGeral = consolidatedMetrics.summary.monthTotal;
     const saldoLiquido = faturamentoGeral - total;
     const lucroEstimado = faturamentoGeral > 0 ? (saldoLiquido / faturamentoGeral) * 100 : 0;
 
@@ -1298,21 +1315,21 @@ metricsPetMovel = {
           {points.map((pt, idx) => (
             <g key={idx} className="cursor-pointer group/dot">
               {/* Círculo visível */}
-              <circle 
-                cx={pt.x} 
-                cy={pt.y} 
-                r="4" 
-                fill="#ffffff" 
-                stroke={color} 
+              <circle
+                cx={pt.x}
+                cy={pt.y}
+                r="4"
+                fill="#ffffff"
+                stroke={color}
                 strokeWidth="2"
                 className="transition-all duration-200 group-hover/dot:stroke-[4px]"
               />
               {/* Área de detecção estável ampliada (invisível, evita flicker) */}
-              <circle 
-                cx={pt.x} 
-                cy={pt.y} 
-                r="14" 
-                fill="transparent" 
+              <circle
+                cx={pt.x}
+                cy={pt.y}
+                r="14"
+                fill="transparent"
                 className="cursor-pointer"
               />
               {/* Tooltip com setinha elegante */}
@@ -1336,44 +1353,35 @@ metricsPetMovel = {
   };
 
   // Gráfico de Evolução Geral de Faturamento (Visão Geral)
+  // Gráfico de Evolução Geral de Faturamento (Visão Geral - Barras SVG Premium)
   const renderEvolucaoChart = () => {
     const width = 800;
     const height = 180;
-    
+
     const totalData: number[] = [];
     for (let m = 0; m < 12; m++) {
       totalData.push(
         consolidatedMetrics.chart.banhotosa[m] +
         consolidatedMetrics.chart.petmovel[m] +
-        consolidatedMetrics.chart.creche[m] +
-        consolidatedMetrics.chart.hotel[m]
+        consolidatedMetrics.chart.creche[m]
       );
     }
 
-    const maxVal = Math.max(...totalData) * 1.1 || 10000;
-    const minVal = Math.min(...totalData) * 0.9 || 0;
+    const maxVal = Math.max(...totalData) * 1.25 || 10000;
+    const barWidth = 44; // Barras maiores e mais robustas!
+    const spacing = (width - 60) / 11;
 
-    const points = totalData.map((val, i) => {
-      const x = (i * (width - 60)) / 11 + 30;
-      const y = height - ((val - minVal) * (height - 40)) / (maxVal - minVal) - 20;
-      return { x, y, val };
+    const bars = totalData.map((val, i) => {
+      const xCenter = 30 + i * spacing;
+      const x = xCenter - barWidth / 2;
+      const usableHeight = height - 65; // Ajustado para dar mais folga vertical
+      const barHeight = (val / maxVal) * usableHeight;
+      const y = height - 20 - barHeight;
+      return { x, y, barWidth, barHeight, val, xCenter, monthIndex: i };
     });
 
-    let pathD = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const curr = points[i];
-      const next = points[i + 1];
-      const cpX1 = curr.x + (next.x - curr.x) / 3;
-      const cpY1 = curr.y;
-      const cpX2 = curr.x + (2 * (next.x - curr.x)) / 3;
-      const cpY2 = next.y;
-      pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${next.x} ${next.y}`;
-    }
-
-    const areaPathD = `${pathD} L ${points[points.length - 1].x} ${height - 10} L ${points[0].x} ${height - 10} Z`;
-
     return (
-      <div className="relative group w-full h-[220px] backdrop-blur-md bg-white/20 rounded-3xl p-5 border border-pink-100/30 shadow-xl overflow-hidden">
+      <div className="relative group w-full h-full min-h-[340px] backdrop-blur-md bg-white/20 rounded-3xl p-5 border border-pink-100/30 shadow-xl flex flex-col justify-between animate-fadeIn">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-pink-300 rounded-full blur-3xl opacity-10 pointer-events-none"></div>
         <div className="flex justify-between items-center mb-3">
           <div>
@@ -1388,56 +1396,104 @@ metricsPetMovel = {
           </span>
         </div>
 
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-[140px] overflow-visible">
+        <svg viewBox={`0 0 ${width} ${height + 20}`} className="w-full h-[160px] overflow-visible">
           <defs>
-            <linearGradient id="grad-evolucao" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#db2777" stopOpacity="0.45" />
-              <stop offset="100%" stopColor="#ec4899" stopOpacity="0.00" />
+            <linearGradient id="grad-evolucao-normal" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ec4899" />
+              <stop offset="100%" stopColor="#db2777" />
             </linearGradient>
+            <linearGradient id="grad-evolucao-active" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#db2777" />
+              <stop offset="100%" stopColor="#be185d" />
+            </linearGradient>
+            <filter id="shadow-evolucao" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#ec4899" floodOpacity="0.15" />
+            </filter>
+            <filter id="shadow-evolucao-active" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#db2777" floodOpacity="0.3" />
+            </filter>
           </defs>
 
-          <line x1="30" y1={height - 10} x2={width - 30} y2={height - 10} stroke="rgba(219,39,119,0.08)" strokeDasharray="3,3" />
-          <line x1="30" y1={height / 2} x2={width - 30} y2={height / 2} stroke="rgba(219,39,119,0.08)" strokeDasharray="3,3" />
-          <line x1="30" y1="20" x2={width - 30} y2="20" stroke="rgba(219,39,119,0.08)" strokeDasharray="3,3" />
+          {/* Linhas de grade horizontais de fundo */}
+          <line x1="30" y1={height - 20} x2={width - 30} y2={height - 20} stroke="rgba(219,39,119,0.06)" strokeWidth="1.5" />
+          <line x1="30" y1={(height - 20) / 2 + 10} x2={width - 30} y2={(height - 20) / 2 + 10} stroke="rgba(219,39,119,0.06)" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1="30" y1="40" x2={width - 30} y2="40" stroke="rgba(219,39,119,0.06)" strokeWidth="1" strokeDasharray="4,4" />
 
-          <path d={areaPathD} fill="url(#grad-evolucao)" />
-          <path d={pathD} fill="none" stroke="#db2777" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Labels dos meses dentro do SVG — alinhados exatamente ao centro de cada barra */}
+          {bars.map((bar, idx) => {
+            const isActive = bar.monthIndex === selectedMonth;
+            const isZero = totalData[idx] === 0;
+            return (
+              <text
+                key={`label-${idx}`}
+                x={bar.xCenter}
+                y={height + 12}
+                textAnchor="middle"
+                fontSize="10"
+                fontWeight={isActive ? '900' : isZero ? '500' : '700'}
+                fill={isActive ? '#db2777' : isZero ? '#d1d5db' : '#9ca3af'}
+              >
+                {months[idx].substring(0, 3)}
+              </text>
+            );
+          })}
 
-          {points.map((pt, idx) => (
-            <g key={idx} className="cursor-pointer group/ev">
-              {/* Círculo visível */}
-              <circle 
-                cx={pt.x} 
-                cy={pt.y} 
-                r="5" 
-                fill="#ffffff" 
-                stroke="#db2777" 
-                strokeWidth="3"
-                className="transition-all duration-200 group-hover/ev:stroke-[5px]"
-              />
-              {/* Área de detecção estável ampliada (invisível, evita flicker) */}
-              <circle 
-                cx={pt.x} 
-                cy={pt.y} 
-                r="16" 
-                fill="transparent" 
-                className="cursor-pointer"
-              />
-              {/* Tooltip com setinha elegante */}
-              <g className="opacity-0 pointer-events-none group-hover/ev:opacity-100 transition-opacity duration-200">
-                <path d={`M ${pt.x - 4} ${pt.y - 12} L ${pt.x} ${pt.y - 8} L ${pt.x + 4} ${pt.y - 12} Z`} fill="#030712" />
-                <rect x={pt.x - 55} y={pt.y - 34} width="110" height="22" rx="6" fill="#030712" className="shadow-2xl" />
-                <text x={pt.x} y={pt.y - 20} fill="#ffffff" fontSize="9" fontWeight="black" textAnchor="middle">
-                  R$ {pt.val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+          {bars.map((bar, idx) => {
+            const isActive = bar.monthIndex === selectedMonth;
+
+            // Omitir renderização de colunas e textos para meses sem faturamento (valor = 0)
+            if (bar.val === 0) return null;
+
+            return (
+              <g key={idx} className="cursor-pointer group/bar">
+                {/* Valor textual fixo acima de cada barra */}
+                <text
+                  x={bar.xCenter}
+                  y={bar.y - 8}
+                  fill={isActive ? '#be185d' : '#db2777'}
+                  fontSize="12"
+                  fontWeight="900"
+                  textAnchor="middle"
+                  className="transition-all duration-200 group-hover/bar:fill-gray-900 font-sans tracking-tight"
+                >
+                  R$ {Math.round(bar.val).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                 </text>
-              </g>
-            </g>
-          ))}
-        </svg>
 
-        <div className="flex justify-between text-[10px] font-black text-gray-400 mt-2 px-6">
-          {months.map(m => <span key={m}>{m.substring(0, 3)}</span>)}
-        </div>
+                {/* Retângulo da Barra */}
+                <rect
+                  x={bar.x}
+                  y={bar.y}
+                  width={bar.barWidth}
+                  height={bar.barHeight}
+                  rx="7"
+                  ry="7"
+                  fill={isActive ? 'url(#grad-evolucao-active)' : 'url(#grad-evolucao-normal)'}
+                  filter={isActive ? 'url(#shadow-evolucao-active)' : 'url(#shadow-evolucao)'}
+                  className="transition-all duration-300 group-hover/bar:brightness-110"
+                  style={{ transformOrigin: `${bar.xCenter}px ${height - 20}px` }}
+                />
+
+                {/* Área de detecção invisível para tooltip */}
+                <rect
+                  x={bar.xCenter - spacing / 2}
+                  y="10"
+                  width={spacing}
+                  height={height - 30}
+                  fill="transparent"
+                />
+
+                {/* Tooltip hover */}
+                <g className="opacity-0 pointer-events-none group-hover/bar:opacity-100 transition-opacity duration-200">
+                  <path d={`M ${bar.xCenter - 4} ${bar.y - 25} L ${bar.xCenter} ${bar.y - 21} L ${bar.xCenter + 4} ${bar.y - 25} Z`} fill="#030712" />
+                  <rect x={bar.xCenter - 65} y={bar.y - 49} width="130" height="24" rx="6" fill="#030712" />
+                  <text x={bar.xCenter} y={bar.y - 34} fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">
+                    Total: R$ {bar.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </text>
+                </g>
+              </g>
+            );
+          })}
+        </svg>
       </div>
     );
   };
@@ -1448,8 +1504,7 @@ metricsPetMovel = {
     const allServices = [
       { name: 'Banho & Tosa', value: shares.banhotosa, color: '#ec4899', amount: shares.valBanhoTosa },
       { name: 'Pet Móvel', value: shares.petmovel, color: '#06b6d4', amount: shares.valPetMovel },
-      { name: 'Creche Pet', value: shares.creche, color: '#8b5cf6', amount: shares.valCreche },
-      { name: 'Hotel Pet', value: shares.hotel, color: '#f59e0b', amount: shares.valHotel }
+      { name: 'Creche Pet', value: shares.creche, color: '#8b5cf6', amount: shares.valCreche }
     ];
 
     // Fatias do donut apenas para valores maiores que zero
@@ -1481,12 +1536,12 @@ metricsPetMovel = {
               const [startX, startY] = getCoordinatesForPercent(startPercent);
               const [endX, endY] = getCoordinatesForPercent(adjustedEndPercent);
               const largeArcFlag = slice.value > 50 ? 1 : 0;
-              
+
               const sx = center + startX * radius;
               const sy = center + startY * radius;
               const ex = center + endX * radius;
               const ey = center + endY * radius;
-              
+
               const d = [
                 `M ${sx} ${sy}`,
                 `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${ex} ${ey}`
@@ -1563,12 +1618,12 @@ metricsPetMovel = {
               const [startX, startY] = getCoordinatesForPercent(startPercent);
               const [endX, endY] = getCoordinatesForPercent(adjustedEndPercent);
               const largeArcFlag = slice.value > 50 ? 1 : 0;
-              
+
               const sx = center + startX * radius;
               const sy = center + startY * radius;
               const ex = center + endX * radius;
               const ey = center + endY * radius;
-              
+
               const d = [
                 `M ${sx} ${sy}`,
                 `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${ex} ${ey}`
@@ -1668,7 +1723,7 @@ metricsPetMovel = {
 
           {bars.map((bar, idx) => {
             const isActive = bar.monthIndex === selectedMonth;
-            
+
             // Omitir renderização de colunas e textos para meses sem despesas (valor = 0)
             if (bar.val === 0) return null;
 
@@ -1727,15 +1782,14 @@ metricsPetMovel = {
           {months.map((m, idx) => {
             const isZero = data[idx] === 0;
             return (
-              <span 
-                key={m} 
-                className={`transition-colors ${
-                  idx === selectedMonth 
-                    ? 'text-pink-600 font-extrabold scale-110' 
-                    : isZero 
+              <span
+                key={m}
+                className={`transition-colors ${idx === selectedMonth
+                    ? 'text-pink-600 font-extrabold scale-110'
+                    : isZero
                       ? 'text-gray-300 font-medium' // deixa os meses de 0 mais discretos
                       : 'text-gray-500'
-                }`}
+                  }`}
               >
                 {m.substring(0, 3)}
               </span>
@@ -1762,13 +1816,13 @@ metricsPetMovel = {
       <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1 scrollbar-purple">
         {items.map((item, idx) => {
           const isBanho = item.origem === 'Banho & Tosa';
-          
+
           return (
             <div key={idx} className="relative flex gap-4">
               {idx < items.length - 1 && (
                 <div className="absolute left-[17px] top-[30px] bottom-0 w-0.5 border-l border-dashed border-pink-300"></div>
               )}
-              
+
               <div className={`w-9 h-9 rounded-2xl flex flex-col items-center justify-center font-bold text-[9px] shrink-0 border bg-pink-50 text-pink-500 border-pink-100`}>
                 <span className="leading-none font-black">{item.timeStr}</span>
                 <span className="text-[7px] opacity-70 mt-0.5">{item.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
@@ -1778,15 +1832,14 @@ metricsPetMovel = {
                 <div className="flex items-center gap-3">
                   <span className="text-lg">{isBanho ? '🧼' : '🚐'}</span>
                   <div>
-                    <span className={`text-[10px] font-black uppercase tracking-wider block ${
-                      isBanho ? 'text-pink-500' : 'text-cyan-500'
-                    }`}>
+                    <span className={`text-[10px] font-black uppercase tracking-wider block ${isBanho ? 'text-pink-500' : 'text-cyan-500'
+                      }`}>
                       {item.origem}
                     </span>
                     <span className="text-xs font-black text-gray-800">{item.pet_name}</span>
                   </div>
                 </div>
-                
+
                 <div className="text-right">
                   <span className="text-xs font-black text-gray-700">
                     R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -1805,7 +1858,7 @@ metricsPetMovel = {
       {/* CABEÇALHO INTELIGENTE DO ADMINISTRADOR */}
       <div className="relative z-[100] bg-white/70 backdrop-blur-md rounded-3xl p-6 border border-pink-100 shadow-xl animate-fadeIn">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-gradient-to-br from-pink-100 to-cyan-100 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
-        
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="text-center md:text-left">
             <h2 className="text-4xl font-extrabold text-pink-600 flex items-center justify-center md:justify-start gap-2" style={{ fontFamily: '"Lobster Two", cursive' }}>
@@ -1820,7 +1873,7 @@ metricsPetMovel = {
           {/* SELETORES DE MÊS E ANO GLOBAIS */}
           <div className="flex flex-wrap items-center justify-center gap-4 z-50">
             <div className="relative">
-              <button 
+              <button
                 onClick={() => { setShowMonthDropdown(!showMonthDropdown); setShowYearDropdown(false); }}
                 className="flex items-center gap-2 px-5 py-3 bg-white/80 border border-pink-100 text-gray-700 font-extrabold text-sm rounded-2xl shadow-sm hover:shadow-md transition-all h-12 min-w-[150px] justify-between cursor-pointer"
               >
@@ -1830,7 +1883,7 @@ metricsPetMovel = {
                 </div>
                 <ChevronDown className={`w-4 h-4 text-pink-500 transition-transform ${showMonthDropdown ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {showMonthDropdown && (
                 <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-md border border-pink-50 rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-pink-100 [&::-webkit-scrollbar-thumb]:rounded-full">
                   {months.map((m, idx) => (
@@ -1847,7 +1900,7 @@ metricsPetMovel = {
             </div>
 
             <div className="relative">
-              <button 
+              <button
                 onClick={() => { setShowYearDropdown(!showYearDropdown); setShowMonthDropdown(false); }}
                 className="flex items-center gap-2 px-5 py-3 bg-white/80 border border-pink-100 text-gray-700 font-extrabold text-sm rounded-2xl shadow-sm hover:shadow-md transition-all h-12 min-w-[110px] justify-between cursor-pointer"
               >
@@ -1857,7 +1910,7 @@ metricsPetMovel = {
                 </div>
                 <ChevronDown className={`w-4 h-4 text-pink-500 transition-transform ${showYearDropdown ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {showYearDropdown && (
                 <div className="absolute right-0 mt-2 w-32 bg-white/95 backdrop-blur-md border border-pink-50 rounded-2xl shadow-2xl z-50">
                   {years.map(y => (
@@ -1873,7 +1926,7 @@ metricsPetMovel = {
               )}
             </div>
 
-            <button 
+            <button
               onClick={handleReloadAll}
               className="flex items-center justify-center p-3 bg-pink-50 text-pink-600 border border-pink-100 rounded-2xl hover:bg-pink-100 active:scale-95 shadow-sm cursor-pointer transition-all h-12 w-12"
               title="Atualizar dados"
@@ -1888,22 +1941,20 @@ metricsPetMovel = {
       <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-2xl border border-pink-100/50 w-full max-w-[400px] shadow-sm animate-fadeIn">
         <button
           onClick={() => setActiveSubTab('overview')}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${
-            activeSubTab === 'overview'
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${activeSubTab === 'overview'
               ? 'bg-pink-500 text-white shadow-md'
               : 'text-gray-600 hover:text-pink-600'
-          }`}
+            }`}
         >
           <BarChart3 className="w-4 h-4" />
           Visão Geral
         </button>
         <button
           onClick={() => setActiveSubTab('expenses')}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${
-            activeSubTab === 'expenses'
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${activeSubTab === 'expenses'
               ? 'bg-pink-500 text-white shadow-md'
               : 'text-gray-600 hover:text-pink-600'
-          }`}
+            }`}
         >
           <Layers className="w-4 h-4" />
           Gastos
@@ -1960,9 +2011,8 @@ metricsPetMovel = {
               <div className="absolute -top-3 -right-3 w-12 h-12 bg-cyan-50 rounded-full flex items-center justify-center text-lg">⚖️</div>
               <div className="flex flex-col items-center w-full">
                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Líquido</span>
-                <span className={`text-2xl font-black leading-snug ${
-                  (consolidatedMetrics.summary.monthTotal - expensesMetrics.total) >= 0 ? 'text-cyan-600' : 'text-red-600'
-                }`}>
+                <span className={`text-2xl font-black leading-snug ${(consolidatedMetrics.summary.monthTotal - expensesMetrics.total) >= 0 ? 'text-cyan-600' : 'text-red-600'
+                  }`}>
                   R$ <AnimatedCounter value={consolidatedMetrics.summary.monthTotal - expensesMetrics.total} decimals={0} />
                 </span>
               </div>
@@ -1986,9 +2036,8 @@ metricsPetMovel = {
                   <h4 className="font-extrabold text-pink-600 flex items-center gap-2">
                     <img src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho & Tosa" className="w-6 h-6 object-contain" /> Banho & Tosa Fixo
                   </h4>
-                  <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
-                    consolidatedMetrics.banhotosa.growth >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                  }`}>
+                  <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${consolidatedMetrics.banhotosa.growth >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                    }`}>
                     {consolidatedMetrics.banhotosa.growth >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                     <span>{consolidatedMetrics.banhotosa.growth.toFixed(1)}%</span>
                   </div>
@@ -2024,7 +2073,7 @@ metricsPetMovel = {
                     <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.banhotosa.year} decimals={0} /></span>
                   </div>
                 </div>
-                
+
                 {renderLineChart(consolidatedMetrics.chart.banhotosa, '#ec4899', 'banhotosa')}
               </div>
 
@@ -2035,43 +2084,42 @@ metricsPetMovel = {
                   <h4 className="font-extrabold text-cyan-600 flex items-center gap-2">
                     <img src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-6 h-6 object-contain" /> Pet Móvel (Condomínios)
                   </h4>
-                  <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
-                    consolidatedMetrics.petmovel.growth >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                  }`}>
+                  <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${consolidatedMetrics.petmovel.growth >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                    }`}>
                     {consolidatedMetrics.petmovel.growth >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                     <span>{consolidatedMetrics.petmovel.growth.toFixed(1)}%</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-<div className="bg-cyan-50/40 p-3 rounded-2xl">
-                      <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
-                        Hoje
-                        <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentHoje >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentHoje >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentHoje).toFixed(1)}% </span>
-                      </span>
-                      <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.today} decimals={0} /></span>
-                    </div>
-<div className="bg-cyan-50/40 p-3 rounded-2xl">
-                     <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
-                       Semana
-                       <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentSemana >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentSemana >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentSemana).toFixed(1)}% </span>
-                     </span>
-                     <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.week} decimals={0} /></span>
-                   </div>
-<div className="bg-cyan-100/50 p-3 rounded-2xl border border-cyan-200/50">
-                     <span className="text-[10px] text-cyan-500 font-extrabold flex items-center uppercase mb-1">
-                       Mês
-                       <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentMes >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentMes >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentMes).toFixed(1)}% </span>
-                     </span>
-                     <span className="text-base font-black text-cyan-600">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.month} decimals={0} /></span>
-                   </div>
-<div className="bg-cyan-50/40 p-3 rounded-2xl">
-                     <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
-                       Anual
-                       <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentAno >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentAno >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentAno).toFixed(1)}% </span>
-                     </span>
-                     <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.year} decimals={0} /></span>
-                   </div>
+                  <div className="bg-cyan-50/40 p-3 rounded-2xl">
+                    <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
+                      Hoje
+                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentHoje >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentHoje >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentHoje).toFixed(1)}% </span>
+                    </span>
+                    <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.today} decimals={0} /></span>
+                  </div>
+                  <div className="bg-cyan-50/40 p-3 rounded-2xl">
+                    <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
+                      Semana
+                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentSemana >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentSemana >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentSemana).toFixed(1)}% </span>
+                    </span>
+                    <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.week} decimals={0} /></span>
+                  </div>
+                  <div className="bg-cyan-100/50 p-3 rounded-2xl border border-cyan-200/50">
+                    <span className="text-[10px] text-cyan-500 font-extrabold flex items-center uppercase mb-1">
+                      Mês
+                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentMes >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentMes >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentMes).toFixed(1)}% </span>
+                    </span>
+                    <span className="text-base font-black text-cyan-600">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.month} decimals={0} /></span>
+                  </div>
+                  <div className="bg-cyan-50/40 p-3 rounded-2xl">
+                    <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
+                      Anual
+                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentAno >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentAno >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentAno).toFixed(1)}% </span>
+                    </span>
+                    <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.year} decimals={0} /></span>
+                  </div>
                 </div>
 
                 {renderLineChart(consolidatedMetrics.chart.petmovel, '#06b6d4', 'petmovel')}
@@ -2080,7 +2128,7 @@ metricsPetMovel = {
               {/* Card Creche Pet – Total de Aprovações */}
               <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-6 border border-pink-100/60 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-purple-200 flex flex-col justify-between min-h-[380px]">
                 <div className="absolute top-0 right-0 -mt-6 -mr-6 w-20 h-20 bg-purple-400 rounded-full blur-2xl opacity-20"></div>
-                
+
                 <div>
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="font-extrabold text-purple-600 flex items-center gap-2">
@@ -2136,11 +2184,11 @@ metricsPetMovel = {
               {/* Card Hotel Pet – Total de Hospedagens */}
               <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-6 border border-pink-100/60 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-amber-200 flex flex-col justify-between min-h-[380px]">
                 <div className="absolute top-0 right-0 -mt-6 -mr-6 w-20 h-20 bg-amber-400 rounded-full blur-2xl opacity-20"></div>
-                
+
                 <div>
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="font-extrabold text-amber-600 flex items-center gap-2">
-                      <img src="https://cdn-icons-png.flaticon.com/512/2984/2984025.png" alt="Hotel Pet" className="w-6 h-6 object-contain" /> Hotel Pet
+                      <img src="https://cdn-icons-png.flaticon.com/512/1131/1131938.png" alt="Hotel Pet" className="w-6 h-6 object-contain" /> Hotel Pet
                     </h4>
                     <span className="text-[10px] font-black bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full border border-amber-100">
                       {consolidatedMetrics.approvedHotelPets.length} Hóspedes
@@ -2191,8 +2239,8 @@ metricsPetMovel = {
                 </div>
               </div>
 
-              </div>
             </div>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
             <div className="lg:col-span-2 bg-white/70 backdrop-blur-md rounded-3xl p-6 border border-pink-100 shadow-xl space-y-4">
@@ -2260,8 +2308,8 @@ metricsPetMovel = {
 
 
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
-            <div className="bg-white/70 backdrop-blur-md rounded-[2.25rem] p-6 border border-pink-100 shadow-xl space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn items-stretch">
+            <div className="bg-white/70 backdrop-blur-md rounded-[2.25rem] p-6 border border-pink-100 shadow-xl flex flex-col justify-between h-full min-h-[340px]">
               <div>
                 <h3 className="text-lg font-black text-pink-700 flex items-center gap-1.5">
                   <PieChart className="w-5 h-5" />
@@ -2269,10 +2317,12 @@ metricsPetMovel = {
                 </h3>
                 <p className="text-[10px] text-gray-400 font-bold">Participação de cada serviço no faturamento do mês</p>
               </div>
-              {renderDonutChart()}
+              <div className="flex-1 flex items-center justify-center">
+                {renderDonutChart()}
+              </div>
             </div>
 
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 flex flex-col h-full">
               {renderEvolucaoChart()}
             </div>
           </div>
@@ -2335,14 +2385,12 @@ metricsPetMovel = {
                 <div className="absolute -top-3 -right-3 w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-lg">⚖️</div>
                 <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Saldo Líquido</span>
-                  <span className={`text-2xl font-black leading-snug block ${(consolidatedMetrics.timeline.totalGeral - expensesMetrics.total) >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                    R$ <AnimatedCounter value={consolidatedMetrics.timeline.totalGeral - expensesMetrics.total} decimals={0} />
+                  <span className={`text-2xl font-black leading-snug block ${expensesMetrics.saldoLiquido >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                    R$ <AnimatedCounter value={expensesMetrics.saldoLiquido} decimals={0} />
                   </span>
                 </div>
                 <span className="text-[10px] font-bold text-gray-400 block mt-1">
-                  Margem: {consolidatedMetrics.timeline.totalGeral > 0
-                    ? (((consolidatedMetrics.timeline.totalGeral - expensesMetrics.total) / consolidatedMetrics.timeline.totalGeral) * 100).toFixed(0)
-                    : '0'}%
+                  Margem: {expensesMetrics.lucroEstimado.toFixed(0)}%
                 </span>
               </div>
             </div>
@@ -2374,41 +2422,37 @@ metricsPetMovel = {
 
               <button
                 onClick={() => setSelectedServiceFilter('all')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  selectedServiceFilter === 'all'
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedServiceFilter === 'all'
                     ? 'bg-pink-500 text-white shadow-sm'
                     : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 Todos
               </button>
               <button
                 onClick={() => setSelectedServiceFilter('petmovel')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  selectedServiceFilter === 'petmovel'
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedServiceFilter === 'petmovel'
                     ? 'bg-pink-500 text-white shadow-sm'
                     : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <img src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-4 h-4 object-contain inline-block mr-1" /> Pet Móvel
               </button>
               <button
                 onClick={() => setSelectedServiceFilter('creche')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  selectedServiceFilter === 'creche'
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedServiceFilter === 'creche'
                     ? 'bg-pink-500 text-white shadow-sm'
                     : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <img src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche" className="w-4 h-4 object-contain inline-block mr-1" /> Creche
               </button>
               <button
                 onClick={() => setSelectedServiceFilter('banhotosa')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  selectedServiceFilter === 'banhotosa'
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedServiceFilter === 'banhotosa'
                     ? 'bg-pink-500 text-white shadow-sm'
                     : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <img src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho &amp; Tosa" className="w-4 h-4 object-contain inline-block mr-1" /> Banho &amp; Tosa
               </button>
@@ -2472,11 +2516,10 @@ metricsPetMovel = {
                               <td className="py-3 text-center">
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
-                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${
-                                    item.status_pagamento === 'pago'
+                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
                                       ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
                                       : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
-                                  }`}
+                                    }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
                                   {item.status_pagamento === 'pago' ? 'Pago' : 'Pendente'}
@@ -2523,11 +2566,10 @@ metricsPetMovel = {
                               <td className="py-3 text-center">
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
-                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${
-                                    item.status_pagamento === 'pago'
+                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
                                       ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
                                       : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
-                                  }`}
+                                    }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
                                   {item.status_pagamento === 'pago' ? 'Pago' : 'Pendente'}
@@ -2604,11 +2646,10 @@ metricsPetMovel = {
                               <td className="py-3 text-center">
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
-                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${
-                                    item.status_pagamento === 'pago'
+                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
                                       ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
                                       : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
-                                  }`}
+                                    }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
                                   {item.status_pagamento === 'pago' ? 'Pago' : 'Pendente'}
@@ -2655,11 +2696,10 @@ metricsPetMovel = {
                               <td className="py-3 text-center">
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
-                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${
-                                    item.status_pagamento === 'pago'
+                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
                                       ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
                                       : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
-                                  }`}
+                                    }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
                                   {item.status_pagamento === 'pago' ? 'Pago' : 'Pendente'}
@@ -2736,11 +2776,10 @@ metricsPetMovel = {
                               <td className="py-3 text-center">
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
-                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${
-                                    item.status_pagamento === 'pago'
+                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
                                       ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
                                       : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
-                                  }`}
+                                    }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
                                   {item.status_pagamento === 'pago' ? 'Pago' : 'Pendente'}
@@ -2787,11 +2826,10 @@ metricsPetMovel = {
                               <td className="py-3 text-center">
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
-                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${
-                                    item.status_pagamento === 'pago'
+                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
                                       ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
                                       : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
-                                  }`}
+                                    }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
                                   {item.status_pagamento === 'pago' ? 'Pago' : 'Pendente'}
@@ -2940,22 +2978,20 @@ metricsPetMovel = {
                     <button
                       type="button"
                       onClick={() => setFormStatus('pago')}
-                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-                        formStatus === 'pago'
+                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${formStatus === 'pago'
                           ? 'bg-green-100 text-green-700 border-green-300 shadow-sm'
                           : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       Pago
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormStatus('pendente')}
-                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-                        formStatus === 'pendente'
+                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${formStatus === 'pendente'
                           ? 'bg-yellow-100 text-yellow-700 border-yellow-300 shadow-sm'
                           : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       Pendente
                     </button>
@@ -3008,7 +3044,7 @@ metricsPetMovel = {
               <div>
                 <h3 className="text-lg font-black text-gray-800">Gasto Recorrente Detectado</h3>
                 <p className="text-xs text-gray-400 font-bold mt-1 leading-relaxed">
-                  <span className="text-pink-600 font-extrabold">"{expenseToDelete.nome_gasto}"</span> está marcado como recorrente.<br/>
+                  <span className="text-pink-600 font-extrabold">"{expenseToDelete.nome_gasto}"</span> está marcado como recorrente.<br />
                   Como deseja realizar a exclusão?
                 </p>
               </div>
