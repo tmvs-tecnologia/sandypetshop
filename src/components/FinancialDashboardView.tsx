@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
+import './FinancialDashboardView.css';
 import {
   TrendingUp,
   TrendingDown,
@@ -1132,6 +1133,8 @@ const FinancialDashboardView: React.FC = () => {
         ticketMedium,
         totalAppointmentsCount,
         totalServicesCountReal,
+        countBanhoReal,
+        countPetMovelReal,
         maiorDiaFaturamento,
         projection
       },
@@ -1698,7 +1701,7 @@ const FinancialDashboardView: React.FC = () => {
           </span>
         </div>
 
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-[140px] overflow-visible">
+        <svg viewBox={`0 0 ${width} ${height + 20}`} className="w-full h-[160px] overflow-visible">
           <defs>
             <linearGradient id="grad-bar-normal" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#f43f5e" />
@@ -1720,6 +1723,25 @@ const FinancialDashboardView: React.FC = () => {
           <line x1="30" y1={height - 20} x2={width - 30} y2={height - 20} stroke="rgba(239,68,68,0.06)" strokeWidth="1.5" />
           <line x1="30" y1={(height - 20) / 2 + 10} x2={width - 30} y2={(height - 20) / 2 + 10} stroke="rgba(239,68,68,0.06)" strokeWidth="1" strokeDasharray="4,4" />
           <line x1="30" y1="40" x2={width - 30} y2="40" stroke="rgba(239,68,68,0.06)" strokeWidth="1" strokeDasharray="4,4" />
+
+          {/* Labels dos meses dentro do SVG — alinhados exatamente ao centro de cada barra */}
+          {bars.map((bar, idx) => {
+            const isActive = bar.monthIndex === selectedMonth;
+            const isZero = data[idx] === 0;
+            return (
+              <text
+                key={`label-${idx}`}
+                x={bar.xCenter}
+                y={height + 12}
+                textAnchor="middle"
+                fontSize="10"
+                fontWeight={isActive ? '900' : isZero ? '500' : '700'}
+                fill={isActive ? '#e11d48' : isZero ? '#d1d5db' : '#9ca3af'}
+              >
+                {months[idx].substring(0, 3)}
+              </text>
+            );
+          })}
 
           {bars.map((bar, idx) => {
             const isActive = bar.monthIndex === selectedMonth;
@@ -1777,25 +1799,6 @@ const FinancialDashboardView: React.FC = () => {
             );
           })}
         </svg>
-
-        <div className="flex justify-between text-[10px] font-black text-gray-400 mt-2 px-6">
-          {months.map((m, idx) => {
-            const isZero = data[idx] === 0;
-            return (
-              <span
-                key={m}
-                className={`transition-colors ${idx === selectedMonth
-                    ? 'text-pink-600 font-extrabold scale-110'
-                    : isZero
-                      ? 'text-gray-300 font-medium' // deixa os meses de 0 mais discretos
-                      : 'text-gray-500'
-                  }`}
-              >
-                {m.substring(0, 3)}
-              </span>
-            );
-          })}
-        </div>
       </div>
     );
   };
@@ -1856,7 +1859,7 @@ const FinancialDashboardView: React.FC = () => {
   return (
     <div className="space-y-8 pb-12 max-w-7xl mx-auto px-1 sm:px-2 md:px-4">
       {/* CABEÇALHO INTELIGENTE DO ADMINISTRADOR */}
-      <div className="relative z-[100] bg-white/70 backdrop-blur-md rounded-3xl p-6 border border-pink-100 shadow-xl animate-fadeIn">
+      <div className="relative z-20 bg-white/70 backdrop-blur-md rounded-3xl p-6 border border-pink-100 shadow-xl animate-fadeIn">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-gradient-to-br from-pink-100 to-cyan-100 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -1979,8 +1982,10 @@ const FinancialDashboardView: React.FC = () => {
           {/* SESSÃO DE CARDS DE KPI DE VISÃO GERAL */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-fadeIn">
             {/* Card Entradas */}
-            <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
-              <div className="absolute -top-3 -right-3 w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-lg">💰</div>
+            <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+              <div className="absolute -top-3 -right-3 w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
+                <img src="https://cdn-icons-png.flaticon.com/512/8438/8438644.png" alt="Entradas" className="w-7 h-7 object-contain" />
+              </div>
               <div className="flex flex-col items-center w-full">
                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Entradas</span>
                 <span className="text-2xl font-black text-green-600 leading-snug">
@@ -1993,8 +1998,10 @@ const FinancialDashboardView: React.FC = () => {
             </div>
 
             {/* Card Saídas (Gastos) */}
-            <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
-              <div className="absolute -top-3 -right-3 w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-lg">💸</div>
+            <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+              <div className="absolute -top-3 -right-3 w-12 h-12 bg-red-50 rounded-full flex items-center justify-center">
+                <img src="https://cdn-icons-png.flaticon.com/512/6067/6067145.png" alt="Saídas" className="w-7 h-7 object-contain" />
+              </div>
               <div className="flex flex-col items-center w-full">
                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Saídas</span>
                 <span className="text-2xl font-black text-red-500 leading-snug">
@@ -2007,8 +2014,10 @@ const FinancialDashboardView: React.FC = () => {
             </div>
 
             {/* Card Líquido */}
-            <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
-              <div className="absolute -top-3 -right-3 w-12 h-12 bg-cyan-50 rounded-full flex items-center justify-center text-lg">⚖️</div>
+            <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+              <div className="absolute -top-3 -right-3 w-12 h-12 bg-cyan-50 rounded-full flex items-center justify-center">
+                <img src="https://cdn-icons-png.flaticon.com/512/584/584026.png" alt="Líquido" className="w-7 h-7 object-contain" />
+              </div>
               <div className="flex flex-col items-center w-full">
                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Líquido</span>
                 <span className={`text-2xl font-black leading-snug ${(consolidatedMetrics.summary.monthTotal - expensesMetrics.total) >= 0 ? 'text-cyan-600' : 'text-red-600'
@@ -2264,16 +2273,27 @@ const FinancialDashboardView: React.FC = () => {
               <div>
                 <h3 className="text-lg font-black text-pink-700 flex items-center gap-1.5">
                   <Activity className="w-5 h-5" />
-                  Performance Diária
+                  Performance Mensal
                 </h3>
-                <p className="text-[10px] text-gray-400 font-bold">Estatísticas acumuladas das últimas 24h</p>
+                <p className="text-[10px] text-gray-400 font-bold">Estatísticas acumuladas do mês de {months[selectedMonth]}</p>
               </div>
 
               <div className="space-y-4">
                 <div className="bg-pink-50/50 p-4 rounded-2xl border border-pink-50 flex justify-between items-center">
                   <div>
                     <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest block">Ticket Médio Geral</span>
-                    <span className="text-lg font-black text-pink-600">R$ 218,75</span>
+                    <span className="text-lg font-black text-pink-600">
+                      R$ <AnimatedCounter
+                        value={
+                          (() => {
+                            const totalServicos = consolidatedMetrics.summary.countBanhoReal + consolidatedMetrics.summary.countPetMovelReal;
+                            const totalValor = consolidatedMetrics.banhotosa.month + consolidatedMetrics.petmovel.month;
+                            return totalServicos > 0 ? totalValor / totalServicos : 0;
+                          })()
+                        }
+                        decimals={2}
+                      />
+                    </span>
                   </div>
                   <span className="text-2xl">🎟️</span>
                 </div>
@@ -2281,14 +2301,16 @@ const FinancialDashboardView: React.FC = () => {
                 <div className="bg-cyan-50/50 p-4 rounded-2xl border border-cyan-50 flex justify-between items-center">
                   <div>
                     <span className="text-[10px] font-black text-cyan-500 uppercase tracking-widest block">Volume Operacional</span>
-                    <span className="text-lg font-black text-cyan-600">14 Atendimentos</span>
+                    <span className="text-lg font-black text-cyan-600">
+                      <AnimatedCounter value={consolidatedMetrics.summary.totalServicesCountReal} decimals={0} /> Serviços
+                    </span>
                   </div>
                   <span className="text-2xl">🐕</span>
                 </div>
               </div>
 
               <div className="pt-2">
-                <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Curva de Faturamento Diário</h4>
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Curva de Faturamento Mensal</h4>
                 <div className="h-[90px] w-full">
                   <svg viewBox="0 0 200 80" className="w-full h-full overflow-visible">
                     <defs>
@@ -2341,8 +2363,10 @@ const FinancialDashboardView: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {/* Total de Gastos */}
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-lg">💸</div>
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+                <div className="absolute -top-3 -right-3 w-12 h-12 bg-red-50 rounded-full flex items-center justify-center">
+                  <img src="https://cdn-icons-png.flaticon.com/512/6067/6067145.png" alt="Gastos" className="w-7 h-7 object-contain" />
+                </div>
                 <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Total de Gastos</span>
                   <span className="text-2xl font-black text-red-500 leading-snug">R$ <AnimatedCounter value={expensesMetrics.total} decimals={0} /></span>
@@ -2350,9 +2374,9 @@ const FinancialDashboardView: React.FC = () => {
                 <span className="text-[10px] font-bold text-gray-400 block mt-2">Custo operacional mensal</span>
               </div>
 
-              {/* Fixos */}
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-50 rounded-full flex items-center justify-center text-lg">🔒</div>
+{/* Fixos */}
+               <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+                <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-50 rounded-full flex items-center justify-center"><img src="https://cdn-icons-png.flaticon.com/512/16090/16090543.png" alt="Gastos Fixos" className="w-7 h-7 object-contain" /></div>
                 <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Gastos Fixos</span>
                   <span className="text-2xl font-black text-gray-800 leading-snug">R$ <AnimatedCounter value={expensesMetrics.fixos} decimals={0} /></span>
@@ -2360,9 +2384,9 @@ const FinancialDashboardView: React.FC = () => {
                 <span className="text-[10px] font-bold text-pink-600 block mt-2">Estáveis e estruturais</span>
               </div>
 
-              {/* Variáveis */}
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-cyan-50 rounded-full flex items-center justify-center text-lg">⚡</div>
+{/* Variáveis */}
+               <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+                <div className="absolute -top-3 -right-3 w-12 h-12 bg-cyan-50 rounded-full flex items-center justify-center"><img src="https://cdn-icons-png.flaticon.com/512/15548/15548902.png" alt="Gastos Variáveis" className="w-7 h-7 object-contain" /></div>
                 <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Gastos Variáveis</span>
                   <span className="text-2xl font-black text-gray-800 leading-snug">R$ <AnimatedCounter value={expensesMetrics.variaveis} decimals={0} /></span>
@@ -2370,9 +2394,9 @@ const FinancialDashboardView: React.FC = () => {
                 <span className="text-[10px] font-bold text-cyan-600 block mt-2">Insumos e consumo</span>
               </div>
 
-              {/* Maior Gasto */}
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center text-lg">🔺</div>
+{/* Maior Gasto */}
+               <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+                <div className="absolute -top-3 -right-3 w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center"><img src="https://cdn-icons-png.flaticon.com/512/6778/6778921.png" alt="Maior Gasto" className="w-7 h-7 object-contain" /></div>
                 <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Maior Gasto</span>
                   <span className="text-base font-black text-purple-600 leading-snug truncate block max-w-[130px]">{expensesMetrics.maiorCategoria.name}</span>
@@ -2380,9 +2404,9 @@ const FinancialDashboardView: React.FC = () => {
                 <span className="text-[10px] font-bold text-gray-400 block mt-2">R$ {expensesMetrics.maiorCategoria.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
               </div>
 
-              {/* Saldo Líquido e Margem de Lucro */}
-              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-lg">⚖️</div>
+{/* Saldo Líquido e Margem de Lucro */}
+               <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+                <div className="absolute -top-3 -right-3 w-12 h-12 bg-green-50 rounded-full flex items-center justify-center"><img src="https://cdn-icons-png.flaticon.com/512/584/584026.png" alt="Saldo Líquido" className="w-7 h-7 object-contain" /></div>
                 <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Saldo Líquido</span>
                   <span className={`text-2xl font-black leading-snug block ${expensesMetrics.saldoLiquido >= 0 ? 'text-green-600' : 'text-red-500'}`}>
