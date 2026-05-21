@@ -36,6 +36,7 @@ import FiscalNotesView from './src/components/FiscalNotesView';
 import { AdoptionPublicView } from './src/components/AdoptionPublicView';
 import { AdoptionAdminView } from './src/components/AdoptionAdminView';
 import TestimonialsCarousel from './src/components/TestimonialsCarousel';
+import FinancialDashboardView from './src/components/FinancialDashboardView';
 
 
 // HELPERS DE IDENTIFICAÇÃO DE SERVIÇO (UNIFICADOS)
@@ -5827,6 +5828,8 @@ interface AppointmentsViewProps {
     onEmitNFe?: (appointment: AdminAppointment) => void;
     emittingNFeId: string | null;
     fiscalNotesMap?: Record<string, string>;
+    onExportCsv?: () => Promise<void>;
+    isExporting?: boolean;
 }
 
 const AppointmentsView: React.FC<AppointmentsViewProps> = ({ 
@@ -5851,7 +5854,9 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     onShowLoyalty, 
     onEmitNFe,
     emittingNFeId,
-    fiscalNotesMap
+    fiscalNotesMap,
+    onExportCsv,
+    isExporting
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -5990,6 +5995,20 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                             ) : (
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+                                </svg>
+                            )}
+                        </button>
+                        <button 
+                            onClick={onExportCsv} 
+                            disabled={isExporting}
+                            title="Exportar CSV" 
+                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
+                        >
+                            {isExporting ? (
+                                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                 </svg>
                             )}
                         </button>
@@ -6338,6 +6357,8 @@ interface PetMovelViewProps {
     onEmitNFe: (appointment: AdminAppointment) => void;
     emittingNFeId: string | null;
     fiscalNotesMap?: Record<string, string>;
+    onExportCsv?: () => Promise<void>;
+    isExporting?: boolean;
 }
 
 const PetMovelView: React.FC<PetMovelViewProps> = ({ 
@@ -6359,7 +6380,8 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
     isAddModalOpen: _isAddModalOpen,
     onOpenAddModal,
     onCloseAddModal,
-    onShowLoyalty, onEmitNFe, emittingNFeId, fiscalNotesMap
+    onShowLoyalty, onEmitNFe, emittingNFeId, fiscalNotesMap,
+    onExportCsv, isExporting
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -6485,6 +6507,20 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
                             ) : (
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+                                </svg>
+                            )}
+                        </button>
+                        <button 
+                            onClick={onExportCsv} 
+                            disabled={isExporting}
+                            title="Exportar CSV" 
+                            className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none"
+                        >
+                            {isExporting ? (
+                                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                 </svg>
                             )}
                         </button>
@@ -16293,6 +16329,90 @@ const AdminDashboard: React.FC<{
     };
     const [showHotelStatistics, setShowHotelStatistics] = useState(false);
     const [isPriceManagementOpen, setIsPriceManagementOpen] = useState(false);
+    const [exporting, setExporting] = useState(false);
+    const exportAllCsv = async () => {
+        if (exporting) return;
+        try {
+            setExporting(true);
+            const fetchAll = async (table: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa') => {
+                let allData: any[] = [];
+                let page = 0;
+                while (true) {
+                    const { data, error } = await supabase
+                        .from(table)
+                        .select('*')
+                        .order('appointment_time', { ascending: false })
+                        .range(page * 1000, (page + 1) * 1000 - 1);
+                    if (error) {
+                        console.warn(`Erro ao exportar tabela ${table}:`, error);
+                        break;
+                    }
+                    if (data) allData = allData.concat(data);
+                    if (!data || data.length < 1000) break;
+                    page++;
+                }
+                return allData;
+            };
+
+            const [bath, petMovel, banhoTosa] = await Promise.all([
+                fetchAll('appointments'),
+                fetchAll('pet_movel_appointments'),
+                fetchAll('agendamento_banhotosa')
+            ]);
+
+            const combined = [
+                ...bath.map(x => ({ ...x, origem: 'Banho & Tosa' })),
+                ...petMovel.map(x => ({ ...x, origem: 'Pet Móvel' })),
+                ...banhoTosa.map(x => ({ ...x, origem: 'Banho & Tosa Fixo' }))
+            ];
+
+            if (combined.length === 0) {
+                alert("Nenhum agendamento encontrado para exportar.");
+                return;
+            }
+
+            const headers = [
+                'ID', 'Data/Hora', 'Nome do Pet', 'Nome do Tutor', 'Serviço', 'Status', 
+                'Preço', 'WhatsApp', 'Peso', 'Observação', 'Origem', 'Condomínio'
+            ];
+
+            const csvRows = [headers.join(';')];
+
+            for (const appt of combined) {
+                const dateStr = appt.appointment_time ? new Date(appt.appointment_time).toLocaleString('pt-BR') : '';
+                const row = [
+                    appt.id || '',
+                    dateStr,
+                    appt.pet_name || '',
+                    appt.owner_name || '',
+                    appt.service || '',
+                    appt.status || '',
+                    appt.price || '',
+                    appt.whatsapp || '',
+                    appt.weight || '',
+                    (appt.observation || '').replace(/\r?\n|\r/g, " "),
+                    appt.origem,
+                    appt.condominium || ''
+                ].map(val => `"${String(val).replace(/"/g, '""')}"`);
+                csvRows.push(row.join(';'));
+            }
+
+            const csvString = "\uFEFF" + csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `agendamentos_sandys_petshop_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Erro ao exportar CSV:', error);
+            alert('Erro ao gerar o arquivo CSV.');
+        } finally {
+            setExporting(false);
+        }
+    };
 
     const adminTitleFull = "Sandy's Pet Admin";
     const [adminTitle, setAdminTitle] = useState('');
@@ -16780,6 +16900,7 @@ const AdminDashboard: React.FC<{
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
                 onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap}
+                onExportCsv={exportAllCsv} isExporting={exporting}
             />;
             case 'petMovel': return <PetMovelView 
                 key={dataKey} 
@@ -16802,6 +16923,7 @@ const AdminDashboard: React.FC<{
                 onOpenAddModal={handleOpenAddModal}
                 onCloseAddModal={handleCloseAddModal}
                 onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap}
+                onExportCsv={exportAllCsv} isExporting={exporting}
             />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} onFiscalNote={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
@@ -16819,6 +16941,7 @@ const AdminDashboard: React.FC<{
             case 'closeDay': return <CloseDayView onBack={() => setActiveView(previousView)} />;
             case 'insights': return <InsightsDashboard key={dataKey} onBack={() => setActiveView('resumo')} />;
             case 'fiscalNotes': return <FiscalNotesView />;
+            case 'financial': return <FinancialDashboardView />;
 
             case 'feedbacks': return <FeedbacksView key={dataKey} />;
             case 'album': return <AlbumManagementView />;
@@ -16845,6 +16968,7 @@ const AdminDashboard: React.FC<{
                 onCloseAddModal={handleCloseAddModal}
                 onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe}
                 fiscalNotesMap={fiscalNotesMap}
+                onExportCsv={exportAllCsv} isExporting={exporting}
             />;
         }
     };
@@ -16938,6 +17062,13 @@ const AdminDashboard: React.FC<{
                                 <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
                             </div>
                             <button
+                                onClick={() => { setActiveView('financial'); closeMobileMenu(); }}
+                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'financial' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/2910/2910313.png" alt="Financeiro" className="w-6 h-6 object-contain" />
+                                Financeiro
+                            </button>
+                            <button
                                 onClick={() => { setActiveView('fiscalNotes'); closeMobileMenu(); }}
                                 className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'fiscalNotes' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
@@ -17011,6 +17142,13 @@ const AdminDashboard: React.FC<{
                             <div className="px-4 pb-2">
                                 <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Ajustes</h3>
                             </div>
+                            <button
+                                onClick={() => setActiveView('financial')}
+                                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'financial' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/2910/2910313.png" alt="Financeiro" className="w-6 h-6 object-contain" />
+                                Financeiro
+                            </button>
                             <button
                                 onClick={() => setActiveView('fiscalNotes')}
                                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'fiscalNotes' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}

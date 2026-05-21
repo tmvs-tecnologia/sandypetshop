@@ -138,6 +138,7 @@ function timeAgo(dateStr: string): string {
 const FeedbacksView: React.FC = () => {
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
     const [filterPet, setFilterPet] = useState('');
     const [filterStars, setFilterStars] = useState(0); // 0 = todos
     const [sortOrder, setSortOrder] = useState<'newest' | 'highest' | 'lowest'>('newest');
@@ -176,6 +177,47 @@ const FeedbacksView: React.FC = () => {
             setLoading(false);
         }
     }, []);
+
+    // ---------- Exportação CSV de avaliações ----------
+    const exportFeedbacksCsv = async () => {
+        setExporting(true);
+        try {
+            const { data, error } = await supabase
+                .from('feedbacks')
+                .select('owner_name, comment, stars, submitted_at')
+                .order('submitted_at', { ascending: false });
+            if (error) {
+                console.error('Erro ao exportar avaliações', error);
+                return;
+            }
+            const rows = data as Feedback[];
+            if (!rows || rows.length === 0) {
+                console.warn('Nenhum feedback para exportar');
+                return;
+            }
+            const headers = ['owner_name', 'comment', 'stars', 'submitted_at'];
+            const csvLines = [
+                headers.join(','),
+                ...rows.map(r =>
+                    headers.map(h => {
+                        const v = (r as any)[h];
+                        const escaped = String(v ?? '').replace(/"/g, '""');
+                        return `"${escaped}"`;
+                    }).join(',')
+                ),
+            ];
+            const csvContent = csvLines.join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.setAttribute('download', `avaliacoes_${new Date().toISOString().split('T')[0]}.csv`);
+            a.click();
+            URL.revokeObjectURL(url);
+        } finally {
+            setExporting(false);
+        }
+    };
 
     useEffect(() => { fetchFeedbacks(); }, [fetchFeedbacks]);
 
@@ -251,6 +293,14 @@ const FeedbacksView: React.FC = () => {
 
             {/* ── Header ──────────────────────────────────────────────────────── */}
             <div className="relative flex flex-col items-center text-center mb-8">
+                {/* Botão de exportação CSV */}
+                <button
+                    onClick={exportFeedbacksCsv}
+                    disabled={loading || exporting}
+                    className="ml-4 mb-2 px-4 py-2 bg-gradient-to-r from-[#FF9A44] to-[#E93D8E] text-white rounded-xl hover:brightness-110 transition-colors disabled:opacity-60"
+                >
+                    {exporting ? 'Exportando...' : 'Exportar CSV'}
+                </button>
                 <button
                     onClick={fetchFeedbacks}
                     disabled={loading}

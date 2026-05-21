@@ -50,7 +50,7 @@ const PriceTableModal: React.FC<PriceTableModalProps> = ({ isOpen, onClose }) =>
         className={`relative bg-white rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(244,114,182,0.3)] w-full max-w-4xl max-h-[90vh] flex flex-col transform transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] border border-pink-100/50 ${isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-90 translate-y-8 opacity-0'}`}
       >
         {/* Header fixo com o botão de fechar */}
-        <div className="sticky top-0 z-30 flex justify-between items-center p-6 bg-white/90 backdrop-blur-sm border-b border-pink-50 rounded-t-[2rem]">
+        <div className="sticky top-0 z-30 flex justify-between items-center p-6 bg-gradient-to-r from-pink-100 to-rose-100 backdrop-blur-sm border-b border-pink-50 rounded-t-[2rem]">
           <div className="flex-1">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-pink-950 tracking-tight">Tabela de Preços</h2>
           </div>
@@ -72,8 +72,8 @@ const PriceTableModal: React.FC<PriceTableModalProps> = ({ isOpen, onClose }) =>
             <div className="relative w-full rounded-[1.5rem] p-2 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/80 transition-transform duration-500 hover:-translate-y-1">
               {!img1Error ? (
                 <img 
-                  src="https://i.imgur.com/4bJHpV4.jpeg" 
-                  alt="Tabela de Preços Sandy's Pet Shop - Parte 1" 
+                  src="https://i.imgur.com/gluvjS2.jpeg" 
+                  alt="Banho & Tosa - Preço" 
                   className="w-full h-auto rounded-[1rem] object-contain"
                   loading="eager"
                   referrerPolicy="no-referrer"
@@ -94,8 +94,8 @@ const PriceTableModal: React.FC<PriceTableModalProps> = ({ isOpen, onClose }) =>
              <div className="relative w-full rounded-[1.5rem] p-2 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/80 transition-transform duration-500 hover:-translate-y-1">
               {!img2Error ? (
                 <img 
-                  src="https://i.imgur.com/JClKgTV.jpeg" 
-                  alt="Tabela de Preços Sandy's Pet Shop - Parte 2" 
+                  src="https://i.imgur.com/imbgDQv.jpeg" 
+                  alt="Creche Pet - Preço" 
                   className="w-full h-auto rounded-[1rem] object-contain"
                   loading="eager"
                   referrerPolicy="no-referrer"

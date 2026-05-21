@@ -1,0 +1,111 @@
+## Revisão de Front‑end & Roteiro de Melhorias
+
+*(Todas as sugestões estão em português e focam no código React + Tailwind + Vite atual. Não há necessidade de instalar novas bibliotecas, mas cada recomendação pode ser adotada incrementalmente.)*
+
+---
+
+### 1️⃣ Consistência e Kit de UI Reutilizável
+
+| Problema | Recomendações | Ganho rápido |
+|----------|----------------|--------------|
+| Botões, inputs, cards, modais estão codificados “na mão” em vários arquivos (ex.: modal de `AddPet`, `AvailableTimesPage`, `ManageAppointmentPage`, etc.). | **Extrair um pequeno Design System** – criar componentes genéricos como `<Button>`, `<IconButton>`, `<Card>`, `<Modal>`, `<FormField>` que aceitam `className` para variações. | Crie `<Button>` que já contém a lógica de gradiente (`bg-gradient-to-r …`) e substitua os botões existentes (4‑5 arquivos). |
+| Cores e fontes são repetidas como strings hex (`#FF9A44`, `#E93D8E`, `#4A0D2B`). | **Definir um tema Tailwind** (`tailwind.config.js → extend.colors` e `fontFamily`). Trocar valores hard‑coded por tokens como `text-primary`, `bg-pink-500`, etc. | Adicione `primary: '#FF9A44'`, `accent: '#E93D8E'`, `brand: '#4A0D2B'` e substitua. |
+| Várias seções repetem o mesmo cabeçalho gradiente (`<div className="bg-gradient-to-r …">`). | **Criar componente `<SectionHeader>`** que recebe título, ícone e subtítulo opcional. | Um único arquivo → substituir 4‑5 blocos de cabeçalho. |
+| Modais repetem lógica de foco/overlay. | **Componente `<Modal>` reutilizável** (portal, `role="dialog"`, fechar com ESC, trap de foco). | Trocar as 3 implementações de modal por um único componente. |
+
+---
+
+### 2️⃣ Acessibilidade (a11y)
+
+| Falha | Correção |
+|-------|----------|
+| Falta de `aria-label`/`aria-labelledby` em ícones interativos (ex.: botão “+”, seletor de calendário). | Acrescentar `aria-label` significativos ou envolver o ícone em `<button aria-label="Adicionar pet">`. |
+| Modais sem foco‑trap → teclado pode sair do modal. | Utilizar hook `useFocusTrap` dentro do `<Modal>` reutilizável. |
+| Contraste de cor em alguns gradientes (texto rosa sobre fundo rosa) pode ficar baixo para WCAG AA. | Verificar contraste com Lighthouse; se necessário usar tom mais escuro ou acrescentar `text-shadow`. |
+| Imagens que caem para fallback Lottie não têm `alt`. | Garantir alt padrão como `"Imagem de foto do pet"`. |
+| Campos de formulário não têm hint de `required` no ARIA. | Adicionar `aria-required="true"` onde houver `required`, e usar `aria-invalid` em caso de erro. |
+| Navegação por teclado no selector de datas (scroll horizontal) não tem suporte a setas. | Dar `tabIndex={0}` a cada botão de data e implementar navegação com setas esquerda/direita. |
+
+---
+
+### 3️⃣ Performance & Busca de Dados
+
+| Comportamento atual | Melhoria |
+|----------------------|----------|
+| Cada tela faz `supabase.from(...).select('*')` no `useEffect`; usamos listeners Realtime manuais. | **Adotar React‑Query (ou SWR)** para cache, refetch automático ao focar a janela, e invalidar queries quando o hook Realtime disparar. |
+| A aplicação carrega tudo de uma vez (`App.tsx`). | **Code‑splitting com `import()`** para seções pesadas (ex.: `FeedbacksView`, `AvailableTimesPage`). Vite já suporta lazy loading (`React.lazy`). |
+| Datas/horas são formatadas manualmente (`new Date(...).toISOString()`). | **Day.js** (ou `date-fns`) com plugins timezone → `dayjs(date).tz('America/Sao_Paulo').format('YYYY-MM-DD')`. Garante fuso‑horário em todos os browsers. |
+| Spinners bloqueiam a UI enquanto os dados são carregados. | **Skeleton UI** (ex.: `<SkeletonCard />`) para listas – percepção de rapidez melhora. |
+| Cada mudança de agendamento força recarregamento completo da lista (`setAppointments(prev => …)`). | Usar `React.memo` nos itens da lista e manter a lista como map de IDs + detalhes. |
+| Lógica de fetch de agendamentos está espalhada em vários componentes. | Centralizar em um hook `useAppointments` que devolve `{appointments, loading, refetch}` – consistência e teste facilitado. |
+
+---
+
+### 4️⃣ Gerenciamento de Estado & Tipagem
+
+| Observação | Recomendações |
+|------------|----------------|
+| Vários componentes mantêm estados semelhantes (`selectedDate`, `selectedTime`, `loading`, `error`). | Criar **store global** (ex.: `zustand` ou `Jotai`) para estado UI compartilhado (serviço selecionado, data, tema). Evita prop‑drilling e facilita toggle de dark‑mode. |
+| Tipos de linhas do Supabase são duplicados (`interface Appointment`, `Feedback`). | Centralizar todas as interfaces em `src/types/supabase.ts` e importá‑las. Aproveitar `type Appointment = Awaited<ReturnType<typeof supabase.from('appointments').select>>[number]` para tipagem automática. |
+| Funções como `handleAddPet` manipulam a UI direto após inserção. | Encapsular chamadas ao DB em um **service layer** (`petService.ts`). UI só chama o service e invalida a query; facilita teste unitário e troca de backend. |
+
+---
+
+### 5️⃣ Polimento Visual & Interação
+
+| Área | Polimento sugerido |
+|------|---------------------|
+| Hero (texto “Cuidamos…”) | Inserir animação **Lottie** sutil ou fundo com blur que reage ao scroll (parallax). |
+| Carousel de Testemunhos | Adicionar **controles de ponto** e pausa ao hover; suportar swipe em mobile (`useSwipeable`). |
+| Selector de data em `AvailableTimesPage` | Oferecer um **dropdown compacto** para mobile e um **popover de calendário** para desktop (`react-calendar` ou custom). |
+| Botões | Aplicar animação de elevação suave (`translateY(-2px)`) + `shadow-lg` e `scale(1.02)` no hover. |
+| Cards de serviço (Banho, Visita, Creche) | Usar **tilt 3D** leve em hover (`transform: rotateY(3deg)`), mantendo a identidade visual. |
+| Spinners | Centralizar spinner como `<Spinner size="md" color="pink" />` para usar o mesmo estilo em todo app. |
+| FeedbacksView – estrelas | Substituir caracteres ★/☆ por **SVG preenchido** com animação `starIn`. |
+| Modo Dark | Inserir toggle (sol/lua) no canto superior; salvar preferência em `localStorage` e usar variáveis CSS (`darkMode: 'class'`). |
+| Responsividade | Ajustar grades (`grid-cols-3`) para `sm:grid-cols-2 md:grid-cols-3` e garantir `min-w-0` nos cards para evitar overflow. |
+| Toast notifications | Usar um **sistema de toast** (ex.: `react-hot-toast` ou componente custom) para mensagens de sucesso/erro — substitui mensagens inline. |
+
+---
+
+### 6️⃣ Novas Funcionalidades a Considerar
+
+| Funcionalidade | Por que agrega valor | Passos de implementação resumidos |
+|----------------|----------------------|-----------------------------------|
+| **Dashboard de Analítica** (total de agendamentos, receitas, serviços mais populares) | Visão rápida para admin tomar decisões. | Criar página `/admin/dashboard`; usar queries agregadas (RPC ou `supabase.from(...).select(...).count()`) e gráficos (Chart.js ou Recharts). |
+| **Exportação em CSV** de agendamentos & avaliações | Permite relatórios externos, integração com Excel/Google Sheets. | Botão que chama `supabase.from('appointments').select('*')`, converte para CSV (`PapaParse`) e dispara download. |
+| **Programa de Fidelidade** (pontos, recompensas) | Incentiva retenção e upsell. | Reutilizar `LoyaltyDashboardView`; exibir saldo, permitir resgate via modal. |
+| **Push Notifications Web** (para lembrança de agendamentos) | Reduz ausências, melhora engajamento. | Registrar Service Worker, solicitar permissão, salvar subscription em tabela `push_subscriptions`, disparar via Supabase Edge Functions. |
+| **i18n – suporte a múltiplos idiomas** (PT‑BR e EN) | Amplia mercado. | Integrar `react-i18next`; extrair strings; colocar seletor de idioma no header. |
+| **Calendário inline** (em vez de lista horizontal de datas) | UI mais intuitiva; permite ver rapidamente datas bloqueadas. | Utilizar `react-calendar` estilizado com Tailwind; desabilitar fins de semana e datas indisponíveis. |
+| **Busca com debounce** no campo de telefone (`ManageAppointmentPage`) | Evita chamadas excessivas ao Supabase enquanto o usuário digita. | Hook `useDebounce(200ms)` e disparar `searchAppointments` só após pausa. |
+| **Login sem senha / Magic Link** (Supabase) | Simplifica acesso para a equipe. | Habilitar Auth magic‑link no Supabase; substituir tela de login por campo de e‑mail único. |
+| **Melhorias PWA** – cache de assets estáticos, sync em background para criação de agendamentos offline. | Permite uso intermitente em redes móveis. | Já há `sw.js`; acrescentar estratégias Workbox para cache de respostas API e `registerBackgroundSync`. |
+| **Notificação em tempo real na campainha** (já existe `NotificationBell`) | Mostrar contagem de novos agendamentos/cancelamentos em tempo real. | Subscribir ao mesmo `useRealtime` nas tabelas de agendamento e atualizar badge no `NotificationBell`. |
+
+---
+
+### 7️⃣ Plano de Ação Imediata (2‑Semanas)
+
+1. **Dias 1‑3** – Extrair componentes UI genéricos (`Button`, `Card`, `Modal`, `SectionHeader`). Substituir markup duplicado. 
+2. **Dias 4‑5** – Estender o tema Tailwind (cores, fontes) e substituir valores hard‑coded.
+3. **Dias 6‑7** – Instalar e integrar `react-query` (ou SWR) em um componente pesado (ex.: `FeedbacksView`). Configurar `useRealtime` para invalidar queries.
+4. **Dias 8‑10** – Aplicar correções de acessibilidade (ARIA, foco, contraste). Executar auditoria Lighthouse e ajustar.
+5. **Dias 11‑12** – Trocar a geração de datas em `AvailableTimesPage` para a versão timezone‑aware já feita; opcionalmente adicionar calendário pop‑over.
+6. **Dias 13‑14** – Implementar toggle de **dark‑mode** e componente de **toast** para mensagens de sucesso/erro.
+
+*Ao final dessas duas semanas a aplicação ficará mais limpa, mais rápida, totalmente acessível e pronta para novos recursos.*
+
+---
+
+### 8️⃣ Resumo rápido (O que fazer agora)
+
+1. Extrair UI reutilizável.
+2. Centralizar cores/fonte no tema Tailwind.
+3. Migrar fetches para React‑Query (ou SWR) e manter o hook `useRealtime`.
+4. Corrigir a acessibilidade (ARIA, foco, contraste).
+5. Ajustar a geração de datas já feita (fuso‑horário São Paulo, sem fins de semana).
+6. Implementar dark‑mode, toast e controles no carousel.
+7. Planejar as funcionalidades maiores (dashboard, export CSV, push, i18n, etc.).
+
+Boa implementação!

@@ -19,7 +19,8 @@ import {
     Loader2,
     CalendarDays,
     PhoneOutgoing,
-    Ban
+    Ban,
+    Download
 } from 'lucide-react';
 import { useRealtime } from '../hooks/useRealtime';
 
@@ -60,6 +61,7 @@ export const ManageAppointmentPage: React.FC = () => {
     const [rescheduleTime, setRescheduleTime] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [exporting, setExporting] = useState(false);
     const [availableDates, setAvailableDates] = useState<string[]>([]);
     const [availableHours, setAvailableHours] = useState<number[]>([]);
     const [bookedHours, setBookedHours] = useState<number[]>([]);
@@ -309,6 +311,48 @@ export const ManageAppointmentPage: React.FC = () => {
         }
     };
 
+    // ---------- Exportação CSV de agendamentos ----------
+    const exportAppointmentsCsv = async () => {
+        setExporting(true);
+        try {
+            const [{ data: apptData, error: apptError }, { data: petData, error: petError }, { data: bathData, error: bathError }] = await Promise.all([
+                supabase.from('appointments').select('id, pet_name, owner_name, whatsapp, service, appointment_time, status, condominium'),
+                supabase.from('pet_movel_appointments').select('id, pet_name, owner_name, whatsapp, service, appointment_time, status, condominium'),
+                supabase.from('agendamento_banhotosa').select('id, pet_name, owner_name, whatsapp, service, appointment_time, status, condominium')
+            ]);
+            if (apptError || petError || bathError) {
+                console.error('Erro ao exportar agendamentos', apptError || petError || bathError);
+                return;
+            }
+            const rows = [...(apptData || []), ...(petData || []), ...(bathData || [])];
+            if (!rows.length) {
+                console.warn('Nenhum agendamento para exportar');
+                return;
+            }
+            const headers = ['id', 'pet_name', 'owner_name', 'whatsapp', 'service', 'appointment_time', 'status', 'condominium'];
+            const csvLines = [
+                headers.join(','),
+                ...rows.map(r =>
+                    headers.map(h => {
+                        const v = (r as any)[h];
+                        const escaped = String(v ?? '').replace(/"/g, '""');
+                        return `"${escaped}"`;
+                    }).join(',')
+                )
+            ];
+            const csvContent = csvLines.join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.setAttribute('download', `agendamentos_${new Date().toISOString().split('T')[0]}.csv`);
+            a.click();
+            URL.revokeObjectURL(url);
+        } finally {
+            setExporting(false);
+        }
+    };
+
     // Realtime: refresh the current search results when any appointment record changes.
     useRealtime(
       ['appointments', 'pet_movel_appointments', 'agendamento_banhotosa'],
@@ -522,6 +566,7 @@ export const ManageAppointmentPage: React.FC = () => {
                                 <Search className="w-5 h-5" />
                             )}
                         </button>
+{/* Export CSV button moved to global header */}
                     </div>
                     
                     {error && (
