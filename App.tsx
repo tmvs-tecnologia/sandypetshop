@@ -17066,7 +17066,7 @@ const AdminDashboard: React.FC<{
                                 onClick={() => { setActiveView('financial'); closeMobileMenu(); }}
                                 className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-base font-medium transition-colors ${activeView === 'financial' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/2910/2910313.png" alt="Financeiro" className="w-6 h-6 object-contain" />
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/5501/5501360.png" alt="Financeiro" className="w-6 h-6 object-contain" />
                                 Financeiro
                             </button>
                             <button
@@ -17147,7 +17147,7 @@ const AdminDashboard: React.FC<{
                                 onClick={() => setActiveView('financial')}
                                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-colors ${activeView === 'financial' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/2910/2910313.png" alt="Financeiro" className="w-6 h-6 object-contain" />
+                                <SafeImage src="https://cdn-icons-png.flaticon.com/512/5501/5501360.png" alt="Financeiro" className="w-6 h-6 object-contain" />
                                 Financeiro
                             </button>
                             <button

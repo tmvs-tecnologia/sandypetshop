@@ -4,7 +4,7 @@ import './FinancialDashboardView.css';
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
+  
   Calendar,
   Clock,
   Award,
@@ -22,7 +22,8 @@ import {
   Pencil,
   Trash2,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Printer, DocumentReportIcon
 } from 'lucide-react';
 
 // Tipos para os dados do Supabase
@@ -127,8 +128,8 @@ const FinancialDashboardView: React.FC = () => {
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [showYearDropdown, setShowYearDropdown] = useState(false);
 
-  // Estados de Abas Secundárias (Visão Geral vs Gastos)
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'expenses'>('overview');
+  // Estados de Abas Secundárias (Visão Geral vs Gastos vs Relatório)
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'expenses' | 'report'>('overview');
 
   // Estados de dados e loading (Visão Geral)
   const [loading, setLoading] = useState(true);
@@ -226,10 +227,10 @@ const FinancialDashboardView: React.FC = () => {
     else setRefreshing(true);
 
     try {
-      const banhoRes = await supabase.from('agendamento_banhotosa').select('price, appointment_time, status, pet_name');
-      const apptRes = await supabase.from('appointments').select('price, appointment_time, status, service, pet_name');
-      const pmRes = await supabase.from('pet_movel_appointments').select('price, appointment_time, status, pet_name');
-      const daycareRes = await supabase.from('daycare_enrollments').select('total_price, created_at, status, pet_name, pet_breed');
+      const banhoRes = await supabase.from('agendamento_banhotosa').select('price, appointment_time, status, pet_name, owner_name');
+      const apptRes = await supabase.from('appointments').select('price, appointment_time, status, service, pet_name, owner_name');
+      const pmRes = await supabase.from('pet_movel_appointments').select('price, appointment_time, status, pet_name, owner_name');
+      const daycareRes = await supabase.from('daycare_enrollments').select('total_price, created_at, status, pet_name, pet_breed, tutor_name');
       const hotelRes = await supabase.from('hotel_registrations').select('total_services_price, check_in_date, check_out_date, status, pet_name, pet_breed, tutor_name, registration_date');
 
       setDbData({
@@ -831,13 +832,17 @@ const FinancialDashboardView: React.FC = () => {
         price: Number(d.price || d.total_price || 0),
         date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
         status: d.status,
-        appointment_time: d.appointment_time
+        appointment_time: d.appointment_time,
+        pet_name: d.pet_name || 'Pet sem nome',
+        owner_name: d.owner_name || 'Tutor não informado'
       })),
       ...dbData.appointments.map(d => ({
         price: Number(d.price || 0),
         date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
         status: d.status,
-        appointment_time: d.appointment_time
+        appointment_time: d.appointment_time,
+        pet_name: d.pet_name || 'Pet sem nome',
+        owner_name: d.owner_name || 'Tutor não informado'
       }))
     ];
 
@@ -894,7 +899,9 @@ const FinancialDashboardView: React.FC = () => {
       date: d.created_at ? new Date(d.created_at) : new Date(),
       status: d.status,
       paid: isConcluido(d.status),
-      created_at: d.created_at
+      created_at: d.created_at,
+      pet_name: d.pet_name || 'Pet sem nome',
+      tutor_name: d.tutor_name || 'Tutor não informado'
     }));
 
     // Total de matrículas aprovadas (sem filtro de data)
@@ -907,7 +914,8 @@ const FinancialDashboardView: React.FC = () => {
       .map(d => ({
         petName: d.pet_name || 'Pet sem nome',
         petBreed: d.pet_breed || 'Sem raça definida',
-        price: Number(d.total_price || 0)
+        price: Number(d.total_price || 0),
+        tutorName: d.tutor_name || 'Tutor não informado'
       }))
       .sort((a, b) => a.petName.localeCompare(b.petName));
 
@@ -1096,6 +1104,41 @@ const FinancialDashboardView: React.FC = () => {
       return items.sort((a, b) => b.date.getTime() - a.date.getTime());
     })();
 
+    const banhoTosaMesDetalhes = dbData.banhoTosa
+      .filter(d => {
+        if (!isConcluido(d.status)) return false;
+        const { year, month } = parseYearMonth(d.appointment_time);
+        return year === currentYear && month === currentMonth;
+      })
+      .map(d => ({
+        date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
+        pet_name: d.pet_name || 'Pet sem nome',
+        owner_name: d.owner_name || 'Tutor não informado',
+        price: Number(d.price || 0)
+      }));
+
+    const petMovelMesDetalhes = realPetMovelConcluido
+      .filter(d => {
+        const { year, month } = parseYearMonth(d.appointment_time);
+        return year === currentYear && month === currentMonth;
+      })
+      .map(d => ({
+        date: d.date,
+        pet_name: d.pet_name,
+        owner_name: d.owner_name,
+        price: d.price
+      }));
+
+    const crecheMesDetalhes = dbData.daycare
+      .filter(d => isConcluido(d.status))
+      .map(d => ({
+        date: d.created_at ? new Date(d.created_at) : new Date(),
+        pet_name: d.pet_name || 'Pet sem nome',
+        tutor_name: d.tutor_name || 'Tutor não informado',
+        price: Number(d.total_price || 0)
+      }))
+      .sort((a, b) => a.pet_name.localeCompare(b.pet_name));
+
     const valorTotalGeral = realTimelineItems.reduce((sum, item) => sum + item.valor, 0);
 
     return {
@@ -1107,6 +1150,9 @@ const FinancialDashboardView: React.FC = () => {
       approvedCrechePets,
       totalHotelAprovado,
       approvedHotelPets,
+      banhoTosaMesDetalhes,
+      petMovelMesDetalhes,
+        crecheMesDetalhes,
       chart: {
         banhotosa: chartBanhoTosa,
         petmovel: chartPetMovel,
@@ -1856,16 +1902,468 @@ const FinancialDashboardView: React.FC = () => {
     );
   };
 
+  // Renderizador da Aba de Relatório Financeiro (Simplificado e pronto para impressão)
+  const renderReportTab = () => {
+    const entradasBanhoTosa = consolidatedMetrics.banhoTosaMesDetalhes || [];
+    const entradasPetMovel = consolidatedMetrics.petMovelMesDetalhes || [];
+    const entradasCreche = consolidatedMetrics.crecheMesDetalhes || [];
+
+    const totalEntradasBanhoTosa = entradasBanhoTosa.reduce((sum, item) => sum + item.price, 0);
+    const totalEntradasPetMovel = entradasPetMovel.reduce((sum, item) => sum + item.price, 0);
+    const totalEntradasCreche = entradasCreche.reduce((sum, item) => sum + item.price, 0);
+
+    const totalEntradas = consolidatedMetrics.summary.monthTotal;
+
+    const saidasBanhoTosa = expensesToShow.filter(x => x.servico === 'banhotosa');
+    const saidasPetMovel = expensesToShow.filter(x => x.servico === 'petmovel');
+    const saidasCreche = expensesToShow.filter(x => x.servico === 'creche');
+
+    const totalSaidasBanhoTosa = saidasBanhoTosa.reduce((sum, item) => sum + Number(item.valor || 0), 0);
+    const totalSaidasPetMovel = saidasPetMovel.reduce((sum, item) => sum + Number(item.valor || 0), 0);
+    const totalSaidasCreche = saidasCreche.reduce((sum, item) => sum + Number(item.valor || 0), 0);
+
+    const totalSaidas = expensesMetrics.total;
+    const saldoLiquido = totalEntradas - totalSaidas;
+
+    const maxVal = Math.max(totalEntradas, totalSaidas, 1);
+    const entradasHeight = (totalEntradas / maxVal) * 140;
+    const saidasHeight = (totalSaidas / maxVal) * 140;
+
+    const dataEmissao = new Date().toLocaleString('pt-BR');
+
+    return (
+      <div className="report-container bg-white/80 p-8 rounded-3xl border border-pink-100/50 shadow-md space-y-8 animate-fadeIn text-gray-800">
+        
+        {/* CABEÇALHO DO RELATÓRIO (EXCLUSIVO PARA TELA E IMPRESSÃO) */}
+        <div className="report-header flex flex-col sm:flex-row items-center justify-between border-b-2 border-pink-100 pb-6 gap-4">
+          <div className="flex items-center gap-3 text-center sm:text-left">
+            <div className="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center shadow-inner">
+              <img src="https://cdn-icons-png.flaticon.com/512/5501/5501360.png" alt="Logo" className="w-9 h-9 object-contain" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-pink-600" style={{ fontFamily: '"Lobster Two", cursive' }}>Sandy's PetShop</h3>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Relatório Financeiro Gerencial</p>
+            </div>
+          </div>
+          
+          <div className="text-center sm:text-right space-y-1">
+            <div className="px-4 py-1.5 bg-pink-50 text-pink-600 rounded-full text-xs font-black uppercase tracking-wider inline-block">
+              Período: {months[selectedMonth]} de {selectedYear}
+            </div>
+            <p className="text-[9px] font-bold text-gray-400 block">Emitido em: {dataEmissao}</p>
+          </div>
+        </div>
+
+        {/* BOTÃO EXPORTAR (NÃO IMPRIME) */}
+        <div className="flex justify-end no-print">
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer"
+          >
+            <Printer className="w-4.5 h-4.5" />
+            Exportar PDF / Imprimir
+          </button>
+        </div>
+
+        {/* RESUMOS DE KPI (CARTÕES ELEGANTES) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100 flex flex-col items-center justify-center text-center h-28 relative overflow-hidden group">
+            <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Total de Entradas</span>
+            <span className="text-2xl font-black text-emerald-600">
+              R$ {totalEntradas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </span>
+            <span className="text-[9px] font-bold text-emerald-500 mt-1 uppercase tracking-wider">Mapeamento reativo</span>
+          </div>
+
+          <div className="bg-rose-50/50 p-5 rounded-2xl border border-rose-100 flex flex-col items-center justify-center text-center h-28 relative overflow-hidden group">
+            <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Total de Saídas</span>
+            <span className="text-2xl font-black text-rose-600">
+              R$ {totalSaidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </span>
+            <span className="text-[9px] font-bold text-rose-500 mt-1 uppercase tracking-wider">Despesas no período</span>
+          </div>
+
+          <div className={`${saldoLiquido >= 0 ? 'bg-cyan-50/50 border-cyan-100' : 'bg-red-50/50 border-red-100'} p-5 rounded-2xl border flex flex-col items-center justify-center text-center h-28 relative overflow-hidden group`}>
+            <span className={`text-[9px] font-black uppercase tracking-widest mb-1 ${saldoLiquido >= 0 ? 'text-cyan-600' : 'text-red-600'}`}>Saldo Líquido</span>
+            <span className={`text-2xl font-black ${saldoLiquido >= 0 ? 'text-cyan-600' : 'text-red-600'}`}>
+              R$ {saldoLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </span>
+            <span className={`text-[9px] font-bold mt-1 uppercase tracking-wider ${saldoLiquido >= 0 ? 'text-cyan-500' : 'text-red-400'}`}>
+              {saldoLiquido >= 0 ? 'Lucro Líquido Real' : 'Déficit Operacional'}
+            </span>
+          </div>
+        </div>
+
+        {/* SEÇÃO 3: GRÁFICO COMPARATIVO ENTRADAS X SAÍDAS */}
+        <div className="bg-gray-50/30 p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-4">
+          <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest text-center mb-2">
+            Gráfico de Comparativo Mensal (Entradas x Saídas)
+          </h4>
+          <div className="w-full flex justify-center items-center">
+            <svg viewBox="0 0 500 240" className="w-full max-w-[500px] h-auto overflow-visible">
+              <defs>
+                <linearGradient id="entradasGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10B981" />
+                  <stop offset="100%" stopColor="#059669" />
+                </linearGradient>
+                <linearGradient id="saidasGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#F43F5E" />
+                  <stop offset="100%" stopColor="#E11D48" />
+                </linearGradient>
+              </defs>
+              
+              <line x1="50" y1="20" x2="450" y2="20" stroke="#F1F5F9" strokeWidth="1" strokeDasharray="4" />
+              <line x1="50" y1="100" x2="450" y2="100" stroke="#F1F5F9" strokeWidth="1" strokeDasharray="4" />
+              <line x1="50" y1="180" x2="450" y2="180" stroke="#E2E8F0" strokeWidth="1.5" />
+              
+              <rect 
+                x="130" 
+                y={180 - entradasHeight} 
+                width="70" 
+                height={entradasHeight} 
+                rx="10" 
+                fill="url(#entradasGrad)" 
+              />
+              <text 
+                x="165" 
+                y={180 - entradasHeight - 10} 
+                textAnchor="middle" 
+                className="text-xs font-black fill-emerald-600"
+              >
+                R$ {totalEntradas.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </text>
+              <text 
+                x="165" 
+                y="205" 
+                textAnchor="middle" 
+                className="text-[10px] font-black fill-gray-500 uppercase tracking-widest"
+              >
+                Entradas
+              </text>
+              
+              <rect 
+                x="300" 
+                y={180 - saidasHeight} 
+                width="70" 
+                height={saidasHeight} 
+                rx="10" 
+                fill="url(#saidasGrad)" 
+              />
+              <text 
+                x="335" 
+                y={180 - saidasHeight - 10} 
+                textAnchor="middle" 
+                className="text-xs font-black fill-rose-600"
+              >
+                R$ {totalSaidas.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </text>
+              <text 
+                x="335" 
+                y="205" 
+                textAnchor="middle" 
+                className="text-[10px] font-black fill-gray-500 uppercase tracking-widest"
+              >
+                Saídas
+              </text>
+            </svg>
+          </div>
+        </div>
+
+        {/* DETALHAMENTO DE ENTRADAS */}
+        <div className="space-y-6">
+          <h4 className="text-sm font-black text-pink-600 uppercase tracking-widest border-b border-pink-100 pb-2">
+            1. Detalhamento de Entradas (Faturamento)
+          </h4>
+          
+          <div className="grid grid-cols-1 gap-6">
+            
+            {/* SERVIÇO: BANHO E TOSA FIXO */}
+            <div className="bg-gray-50/20 p-5 rounded-2xl border border-gray-100">
+              <div className="flex justify-between items-center mb-3">
+                <h5 className="text-xs font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-pink-400 inline-block" />
+                  Banho & Tosa Fixo
+                </h5>
+                <span className="text-xs font-black text-pink-600 bg-pink-50 px-2.5 py-1 rounded-full">
+                  Total: R$ {totalEntradasBanhoTosa.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              {entradasBanhoTosa.length === 0 ? (
+                <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum serviço de Banho & Tosa Fixo realizado no período.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-400 font-black uppercase tracking-wider">
+                        <th className="py-2">Data</th>
+                        <th className="py-2">Pet</th>
+                        <th className="py-2">Tutor</th>
+                        <th className="py-2 text-right">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold text-gray-600">
+                      {entradasBanhoTosa.map((item, idx) => (
+                        <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2">{new Date(item.date).toLocaleDateString('pt-BR')}</td>
+                          <td className="py-2 font-black text-gray-800">{item.pet_name}</td>
+                          <td className="py-2">{item.owner_name}</td>
+                          <td className="py-2 text-right text-gray-800">R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* SERVIÇO: PET MÓVEL */}
+            <div className="bg-gray-50/20 p-5 rounded-2xl border border-gray-100">
+              <div className="flex justify-between items-center mb-3">
+                <h5 className="text-xs font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
+                  Pet Móvel
+                </h5>
+                <span className="text-xs font-black text-cyan-600 bg-cyan-50 px-2.5 py-1 rounded-full">
+                  Total: R$ {totalEntradasPetMovel.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              {entradasPetMovel.length === 0 ? (
+                <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum serviço de Pet Móvel realizado no período.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-400 font-black uppercase tracking-wider">
+                        <th className="py-2">Data</th>
+                        <th className="py-2">Pet</th>
+                        <th className="py-2">Tutor</th>
+                        <th className="py-2 text-right">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold text-gray-600">
+                      {entradasPetMovel.map((item, idx) => (
+                        <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2">{new Date(item.date).toLocaleDateString('pt-BR')}</td>
+                          <td className="py-2 font-black text-gray-800">{item.pet_name}</td>
+                          <td className="py-2">{item.owner_name}</td>
+                          <td className="py-2 text-right text-gray-800">R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* SERVIÇO: CRECHE */}
+            <div className="bg-gray-50/20 p-5 rounded-2xl border border-gray-100">
+              <div className="flex justify-between items-center mb-3">
+                <h5 className="text-xs font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block" />
+                  Creche (Daycare)
+                </h5>
+                <span className="text-xs font-black text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full">
+                  Total: R$ {totalEntradasCreche.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              {entradasCreche.length === 0 ? (
+                <p className="text-xs text-gray-400 font-bold italic py-2">Nenhuma matrícula de creche ativa no período.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-400 font-black uppercase tracking-wider">
+                        <th className="py-2">Data</th>
+                        <th className="py-2">Pet</th>
+                        <th className="py-2">Tutor</th>
+                        <th className="py-2 text-right">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold text-gray-600">
+                      {entradasCreche.map((item, idx) => (
+                        <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2">{new Date(item.date).toLocaleDateString('pt-BR')}</td>
+                          <td className="py-2 font-black text-gray-800">{item.pet_name}</td>
+                          <td className="py-2">{item.tutor_name}</td>
+                          <td className="py-2 text-right text-gray-800">R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+
+        {/* DETALHAMENTO DE SAÍDAS */}
+        <div className="space-y-6">
+          <h4 className="text-sm font-black text-rose-600 uppercase tracking-widest border-b border-rose-100 pb-2">
+            2. Detalhamento de Saídas (Despesas)
+          </h4>
+          
+          <div className="grid grid-cols-1 gap-6">
+            
+            {/* SAÍDAS: BANHO E TOSA */}
+            <div className="bg-gray-50/20 p-5 rounded-2xl border border-gray-100">
+              <div className="flex justify-between items-center mb-3">
+                <h5 className="text-xs font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-pink-400 inline-block" />
+                  Despesas de Banho & Tosa
+                </h5>
+                <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full">
+                  Total: R$ {totalSaidasBanhoTosa.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              {saidasBanhoTosa.length === 0 ? (
+                <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum gasto registrado para Banho & Tosa no período.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-400 font-black uppercase tracking-wider">
+                        <th className="py-2">Gasto</th>
+                        <th className="py-2">Categoria</th>
+                        <th className="py-2">Observação</th>
+                        <th className="py-2 text-right">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold text-gray-600">
+                      {saidasBanhoTosa.map((item, idx) => (
+                        <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2 font-black text-gray-800">{item.nome_gasto}</td>
+                          <td className="py-2">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                              item.categoria === 'fixo' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                            }`}>
+                              {item.categoria === 'fixo' ? 'Fixo' : 'Variável'}
+                            </span>
+                          </td>
+                          <td className="py-2 font-normal text-gray-400 truncate max-w-[200px]">{item.observacoes || '-'}</td>
+                          <td className="py-2 text-right text-gray-800">R$ {Number(item.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* SAÍDAS: PET MÓVEL */}
+            <div className="bg-gray-50/20 p-5 rounded-2xl border border-gray-100">
+              <div className="flex justify-between items-center mb-3">
+                <h5 className="text-xs font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
+                  Despesas de Pet Móvel
+                </h5>
+                <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full">
+                  Total: R$ {totalSaidasPetMovel.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              {saidasPetMovel.length === 0 ? (
+                <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum gasto registrado para Pet Móvel no período.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-400 font-black uppercase tracking-wider">
+                        <th className="py-2">Gasto</th>
+                        <th className="py-2">Categoria</th>
+                        <th className="py-2">Observação</th>
+                        <th className="py-2 text-right">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold text-gray-600">
+                      {saidasPetMovel.map((item, idx) => (
+                        <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2 font-black text-gray-800">{item.nome_gasto}</td>
+                          <td className="py-2">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                              item.categoria === 'fixo' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                            }`}>
+                              {item.categoria === 'fixo' ? 'Fixo' : 'Variável'}
+                            </span>
+                          </td>
+                          <td className="py-2 font-normal text-gray-400 truncate max-w-[200px]">{item.observacoes || '-'}</td>
+                          <td className="py-2 text-right text-gray-800">R$ {Number(item.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* SAÍDAS: CRECHE */}
+            <div className="bg-gray-50/20 p-5 rounded-2xl border border-gray-100">
+              <div className="flex justify-between items-center mb-3">
+                <h5 className="text-xs font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block" />
+                  Despesas de Creche
+                </h5>
+                <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full">
+                  Total: R$ {totalSaidasCreche.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              {saidasCreche.length === 0 ? (
+                <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum gasto registrado para Creche no período.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-400 font-black uppercase tracking-wider">
+                        <th className="py-2">Gasto</th>
+                        <th className="py-2">Categoria</th>
+                        <th className="py-2">Observação</th>
+                        <th className="py-2 text-right">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold text-gray-600">
+                      {saidasCreche.map((item, idx) => (
+                        <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2 font-black text-gray-800">{item.nome_gasto}</td>
+                          <td className="py-2">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                              item.categoria === 'fixo' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                            }`}>
+                              {item.categoria === 'fixo' ? 'Fixo' : 'Variável'}
+                            </span>
+                          </td>
+                          <td className="py-2 font-normal text-gray-400 truncate max-w-[200px]">{item.observacoes || '-'}</td>
+                          <td className="py-2 text-right text-gray-800">R$ {Number(item.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8 pb-12 max-w-7xl mx-auto px-1 sm:px-2 md:px-4">
+
       {/* CABEÇALHO INTELIGENTE DO ADMINISTRADOR */}
-      <div className="relative z-20 bg-white/70 backdrop-blur-md rounded-3xl p-6 border border-pink-100 shadow-xl animate-fadeIn">
+      <div className="relative z-20 bg-white/70 backdrop-blur-md rounded-3xl p-6 border border-pink-100 shadow-xl">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-gradient-to-br from-pink-100 to-cyan-100 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="text-center md:text-left">
             <h2 className="text-4xl font-extrabold text-pink-600 flex items-center justify-center md:justify-start gap-2" style={{ fontFamily: '"Lobster Two", cursive' }}>
-              <DollarSign className="w-9 h-9 animate-bounce text-pink-500" />
+              <img src="https://cdn-icons-png.flaticon.com/512/5501/5501360.png" alt="Financeiro" className="w-9 h-9 object-contain" />
               Financeiro
             </h2>
             <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">
@@ -1941,7 +2439,7 @@ const FinancialDashboardView: React.FC = () => {
       </div>
 
       {/* ABAS SECUNDÁRIAS PREMIUM (CHAVEADOR SLIDE GLASSMORPHISM) */}
-      <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-2xl border border-pink-100/50 w-full max-w-[400px] shadow-sm animate-fadeIn">
+      <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-2xl border border-pink-100/50 w-full max-w-[550px] shadow-sm animate-fadeIn">
         <button
           onClick={() => setActiveSubTab('overview')}
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${activeSubTab === 'overview'
@@ -1961,6 +2459,16 @@ const FinancialDashboardView: React.FC = () => {
         >
           <Layers className="w-4 h-4" />
           Gastos
+        </button>
+        <button
+          onClick={() => setActiveSubTab('report')}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${activeSubTab === 'report'
+              ? 'bg-pink-500 text-white shadow-md'
+              : 'text-gray-600 hover:text-pink-600'
+            }`}
+        >
+          <PieChart className="w-4 h-4" />
+          Relatório
         </button>
       </div>
 
@@ -2349,7 +2857,7 @@ const FinancialDashboardView: React.FC = () => {
             </div>
           </div>
         </>
-      ) : (
+      ) : activeSubTab === 'expenses' ? (
         // ==========================================
         // RENDER 2: ABA DE GASTOS OPERACIONAIS (NOVO)
         // ==========================================
@@ -2876,6 +3384,8 @@ const FinancialDashboardView: React.FC = () => {
             )}
           </div>
         </>
+      ) : (
+        renderReportTab()
       )}
 
       {/* ==========================================

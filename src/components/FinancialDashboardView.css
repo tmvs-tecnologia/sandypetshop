@@ -2,3 +2,45 @@
 .relative .absolute {
   z-index: 50;
 }
+
+@media print {
+  /* Oculta layouts e elementos que não devem ser impressos */
+  .bottom-navbar,
+  aside,
+  nav,
+  header,
+  .no-print,
+  .sidebar,
+  button,
+  .flex-wrap,
+  .rounded-2xl {
+    box-shadow: none !important;
+  }
+
+  /* Garante o fundo branco absoluto para economia de tinta e nitidez */
+  body, html {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+  }
+
+  /* Remove bordas, sombras e paddings excessivos do relatório */
+  .report-container {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* Evita quebras de páginas no meio de blocos críticos e tabelas */
+  tr, p, svg, .bg-gray-50\/20, .grid {
+    page-break-inside: avoid;
+  }
+  
+  h3, h4, h5 {
+    page-break-after: avoid;
+  }
+}
