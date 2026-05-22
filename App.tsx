@@ -9187,6 +9187,7 @@ const DaycareEnrollmentDetailsModal: React.FC<{
                             <DetailItem label="Nome do Pet" value={enrollment.pet_name} />
                             <DetailItem label="Raça" value={enrollment.pet_breed} />
                             <DetailItem label="Idade" value={enrollment.pet_age} />
+                            <DetailItem label="Data Aniversário" value={formatDateToBR(enrollment.pet_birthday || null)} />
                             <DetailItem label="Sexo" value={enrollment.pet_sex} />
                             <DetailItem label="Castrado(a)" value={enrollment.is_neutered ? 'Sim' : 'Não'} />
                             <DetailItem label="Desconto Irmão" value={enrollment.has_sibling_discount ? 'Sim (10%)' : 'Não'} />
@@ -9331,6 +9332,7 @@ const EditDaycareEnrollmentModal: React.FC<{
             last_deworming: enrollment.last_deworming?.split('T')[0] || '',
             last_flea_remedy: enrollment.last_flea_remedy?.split('T')[0] || '',
             payment_date: enrollment.payment_date?.split('T')[0] || '',
+            pet_birthday: enrollment.pet_birthday?.split('T')[0] || '',
             delivered_items: (enrollment as any).delivered_items || { items: [], other: '' },
             enrollment_date: (enrollment.enrollment_date || '').split('T')[0] || '',
             check_in_date: (enrollment.check_in_date || '').split('T')[0] || '',
@@ -9431,6 +9433,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                 check_out_time: formData.check_out_time || null,
                 attendance_days: formData.attendance_days || [],
                 enrollment_date: formData.enrollment_date || null,
+                pet_birthday: formData.pet_birthday || null,
             };
             (payload as any).extra_services = (() => {
                 const es: any = (formData as any);
@@ -9496,6 +9499,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                         <div><label className="block text-base font-semibold text-gray-700">Nome</label><input type="text" name="pet_name" value={formData.pet_name} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
                         <div><label className="block text-base font-semibold text-gray-700">Raça</label><input type="text" name="pet_breed" value={formData.pet_breed} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
                         <div><label className="block text-base font-semibold text-gray-700">Idade</label><input type="text" name="pet_age" value={formData.pet_age} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
+                        <div><label className="block text-base font-semibold text-gray-700">Data Aniversário</label><input type="date" name="pet_birthday" value={formData.pet_birthday || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
                         <div><label className="block text-base font-semibold text-gray-700">Sexo</label><input type="text" name="pet_sex" value={formData.pet_sex} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
                         {renderRadioGroup('Castrado (a)', 'is_neutered', [{ label: 'Sim', value: true }, { label: 'Não', value: false }])}
                         <div className="md:col-span-2"><label className="block text-base font-semibold text-gray-700">Foto do Pet (URL)</label><input type="url" name="pet_photo_url" value={formData.pet_photo_url || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 bg-gray-50 border rounded-md" /></div>
@@ -11050,7 +11054,7 @@ const DaycareRegistrationForm: React.FC<{
     isAdmin?: boolean;
 }> = ({ setView, onBack, onSuccess, isAdmin = false }) => {
     const [formData, setFormData] = useState<DaycareRegistration>({
-        pet_name: '', pet_breed: '', is_neutered: null, pet_sex: '', pet_age: '', has_sibling_discount: false,
+        pet_name: '', pet_breed: '', is_neutered: null, pet_sex: '', pet_age: '', pet_birthday: '', has_sibling_discount: false,
         tutor_name: '', tutor_rg: '', owner_cpf: '', address: '', contact_phone: '', emergency_contact_name: '', vet_phone: '',
         gets_along_with_others: null, last_vaccine: '', last_deworming: '', last_flea_remedy: '',
         has_allergies: null, allergies_description: '', needs_special_care: null, special_care_description: '',
@@ -11167,6 +11171,7 @@ const DaycareRegistrationForm: React.FC<{
                 total_price: formData.total_price ? parseFloat(String(formData.total_price)) : null,
                 payment_date: formData.payment_date || null,
                 enrollment_date: formData.enrollment_date || new Date().toISOString().split('T')[0],
+                pet_birthday: formData.pet_birthday || null,
             };
 
             console.log('Iniciando insert no Supabase', payload);
@@ -11399,6 +11404,16 @@ const DaycareRegistrationForm: React.FC<{
                                     type="text"
                                     name="pet_age"
                                     value={formData.pet_age}
+                                    onChange={handleInputChange}
+                                    className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-pink-900 uppercase tracking-widest mb-3">Data Aniversário</label>
+                                <input
+                                    type="date"
+                                    name="pet_birthday"
+                                    value={formData.pet_birthday || ''}
                                     onChange={handleInputChange}
                                     className="block w-full px-5 py-4 bg-pink-50/50 border-2 border-pink-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-pink-200 focus:border-pink-400 text-pink-950 font-medium transition-all"
                                 />
@@ -15270,6 +15285,153 @@ const EditHotelRegistrationModal: React.FC<{
     );
 };
 
+const BirthdayPetCard: React.FC<{ 
+    pet: DaycareRegistration; 
+    selectedMonth: number; 
+    months: string[]; 
+}> = ({ pet, selectedMonth, months }) => {
+    const [imgError, setImgError] = React.useState(false);
+    const day = pet.pet_birthday ? parseInt(pet.pet_birthday.split('-')[2], 10) : 0;
+
+    return (
+        <div className="bg-white rounded-3xl p-6 border-2 border-purple-100/60 hover:border-purple-300 shadow-[0_10px_30px_rgba(168,85,247,0.02)] hover:shadow-[0_20px_40px_rgba(168,85,247,0.06)] hover:scale-[1.03] transition-all duration-300 relative overflow-hidden group flex flex-col items-center text-center animate-scaleIn">
+            {/* Detalhes festivos de fundo */}
+            <div className="absolute top-2 right-2 text-xl opacity-20 group-hover:opacity-100 transition-opacity duration-300 select-none">🎈</div>
+            <div className="absolute bottom-2 left-2 text-xl opacity-20 group-hover:opacity-100 transition-opacity duration-300 select-none">🎁</div>
+
+            {/* Foto do Pet */}
+            <div className="relative w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-purple-400 via-pink-400 to-rose-400 shadow-md group-hover:scale-105 transition-all duration-300">
+                {/* Coroa flutuante premium */}
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-2xl drop-shadow-md select-none z-20">👑</span>
+                <div className="w-full h-full rounded-full overflow-hidden bg-purple-50 flex items-center justify-center relative">
+                    {pet.pet_photo_url && !imgError ? (
+                        <img 
+                            src={pet.pet_photo_url} 
+                            alt={pet.pet_name} 
+                            className="w-full h-full object-cover rounded-full"
+                            onError={() => setImgError(true)}
+                        />
+                    ) : (
+                        /* Placeholder com inicial caso não tenha foto ou ocorra erro */
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-tr from-purple-100 to-pink-100 text-purple-700 select-none rounded-full">
+                            <span className="text-3xl font-black">{pet.pet_name.charAt(0).toUpperCase()}</span>
+                            <span className="text-[10px] font-bold tracking-wider mt-0.5">PET</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Nome e Raça */}
+            <h3 className="text-xl font-bold text-gray-800 mt-4 group-hover:text-purple-600 transition-colors truncate w-full px-2">{pet.pet_name}</h3>
+            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 truncate w-full px-4">{pet.pet_breed}</p>
+
+            {/* Data do Aniversário */}
+            <div className="mt-4 px-4 py-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full inline-flex items-center gap-1.5 text-purple-700 font-extrabold text-xs shadow-sm">
+                <span>📅</span>
+                <span>Dia {day} de {months[selectedMonth]}</span>
+            </div>
+        </div>
+    );
+};
+
+const DaycareBirthdaysModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    birthdayPets: DaycareRegistration[];
+    selectedMonth: number;
+    setSelectedMonth: (month: number) => void;
+}> = ({ isOpen, onClose, birthdayPets, selectedMonth, setSelectedMonth }) => {
+    if (!isOpen) return null;
+
+    const months = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    const monthsShort = [
+        'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+        'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+    ];
+
+    return createPortal(
+        <div className="fixed inset-0 bg-white/95 backdrop-blur-xl z-[99999] overflow-y-auto flex flex-col p-4 sm:p-6 animate-fadeIn">
+            {/* Background decorativo */}
+            <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-gradient-to-bl from-purple-200/30 via-pink-100/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-[-10%] left-[-5%] w-[300px] h-[300px] bg-gradient-to-tr from-rose-100/20 via-purple-100/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="relative w-full max-w-7xl mx-auto flex flex-col flex-1 z-10">
+                {/* Cabeçalho */}
+                <div className="flex justify-between items-center border-b border-purple-100 pb-6 mb-6">
+                    <div className="flex items-center gap-3">
+                        <span className="text-3xl sm:text-4xl">🎂</span>
+                        <div>
+                            <h2 className="text-3xl sm:text-4xl font-extrabold text-purple-950" style={{ fontFamily: '"Lobster Two", cursive' }}>
+                                Aniversariantes do Mês
+                            </h2>
+                            <p className="text-xs sm:text-sm text-gray-500 font-semibold uppercase tracking-wider mt-0.5">Gestão de aniversários da creche</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onClose} 
+                        className="p-3 rounded-full bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 hover:text-purple-800 transition-all duration-300 hover:rotate-90 active:scale-95 flex items-center justify-center shadow-sm"
+                        title="Fechar"
+                    >
+                        <CloseIcon />
+                    </button>
+                </div>
+
+                {/* Seletor de Meses */}
+                <div className="w-full mb-8">
+                    <div className="flex items-center gap-2 p-1.5 bg-purple-50/50 backdrop-blur-sm rounded-2xl overflow-x-auto custom-scrollbar-hide justify-start md:justify-center">
+                        {months.map((month, idx) => {
+                            const isSelected = selectedMonth === idx;
+                            return (
+                                <button
+                                    key={month}
+                                    onClick={() => setSelectedMonth(idx)}
+                                    className={`px-4 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-300 ${
+                                        isSelected 
+                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-pink-200/50 scale-105' 
+                                            : 'text-purple-900/60 hover:text-purple-950 hover:bg-purple-100/50'
+                                    }`}
+                                >
+                                    <span className="hidden sm:inline">{month}</span>
+                                    <span className="sm:hidden">{monthsShort[idx]}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Lista de Aniversariantes */}
+                <div className="flex-1 flex flex-col">
+                    {birthdayPets.length === 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center p-12 bg-white/50 backdrop-blur-sm rounded-3xl border-2 border-dashed border-purple-100/80 max-w-2xl mx-auto w-full my-auto shadow-sm">
+                            <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mb-6 text-4xl animate-bounce">
+                                🎉
+                            </div>
+                            <h3 className="text-xl font-bold text-purple-950 mb-2">Nenhum aniversariante em {months[selectedMonth]}</h3>
+                            <p className="text-gray-500 font-semibold text-sm max-w-md">Que tal dar uma olhada nos outros meses para planejar as comemorações e mimos da creche?</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-12 animate-scaleIn">
+                            {birthdayPets.map(pet => (
+                                <BirthdayPetCard 
+                                    key={pet.id} 
+                                    pet={pet} 
+                                    selectedMonth={selectedMonth} 
+                                    months={months} 
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+};
+
 const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: DaycareRegistration) => void; emittingNFeId?: string | null; fiscalNotesMap?: Record<string, string> }> = ({ refreshKey, onFiscalNote, emittingNFeId, fiscalNotesMap }) => {
     const [enrollments, setEnrollments] = useState<DaycareRegistration[]>([]);
     const [petsInDaycareNow, setPetsInDaycareNow] = useState<DaycareRegistration[]>([]);
@@ -15302,6 +15464,8 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
     const [pendentesCrecheCount, setPendentesCrecheCount] = useState(0);
     const [pendentesCrecheData, setPendentesCrecheData] = useState<DaycareRegistration[]>([]);
     const [alertCrecheInfo, setAlertCrecheInfo] = useState<{ title: string; message: string; variant: 'success' | 'error' } | null>(null);
+    const [isBirthdayModalOpen, setIsBirthdayModalOpen] = useState(false);
+    const [selectedBirthdayMonth, setSelectedBirthdayMonth] = useState<number>(() => new Date().getMonth());
 
     useEffect(() => {
         if (isUploadDaycarePhotoModalOpen) {
@@ -15651,6 +15815,31 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
         return { pending, approved };
     }, [enrollments, petsInDaycareNow]);
 
+    const currentMonthIndex = useMemo(() => new Date().getMonth(), []);
+    const currentMonthBirthdayCount = useMemo(() => {
+        return enrollments.filter(e => {
+            if (!e.pet_birthday) return false;
+            const parts = e.pet_birthday.split('-');
+            if (parts.length < 2) return false;
+            const petMonth = parseInt(parts[1], 10) - 1;
+            return petMonth === currentMonthIndex;
+        }).length;
+    }, [enrollments, currentMonthIndex]);
+
+    const birthdayPetsForSelectedMonth = useMemo(() => {
+        return enrollments.filter(e => {
+            if (!e.pet_birthday) return false;
+            const parts = e.pet_birthday.split('-');
+            if (parts.length < 2) return false;
+            const petMonth = parseInt(parts[1], 10) - 1;
+            return petMonth === selectedBirthdayMonth;
+        }).sort((a, b) => {
+            const dayA = parseInt(a.pet_birthday!.split('-')[2] || '0', 10);
+            const dayB = parseInt(b.pet_birthday!.split('-')[2] || '0', 10);
+            return dayA - dayB;
+        });
+    }, [enrollments, selectedBirthdayMonth]);
+
     const openDiary = (enrollment: DaycareRegistration) => {
         setDiaryFor(enrollment);
         try { window.history.pushState({ v: 'daycareDiary', id: enrollment.id }, '', `/admin/daycare/diario/${enrollment.id}`); } catch { }
@@ -15869,6 +16058,15 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
                 isLoading={isCobrancaCrecheLoading}
                 icon={<svg className="w-9 h-9 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
             />
+            {isBirthdayModalOpen && (
+                <DaycareBirthdaysModal
+                    isOpen={isBirthdayModalOpen}
+                    onClose={() => setIsBirthdayModalOpen(false)}
+                    birthdayPets={birthdayPetsForSelectedMonth}
+                    selectedMonth={selectedBirthdayMonth}
+                    setSelectedMonth={setSelectedBirthdayMonth}
+                />
+            )}
 
             <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-6 mb-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-gradient-to-br from-pink-50 to-purple-50 rounded-full blur-2xl opacity-70 pointer-events-none"></div>
@@ -15910,7 +16108,7 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
                 </div>
 
                 {/* Resumo Rápido */}
-                <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6 sm:mt-8 relative z-10">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mt-6 sm:mt-8 relative z-10">
                     <div className="bg-green-50 rounded-xl p-2 sm:p-4 border border-green-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-200 rounded-full flex items-center justify-center shrink-0">
                             <span className="relative flex h-2 w-2 sm:h-3 sm:w-3">
@@ -15939,6 +16137,21 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
                         <div className="min-w-0 flex-1 w-full">
                             <p className="text-[9px] sm:text-xs font-bold text-yellow-700 uppercase tracking-wider truncate">Pendentes</p>
                             <p className="text-lg sm:text-2xl font-black text-yellow-900 truncate">{categorizedEnrollments.pending.length}</p>
+                        </div>
+                    </div>
+                    <div 
+                        onClick={() => {
+                            setSelectedBirthdayMonth(new Date().getMonth());
+                            setIsBirthdayModalOpen(true);
+                        }}
+                        className="bg-purple-50 rounded-xl p-2 sm:p-4 border border-purple-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-200 text-purple-700 rounded-full flex items-center justify-center shrink-0 font-bold text-base sm:text-lg">
+                            🎂
+                        </div>
+                        <div className="min-w-0 flex-1 w-full">
+                            <p className="text-[9px] sm:text-xs font-bold text-purple-700 uppercase tracking-wider truncate">Aniversariantes</p>
+                            <p className="text-lg sm:text-2xl font-black text-purple-900 truncate">{currentMonthBirthdayCount}</p>
                         </div>
                     </div>
                 </div>

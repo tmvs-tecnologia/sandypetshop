@@ -137,6 +137,7 @@ export interface DaycareRegistration {
     pet_sex: string;
     pet_age: string;
     pet_photo_url?: string | null;
+    pet_birthday?: string | null;
     has_sibling_discount: boolean;
     tutor_name: string;
     tutor_rg: string;
