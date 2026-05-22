@@ -11,7 +11,8 @@ import {
     ExclamationTriangleIcon,
     CheckCircleIcon,
     XMarkIcon,
-    PauseIcon
+    PauseIcon,
+    PlayIcon
 } from '@heroicons/react/24/outline';
 import { MonthlyClient } from '../../types';
 import { useServiceValidation } from '../hooks/useServiceValidation';
@@ -235,6 +236,27 @@ const MonthlyClientCard: React.FC<{
             console.error('Failed to pause monthly client:', err);
         } finally {
             setIsPausing(false);
+        }
+    };
+
+    // Estados para o fluxo de confirmação e sucesso ao reativar mensalista
+    const [showReactivateConfirm, setShowReactivateConfirm] = useState(false);
+    const [showReactivateSuccess, setShowReactivateSuccess] = useState(false);
+    const [isReactivating, setIsReactivating] = useState(false);
+
+    const handleReactivate = async () => {
+        setIsReactivating(true);
+        try {
+            const { error } = await supabase.from('monthly_clients')
+                .update({ is_active: true })
+                .eq('id', client.id);
+            if (error) throw error;
+            setShowReactivateConfirm(false);
+            setShowReactivateSuccess(true);
+        } catch (err) {
+            console.error('Failed to reactivate monthly client:', err);
+        } finally {
+            setIsReactivating(false);
         }
     };
 
@@ -576,18 +598,7 @@ const MonthlyClientCard: React.FC<{
                             if (client.is_active) {
                                 setShowPauseConfirm(true);
                             } else {
-                                const reactivate = async () => {
-                                    try {
-                                        const { error } = await supabase.from('monthly_clients')
-                                            .update({ is_active: true })
-                                            .eq('id', client.id);
-                                        if (error) throw error;
-                                        window.location.reload();
-                                    } catch (err) {
-                                        console.error('Failed to reactivate client:', err);
-                                    }
-                                };
-                                reactivate();
+                                setShowReactivateConfirm(true);
                             }
                         }}
                         className={client.is_active ? "px-3 py-1.5 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200 font-medium text-xs transition-all" : "px-3 py-1.5 rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 border border-gray-300 font-medium text-xs transition-all"}
@@ -834,6 +845,163 @@ const MonthlyClientCard: React.FC<{
                         <button
                             onClick={() => {
                                 setShowPauseSuccess(false);
+                                window.location.reload();
+                            }}
+                            className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-green-100 hover:shadow-green-200 active:scale-[0.98] transition-all duration-300 font-outfit"
+                        >
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )}
+
+        {/* Modal de Confirmação de Reativação */}
+        {showReactivateConfirm && createPortal(
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-gray-950/60 backdrop-blur-sm animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+                <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-scaleIn border border-blue-50">
+                    {/* Header com Gradiente */}
+                    <div className="relative h-32 bg-gradient-to-br from-blue-500 to-indigo-400 flex items-center justify-center">
+                        <div className="absolute top-0 right-0 p-4 z-10">
+                            <button 
+                                onClick={() => setShowReactivateConfirm(false)}
+                                className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all backdrop-blur-md"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="bg-white/20 p-4 rounded-full backdrop-blur-xl border border-white/30 shadow-inner">
+                            <PlayIcon className="w-12 h-12 text-white" />
+                        </div>
+                        
+                        {/* Elementos Decorativos */}
+                        <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                        <div className="absolute top-0 -right-4 w-16 h-16 bg-indigo-300/20 rounded-full blur-xl pointer-events-none"></div>
+                    </div>
+
+                    {/* Conteúdo */}
+                    <div className="px-8 pt-8 pb-8 text-center">
+                        <h3 className="text-2xl font-extrabold text-gray-800 tracking-tight mb-2 font-outfit">
+                            Reativar Mensalista?
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                            Você está prestes a reativar o plano mensalista de <strong className="text-gray-700">{client.pet_name}</strong>.
+                        </p>
+
+                        {/* Card de Detalhes */}
+                        <div className="bg-blue-50/40 rounded-3xl p-5 mb-6 border border-blue-100/50 text-left">
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">Tutor</span>
+                                <span className="text-sm font-bold text-gray-700">{client.owner_name}</span>
+                            </div>
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">Pet</span>
+                                <span className="text-sm font-bold text-gray-700">{client.pet_name}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">Frequência</span>
+                                <span className="text-sm font-bold text-gray-700">{getRecurrenceText(client)}</span>
+                            </div>
+                            <div className="h-px bg-blue-100 my-3"></div>
+                            <p className="text-xs text-blue-700 font-medium leading-relaxed">
+                                ℹ️ <strong>Importante:</strong> Ao reativar, os agendamentos recorrentes deste mensalista serão novamente exibidos na agenda do administrador e a disponibilidade do horário será atualizada.
+                            </p>
+                        </div>
+
+                        {/* Ações */}
+                        <div className="flex flex-col gap-2.5">
+                            <button
+                                onClick={handleReactivate}
+                                disabled={isReactivating}
+                                className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-100 hover:shadow-blue-200 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2"
+                            >
+                                {isReactivating ? (
+                                    <>
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Ativando...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <PlayIcon className="w-5 h-5" />
+                                        <span>Sim, Ativar</span>
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setShowReactivateConfirm(false)}
+                                disabled={isReactivating}
+                                className="w-full py-3 text-gray-400 font-bold hover:text-gray-600 transition-colors text-sm"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )}
+
+        {/* Modal de Sucesso Pós-Reativação */}
+        {showReactivateSuccess && createPortal(
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-gray-950/60 backdrop-blur-sm animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+                <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-scaleIn border border-green-50">
+                    {/* Header com Gradiente */}
+                    <div className="relative h-32 bg-gradient-to-br from-green-500 to-emerald-400 flex items-center justify-center">
+                        <div className="absolute top-0 right-0 p-4 z-10">
+                            <button 
+                                onClick={() => {
+                                    setShowReactivateSuccess(false);
+                                    window.location.reload();
+                                }}
+                                className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all backdrop-blur-md"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="bg-white/20 p-4 rounded-full backdrop-blur-xl border border-white/30 shadow-inner">
+                            <CheckCircleIcon className="w-12 h-12 text-white" />
+                        </div>
+                        
+                        {/* Elementos Decorativos */}
+                        <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                        <div className="absolute top-0 -right-4 w-16 h-16 bg-emerald-300/20 rounded-full blur-xl pointer-events-none"></div>
+                    </div>
+
+                    {/* Conteúdo */}
+                    <div className="px-8 pt-8 pb-8 text-center">
+                        <h3 className="text-2xl font-extrabold text-gray-800 tracking-tight mb-2 font-outfit">
+                            Mensalista Reativado!
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                            O plano mensalista de <strong className="text-gray-700">{client.pet_name}</strong> foi reativado com sucesso.
+                        </p>
+
+                        {/* Listagem Informativa de Ações */}
+                        <div className="flex flex-col gap-3.5 mb-8 text-left">
+                            <div className="flex gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-100 hover:bg-green-50/20 hover:border-green-100/50 transition-colors">
+                                <span className="text-lg mt-0.5">▶️</span>
+                                <div>
+                                    <h4 className="text-xs font-black text-gray-800 uppercase tracking-wider mb-0.5">Plano Ativo</h4>
+                                    <p className="text-xs text-gray-500 leading-normal">O status do mensalista foi alterado para ativo no sistema.</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-100 hover:bg-green-50/20 hover:border-green-100/50 transition-colors">
+                                <span className="text-lg mt-0.5">📅</span>
+                                <div>
+                                    <h4 className="text-xs font-black text-gray-800 uppercase tracking-wider mb-0.5">Agendamentos Visíveis</h4>
+                                    <p className="text-xs text-gray-500 leading-normal">Os agendamentos futuros deste pet voltaram a ficar visíveis para o administrador na agenda geral.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Botão de Fechamento */}
+                        <button
+                            onClick={() => {
+                                setShowReactivateSuccess(false);
                                 window.location.reload();
                             }}
                             className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-green-100 hover:shadow-green-200 active:scale-[0.98] transition-all duration-300 font-outfit"
