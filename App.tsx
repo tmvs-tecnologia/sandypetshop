@@ -12114,15 +12114,19 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
         const queryEnd = new Date(endOfDay);
         queryEnd.setHours(queryEnd.getHours() + 4);
 
-        const [{ data: regularData, error: regularError }, { data: petMovelData, error: petMovelError }, { data: banhoTosaData, error: banhoTosaError }] = await Promise.all([
+        const [{ data: regularData, error: regularError }, { data: petMovelData, error: petMovelError }, { data: banhoTosaData, error: banhoTosaError }, { data: inactiveClientsData, error: inactiveClientsError }] = await Promise.all([
             supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
             supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
             supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+            supabase.from('monthly_clients').select('id').eq('is_active', false)
         ]);
 
         if (regularError) { console.error('Error fetching appointments:', regularError); }
         if (petMovelError) { console.error('Error fetching pet_movel_appointments:', petMovelError); }
         if (banhoTosaError) { console.error('Error fetching agendamento_banhotosa:', banhoTosaError); }
+        if (inactiveClientsError) { console.error('Error fetching inactive monthly clients:', inactiveClientsError); }
+
+        const inactiveIds = new Set((inactiveClientsData || []).map((c: any) => c.id));
 
         const regularAppointments: Appointment[] = (regularData || [])
             .map((rec: any) => {
@@ -12164,7 +12168,8 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
                     condominium: rec.condominium || rec.condo || undefined,
                 };
             })
-            .filter(Boolean) as Appointment[];
+            .filter(Boolean)
+            .filter((appt: any) => !appt.monthly_client_id || !inactiveIds.has(appt.monthly_client_id)) as Appointment[];
 
         const mobileAppointments: Appointment[] = (petMovelData || [])
             .map((rec: any) => {
@@ -12196,7 +12201,8 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
                     status: rec.status,
                 };
             })
-            .filter(Boolean) as Appointment[];
+            .filter(Boolean)
+            .filter((appt: any) => !appt.monthly_client_id || !inactiveIds.has(appt.monthly_client_id)) as Appointment[];
 
         const banhoTosaAppointments: Appointment[] = (banhoTosaData || [])
             .map((rec: any) => {
@@ -12225,7 +12231,8 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
                     condominium: rec.condominium || rec.condo || undefined,
                 };
             })
-            .filter(Boolean) as Appointment[];
+            .filter(Boolean)
+            .filter((appt: any) => !appt.monthly_client_id || !inactiveIds.has(appt.monthly_client_id)) as Appointment[];
 
         const allFetched: Appointment[] = [...regularAppointments, ...mobileAppointments, ...banhoTosaAppointments];
 
