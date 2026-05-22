@@ -232,20 +232,25 @@ export const ManageAppointmentPage: React.FC = () => {
 
         const targetTable = type === 'fixed' ? 'agendamento_banhotosa' : 'pet_movel_appointments';
         
-        let query = supabase.from(targetTable).select('appointment_time').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay);
-        
-        const { data, error } = await query;
+        const [bookedRes, inactiveClientsRes] = await Promise.all([
+            supabase.from(targetTable).select('appointment_time, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+            supabase.from('monthly_clients').select('id').eq('is_active', false)
+        ]);
 
-        if (error) {
-            console.error('Erro ao buscar horários:', error);
+        if (bookedRes.error) {
+            console.error('Erro ao buscar horários:', bookedRes.error);
             setBookedHours([]);
             return;
         }
 
-        const hours = (data || []).map(apt => {
-            const d = new Date(apt.appointment_time);
-            return d.getHours();
-        });
+        const inactiveIds = new Set((inactiveClientsRes.data || []).map((c: any) => c.id));
+
+        const hours = (bookedRes.data || [])
+            .filter(apt => !apt.monthly_client_id || !inactiveIds.has(apt.monthly_client_id))
+            .map(apt => {
+                const d = new Date(apt.appointment_time);
+                return d.getHours();
+            });
         
         console.log('Horários ocupados para', date, ':', hours, 'total:', hours.length);
         setBookedHours(hours);

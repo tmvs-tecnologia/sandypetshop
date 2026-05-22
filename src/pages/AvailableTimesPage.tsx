@@ -69,17 +69,21 @@ export const AvailableTimesPage: React.FC = () => {
                 const startOfDay = `${selectedDate}T00:00:00`;
                 const endOfDay = `${selectedDate}T23:59:59`;
 
-                const [bathGroomData, petMobileData, regularData] = await Promise.all([
-                    supabase.from('agendamento_banhotosa').select('appointment_time, status').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
-                    supabase.from('pet_movel_appointments').select('appointment_time, condominium, status').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
-                    supabase.from('appointments').select('appointment_time, condominium, status').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay)
+                const [bathGroomData, petMobileData, regularData, inactiveClientsRes] = await Promise.all([
+                    supabase.from('agendamento_banhotosa').select('appointment_time, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+                    supabase.from('pet_movel_appointments').select('appointment_time, condominium, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+                    supabase.from('appointments').select('appointment_time, condominium, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+                    supabase.from('monthly_clients').select('id').eq('is_active', false)
                 ]);
+
+                const inactiveIds = new Set((inactiveClientsRes.data || []).map((c: any) => c.id));
 
                 const allAppointments = [
                     ...(bathGroomData.data || []).map(a => ({ ...a, source: 'bath' })),
                     ...(petMobileData.data || []).map(a => ({ ...a, source: 'movel' })),
                     ...(regularData.data || []).map(a => ({ ...a, source: 'regular' }))
-                ];
+                ].filter(apt => !apt.monthly_client_id || !inactiveIds.has(apt.monthly_client_id));
+
                 setAppointments(allAppointments);
             } catch (err) {
                 console.error('Error fetching appointments:', err);

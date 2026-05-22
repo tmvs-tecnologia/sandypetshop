@@ -4381,15 +4381,19 @@ const AdminAddAppointmentModal: React.FC<{
                 banhoTosaPromise = supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
             }
 
-            const [regularRes, petMovelRes, banhoTosaRes] = await Promise.all([
+            const [regularRes, petMovelRes, banhoTosaRes, inactiveClientsRes] = await Promise.all([
                 regularPromise || Promise.resolve({ data: [] }),
                 petMovelPromise || Promise.resolve({ data: [] }),
-                banhoTosaPromise || Promise.resolve({ data: [] })
+                banhoTosaPromise || Promise.resolve({ data: [] }),
+                supabase.from('monthly_clients').select('id').eq('is_active', false)
             ]);
 
             if (regularRes.error) { console.error('Error fetching appointments:', regularRes.error); return; }
             if (petMovelRes.error) { console.error('Error fetching pet_movel_appointments:', petMovelRes.error); return; }
             if (banhoTosaRes.error) { console.error('Error fetching agendamento_banhotosa:', banhoTosaRes.error); }
+            if (inactiveClientsRes.error) { console.error('Error fetching inactive monthly clients:', inactiveClientsRes.error); }
+
+            const inactiveIds = new Set((inactiveClientsRes.data || []).map((c: any) => c.id));
 
             const mapToLocal = (data: any[] | null | undefined, tableName: string) => (data || []).map(dbRecord => {
                 let serviceKey = Object.keys(SERVICES).find(key => SERVICES[key as ServiceType].label === dbRecord.service) as ServiceType | undefined;
@@ -4429,6 +4433,7 @@ const AdminAddAppointmentModal: React.FC<{
                     owner_address: dbRecord.owner_address,
                     observation: dbRecord.observation,
                     owner_cpf: dbRecord.owner_cpf,
+                    monthly_client_id: dbRecord.monthly_client_id,
                     table: tableName
                 };
             });
@@ -4437,7 +4442,12 @@ const AdminAddAppointmentModal: React.FC<{
                 ...mapToLocal(regularRes.data, 'appointments'),
                 ...mapToLocal(petMovelRes.data, 'pet_movel_appointments'),
                 ...mapToLocal(banhoTosaRes.data, 'agendamento_banhotosa'),
-            ];
+            ].filter(appt => {
+                if (appt.monthly_client_id && inactiveIds.has(appt.monthly_client_id)) {
+                    return false;
+                }
+                return true;
+            });
 
             setAppointments(allFetched);
         };
@@ -4639,7 +4649,14 @@ const AdminAddAppointmentModal: React.FC<{
                 btP = supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
             }
 
-            const [regR, pmR, btR] = await Promise.all([regP, pmP, btP]);
+            const [regR, pmR, btR, inactiveClientsRes] = await Promise.all([
+                regP,
+                pmP,
+                btP,
+                supabase.from('monthly_clients').select('id').eq('is_active', false)
+            ]);
+
+            const inactiveIds = new Set((inactiveClientsRes.data || []).map((c: any) => c.id));
 
             const allReal = [
                 ...(regR.data || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) })),
@@ -4647,7 +4664,9 @@ const AdminAddAppointmentModal: React.FC<{
                 ...(btR.data || []).map(r => ({ ...r, appointmentTime: new Date(r.appointment_time) }))
             ].filter(appt => {
                 const s = String(appt.status || '').toUpperCase();
-                return s !== 'CANCELADO';
+                if (s === 'CANCELADO') return false;
+                if (appt.monthly_client_id && inactiveIds.has(appt.monthly_client_id)) return false;
+                return true;
             });
 
 
@@ -5975,11 +5994,6 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                         <button onClick={handleOpenAddModal} title="Adicionar Agendamento" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
                             <SafeImage alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" loading="eager" />
                         </button>
-                        <button onClick={onOpenDashboard} title="Estatísticas" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                        </button>
                         <button onClick={onOpenCloseDay} title="Bloquear Dias" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
                             <SafeImage
                                 alt="Bloquear Dias"
@@ -6491,11 +6505,6 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
                     <div className="flex gap-2 flex-wrap justify-center">
                         <button onClick={handleOpenAddModal} title="Adicionar Agendamento" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
                             <SafeImage alt="Adicionar Agendamento" className="h-6 w-6" src="https://i.imgur.com/ZimMFxY.png" loading="eager" />
-                        </button>
-                        <button onClick={onOpenDashboard} title="Estatísticas" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
                         </button>
                         <button onClick={onOpenCloseDay} title="Bloquear Dias" className="flex-1 sm:flex-shrink-0 inline-flex items-center justify-center bg-pink-600 text-white font-semibold h-11 px-5 text-base rounded-lg hover:bg-pink-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none">
                             <SafeImage alt="Bloquear Dias" className="h-6 w-6" src="https://i.imgur.com/BaVdolX.png" loading="eager" />
@@ -8193,15 +8202,7 @@ const MonthlyClientsView: React.FC<{
                             </div>
                         </button>
 
-                        <button
-                            onClick={onOpenDashboard}
-                            className="inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-gray-200"
-                            title="Estatísticas"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                        </button>
+
 
                         <button
                             onClick={handleCobrancaMensalistas}
@@ -14513,17 +14514,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                             </svg>
                             <span>Nova Reserva</span>
                         </button>
-                        {setShowHotelStatistics && (
-                            <button
-                                onClick={() => setShowHotelStatistics(true)}
-                                className="inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-gray-200"
-                                title="Estatísticas"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                                </svg>
-                            </button>
-                        )}
+
                     </div>
                 </div>
 
@@ -16087,13 +16078,7 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
                             <UserPlusIcon className="w-5 h-5" />
                             <span>Nova Matrícula</span>
                         </button>
-                        <button
-                            onClick={() => setShowLocalStats(true)}
-                            className="inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-gray-200"
-                            title="Estatísticas"
-                        >
-                            <ChartBarIcon className="w-5 h-5" />
-                        </button>
+
 
                         <button
                             onClick={handleCobrancaCreche}
@@ -17053,12 +17038,26 @@ const AdminDashboard: React.FC<{
                     ...normalize(filteredC, 'agendamento_banhotosa'),
                 ].sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
 
+                const { data: inactiveClients } = await supabase
+                    .from('monthly_clients')
+                    .select('id')
+                    .eq('is_active', false);
+                const inactiveIds = new Set((inactiveClients || []).map((c: any) => c.id));
+                const nowTime = new Date().getTime();
+
+                const filteredCombined = combined.filter(app => {
+                    if (app.monthly_client_id && inactiveIds.has(app.monthly_client_id)) {
+                        return new Date(app.appointment_time).getTime() < nowTime;
+                    }
+                    return true;
+                });
+
                 setAppointments(prev => {
                     // Merge: use fetched data as the base, but preserve any appointments
                     // in current state that are NOT yet in the DB result (e.g. just inserted)
-                    const fetchedIds = new Set(combined.map(a => a.id));
+                    const fetchedIds = new Set(filteredCombined.map(a => a.id));
                     const localOnly = prev.filter(a => !fetchedIds.has(a.id));
-                    return [...combined, ...localOnly].sort((a, b) =>
+                    return [...filteredCombined, ...localOnly].sort((a, b) =>
                         new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime()
                     );
                 });
@@ -17948,7 +17947,21 @@ const App: React.FC<AppProps> = ({ prefillService, prefillDate, prefillTime }) =
                     ...normalize(banhoTosaAppointments, 'agendamento_banhotosa'),
                 ].sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
 
-                if (!cancelled) setAppointments(combined);
+                const { data: inactiveClients } = await supabase
+                    .from('monthly_clients')
+                    .select('id')
+                    .eq('is_active', false);
+                const inactiveIds = new Set((inactiveClients || []).map((c: any) => c.id));
+                const nowTime = new Date().getTime();
+
+                const filteredCombined = combined.filter(app => {
+                    if (app.monthly_client_id && inactiveIds.has(app.monthly_client_id)) {
+                        return new Date(app.appointment_time).getTime() < nowTime;
+                    }
+                    return true;
+                });
+
+                if (!cancelled) setAppointments(filteredCombined);
             } catch (err) {
                 console.warn('Falha ao carregar agendamentos:', err);
             }

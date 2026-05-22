@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
     CalendarIcon,
     ClockIcon,
@@ -6,7 +7,11 @@ import {
     PhoneIcon,
     SparklesIcon,
     DocumentTextIcon,
-    ArrowTopRightOnSquareIcon
+    ArrowTopRightOnSquareIcon,
+    ExclamationTriangleIcon,
+    CheckCircleIcon,
+    XMarkIcon,
+    PauseIcon
 } from '@heroicons/react/24/outline';
 import { MonthlyClient } from '../../types';
 import { useServiceValidation } from '../hooks/useServiceValidation';
@@ -212,7 +217,33 @@ const MonthlyClientCard: React.FC<{
     const [upcomingAppointments, setUpcomingAppointments] = useState<{date: string, status: string, isPast: boolean}[]>([]);
     const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
 
+    // Estados para o fluxo de confirmação e sucesso ao pausar mensalista
+    const [showPauseConfirm, setShowPauseConfirm] = useState(false);
+    const [showPauseSuccess, setShowPauseSuccess] = useState(false);
+    const [isPausing, setIsPausing] = useState(false);
+
+    const handlePause = async () => {
+        setIsPausing(true);
+        try {
+            const { error } = await supabase.from('monthly_clients')
+                .update({ is_active: false })
+                .eq('id', client.id);
+            if (error) throw error;
+            setShowPauseConfirm(false);
+            setShowPauseSuccess(true);
+        } catch (err) {
+            console.error('Failed to pause monthly client:', err);
+        } finally {
+            setIsPausing(false);
+        }
+    };
+
     useEffect(() => {
+        if (!client.is_active) {
+            setUpcomingAppointments([]);
+            setIsLoadingAppointments(false);
+            return;
+        }
         let isMounted = true;
         const fetchAppointments = async () => {
             setIsLoadingAppointments(true);
@@ -328,10 +359,11 @@ const MonthlyClientCard: React.FC<{
     };
 
     return (
-        <div
-            className="group relative bg-white rounded-3xl shadow-sm hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 overflow-hidden flex flex-col h-full font-jakarta"
-            onClick={() => onClick && onClick(client)}
-        >
+        <>
+            <div
+                className="group relative bg-white rounded-3xl shadow-sm hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 overflow-hidden flex flex-col h-full font-jakarta"
+                onClick={() => onClick && onClick(client)}
+            >
             {/* --- Status Bar & Badges --- */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-400 to-purple-500" />
 
@@ -477,7 +509,17 @@ const MonthlyClientCard: React.FC<{
                         Próximos Agendamentos
                     </h4>
                     <div className="overflow-y-auto pr-1 custom-scrollbar flex-1 space-y-1.5 scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
-                        {isLoadingAppointments ? (
+                        {!client.is_active ? (
+                            <div className="flex flex-col items-center justify-center h-full text-center p-3">
+                                <span className="text-2xl mb-1">⏸️</span>
+                                <p className="text-[11px] font-bold text-amber-600 leading-normal">
+                                    Mensalista Pausado
+                                </p>
+                                <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">
+                                    Os agendamentos futuros estão ocultados e o horário está liberado na grade de reservas.
+                                </p>
+                            </div>
+                        ) : isLoadingAppointments ? (
                             <div className="flex items-center justify-center h-full text-xs text-pink-400 font-medium py-4">Buscando agendamentos reais...</div>
                         ) : upcomingAppointments.length > 0 ? (
                             upcomingAppointments.map((app, idx) => {
@@ -531,22 +573,24 @@ const MonthlyClientCard: React.FC<{
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            // Toggle active status
-                            const toggleActive = async () => {
-                                try {
-                                    const { error } = await supabase.from('monthly_clients')
-                                        .update({ is_active: !client.is_active })
-                                        .eq('id', client.id);
-                                    if (error) throw error;
-                                    // Reload to reflect changes
-                                    window.location.reload();
-                                } catch (err) {
-                                    console.error('Failed to toggle active status:', err);
-                                }
-                            };
-                            toggleActive();
+                            if (client.is_active) {
+                                setShowPauseConfirm(true);
+                            } else {
+                                const reactivate = async () => {
+                                    try {
+                                        const { error } = await supabase.from('monthly_clients')
+                                            .update({ is_active: true })
+                                            .eq('id', client.id);
+                                        if (error) throw error;
+                                        window.location.reload();
+                                    } catch (err) {
+                                        console.error('Failed to reactivate client:', err);
+                                    }
+                                };
+                                reactivate();
+                            }
                         }}
-                        className={client.is_active ? "px-3 py-1.5 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200" : "px-3 py-1.5 rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 border border-gray-300"}
+                        className={client.is_active ? "px-3 py-1.5 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200 font-medium text-xs transition-all" : "px-3 py-1.5 rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 border border-gray-300 font-medium text-xs transition-all"}
                         title={client.is_active ? "Pausar cliente" : "Reativar cliente"}
                     >
                         {client.is_active ? "⏸ Pausar" : "▶ Ativar"}
@@ -637,7 +681,172 @@ const MonthlyClientCard: React.FC<{
                 </div>
             </div>
         </div>
-    );
+
+        {/* Modal de Confirmação da Pausa */}
+        {showPauseConfirm && createPortal(
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-gray-950/60 backdrop-blur-sm animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+                <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-scaleIn border border-yellow-50">
+                    {/* Header com Gradiente */}
+                    <div className="relative h-32 bg-gradient-to-br from-yellow-500 to-amber-400 flex items-center justify-center">
+                        <div className="absolute top-0 right-0 p-4 z-10">
+                            <button 
+                                onClick={() => setShowPauseConfirm(false)}
+                                className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all backdrop-blur-md"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="bg-white/20 p-4 rounded-full backdrop-blur-xl border border-white/30 shadow-inner">
+                            <ExclamationTriangleIcon className="w-12 h-12 text-white" />
+                        </div>
+                        
+                        {/* Elementos Decorativos */}
+                        <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                        <div className="absolute top-0 -right-4 w-16 h-16 bg-amber-300/20 rounded-full blur-xl pointer-events-none"></div>
+                    </div>
+
+                    {/* Conteúdo */}
+                    <div className="px-8 pt-8 pb-8 text-center">
+                        <h3 className="text-2xl font-extrabold text-gray-800 tracking-tight mb-2 font-outfit">
+                            Confirmar Pausa do Plano?
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                            Você está prestes a pausar temporariamente o plano mensalista de <strong className="text-gray-700">{client.pet_name}</strong>.
+                        </p>
+
+                        {/* Card de Detalhes */}
+                        <div className="bg-yellow-50/40 rounded-3xl p-5 mb-6 border border-yellow-100/50 text-left">
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">Tutor</span>
+                                <span className="text-sm font-bold text-gray-700">{client.owner_name}</span>
+                            </div>
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">Pet</span>
+                                <span className="text-sm font-bold text-gray-700">{client.pet_name}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">Frequência</span>
+                                <span className="text-sm font-bold text-gray-700">{getRecurrenceText(client)}</span>
+                            </div>
+                            <div className="h-px bg-yellow-100 my-3"></div>
+                            <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                                ⚠️ <strong>Importante:</strong> Ao pausar, os agendamentos na grade serão ocultados e os horários serão liberados para novos atendimentos.
+                            </p>
+                        </div>
+
+                        {/* Ações */}
+                        <div className="flex flex-col gap-2.5">
+                            <button
+                                onClick={handlePause}
+                                disabled={isPausing}
+                                className="w-full py-3.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-bold rounded-2xl shadow-lg shadow-yellow-100 hover:shadow-yellow-200 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2"
+                            >
+                                {isPausing ? (
+                                    <>
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Pausando...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <PauseIcon className="w-5 h-5" />
+                                        <span>Sim, Pausar</span>
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setShowPauseConfirm(false)}
+                                disabled={isPausing}
+                                className="w-full py-3 text-gray-400 font-bold hover:text-gray-600 transition-colors text-sm"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )}
+
+        {/* Modal de Sucesso Pós-Pausa */}
+        {showPauseSuccess && createPortal(
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-gray-950/60 backdrop-blur-sm animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+                <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-scaleIn border border-green-50">
+                    {/* Header com Gradiente */}
+                    <div className="relative h-32 bg-gradient-to-br from-green-500 to-emerald-400 flex items-center justify-center">
+                        <div className="absolute top-0 right-0 p-4 z-10">
+                            <button 
+                                onClick={() => {
+                                    setShowPauseSuccess(false);
+                                    window.location.reload();
+                                }}
+                                className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all backdrop-blur-md"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="bg-white/20 p-4 rounded-full backdrop-blur-xl border border-white/30 shadow-inner">
+                            <CheckCircleIcon className="w-12 h-12 text-white" />
+                        </div>
+                        
+                        {/* Elementos Decorativos */}
+                        <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                        <div className="absolute top-0 -right-4 w-16 h-16 bg-emerald-300/20 rounded-full blur-xl pointer-events-none"></div>
+                    </div>
+
+                    {/* Conteúdo */}
+                    <div className="px-8 pt-8 pb-8 text-center">
+                        <h3 className="text-2xl font-extrabold text-gray-800 tracking-tight mb-2 font-outfit">
+                            Mensalista Pausado!
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                            O plano mensalista de <strong className="text-gray-700">{client.pet_name}</strong> foi atualizado e as seguintes alterações foram realizadas com sucesso:
+                        </p>
+
+                        {/* Listagem Informativa de Ações */}
+                        <div className="flex flex-col gap-3.5 mb-8 text-left">
+                            <div className="flex gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-100 hover:bg-green-50/20 hover:border-green-100/50 transition-colors">
+                                <span className="text-lg mt-0.5">⏸️</span>
+                                <div>
+                                    <h4 className="text-xs font-black text-gray-800 uppercase tracking-wider mb-0.5">Plano Pausado</h4>
+                                    <p className="text-xs text-gray-500 leading-normal">O status do mensalista foi alterado para inativo no sistema.</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-100 hover:bg-green-50/20 hover:border-green-100/50 transition-colors">
+                                <span className="text-lg mt-0.5">📅</span>
+                                <div>
+                                    <h4 className="text-xs font-black text-gray-800 uppercase tracking-wider mb-0.5">Agendamentos Ocultados</h4>
+                                    <p className="text-xs text-gray-500 leading-normal">Todos os agendamentos recorrentes deste pet foram ocultados do calendário.</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-100 hover:bg-green-50/20 hover:border-green-100/50 transition-colors">
+                                <span className="text-lg mt-0.5">🔓</span>
+                                <div>
+                                    <h4 className="text-xs font-black text-gray-800 uppercase tracking-wider mb-0.5">Horário Liberado</h4>
+                                    <p className="text-xs text-gray-500 leading-normal">Os horários anteriormente reservados na grade estão livres para novas reservas de outros clientes.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Botão de Fechamento */}
+                        <button
+                            onClick={() => {
+                                setShowPauseSuccess(false);
+                                window.location.reload();
+                            }}
+                            className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-green-100 hover:shadow-green-200 active:scale-[0.98] transition-all duration-300 font-outfit"
+                        >
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )}
+    </>
+);
 };
 
 export default MonthlyClientCard;
