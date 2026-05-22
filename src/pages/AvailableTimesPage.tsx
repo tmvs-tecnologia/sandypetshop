@@ -70,7 +70,7 @@ export const AvailableTimesPage: React.FC = () => {
                 const endOfDay = `${selectedDate}T23:59:59`;
 
                 const [bathGroomData, petMobileData, regularData, inactiveClientsRes] = await Promise.all([
-                    supabase.from('agendamento_banhotosa').select('appointment_time, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+                    supabase.from('agendamento_banhotosa').select('appointment_time, condominium, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
                     supabase.from('pet_movel_appointments').select('appointment_time, condominium, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
                     supabase.from('appointments').select('appointment_time, condominium, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
                     supabase.from('monthly_clients').select('id').eq('is_active', false)

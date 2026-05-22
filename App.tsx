@@ -4363,28 +4363,11 @@ const AdminAddAppointmentModal: React.FC<{
             const queryEnd = new Date(endOfDay);
             queryEnd.setHours(queryEnd.getHours() + 4); // Buffer
 
-            // Se for Banho & Tosa (Loja), buscamos apenas na tabela agendamento_banhotosa
-            // Se for Pet Móvel, buscamos apenas na tabela pet_movel_appointments
-            // Caso contrário (Creche/Hotel/Main), buscamos em todas (ou mantemos o padrão anterior)
-            
-            let regularPromise: any = null;
-            let petMovelPromise: any = null;
-            let banhoTosaPromise: any = null;
-
-            if (serviceStepView === 'bath_groom') {
-                banhoTosaPromise = supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
-            } else if (serviceStepView === 'pet_movel') {
-                petMovelPromise = supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
-            } else {
-                regularPromise = supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
-                petMovelPromise = supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
-                banhoTosaPromise = supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
-            }
-
+            // Buscamos sempre todas as três tabelas em paralelo para garantir consistência total de disponibilidade
             const [regularRes, petMovelRes, banhoTosaRes, inactiveClientsRes] = await Promise.all([
-                regularPromise || Promise.resolve({ data: [] }),
-                petMovelPromise || Promise.resolve({ data: [] }),
-                banhoTosaPromise || Promise.resolve({ data: [] }),
+                supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+                supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
                 supabase.from('monthly_clients').select('id').eq('is_active', false)
             ]);
 
@@ -4434,6 +4417,7 @@ const AdminAddAppointmentModal: React.FC<{
                     observation: dbRecord.observation,
                     owner_cpf: dbRecord.owner_cpf,
                     monthly_client_id: dbRecord.monthly_client_id,
+                    condominium: dbRecord.condominium || dbRecord.condo,
                     table: tableName
                 };
             });
@@ -4632,27 +4616,11 @@ const AdminAddAppointmentModal: React.FC<{
             const queryStart = new Date(startOfDay); queryStart.setHours(queryStart.getHours() - 4);
             const queryEnd = new Date(endOfDay); queryEnd.setHours(queryEnd.getHours() + 4);
 
-            // Verificação seletiva: se for Banho & Tosa da Loja, valida apenas agendamento_banhotosa
-            // Se for Pet Móvel, valida apenas pet_movel_appointments
-            
-            let regP: any = Promise.resolve({ data: [] });
-            let pmP: any = Promise.resolve({ data: [] });
-            let btP: any = Promise.resolve({ data: [] });
-
-            if (serviceStepView === 'bath_groom') {
-                btP = supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
-            } else if (serviceStepView === 'pet_movel') {
-                pmP = supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
-            } else {
-                regP = supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
-                pmP = supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
-                btP = supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString());
-            }
-
+            // Verificação de capacidade de slots unificada: sempre busca em todas as três tabelas em paralelo para evitar furos de concorrência
             const [regR, pmR, btR, inactiveClientsRes] = await Promise.all([
-                regP,
-                pmP,
-                btP,
+                supabase.from('appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
+                supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', queryStart.toISOString()).lte('appointment_time', queryEnd.toISOString()),
                 supabase.from('monthly_clients').select('id').eq('is_active', false)
             ]);
 
