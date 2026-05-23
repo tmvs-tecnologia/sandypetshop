@@ -4,7 +4,7 @@ import './FinancialDashboardView.css';
 import {
   TrendingUp,
   TrendingDown,
-  
+
   Calendar,
   Clock,
   Award,
@@ -1152,7 +1152,7 @@ const FinancialDashboardView: React.FC = () => {
       approvedHotelPets,
       banhoTosaMesDetalhes,
       petMovelMesDetalhes,
-        crecheMesDetalhes,
+      crecheMesDetalhes,
       chart: {
         banhotosa: chartBanhoTosa,
         petmovel: chartPetMovel,
@@ -1933,7 +1933,7 @@ const FinancialDashboardView: React.FC = () => {
 
     return (
       <div className="report-container bg-white/80 p-8 rounded-3xl border border-pink-100/50 shadow-md space-y-8 animate-fadeIn text-gray-800">
-        
+
         {/* CABEÇALHO DO RELATÓRIO (EXCLUSIVO PARA TELA E IMPRESSÃO) */}
         <div className="report-header flex flex-col sm:flex-row items-center justify-between border-b-2 border-pink-100 pb-6 gap-4">
           <div className="flex items-center gap-3 text-center sm:text-left">
@@ -1945,7 +1945,7 @@ const FinancialDashboardView: React.FC = () => {
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Relatório Financeiro Gerencial</p>
             </div>
           </div>
-          
+
           <div className="text-center sm:text-right space-y-1">
             <div className="px-4 py-1.5 bg-pink-50 text-pink-600 rounded-full text-xs font-black uppercase tracking-wider inline-block">
               Período: {months[selectedMonth]} de {selectedYear}
@@ -2011,56 +2011,56 @@ const FinancialDashboardView: React.FC = () => {
                   <stop offset="100%" stopColor="#E11D48" />
                 </linearGradient>
               </defs>
-              
+
               <line x1="50" y1="20" x2="450" y2="20" stroke="#F1F5F9" strokeWidth="1" strokeDasharray="4" />
               <line x1="50" y1="100" x2="450" y2="100" stroke="#F1F5F9" strokeWidth="1" strokeDasharray="4" />
               <line x1="50" y1="180" x2="450" y2="180" stroke="#E2E8F0" strokeWidth="1.5" />
-              
-              <rect 
-                x="130" 
-                y={180 - entradasHeight} 
-                width="70" 
-                height={entradasHeight} 
-                rx="10" 
-                fill="url(#entradasGrad)" 
+
+              <rect
+                x="130"
+                y={180 - entradasHeight}
+                width="70"
+                height={entradasHeight}
+                rx="10"
+                fill="url(#entradasGrad)"
               />
-              <text 
-                x="165" 
-                y={180 - entradasHeight - 10} 
-                textAnchor="middle" 
+              <text
+                x="165"
+                y={180 - entradasHeight - 10}
+                textAnchor="middle"
                 className="text-xs font-black fill-emerald-600"
               >
                 R$ {totalEntradas.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </text>
-              <text 
-                x="165" 
-                y="205" 
-                textAnchor="middle" 
+              <text
+                x="165"
+                y="205"
+                textAnchor="middle"
                 className="text-[10px] font-black fill-gray-500 uppercase tracking-widest"
               >
                 Entradas
               </text>
-              
-              <rect 
-                x="300" 
-                y={180 - saidasHeight} 
-                width="70" 
-                height={saidasHeight} 
-                rx="10" 
-                fill="url(#saidasGrad)" 
+
+              <rect
+                x="300"
+                y={180 - saidasHeight}
+                width="70"
+                height={saidasHeight}
+                rx="10"
+                fill="url(#saidasGrad)"
               />
-              <text 
-                x="335" 
-                y={180 - saidasHeight - 10} 
-                textAnchor="middle" 
+              <text
+                x="335"
+                y={180 - saidasHeight - 10}
+                textAnchor="middle"
                 className="text-xs font-black fill-rose-600"
               >
                 R$ {totalSaidas.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </text>
-              <text 
-                x="335" 
-                y="205" 
-                textAnchor="middle" 
+              <text
+                x="335"
+                y="205"
+                textAnchor="middle"
                 className="text-[10px] font-black fill-gray-500 uppercase tracking-widest"
               >
                 Saídas
@@ -2074,9 +2074,9 @@ const FinancialDashboardView: React.FC = () => {
           <h4 className="text-sm font-black text-pink-600 uppercase tracking-widest border-b border-pink-100 pb-2">
             1. Detalhamento de Entradas (Faturamento)
           </h4>
-          
+
           <div className="grid grid-cols-1 gap-6">
-            
+
             {/* SERVIÇO: BANHO E TOSA FIXO */}
             <div className="bg-gray-50/20 p-5 rounded-2xl border border-gray-100">
               <div className="flex justify-between items-center mb-3">
@@ -2088,7 +2088,7 @@ const FinancialDashboardView: React.FC = () => {
                   Total: R$ {totalEntradasBanhoTosa.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              
+
               {entradasBanhoTosa.length === 0 ? (
                 <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum serviço de Banho & Tosa Fixo realizado no período.</p>
               ) : (
@@ -2128,7 +2128,7 @@ const FinancialDashboardView: React.FC = () => {
                   Total: R$ {totalEntradasPetMovel.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              
+
               {entradasPetMovel.length === 0 ? (
                 <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum serviço de Pet Móvel realizado no período.</p>
               ) : (
@@ -2168,7 +2168,7 @@ const FinancialDashboardView: React.FC = () => {
                   Total: R$ {totalEntradasCreche.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              
+
               {entradasCreche.length === 0 ? (
                 <p className="text-xs text-gray-400 font-bold italic py-2">Nenhuma matrícula de creche ativa no período.</p>
               ) : (
@@ -2205,9 +2205,9 @@ const FinancialDashboardView: React.FC = () => {
           <h4 className="text-sm font-black text-rose-600 uppercase tracking-widest border-b border-rose-100 pb-2">
             2. Detalhamento de Saídas (Despesas)
           </h4>
-          
+
           <div className="grid grid-cols-1 gap-6">
-            
+
             {/* SAÍDAS: BANHO E TOSA */}
             <div className="bg-gray-50/20 p-5 rounded-2xl border border-gray-100">
               <div className="flex justify-between items-center mb-3">
@@ -2219,7 +2219,7 @@ const FinancialDashboardView: React.FC = () => {
                   Total: R$ {totalSaidasBanhoTosa.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              
+
               {saidasBanhoTosa.length === 0 ? (
                 <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum gasto registrado para Banho & Tosa no período.</p>
               ) : (
@@ -2238,9 +2238,8 @@ const FinancialDashboardView: React.FC = () => {
                         <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                           <td className="py-2 font-black text-gray-800">{item.nome_gasto}</td>
                           <td className="py-2">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                              item.categoria === 'fixo' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-600 border border-amber-100'
-                            }`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${item.categoria === 'fixo' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                              }`}>
                               {item.categoria === 'fixo' ? 'Fixo' : 'Variável'}
                             </span>
                           </td>
@@ -2265,7 +2264,7 @@ const FinancialDashboardView: React.FC = () => {
                   Total: R$ {totalSaidasPetMovel.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              
+
               {saidasPetMovel.length === 0 ? (
                 <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum gasto registrado para Pet Móvel no período.</p>
               ) : (
@@ -2284,9 +2283,8 @@ const FinancialDashboardView: React.FC = () => {
                         <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                           <td className="py-2 font-black text-gray-800">{item.nome_gasto}</td>
                           <td className="py-2">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                              item.categoria === 'fixo' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-600 border border-amber-100'
-                            }`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${item.categoria === 'fixo' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                              }`}>
                               {item.categoria === 'fixo' ? 'Fixo' : 'Variável'}
                             </span>
                           </td>
@@ -2311,7 +2309,7 @@ const FinancialDashboardView: React.FC = () => {
                   Total: R$ {totalSaidasCreche.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              
+
               {saidasCreche.length === 0 ? (
                 <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum gasto registrado para Creche no período.</p>
               ) : (
@@ -2330,9 +2328,8 @@ const FinancialDashboardView: React.FC = () => {
                         <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                           <td className="py-2 font-black text-gray-800">{item.nome_gasto}</td>
                           <td className="py-2">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                              item.categoria === 'fixo' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-600 border border-amber-100'
-                            }`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${item.categoria === 'fixo' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                              }`}>
                               {item.categoria === 'fixo' ? 'Fixo' : 'Variável'}
                             </span>
                           </td>
@@ -2443,8 +2440,8 @@ const FinancialDashboardView: React.FC = () => {
         <button
           onClick={() => setActiveSubTab('overview')}
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${activeSubTab === 'overview'
-              ? 'bg-pink-500 text-white shadow-md'
-              : 'text-gray-600 hover:text-pink-600'
+            ? 'bg-pink-500 text-white shadow-md'
+            : 'text-gray-600 hover:text-pink-600'
             }`}
         >
           <BarChart3 className="w-4 h-4" />
@@ -2453,8 +2450,8 @@ const FinancialDashboardView: React.FC = () => {
         <button
           onClick={() => setActiveSubTab('expenses')}
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${activeSubTab === 'expenses'
-              ? 'bg-pink-500 text-white shadow-md'
-              : 'text-gray-600 hover:text-pink-600'
+            ? 'bg-pink-500 text-white shadow-md'
+            : 'text-gray-600 hover:text-pink-600'
             }`}
         >
           <Layers className="w-4 h-4" />
@@ -2463,8 +2460,8 @@ const FinancialDashboardView: React.FC = () => {
         <button
           onClick={() => setActiveSubTab('report')}
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${activeSubTab === 'report'
-              ? 'bg-pink-500 text-white shadow-md'
-              : 'text-gray-600 hover:text-pink-600'
+            ? 'bg-pink-500 text-white shadow-md'
+            : 'text-gray-600 hover:text-pink-600'
             }`}
         >
           <PieChart className="w-4 h-4" />
@@ -2882,8 +2879,8 @@ const FinancialDashboardView: React.FC = () => {
                 <span className="text-[10px] font-bold text-gray-400 block mt-2">Custo operacional mensal</span>
               </div>
 
-{/* Fixos */}
-               <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+              {/* Fixos */}
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
                 <div className="absolute -top-3 -right-3 w-12 h-12 bg-pink-50 rounded-full flex items-center justify-center"><img src="https://cdn-icons-png.flaticon.com/512/16090/16090543.png" alt="Gastos Fixos" className="w-7 h-7 object-contain" /></div>
                 <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Gastos Fixos</span>
@@ -2892,8 +2889,8 @@ const FinancialDashboardView: React.FC = () => {
                 <span className="text-[10px] font-bold text-pink-600 block mt-2">Estáveis e estruturais</span>
               </div>
 
-{/* Variáveis */}
-               <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+              {/* Variáveis */}
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
                 <div className="absolute -top-3 -right-3 w-12 h-12 bg-cyan-50 rounded-full flex items-center justify-center"><img src="https://cdn-icons-png.flaticon.com/512/15548/15548902.png" alt="Gastos Variáveis" className="w-7 h-7 object-contain" /></div>
                 <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Gastos Variáveis</span>
@@ -2902,8 +2899,8 @@ const FinancialDashboardView: React.FC = () => {
                 <span className="text-[10px] font-bold text-cyan-600 block mt-2">Insumos e consumo</span>
               </div>
 
-{/* Maior Gasto */}
-               <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+              {/* Maior Gasto */}
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
                 <div className="absolute -top-3 -right-3 w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center"><img src="https://cdn-icons-png.flaticon.com/512/6778/6778921.png" alt="Maior Gasto" className="w-7 h-7 object-contain" /></div>
                 <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Maior Gasto</span>
@@ -2912,8 +2909,8 @@ const FinancialDashboardView: React.FC = () => {
                 <span className="text-[10px] font-bold text-gray-400 block mt-2">R$ {expensesMetrics.maiorCategoria.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
               </div>
 
-{/* Saldo Líquido e Margem de Lucro */}
-               <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
+              {/* Saldo Líquido e Margem de Lucro */}
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center relative group hover:shadow-lg transition-shadow">
                 <div className="absolute -top-3 -right-3 w-12 h-12 bg-green-50 rounded-full flex items-center justify-center"><img src="https://cdn-icons-png.flaticon.com/512/584/584026.png" alt="Saldo Líquido" className="w-7 h-7 object-contain" /></div>
                 <div className="flex flex-col items-center w-full">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Saldo Líquido</span>
@@ -2955,8 +2952,8 @@ const FinancialDashboardView: React.FC = () => {
               <button
                 onClick={() => setSelectedServiceFilter('all')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedServiceFilter === 'all'
-                    ? 'bg-pink-500 text-white shadow-sm'
-                    : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
+                  ? 'bg-pink-500 text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
                   }`}
               >
                 Todos
@@ -2964,8 +2961,8 @@ const FinancialDashboardView: React.FC = () => {
               <button
                 onClick={() => setSelectedServiceFilter('petmovel')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedServiceFilter === 'petmovel'
-                    ? 'bg-pink-500 text-white shadow-sm'
-                    : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
+                  ? 'bg-pink-500 text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
                   }`}
               >
                 <img src="https://cdn-icons-png.flaticon.com/512/10754/10754045.png" alt="Pet Móvel" className="w-4 h-4 object-contain inline-block mr-1" /> Pet Móvel
@@ -2973,8 +2970,8 @@ const FinancialDashboardView: React.FC = () => {
               <button
                 onClick={() => setSelectedServiceFilter('creche')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedServiceFilter === 'creche'
-                    ? 'bg-pink-500 text-white shadow-sm'
-                    : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
+                  ? 'bg-pink-500 text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
                   }`}
               >
                 <img src="https://cdn-icons-png.flaticon.com/512/11201/11201086.png" alt="Creche" className="w-4 h-4 object-contain inline-block mr-1" /> Creche
@@ -2982,8 +2979,8 @@ const FinancialDashboardView: React.FC = () => {
               <button
                 onClick={() => setSelectedServiceFilter('banhotosa')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedServiceFilter === 'banhotosa'
-                    ? 'bg-pink-500 text-white shadow-sm'
-                    : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
+                  ? 'bg-pink-500 text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
                   }`}
               >
                 <img src="https://cdn-icons-png.flaticon.com/512/14969/14969909.png" alt="Banho &amp; Tosa" className="w-4 h-4 object-contain inline-block mr-1" /> Banho &amp; Tosa
@@ -3049,8 +3046,8 @@ const FinancialDashboardView: React.FC = () => {
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
                                   className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
-                                      ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
-                                      : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
+                                    ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
+                                    : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
                                     }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
@@ -3099,8 +3096,8 @@ const FinancialDashboardView: React.FC = () => {
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
                                   className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
-                                      ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
-                                      : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
+                                    ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
+                                    : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
                                     }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
@@ -3179,8 +3176,8 @@ const FinancialDashboardView: React.FC = () => {
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
                                   className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
-                                      ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
-                                      : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
+                                    ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
+                                    : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
                                     }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
@@ -3229,8 +3226,8 @@ const FinancialDashboardView: React.FC = () => {
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
                                   className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
-                                      ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
-                                      : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
+                                    ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
+                                    : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
                                     }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
@@ -3309,8 +3306,8 @@ const FinancialDashboardView: React.FC = () => {
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
                                   className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
-                                      ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
-                                      : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
+                                    ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
+                                    : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
                                     }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
@@ -3359,8 +3356,8 @@ const FinancialDashboardView: React.FC = () => {
                                 <button
                                   onClick={() => handleTogglePaymentStatus(item)}
                                   className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${item.status_pagamento === 'pago'
-                                      ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
-                                      : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
+                                    ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
+                                    : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
                                     }`}
                                   title="Clique para alternar o status do pagamento"
                                 >
@@ -3513,8 +3510,8 @@ const FinancialDashboardView: React.FC = () => {
                       type="button"
                       onClick={() => setFormStatus('pago')}
                       className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${formStatus === 'pago'
-                          ? 'bg-green-100 text-green-700 border-green-300 shadow-sm'
-                          : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
+                        ? 'bg-green-100 text-green-700 border-green-300 shadow-sm'
+                        : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
                         }`}
                     >
                       Pago
@@ -3523,8 +3520,8 @@ const FinancialDashboardView: React.FC = () => {
                       type="button"
                       onClick={() => setFormStatus('pendente')}
                       className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${formStatus === 'pendente'
-                          ? 'bg-yellow-100 text-yellow-700 border-yellow-300 shadow-sm'
-                          : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
+                        ? 'bg-yellow-100 text-yellow-700 border-yellow-300 shadow-sm'
+                        : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
                         }`}
                     >
                       Pendente

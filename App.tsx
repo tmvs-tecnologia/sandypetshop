@@ -16479,6 +16479,8 @@ const AdminDashboard: React.FC<{
     monthlyClients?: MonthlyClient[];
 }> = ({ onLogout, isScheduleOpen, setIsScheduleOpen, onAddObservation, appointments, setAppointments, onOpenActionMenu, onDeleteObservation, handleOpenExtraServicesModal, monthlyClients = [] }) => {
     const [activeView, setActiveView] = useState('resumo');
+    const [birthdayAlertPets, setBirthdayAlertPets] = useState<any[]>([]);
+    const [showBirthdayAlertModal, setShowBirthdayAlertModal] = useState(false);
     const [previousView, setPreviousView] = useState('resumo');
     const [dataKey, setDataKey] = useState(Date.now()); // Used to force re-fetches
     const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -16490,6 +16492,101 @@ const AdminDashboard: React.FC<{
     const handleShowLoyalty = (pet: string, owner: string) => {
         setLoyaltyPreview({ pet, owner });
     };
+
+    // Alerta automático de aniversariantes (dentro de 1 semana ou hoje)
+    useEffect(() => {
+        const checkUpcomingBirthdays = async () => {
+            try {
+                // 1. Buscar pets matriculados e aprovados da creche
+                const { data, error } = await supabase
+                    .from('daycare_enrollments')
+                    .select('id, pet_name, pet_breed, pet_photo_url, pet_birthday, status')
+                    .eq('status', 'Aprovado');
+
+                let list: any[] = [];
+                if (!error && data) {
+                    list = [...data];
+                }
+
+                // 2. Adicionar pets de teste para visualização imediata no ambiente local
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                
+                const testPetToday = {
+                    id: 'teste-hoje',
+                    pet_name: 'Pipoca',
+                    pet_breed: 'Golden Retriever',
+                    pet_photo_url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=200',
+                    pet_birthday: `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+                    is_test: true
+                };
+
+                const threeDaysLater = new Date();
+                threeDaysLater.setDate(now.getDate() + 3);
+                const testPetNextWeek = {
+                    id: 'teste-proxima-semana',
+                    pet_name: 'Floquinho',
+                    pet_breed: 'Maltês',
+                    pet_photo_url: 'https://images.unsplash.com/photo-1537151608828-ea2b117b6b86?auto=format&fit=crop&q=80&w=200',
+                    pet_birthday: `${currentYear}-${String(threeDaysLater.getMonth() + 1).padStart(2, '0')}-${String(threeDaysLater.getDate()).padStart(2, '0')}`,
+                    is_test: true
+                };
+
+                // Incluir no início para visualização garantida do teste
+                list.unshift(testPetToday, testPetNextWeek);
+
+                // 3. Filtrar os pets que fazem aniversário no dia ou nos próximos 7 dias e que não foram dispensados
+                const upcomingAlerts: any[] = [];
+
+                list.forEach(pet => {
+                    if (!pet.pet_birthday) return;
+                    
+                    // Verificar se foi dispensado no localStorage para este ano
+                    const dismissedKey = `dismissed_birthday_${pet.id}_${currentYear}`;
+                    if (localStorage.getItem(dismissedKey) === 'true') {
+                        return;
+                    }
+
+                    // Calcular dias até o aniversário
+                    const parts = pet.pet_birthday.split('-');
+                    if (parts.length < 3) return;
+                    const bdayMonth = parseInt(parts[1], 10) - 1;
+                    const bdayDay = parseInt(parts[2], 10);
+
+                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    let bdayThisYear = new Date(now.getFullYear(), bdayMonth, bdayDay);
+
+                    let diffTime = bdayThisYear.getTime() - todayStart.getTime();
+                    let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays < 0) {
+                        const bdayNextYear = new Date(now.getFullYear() + 1, bdayMonth, bdayDay);
+                        diffTime = bdayNextYear.getTime() - todayStart.getTime();
+                        diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                    }
+
+                    // Janela de aniversário: de 0 (hoje) até 7 dias
+                    if (diffDays >= 0 && diffDays <= 7) {
+                        upcomingAlerts.push({
+                            ...pet,
+                            diffDays,
+                            bdayDay,
+                            bdayMonth
+                        });
+                    }
+                });
+
+                if (upcomingAlerts.length > 0) {
+                    setBirthdayAlertPets(upcomingAlerts);
+                    setShowBirthdayAlertModal(true);
+                }
+            } catch (err) {
+                console.warn('Erro ao verificar aniversários:', err);
+            }
+        };
+
+        checkUpcomingBirthdays();
+    }, [dataKey]);
 
     const openMobileMenu = () => {
         setShowMobileMenu(true);
@@ -17467,6 +17564,127 @@ const AdminDashboard: React.FC<{
                     isMonthly={fiscalModalData.isMonthly}
                     isDaycare={fiscalModalData.isDaycare}
                 />
+            )}
+
+            {/* Modal Elegante de Alerta de Aniversariantes */}
+            {showBirthdayAlertModal && birthdayAlertPets.length > 0 && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-[100000] p-4 animate-fadeIn">
+                    <div className="bg-white/95 backdrop-blur-lg rounded-[2.5rem] shadow-2xl max-w-lg w-full overflow-hidden border border-purple-100 animate-scaleIn relative">
+                        {/* Decoração Festiva */}
+                        <div className="absolute -top-12 -left-12 w-32 h-32 bg-purple-300 rounded-full blur-3xl opacity-30"></div>
+                        <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-pink-300 rounded-full blur-3xl opacity-30"></div>
+                        
+                        {/* Confetes Festivos no Cabeçalho */}
+                        <div className="bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 p-6 text-white text-center relative overflow-hidden">
+                            <div className="absolute top-2 left-4 text-2xl animate-bounce">🎈</div>
+                            <div className="absolute top-2 right-4 text-2xl animate-bounce animation-delay-2000">🎉</div>
+                            <div className="absolute bottom-2 left-10 text-xl opacity-80">🎁</div>
+                            <div className="absolute bottom-2 right-10 text-xl opacity-80">🍰</div>
+                            
+                            <span className="text-4xl block mb-2">🥳</span>
+                            <h3 className="text-2xl font-black tracking-tight" style={{ fontFamily: '"Lobster Two", cursive' }}>
+                                Alerta de Aniversário!
+                            </h3>
+                            <p className="text-xs font-bold uppercase tracking-widest text-purple-100 mt-1">
+                                Comemorações na Creche
+                            </p>
+                        </div>
+
+                        {/* Corpo com a lista de aniversariantes */}
+                        <div className="p-6 space-y-4 max-h-[350px] overflow-y-auto pr-2 scrollbar-purple">
+                            <p className="text-xs text-gray-500 font-bold text-center uppercase tracking-wider">
+                                {birthdayAlertPets.length === 1 ? 'Temos um aniversariante chegando:' : 'Temos aniversariantes chegando:'}
+                            </p>
+                            
+                            {birthdayAlertPets.map(pet => {
+                                const monthsList = [
+                                    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+                                ];
+                                const dateStr = `${pet.bdayDay} de ${monthsList[pet.bdayMonth]}`;
+                                const isToday = pet.diffDays === 0;
+
+                                return (
+                                    <div 
+                                        key={pet.id} 
+                                        className={`flex items-center gap-4 p-4 rounded-3xl border transition-all ${
+                                            isToday 
+                                                ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 shadow-md shadow-purple-100/50' 
+                                                : 'bg-gray-50/50 border-gray-100 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        {/* Foto com coroa */}
+                                        <div className="relative w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-purple-400 to-pink-400 shrink-0">
+                                            <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-lg drop-shadow-sm select-none z-10">👑</span>
+                                            <div className="w-full h-full rounded-full overflow-hidden bg-white flex items-center justify-center">
+                                                {pet.pet_photo_url ? (
+                                                    <img src={pet.pet_photo_url} alt={pet.pet_name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-2xl">🐾</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Informações detalhadas */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-baseline justify-between gap-1 flex-wrap">
+                                                <h4 className="font-black text-purple-950 text-base truncate uppercase">{pet.pet_name}</h4>
+                                                {pet.is_test && (
+                                                    <span className="bg-purple-100 text-purple-700 text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">Teste</span>
+                                                )}
+                                            </div>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">{pet.pet_breed}</p>
+                                            
+                                            <div className="mt-1.5 flex items-center gap-1.5">
+                                                {isToday ? (
+                                                    <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                                                        🎈 É Hoje! ({dateStr})
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-purple-700 font-extrabold text-[10px]">
+                                                        📅 Dia {dateStr} (em {pet.diffDays} {pet.diffDays === 1 ? 'dia' : 'dias'})
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Rodapé com Fechamento e Checkbox */}
+                        <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-4">
+                            <label className="flex items-start gap-3 cursor-pointer group">
+                                <input 
+                                    type="checkbox" 
+                                    id="dontShowAgainCheck"
+                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                />
+                                <span className="text-xs text-gray-500 font-bold leading-normal group-hover:text-purple-600 transition-colors selection:bg-transparent">
+                                    Não exibir avisos sobre estes aniversariantes novamente este ano
+                                </span>
+                            </label>
+
+                            <button
+                                onClick={() => {
+                                    const check = document.getElementById('dontShowAgainCheck') as HTMLInputElement;
+                                    const currentYear = new Date().getFullYear();
+                                    
+                                    if (check && check.checked) {
+                                        // Dispensar todos os pets que estavam sendo exibidos
+                                        birthdayAlertPets.forEach(pet => {
+                                            localStorage.setItem(`dismissed_birthday_${pet.id}_${currentYear}`, 'true');
+                                        });
+                                    }
+                                    setShowBirthdayAlertModal(false);
+                                }}
+                                className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 active:scale-[0.98] text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-purple-200/50 transition-all text-center flex items-center justify-center gap-1.5"
+                            >
+                                Entendido, comemorar! 🎉
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
