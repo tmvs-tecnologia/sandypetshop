@@ -23,7 +23,7 @@ import {
   Trash2,
   CheckCircle,
   AlertCircle,
-  Printer, DocumentReportIcon
+  Printer
 } from 'lucide-react';
 
 // Tipos para os dados do Supabase
@@ -823,7 +823,11 @@ const FinancialDashboardView: React.FC = () => {
       percentHoje,
       percentSemana,
       percentMes,
-      percentAno
+      percentAno,
+      valueHojeAnterior: banhoTosaOntem,
+      valueSemanaAnterior: banhoTosaSemanaAnterior,
+      valueMesAnterior: prevMonthBanhoTosa,
+      valueAnoAnterior: banhoTosaAnoAnterior
     };
     // ──────────────────────────────────────────────────────────────────────────
 
@@ -964,9 +968,9 @@ const FinancialDashboardView: React.FC = () => {
       };
     };
 
-    let metricsPetMovel = getServiceMetrics(chartPetMovel, selectedMonth);
-    metricsPetMovel = {
-      ...metricsPetMovel,
+    const baseMetricsPetMovel = getServiceMetrics(chartPetMovel, selectedMonth);
+    const metricsPetMovel = {
+      ...baseMetricsPetMovel,
       today: petMovelHoje,
       week: petMovelSemana,
       month: petMovelMes,
@@ -974,7 +978,11 @@ const FinancialDashboardView: React.FC = () => {
       percentHoje: percentPetHoje,
       percentSemana: percentPetSemana,
       percentMes: percentPetMes,
-      percentAno: percentPetAno
+      percentAno: percentPetAno,
+      valueHojeAnterior: petMovelOntem,
+      valueSemanaAnterior: petMovelSemanaAnterior,
+      valueMesAnterior: prevMonthPetMovel,
+      valueAnoAnterior: petMovelAnoAnterior
     };
 
     const metricsCreche = {
@@ -1604,8 +1612,9 @@ const FinancialDashboardView: React.FC = () => {
                   stroke={slice.color}
                   strokeWidth="22"
                   className="transition-all duration-300 hover:stroke-[26px] cursor-pointer"
-                  title={`${slice.name}: ${slice.value.toFixed(1)}%`}
-                />
+                >
+                  <title>{`${slice.name}: ${slice.value.toFixed(1)}%`}</title>
+                </path>
               );
             })}
           </svg>
@@ -1686,8 +1695,9 @@ const FinancialDashboardView: React.FC = () => {
                   stroke={slice.color}
                   strokeWidth="22"
                   className="transition-all duration-300 hover:stroke-[26px] cursor-pointer"
-                  title={`${slice.name}: ${slice.value.toFixed(1)}%`}
-                />
+                >
+                  <title>{`${slice.name}: ${slice.value.toFixed(1)}%`}</title>
+                </path>
               );
             })}
           </svg>
@@ -2558,31 +2568,55 @@ const FinancialDashboardView: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-                  <div className="bg-pink-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
-                      Hoje
-                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.banhotosa.percentHoje >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.banhotosa.percentHoje >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.banhotosa.percentHoje).toFixed(1)}% </span>
+                  <div className="bg-pink-50/40 p-2.5 sm:p-3 rounded-2xl">
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold flex flex-wrap items-center gap-x-1 gap-y-0.5 uppercase mb-1">
+                      <span>Hoje</span>
+                      <span className={`flex items-center gap-0.5 text-xs ${consolidatedMetrics.banhotosa.percentHoje >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {consolidatedMetrics.banhotosa.percentHoje >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {Math.abs(consolidatedMetrics.banhotosa.percentHoje).toFixed(1)}%
+                      </span>
+                      <span className="text-[8px] sm:text-[9px] text-gray-400 font-medium normal-case" style={{ textTransform: 'none' }}>
+                        (vs R$ {consolidatedMetrics.banhotosa.valueHojeAnterior.toLocaleString('pt-BR', { maximumFractionDigits: 0 })})
+                      </span>
                     </span>
                     <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.banhotosa.today} decimals={0} /></span>
                   </div>
-                  <div className="bg-pink-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
-                      Semana
-                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.banhotosa.percentSemana >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.banhotosa.percentSemana >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.banhotosa.percentSemana).toFixed(1)}% </span>
+                  <div className="bg-pink-50/40 p-2.5 sm:p-3 rounded-2xl">
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold flex flex-wrap items-center gap-x-1 gap-y-0.5 uppercase mb-1">
+                      <span>Semana</span>
+                      <span className={`flex items-center gap-0.5 text-xs ${consolidatedMetrics.banhotosa.percentSemana >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {consolidatedMetrics.banhotosa.percentSemana >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {Math.abs(consolidatedMetrics.banhotosa.percentSemana).toFixed(1)}%
+                      </span>
+                      <span className="text-[8px] sm:text-[9px] text-gray-400 font-medium normal-case" style={{ textTransform: 'none' }}>
+                        (vs R$ {consolidatedMetrics.banhotosa.valueSemanaAnterior.toLocaleString('pt-BR', { maximumFractionDigits: 0 })})
+                      </span>
                     </span>
                     <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.banhotosa.week} decimals={0} /></span>
                   </div>
-                  <div className="bg-pink-100/50 p-3 rounded-2xl border border-pink-200/50">
-                    <span className="text-[10px] text-pink-500 font-extrabold flex items-center uppercase mb-1">
-                      Mês
-                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.banhotosa.percentMes >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.banhotosa.percentMes >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.banhotosa.percentMes).toFixed(1)}% </span>
+                  <div className="bg-pink-100/50 p-2.5 sm:p-3 rounded-2xl border border-pink-200/50">
+                    <span className="text-[9px] sm:text-[10px] text-pink-500 font-extrabold flex flex-wrap items-center gap-x-1 gap-y-0.5 uppercase mb-1">
+                      <span>Mês</span>
+                      <span className={`flex items-center gap-0.5 text-xs ${consolidatedMetrics.banhotosa.percentMes >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {consolidatedMetrics.banhotosa.percentMes >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {Math.abs(consolidatedMetrics.banhotosa.percentMes).toFixed(1)}%
+                      </span>
+                      <span className="text-[8px] sm:text-[9px] text-pink-400 font-medium normal-case" style={{ textTransform: 'none' }}>
+                        (vs R$ {consolidatedMetrics.banhotosa.valueMesAnterior.toLocaleString('pt-BR', { maximumFractionDigits: 0 })})
+                      </span>
                     </span>
                     <span className="text-base font-black text-pink-600">R$ <AnimatedCounter value={consolidatedMetrics.banhotosa.month} decimals={0} /></span>
                   </div>
-                  <div className="bg-pink-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
-                      Anual
-                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.banhotosa.percentAno >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.banhotosa.percentAno >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.banhotosa.percentAno).toFixed(1)}% </span>
+                  <div className="bg-pink-50/40 p-2.5 sm:p-3 rounded-2xl">
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold flex flex-wrap items-center gap-x-1 gap-y-0.5 uppercase mb-1">
+                      <span>Anual</span>
+                      <span className={`flex items-center gap-0.5 text-xs ${consolidatedMetrics.banhotosa.percentAno >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {consolidatedMetrics.banhotosa.percentAno >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {Math.abs(consolidatedMetrics.banhotosa.percentAno).toFixed(1)}%
+                      </span>
+                      <span className="text-[8px] sm:text-[9px] text-gray-400 font-medium normal-case" style={{ textTransform: 'none' }}>
+                        (vs R$ {consolidatedMetrics.banhotosa.valueAnoAnterior.toLocaleString('pt-BR', { maximumFractionDigits: 0 })})
+                      </span>
                     </span>
                     <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.banhotosa.year} decimals={0} /></span>
                   </div>
@@ -2606,31 +2640,55 @@ const FinancialDashboardView: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-                  <div className="bg-cyan-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
-                      Hoje
-                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentHoje >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentHoje >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentHoje).toFixed(1)}% </span>
+                  <div className="bg-cyan-50/40 p-2.5 sm:p-3 rounded-2xl">
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold flex flex-wrap items-center gap-x-1 gap-y-0.5 uppercase mb-1">
+                      <span>Hoje</span>
+                      <span className={`flex items-center gap-0.5 text-xs ${consolidatedMetrics.petmovel.percentHoje >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {consolidatedMetrics.petmovel.percentHoje >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {Math.abs(consolidatedMetrics.petmovel.percentHoje).toFixed(1)}%
+                      </span>
+                      <span className="text-[8px] sm:text-[9px] text-gray-400 font-medium normal-case" style={{ textTransform: 'none' }}>
+                        (vs R$ {consolidatedMetrics.petmovel.valueHojeAnterior.toLocaleString('pt-BR', { maximumFractionDigits: 0 })})
+                      </span>
                     </span>
                     <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.today} decimals={0} /></span>
                   </div>
-                  <div className="bg-cyan-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
-                      Semana
-                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentSemana >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentSemana >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentSemana).toFixed(1)}% </span>
+                  <div className="bg-cyan-50/40 p-2.5 sm:p-3 rounded-2xl">
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold flex flex-wrap items-center gap-x-1 gap-y-0.5 uppercase mb-1">
+                      <span>Semana</span>
+                      <span className={`flex items-center gap-0.5 text-xs ${consolidatedMetrics.petmovel.percentSemana >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {consolidatedMetrics.petmovel.percentSemana >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {Math.abs(consolidatedMetrics.petmovel.percentSemana).toFixed(1)}%
+                      </span>
+                      <span className="text-[8px] sm:text-[9px] text-gray-400 font-medium normal-case" style={{ textTransform: 'none' }}>
+                        (vs R$ {consolidatedMetrics.petmovel.valueSemanaAnterior.toLocaleString('pt-BR', { maximumFractionDigits: 0 })})
+                      </span>
                     </span>
                     <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.week} decimals={0} /></span>
                   </div>
-                  <div className="bg-cyan-100/50 p-3 rounded-2xl border border-cyan-200/50">
-                    <span className="text-[10px] text-cyan-500 font-extrabold flex items-center uppercase mb-1">
-                      Mês
-                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentMes >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentMes >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentMes).toFixed(1)}% </span>
+                  <div className="bg-cyan-100/50 p-2.5 sm:p-3 rounded-2xl border border-cyan-200/50">
+                    <span className="text-[9px] sm:text-[10px] text-cyan-500 font-extrabold flex flex-wrap items-center gap-x-1 gap-y-0.5 uppercase mb-1">
+                      <span>Mês</span>
+                      <span className={`flex items-center gap-0.5 text-xs ${consolidatedMetrics.petmovel.percentMes >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {consolidatedMetrics.petmovel.percentMes >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {Math.abs(consolidatedMetrics.petmovel.percentMes).toFixed(1)}%
+                      </span>
+                      <span className="text-[8px] sm:text-[9px] text-cyan-400 font-medium normal-case" style={{ textTransform: 'none' }}>
+                        (vs R$ {consolidatedMetrics.petmovel.valueMesAnterior.toLocaleString('pt-BR', { maximumFractionDigits: 0 })})
+                      </span>
                     </span>
                     <span className="text-base font-black text-cyan-600">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.month} decimals={0} /></span>
                   </div>
-                  <div className="bg-cyan-50/40 p-3 rounded-2xl">
-                    <span className="text-[10px] text-gray-400 font-bold flex items-center uppercase mb-1">
-                      Anual
-                      <span className={`flex items-center gap-0.5 ml-1 text-xs ${consolidatedMetrics.petmovel.percentAno >= 0 ? 'text-green-600' : 'text-red-600'}`}> {consolidatedMetrics.petmovel.percentAno >= 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {Math.abs(consolidatedMetrics.petmovel.percentAno).toFixed(1)}% </span>
+                  <div className="bg-cyan-50/40 p-2.5 sm:p-3 rounded-2xl">
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold flex flex-wrap items-center gap-x-1 gap-y-0.5 uppercase mb-1">
+                      <span>Anual</span>
+                      <span className={`flex items-center gap-0.5 text-xs ${consolidatedMetrics.petmovel.percentAno >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {consolidatedMetrics.petmovel.percentAno >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {Math.abs(consolidatedMetrics.petmovel.percentAno).toFixed(1)}%
+                      </span>
+                      <span className="text-[8px] sm:text-[9px] text-gray-400 font-medium normal-case" style={{ textTransform: 'none' }}>
+                        (vs R$ {consolidatedMetrics.petmovel.valueAnoAnterior.toLocaleString('pt-BR', { maximumFractionDigits: 0 })})
+                      </span>
                     </span>
                     <span className="text-sm font-black text-gray-800">R$ <AnimatedCounter value={consolidatedMetrics.petmovel.year} decimals={0} /></span>
                   </div>
