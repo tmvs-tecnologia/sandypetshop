@@ -179,6 +179,10 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
             value: service.value === '' ? undefined : Number(service.value)
           };
 
+          if (service.enabled && (key === 'dias_extras' || key === 'pernoite')) {
+            extraServicesForSave[key].date = data.extra_services?.[key]?.date || new Date().toISOString();
+          }
+
           if (key === 'dias_extras' && 'quantity' in service) {
             extraServicesForSave[key].quantity = service.quantity;
           }

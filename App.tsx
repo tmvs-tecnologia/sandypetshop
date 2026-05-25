@@ -8705,7 +8705,9 @@ const DaycareEnrollmentCard: React.FC<{
     onFiscalNote?: (enrollment: DaycareRegistration) => void;
     isEmittingNFe?: boolean;
     fiscalNotesMap?: Record<string, string>;
-}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare, onUploadChecklist, onRemoveChecklist, isUploadingChecklist, onFiscalNote, isEmittingNFe, fiscalNotesMap }) => {
+    onAddPernoite?: (enrollment: DaycareRegistration) => void;
+    onAddDiaria?: (enrollment: DaycareRegistration) => void;
+}> = ({ enrollment, onClick, onEdit, onDelete, onAddExtraServices, sectionId, isDraggable = false, onDragStart, onChangePhoto, onOpenDiary, onApprove, onTogglePaymentStatus, paymentUpdatingId, onTogglePresence, isInDaycare, onUploadChecklist, onRemoveChecklist, isUploadingChecklist, onFiscalNote, isEmittingNFe, fiscalNotesMap, onAddPernoite, onAddDiaria }) => {
     const { created_at, pet_name, tutor_name, contracted_plan, status } = enrollment;
     const formatTimeText = (time: string | null | undefined): string => {
         if (!time) return 'Não definido';
@@ -8958,51 +8960,7 @@ const DaycareEnrollmentCard: React.FC<{
                         })()}
                     </div>
                 </div>
-                {/* Emissão de NFe */}
-                {status === 'Aprovado' && onFiscalNote && (
-                    <div className="mb-4">
-                        <button
-                            onClick={(e) => { 
-                                e.stopPropagation(); 
-                                const nfeUrl = fiscalNotesMap?.[enrollment.id];
-                                if (nfeUrl) {
-                                    window.open(nfeUrl, '_blank');
-                                } else if (onFiscalNote) {
-                                    onFiscalNote(enrollment); 
-                                }
-                            }}
-                            disabled={isEmittingNFe}
-                            className={`w-full py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-bold border shadow-sm ${
-                                isEmittingNFe 
-                                ? 'bg-pink-100 text-pink-400 border-pink-200 cursor-not-allowed' 
-                                : fiscalNotesMap?.[enrollment.id]
-                                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 border-green-400/20 shadow-md'
-                                : 'bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-100 group-hover:shadow-pink-100'
-                            }`}
-                            title={fiscalNotesMap?.[enrollment.id] ? "Abrir Nota Fiscal" : "Emitir Nota Fiscal"}
-                        >
-                            {isEmittingNFe ? (
-                                <>
-                                    <svg className="animate-spin h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <span>Gerando...</span>
-                                </>
-                            ) : fiscalNotesMap?.[enrollment.id] ? (
-                                <>
-                                    <ArrowTopRightOnSquareIcon className="w-5 h-5" />
-                                    <span>Abrir Nota</span>
-                                </>
-                            ) : (
-                                <>
-                                    <DocumentTextIcon className="w-5 h-5" />
-                                    <span>Emitir Nota Fiscal</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-                )}
+
 
                 {/* Serviços Extras (Chips) */}
                 {enrollment.extra_services && Object.keys(enrollment.extra_services).length > 0 && (
@@ -9097,6 +9055,79 @@ const DaycareEnrollmentCard: React.FC<{
                         <EditIcon className="w-4 h-4" />
                         <span className="hidden sm:inline">Editar</span>
                     </button>
+
+                    {/* Botão Pernoite */}
+                    {status === 'Aprovado' && onAddPernoite && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddPernoite(enrollment); }}
+                            className="w-full bg-purple-50 text-purple-700 py-1.5 px-2 rounded-md hover:bg-purple-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none"
+                            title="Agendar Pernoite"
+                        >
+                            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                            </svg>
+                            <span className="hidden sm:inline">Pernoite</span>
+                        </button>
+                    )}
+
+                    {/* Botão Diária */}
+                    {status === 'Aprovado' && onAddDiaria && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddDiaria(enrollment); }}
+                            className="w-full bg-amber-50 text-amber-700 py-1.5 px-2 rounded-md hover:bg-amber-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none"
+                            title="Agendar Diária"
+                        >
+                            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1.5M12 19.5V21M4.22 4.22l1.06 1.06M17.72 17.72l1.06 1.06M3 12h1.5M19.5 12H21M4.22 19.78l1.06-1.06M17.72 6.28l1.06-1.06M12 7.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
+                            </svg>
+                            <span className="hidden sm:inline">Diária</span>
+                        </button>
+                    )}
+
+                    {/* Botão Emitir/Abrir Nota Fiscal */}
+                    {status === 'Aprovado' && onFiscalNote && (
+                        <button
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                const nfeUrl = fiscalNotesMap?.[enrollment.id];
+                                if (nfeUrl) {
+                                    window.open(nfeUrl, '_blank');
+                                } else if (onFiscalNote) {
+                                    onFiscalNote(enrollment); 
+                                }
+                            }}
+                            disabled={isEmittingNFe}
+                            className={`w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none border ${
+                                isEmittingNFe 
+                                ? 'bg-pink-100 text-pink-400 border-pink-200 cursor-not-allowed' 
+                                : fiscalNotesMap?.[enrollment.id]
+                                ? 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200 font-bold'
+                                : 'bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-100'
+                            }`}
+                            title={fiscalNotesMap?.[enrollment.id] ? "Abrir Nota Fiscal" : "Emitir Nota Fiscal"}
+                        >
+                            {isEmittingNFe ? (
+                                <>
+                                    <svg className="animate-spin h-4 w-4 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span className="hidden sm:inline">Gerando...</span>
+                                </>
+                            ) : fiscalNotesMap?.[enrollment.id] ? (
+                                <>
+                                    <ArrowTopRightOnSquareIcon className="w-4 h-4 shrink-0" />
+                                    <span className="hidden sm:inline">Nota</span>
+                                </>
+                            ) : (
+                                <>
+                                    <DocumentTextIcon className="w-4 h-4 shrink-0" />
+                                    <span className="hidden sm:inline">Nota</span>
+                                </>
+                            )}
+                        </button>
+                    )}
+
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(enrollment); }}
                         className="w-full bg-red-50 text-red-600 py-1.5 px-2 rounded-md hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none"
@@ -13403,9 +13434,149 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
     );
 };
 
+// Componente para renderizar os pets da creche com diária/pernoite no Hotel Pet
+const DaycareCardForHotelView: React.FC<{
+    enrollment: DaycareRegistration;
+    type: 'diaria' | 'pernoite';
+    onArchive?: (enrollment: DaycareRegistration) => void;
+    onDelete?: (enrollment: DaycareRegistration) => void;
+}> = ({ enrollment, type, onArchive, onDelete }) => {
+    const { pet_name, tutor_name, contact_phone } = enrollment;
+    
+    // Recupera o valor configurado em extra_services ou usa o fallback
+    const es = enrollment.extra_services as any;
+    const valueFromExtras = type === 'pernoite' 
+        ? (es?.pernoite?.value) 
+        : (es?.dias_extras?.value);
+    const price = Number(valueFromExtras) || (type === 'pernoite' ? 50 : 30);
+
+    const buildWhatsAppLink = (phone: string) => {
+        const digits = String(phone || '').replace(/\D/g, '');
+        const withCountry = digits ? (digits.startsWith('55') ? digits : `55${digits}`) : '';
+        return withCountry ? `https://wa.me/${withCountry}` : '#';
+    };
+
+    const getFormattedDate = () => {
+        const dateVal = type === 'pernoite' ? es?.pernoite?.date : es?.dias_extras?.date;
+        const rawDate = dateVal || enrollment.created_at || new Date().toISOString();
+        try {
+            const d = new Date(rawDate);
+            if (isNaN(d.getTime())) return '-';
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        } catch {
+            return '-';
+        }
+    };
+
+    const isArchived = type === 'pernoite' ? es?.pernoite?.archived === true : es?.dias_extras?.archived === true;
+
+    return (
+        <div className="p-4 sm:p-5 flex flex-col h-full flex-grow bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-200 relative group font-jakarta">
+            {/* Tag Origem: Creche Pet */}
+            <div className="absolute top-3 right-3 z-10 flex gap-1">
+                {isArchived && (
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-gray-500 text-white uppercase tracking-wider shadow-sm">
+                        Arquivado
+                    </span>
+                )}
+                <span className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white uppercase tracking-wider shadow-sm">
+                    Creche Pet
+                </span>
+            </div>
+
+            <div className="flex items-center justify-between mb-4 gap-2">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="relative flex-shrink-0">
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity"></div>
+                        <SafeImage 
+                            src={enrollment.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/11201/11201086.png'} 
+                            alt={pet_name} 
+                            className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md hover:scale-105 transition-transform" 
+                            loading="eager" 
+                        />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-outfit font-bold text-lg sm:text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors truncate">
+                            {pet_name}
+                        </h3>
+                        <div className="flex items-center gap-1.5 mt-1 flex-nowrap overflow-x-auto custom-scrollbar-hide">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border uppercase tracking-wide flex-shrink-0 bg-purple-50 text-purple-700 border-purple-100">
+                                {type === 'pernoite' ? 'Pernoite Extra' : 'Diária Extra'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div className="text-right flex flex-col items-end flex-shrink-0 pl-2">
+                    <div className="font-outfit font-bold text-lg sm:text-xl text-gray-900 whitespace-nowrap">
+                        R$ {price.toFixed(2).replace('.', ',')}
+                    </div>
+                </div>
+            </div>
+
+            {/* Info Grid */}
+            <div className="grid grid-cols-2 gap-y-3 gap-x-2 mb-3 bg-gray-50/50 p-2.5 sm:p-3 rounded-xl border border-gray-100">
+                <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">Tutor</span>
+                        <span className="text-xs font-medium text-gray-700 truncate">{tutor_name}</span>
+                    </div>
+                </div>
+                <div className="flex items-start sm:items-center gap-2 overflow-hidden">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.824-1.502-5.18-3.856-6.682-6.682l1.293-.97c.362-.271.528-.733.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">WhatsApp</span>
+                        {contact_phone ? (
+                            <a href={buildWhatsAppLink(contact_phone)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-green-600 hover:underline truncate" onClick={e => e.stopPropagation()}>
+                                {contact_phone.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
+                            </a>
+                        ) : (
+                            <span className="text-xs font-medium text-gray-700 truncate">-</span>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Data de Registro */}
+            <div className="flex items-center justify-between text-[11px] text-gray-500 font-jakarta border-t border-dashed border-gray-100 pt-2.5 mt-1.5 mb-2.5">
+                <span className="font-semibold text-gray-400">Data de Registro:</span>
+                <span className="font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md">{getFormattedDate()}</span>
+            </div>
+
+            {/* Botões de Ação */}
+            <div className="flex gap-2 mt-auto border-t border-gray-100 pt-3">
+                {onArchive && !isArchived && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onArchive(enrollment); }}
+                        className="flex-1 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 border border-gray-200"
+                        title="Arquivar Registro"
+                    >
+                        <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                        Arquivar
+                    </button>
+                )}
+                {onDelete && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(enrollment); }}
+                        className="flex-1 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 border border-red-100"
+                        title="Excluir Adicional"
+                    >
+                        <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        Excluir
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // Hotel View Component for managing hotel registrations
 const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show: boolean) => void }> = ({ refreshKey, setShowHotelStatistics }) => {
     const [registrations, setRegistrations] = useState<HotelRegistration[]>([]);
+    const [daycareEnrollmentsForHotel, setDaycareEnrollmentsForHotel] = useState<DaycareRegistration[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedRegistration, setSelectedRegistration] = useState<HotelRegistration | null>(null);
     const [isAddFormOpen, setIsAddFormOpen] = useState(false);
@@ -13421,7 +13592,14 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
     const [registrationToReject, setRegistrationToReject] = useState<HotelRegistration | null>(null);
     const [rejectReason, setRejectReason] = useState<string>('');
     const [hotelFilter, setHotelFilter] = useState<'all' | 'in_hotel' | 'approved' | 'analysis' | 'archived'>('all');
-    const [activeTab, setActiveTab] = useState<'in_hotel' | 'approved' | 'analysis' | 'archived'>('in_hotel');
+    const [activeTab, setActiveTab] = useState<'in_hotel' | 'approved' | 'analysis' | 'archived' | 'diaria' | 'pernoite'>(() => {
+        const saved = localStorage.getItem('hotel_active_tab');
+        if (saved && ['in_hotel', 'approved', 'analysis', 'archived', 'diaria', 'pernoite'].includes(saved)) {
+            localStorage.removeItem('hotel_active_tab');
+            return saved as any;
+        }
+        return 'in_hotel';
+    });
     const [showHotelFilterPanel, setShowHotelFilterPanel] = useState(false);
     const [expandedHotelSections, setExpandedHotelSections] = useState<string[]>(['in_hotel', 'approved', 'analysis', 'archived']);
     const [draggingOverHotel, setDraggingOverHotel] = useState<'in_hotel' | 'approved' | 'analysis' | 'archived' | null>(null);
@@ -13572,6 +13750,11 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                 setRegistrations(normalized);
                 try { localStorage.setItem('cached_hotel_registrations', JSON.stringify(normalized || [])); } catch { }
             }
+
+            const { data: daycareData, error: daycareError } = await supabase.from('daycare_enrollments').select('*').order('created_at', { ascending: false });
+            if (!daycareError) {
+                setDaycareEnrollmentsForHotel(daycareData as DaycareRegistration[]);
+            }
         } catch (_) {
             const cached = localStorage.getItem('cached_hotel_registrations');
             if (cached) setRegistrations(JSON.parse(cached));
@@ -13583,6 +13766,117 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
     useEffect(() => {
         fetchRegistrations();
     }, [fetchRegistrations, refreshKey]);
+
+    const handleArchiveDaycareExtra = async (enrollment: DaycareRegistration, type: 'diaria' | 'pernoite') => {
+        try {
+            const currentExtras = enrollment.extra_services && typeof enrollment.extra_services === 'object'
+                ? { ...enrollment.extra_services } as any
+                : {};
+
+            if (type === 'pernoite') {
+                if (currentExtras.pernoite) {
+                    currentExtras.pernoite.archived = true;
+                }
+            } else {
+                if (currentExtras.dias_extras) {
+                    currentExtras.dias_extras.archived = true;
+                }
+            }
+
+            const { data, error } = await supabase
+                .from('daycare_enrollments')
+                .update({ extra_services: currentExtras })
+                .eq('id', enrollment.id)
+                .select()
+                .single();
+
+            if (error) {
+                alert('Erro ao arquivar registro: ' + error.message);
+            } else {
+                setDaycareEnrollmentsForHotel(prev => prev.map(e => e.id === enrollment.id ? (data as DaycareRegistration) : e));
+                alert('Serviço extra arquivado com sucesso!');
+            }
+        } catch (err: any) {
+            alert('Falha ao arquivar: ' + err.message);
+        }
+    };
+
+    const handleDeleteDaycareExtra = async (enrollment: DaycareRegistration, type: 'diaria' | 'pernoite') => {
+        const confirmMsg = type === 'pernoite' 
+            ? `Tem certeza que deseja remover o pernoite extra do pet ${enrollment.pet_name}? Isso recalculará o valor total dele.`
+            : `Tem certeza que deseja remover as diárias extras do pet ${enrollment.pet_name}? Isso recalculará o valor total dele.`;
+        
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+            const currentExtras = enrollment.extra_services && typeof enrollment.extra_services === 'object'
+                ? { ...enrollment.extra_services } as any
+                : {};
+
+            // 1. Calcular extras antigos para extrair o preço base real
+            let oldExtrasTotal = 0;
+            Object.entries(currentExtras).forEach(([key, service]: [string, any]) => {
+                if (service && typeof service === 'object' && service.enabled) {
+                    if (key === 'dias_extras' && service.quantity) {
+                        oldExtrasTotal += (Number(service.value) || 0) * service.quantity;
+                    } else {
+                        oldExtrasTotal += Number(service.value) || 0;
+                    }
+                }
+            });
+
+            // 2. Extrair o preço base do pet
+            const currentDbPrice = Number(enrollment.total_price || 0);
+            const trueBasePrice = Math.max(0, currentDbPrice - oldExtrasTotal);
+
+            // 3. Desativar o serviço
+            if (type === 'pernoite') {
+                if (currentExtras.pernoite) {
+                    currentExtras.pernoite.enabled = false;
+                    currentExtras.pernoite.archived = false;
+                }
+            } else {
+                if (currentExtras.dias_extras) {
+                    currentExtras.dias_extras.enabled = false;
+                    currentExtras.dias_extras.quantity = 0;
+                    currentExtras.dias_extras.archived = false;
+                }
+            }
+
+            // 4. Calcular o novo total de extras
+            let newExtrasTotal = 0;
+            Object.entries(currentExtras).forEach(([key, service]: [string, any]) => {
+                if (service && typeof service === 'object' && service.enabled) {
+                    if (key === 'dias_extras' && service.quantity) {
+                        newExtrasTotal += (Number(service.value) || 0) * service.quantity;
+                    } else {
+                        newExtrasTotal += Number(service.value) || 0;
+                    }
+                }
+            });
+
+            const finalTotalPrice = trueBasePrice + newExtrasTotal;
+
+            const { data, error } = await supabase
+                .from('daycare_enrollments')
+                .update({ 
+                    extra_services: currentExtras,
+                    total_price: finalTotalPrice
+                })
+                .eq('id', enrollment.id)
+                .select()
+                .single();
+
+            if (error) {
+                alert('Erro ao excluir registro: ' + error.message);
+            } else {
+                setDaycareEnrollmentsForHotel(prev => prev.map(e => e.id === enrollment.id ? (data as DaycareRegistration) : e));
+                alert('Serviço extra excluído com sucesso!');
+            }
+        } catch (err: any) {
+            alert('Falha ao excluir: ' + err.message);
+        }
+    };
 
 
 
@@ -13986,6 +14280,58 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
         const tutor = (reg.tutor_name || '').toLowerCase();
         const term = (searchTerm || '').toLowerCase();
         return pet.includes(term) || tutor.includes(term);
+    });
+
+    const daycareDiarias = daycareEnrollmentsForHotel.filter(e => {
+        const es = e.extra_services as any;
+        if (!es) return false;
+        
+        // Só exibe se dias_extras.enabled for explicitamente true, a quantidade for maior que zero e NÃO estiver arquivado
+        const hasExtraDays = es.dias_extras?.enabled === true && es.dias_extras?.archived !== true && (es.dias_extras?.quantity ?? 0) > 0;
+        
+        const pet = (e.pet_name || '').toLowerCase();
+        const tutor = (e.tutor_name || '').toLowerCase();
+        const term = (searchTerm || '').toLowerCase();
+        return hasExtraDays && (pet.includes(term) || tutor.includes(term));
+    });
+
+    const daycarePernoites = daycareEnrollmentsForHotel.filter(e => {
+        const es = e.extra_services as any;
+        if (!es) return false;
+        
+        // Só exibe se pernoite.enabled for explicitamente true e NÃO estiver arquivado
+        const hasPernoite = es.pernoite?.enabled === true && es.pernoite?.archived !== true;
+        
+        const pet = (e.pet_name || '').toLowerCase();
+        const tutor = (e.tutor_name || '').toLowerCase();
+        const term = (searchTerm || '').toLowerCase();
+        return hasPernoite && (pet.includes(term) || tutor.includes(term));
+    });
+
+    const daycareArchivedDiarias = daycareEnrollmentsForHotel.filter(e => {
+        const es = e.extra_services as any;
+        if (!es) return false;
+        
+        // Só exibe se dias_extras.enabled for true, a quantidade for maior que zero e estiver arquivado
+        const hasExtraDays = es.dias_extras?.enabled === true && es.dias_extras?.archived === true && (es.dias_extras?.quantity ?? 0) > 0;
+        
+        const pet = (e.pet_name || '').toLowerCase();
+        const tutor = (e.tutor_name || '').toLowerCase();
+        const term = (searchTerm || '').toLowerCase();
+        return hasExtraDays && (pet.includes(term) || tutor.includes(term));
+    });
+
+    const daycareArchivedPernoites = daycareEnrollmentsForHotel.filter(e => {
+        const es = e.extra_services as any;
+        if (!es) return false;
+        
+        // Só exibe se pernoite.enabled for true e estiver arquivado
+        const hasPernoite = es.pernoite?.enabled === true && es.pernoite?.archived === true;
+        
+        const pet = (e.pet_name || '').toLowerCase();
+        const tutor = (e.tutor_name || '').toLowerCase();
+        const term = (searchTerm || '').toLowerCase();
+        return hasPernoite && (pet.includes(term) || tutor.includes(term));
     });
 
     const currentInHotel = filteredRegistrations.filter(reg => reg.check_in_status === 'checked_in');
@@ -14497,7 +14843,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                 </div>
 
                 {/* Resumo Rápido */}
-                <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6 sm:mt-8 relative z-10">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4 mt-6 sm:mt-8 relative z-10">
                     <div className="bg-green-50 rounded-xl p-2 sm:p-4 border border-green-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-200 rounded-full flex items-center justify-center shrink-0">
                             <span className="relative flex h-2 w-2 sm:h-3 sm:w-3">
@@ -14528,10 +14874,28 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                             <p className="text-lg sm:text-2xl font-black text-yellow-900 truncate">{analysis.length}</p>
                         </div>
                     </div>
+                    <div className="bg-purple-50 rounded-xl p-2 sm:p-4 border border-purple-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-200 text-purple-700 rounded-full flex items-center justify-center shrink-0 font-bold">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                        <div className="min-w-0 flex-1 w-full">
+                            <p className="text-[9px] sm:text-xs font-bold text-purple-700 uppercase tracking-wider truncate">Diárias</p>
+                            <p className="text-lg sm:text-2xl font-black text-purple-900 truncate">{daycareDiarias.length}</p>
+                        </div>
+                    </div>
+                    <div className="bg-indigo-50 rounded-xl p-2 sm:p-4 border border-indigo-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 overflow-hidden">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-200 text-indigo-700 rounded-full flex items-center justify-center shrink-0 font-bold">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                        </div>
+                        <div className="min-w-0 flex-1 w-full">
+                            <p className="text-[9px] sm:text-xs font-bold text-indigo-700 uppercase tracking-wider truncate">Pernoites</p>
+                            <p className="text-lg sm:text-2xl font-black text-indigo-900 truncate">{daycarePernoites.length}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {filteredRegistrations.length > 0 ? (
+            {(filteredRegistrations.length > 0 || daycareEnrollmentsForHotel.length > 0) ? (
                 <div className="space-y-6">
                     <div className="flex items-center gap-2 p-1.5 bg-gray-100/80 backdrop-blur-sm rounded-2xl w-full sm:w-auto overflow-x-auto custom-scrollbar-hide">
                         <button
@@ -14562,6 +14926,34 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                             {analysis.length > 0 && (
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === 'analysis' ? 'bg-pink-100 text-pink-700' : 'bg-red-500 text-white'}`}>{analysis.length}</span>
                             )}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('diaria')}
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-300 ${activeTab === 'diaria' ? 'bg-white text-pink-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
+                        >
+                            <div className="flex items-center justify-center gap-2">
+                                {activeTab === 'diaria' && (
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="absolute inline-flex h-full w-full rounded-full opacity-75 bg-pink-400 animate-ping"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+                                    </span>
+                                )}
+                                Diárias (Creche)
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('pernoite')}
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-300 ${activeTab === 'pernoite' ? 'bg-white text-pink-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
+                        >
+                            <div className="flex items-center justify-center gap-2">
+                                {activeTab === 'pernoite' && (
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="absolute inline-flex h-full w-full rounded-full opacity-75 bg-pink-400 animate-ping"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+                                    </span>
+                                )}
+                                Pernoites (Creche)
+                            </div>
                         </button>
                         <button
                             onClick={() => setActiveTab('archived')}
@@ -14629,11 +15021,29 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                     )}
 
                     {activeTab === 'archived' && (
-                        archived.length > 0 ? (
+                        (archived.length > 0 || daycareArchivedDiarias.length > 0 || daycareArchivedPernoites.length > 0) ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                                 {archived.map(reg => (
                                     <div key={reg.id} draggable onDragStart={(e) => handleHotelDragStart(e, reg, 'archived')} className="w-full">
                                         <HotelRegistrationCard registration={reg} onAddExtraServices={handleAddHotelExtraServices} showCheckActions={false} inHotel={false} onChangePhoto={(r) => { setUploadTargetRegistration(r); setIsUploadPhotoModalOpen(true); }} onUploadChecklist={handleHotelChecklistUpload} onRemoveChecklist={handleHotelChecklistRemove} isUploadingChecklist={!!isUploadingChecklistMap[reg.id!]} />
+                                    </div>
+                                ))}
+                                {daycareArchivedDiarias.map(enrollment => (
+                                    <div key={`archived-diaria-${enrollment.id}`} className="w-full">
+                                        <DaycareCardForHotelView 
+                                            enrollment={enrollment} 
+                                            type="diaria" 
+                                            onDelete={(e) => handleDeleteDaycareExtra(e, 'diaria')}
+                                        />
+                                    </div>
+                                ))}
+                                {daycareArchivedPernoites.map(enrollment => (
+                                    <div key={`archived-pernoite-${enrollment.id}`} className="w-full">
+                                        <DaycareCardForHotelView 
+                                            enrollment={enrollment} 
+                                            type="pernoite" 
+                                            onDelete={(e) => handleDeleteDaycareExtra(e, 'pernoite')}
+                                        />
                                     </div>
                                 ))}
                             </div>
@@ -14643,6 +15053,54 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                                     <svg className="w-8 h-8 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
                                 </div>
                                 <p className="text-gray-500 font-medium">Nenhum registro arquivado.</p>
+                            </div>
+                        )
+                    )}
+ 
+                    {activeTab === 'diaria' && (
+                        daycareDiarias.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                                {daycareDiarias.map(enrollment => (
+                                    <div key={enrollment.id} className="w-full">
+                                        <DaycareCardForHotelView 
+                                            enrollment={enrollment} 
+                                            type="diaria" 
+                                            onArchive={(e) => handleArchiveDaycareExtra(e, 'diaria')}
+                                            onDelete={(e) => handleDeleteDaycareExtra(e, 'diaria')}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-12 border border-pink-100/50 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mb-4">
+                                    <svg className="w-8 h-8 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                </div>
+                                <p className="text-gray-500 font-medium">Nenhum pet da creche com diária extra agendada.</p>
+                            </div>
+                        )
+                    )}
+ 
+                    {activeTab === 'pernoite' && (
+                        daycarePernoites.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                                {daycarePernoites.map(enrollment => (
+                                    <div key={enrollment.id} className="w-full">
+                                        <DaycareCardForHotelView 
+                                            enrollment={enrollment} 
+                                            type="pernoite" 
+                                            onArchive={(e) => handleArchiveDaycareExtra(e, 'pernoite')}
+                                            onDelete={(e) => handleDeleteDaycareExtra(e, 'pernoite')}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-12 border border-pink-100/50 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mb-4">
+                                    <svg className="w-8 h-8 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                                </div>
+                                <p className="text-gray-500 font-medium">Nenhum pet da creche com pernoite extra agendada.</p>
                             </div>
                         )
                     )}
@@ -15401,7 +15859,7 @@ const DaycareBirthdaysModal: React.FC<{
     );
 };
 
-const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: DaycareRegistration) => void; emittingNFeId?: string | null; fiscalNotesMap?: Record<string, string> }> = ({ refreshKey, onFiscalNote, emittingNFeId, fiscalNotesMap }) => {
+const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: DaycareRegistration) => void; emittingNFeId?: string | null; fiscalNotesMap?: Record<string, string>; onNavigate?: (view: string) => void }> = ({ refreshKey, onFiscalNote, emittingNFeId, fiscalNotesMap, onNavigate }) => {
     const [enrollments, setEnrollments] = useState<DaycareRegistration[]>([]);
     const [petsInDaycareNow, setPetsInDaycareNow] = useState<DaycareRegistration[]>([]);
     const [loading, setLoading] = useState(true);
@@ -15435,6 +15893,187 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
     const [alertCrecheInfo, setAlertCrecheInfo] = useState<{ title: string; message: string; variant: 'success' | 'error' } | null>(null);
     const [isBirthdayModalOpen, setIsBirthdayModalOpen] = useState(false);
     const [selectedBirthdayMonth, setSelectedBirthdayMonth] = useState<number>(() => new Date().getMonth());
+
+    // Estados para Diárias & Pernoites Rápidos
+    const [isPernoiteConfirmOpen, setIsPernoiteConfirmOpen] = useState(false);
+    const [isDiariaConfirmOpen, setIsDiariaConfirmOpen] = useState(false);
+    const [enrollmentForQuickAction, setEnrollmentForQuickAction] = useState<DaycareRegistration | null>(null);
+    const [isQuickActionSuccessOpen, setIsQuickActionSuccessOpen] = useState(false);
+    const [quickActionSuccessMessage, setQuickActionSuccessMessage] = useState('');
+    const [isActionLoading, setIsActionLoading] = useState(false);
+    const [quickPernoitePrice, setQuickPernoitePrice] = useState('50');
+    const [quickDiariaPrice, setQuickDiariaPrice] = useState('30');
+
+    const handleQuickPernoite = (enrollment: DaycareRegistration) => {
+        setEnrollmentForQuickAction(enrollment);
+        setQuickPernoitePrice('50');
+        setIsPernoiteConfirmOpen(true);
+    };
+
+    const handleQuickDiaria = (enrollment: DaycareRegistration) => {
+        setEnrollmentForQuickAction(enrollment);
+        setQuickDiariaPrice('30');
+        setIsDiariaConfirmOpen(true);
+    };
+
+    const confirmQuickPernoite = async () => {
+        if (!enrollmentForQuickAction || !enrollmentForQuickAction.id) return;
+        setIsActionLoading(true);
+        try {
+            const currentPriceStr = quickPernoitePrice.replace(',', '.').replace(/[^0-9.]/g, '');
+            const priceVal = parseFloat(currentPriceStr) || 0;
+
+            const currentExtras = enrollmentForQuickAction.extra_services && typeof enrollmentForQuickAction.extra_services === 'object'
+                ? { ...enrollmentForQuickAction.extra_services }
+                : {};
+
+            // 1. Calcular extras antigos para extrair o preço base real
+            let oldExtrasTotal = 0;
+            Object.entries(currentExtras).forEach(([key, service]: [string, any]) => {
+                if (service && typeof service === 'object' && service.enabled) {
+                    if (key === 'dias_extras' && service.quantity) {
+                        oldExtrasTotal += (Number(service.value) || 0) * service.quantity;
+                    } else {
+                        oldExtrasTotal += Number(service.value) || 0;
+                    }
+                }
+            });
+
+            // 2. Extrair o preço base do pet
+            const currentDbPrice = Number(enrollmentForQuickAction.total_price || 0);
+            const trueBasePrice = Math.max(0, currentDbPrice - oldExtrasTotal);
+
+            // 3. Atualizar a pernoite com o novo valor, enabled: true, date e archived: false
+            currentExtras.pernoite = { 
+                enabled: true, 
+                value: priceVal, 
+                date: new Date().toISOString(),
+                archived: false
+            };
+
+            let newExtrasTotal = 0;
+            Object.entries(currentExtras).forEach(([key, service]: [string, any]) => {
+                if (service && typeof service === 'object' && service.enabled) {
+                    if (key === 'dias_extras' && service.quantity) {
+                        newExtrasTotal += (Number(service.value) || 0) * service.quantity;
+                    } else {
+                        newExtrasTotal += Number(service.value) || 0;
+                    }
+                }
+            });
+
+            const finalTotalPrice = trueBasePrice + newExtrasTotal;
+
+            const { data, error } = await supabase
+                .from('daycare_enrollments')
+                .update({ 
+                    extra_services: currentExtras,
+                    total_price: finalTotalPrice 
+                })
+                .eq('id', enrollmentForQuickAction.id)
+                .select()
+                .single();
+
+            if (error) {
+                alert('Erro ao agendar pernoite: ' + error.message);
+            } else {
+                setEnrollments(prev => prev.map(e => e.id === enrollmentForQuickAction.id ? (data as DaycareRegistration) : e));
+                localStorage.setItem('hotel_active_tab', 'pernoite');
+                setQuickActionSuccessMessage(`Pernoite para o pet ${enrollmentForQuickAction.pet_name} agendada com sucesso com o valor de R$ ${priceVal.toFixed(2).replace('.', ',')}! Você será redirecionado para a aba Pernoites no Hotel Pet.`);
+                setIsPernoiteConfirmOpen(false);
+                setIsQuickActionSuccessOpen(true);
+            }
+        } catch (e: any) {
+            alert('Erro inesperado: ' + e.message);
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const confirmQuickDiaria = async () => {
+        if (!enrollmentForQuickAction || !enrollmentForQuickAction.id) return;
+        setIsActionLoading(true);
+        try {
+            const currentPriceStr = quickDiariaPrice.replace(',', '.').replace(/[^0-9.]/g, '');
+            const priceVal = parseFloat(currentPriceStr) || 0;
+
+            const currentExtras = enrollmentForQuickAction.extra_services && typeof enrollmentForQuickAction.extra_services === 'object'
+                ? { ...enrollmentForQuickAction.extra_services }
+                : {};
+
+            // 1. Calcular extras antigos para extrair o preço base real
+            let oldExtrasTotal = 0;
+            Object.entries(currentExtras).forEach(([key, service]: [string, any]) => {
+                if (service && typeof service === 'object' && service.enabled) {
+                    if (key === 'dias_extras' && service.quantity) {
+                        oldExtrasTotal += (Number(service.value) || 0) * service.quantity;
+                    } else {
+                        oldExtrasTotal += Number(service.value) || 0;
+                    }
+                }
+            });
+
+            // 2. Extrair o preço base do pet
+            const currentDbPrice = Number(enrollmentForQuickAction.total_price || 0);
+            const trueBasePrice = Math.max(0, currentDbPrice - oldExtrasTotal);
+
+            // 3. Atualizar a diária extra com o novo valor, enabled: true, quantidade incrementada, data de hoje e archived: false
+            const currentQuantity = currentExtras.dias_extras?.quantity || 0;
+            currentExtras.dias_extras = { 
+                enabled: true, 
+                quantity: currentQuantity + 1, 
+                value: priceVal,
+                date: new Date().toISOString(),
+                archived: false
+            };
+
+            // 4. Calcular o novo total de extras
+            let newExtrasTotal = 0;
+            Object.entries(currentExtras).forEach(([key, service]: [string, any]) => {
+                if (service && typeof service === 'object' && service.enabled) {
+                    if (key === 'dias_extras' && service.quantity) {
+                        newExtrasTotal += (Number(service.value) || 0) * service.quantity;
+                    } else {
+                        newExtrasTotal += Number(service.value) || 0;
+                    }
+                }
+            });
+
+            const finalTotalPrice = trueBasePrice + newExtrasTotal;
+
+            const { data, error } = await supabase
+                .from('daycare_enrollments')
+                .update({ 
+                    extra_services: currentExtras,
+                    total_price: finalTotalPrice 
+                })
+                .eq('id', enrollmentForQuickAction.id)
+                .select()
+                .single();
+
+            if (error) {
+                alert('Erro ao agendar diária: ' + error.message);
+            } else {
+                setEnrollments(prev => prev.map(e => e.id === enrollmentForQuickAction.id ? (data as DaycareRegistration) : e));
+                localStorage.setItem('hotel_active_tab', 'diaria');
+                setQuickActionSuccessMessage(`Diária extra para o pet ${enrollmentForQuickAction.pet_name} agendada com sucesso com o valor de R$ ${priceVal.toFixed(2).replace('.', ',')}! Você será redirecionado para a aba Diárias no Hotel Pet.`);
+                setIsDiariaConfirmOpen(false);
+                setIsQuickActionSuccessOpen(true);
+            }
+        } catch (e: any) {
+            alert('Erro inesperado: ' + e.message);
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const handleCloseSuccessAndNavigate = () => {
+        setIsQuickActionSuccessOpen(false);
+        setEnrollmentForQuickAction(null);
+        if (onNavigate) {
+            onNavigate('hotel');
+        }
+    };
 
     useEffect(() => {
         if (isUploadDaycarePhotoModalOpen) {
@@ -15886,6 +16525,8 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
                         onFiscalNote={onFiscalNote}
                         isEmittingNFe={emittingNFeId === enrollment.id}
                         fiscalNotesMap={fiscalNotesMap}
+                        onAddPernoite={handleQuickPernoite}
+                        onAddDiaria={handleQuickDiaria}
                     />
                 ))}
             </div>
@@ -16034,6 +16675,131 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
                     birthdayPets={birthdayPetsForSelectedMonth}
                     selectedMonth={selectedBirthdayMonth}
                     setSelectedMonth={setSelectedBirthdayMonth}
+                />
+            )}
+            {isPernoiteConfirmOpen && enrollmentForQuickAction && (
+                <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => { setIsPernoiteConfirmOpen(false); setEnrollmentForQuickAction(null); }}></div>
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-scaleIn border border-gray-100 p-6 z-[10002]">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-full bg-pink-50 flex items-center justify-center text-pink-600">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold font-outfit text-gray-800 leading-tight">Agendar Pernoite</h3>
+                                <p className="text-xs text-gray-400 font-medium font-jakarta mt-0.5">Creche Pet para Hotel Pet</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-gray-600 font-jakarta mb-5 leading-relaxed">
+                            Você está agendando uma pernoite extra para o pet <strong className="text-gray-900 font-bold">{enrollmentForQuickAction.pet_name}</strong>. Por favor, defina o valor cobrado por este serviço adicional:
+                        </p>
+                        
+                        <div className="mb-6">
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 font-jakarta">Valor da Pernoite</label>
+                            <div className="relative rounded-xl shadow-sm">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span className="text-gray-400 font-bold text-sm sm:text-base">R$</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={quickPernoitePrice}
+                                    onChange={(e) => {
+                                        let val = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '');
+                                        const parts = val.split('.');
+                                        if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+                                        setQuickPernoitePrice(val);
+                                    }}
+                                    className="block w-full pl-9 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-pink-500 font-bold text-gray-800 font-outfit transition-all text-base sm:text-lg"
+                                    placeholder="50.00"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 justify-end border-t border-gray-100 pt-4 bg-white">
+                            <button
+                                onClick={() => { setIsPernoiteConfirmOpen(false); setEnrollmentForQuickAction(null); }}
+                                className="px-4 py-2.5 text-gray-500 font-semibold border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-jakarta text-xs sm:text-sm"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmQuickPernoite}
+                                disabled={isActionLoading}
+                                className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all disabled:opacity-50 text-xs sm:text-sm flex items-center gap-1.5"
+                            >
+                                {isActionLoading ? 'Agendando...' : 'Confirmar Pernoite'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {isDiariaConfirmOpen && enrollmentForQuickAction && (
+                <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => { setIsDiariaConfirmOpen(false); setEnrollmentForQuickAction(null); }}></div>
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-scaleIn border border-gray-100 p-6 z-[10002]">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-full bg-pink-50 flex items-center justify-center text-pink-600">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold font-outfit text-gray-800 leading-tight">Agendar Diária Extra</h3>
+                                <p className="text-xs text-gray-400 font-medium font-jakarta mt-0.5">Creche Pet para Hotel Pet</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-gray-600 font-jakarta mb-5 leading-relaxed">
+                            Você está agendando uma diária extra para o pet <strong className="text-gray-900 font-bold">{enrollmentForQuickAction.pet_name}</strong>. Por favor, defina o valor cobrado por este serviço adicional:
+                        </p>
+                        
+                        <div className="mb-6">
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 font-jakarta">Valor da Diária</label>
+                            <div className="relative rounded-xl shadow-sm">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span className="text-gray-400 font-bold text-sm sm:text-base">R$</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={quickDiariaPrice}
+                                    onChange={(e) => {
+                                        let val = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '');
+                                        const parts = val.split('.');
+                                        if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+                                        setQuickDiariaPrice(val);
+                                    }}
+                                    className="block w-full pl-9 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-pink-500 font-bold text-gray-800 font-outfit transition-all text-base sm:text-lg"
+                                    placeholder="30.00"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 justify-end border-t border-gray-100 pt-4 bg-white">
+                            <button
+                                onClick={() => { setIsDiariaConfirmOpen(false); setEnrollmentForQuickAction(null); }}
+                                className="px-4 py-2.5 text-gray-500 font-semibold border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-jakarta text-xs sm:text-sm"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmQuickDiaria}
+                                disabled={isActionLoading}
+                                className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all disabled:opacity-50 text-xs sm:text-sm flex items-center gap-1.5"
+                            >
+                                {isActionLoading ? 'Agendando...' : 'Confirmar Diária'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {isQuickActionSuccessOpen && (
+                <ConfirmationModal
+                    isOpen={isQuickActionSuccessOpen}
+                    onClose={handleCloseSuccessAndNavigate}
+                    onConfirm={handleCloseSuccessAndNavigate}
+                    title="Sucesso!"
+                    message={quickActionSuccessMessage}
+                    confirmText="Ir para o Hotel Pet"
+                    cancelText="Fechar"
+                    variant="success"
+                    icon={<svg className="w-9 h-9 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                 />
             )}
 
@@ -17213,7 +17979,7 @@ const AdminDashboard: React.FC<{
                 onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap}
                 onExportCsv={exportAllCsv} isExporting={exporting}
             />;
-            case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} onFiscalNote={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap} />;
+            case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} onFiscalNote={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap} onNavigate={setActiveView} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView 
