@@ -191,6 +191,8 @@ const ExtraServicesModal: React.FC<ExtraServicesModalProps> = ({
       const updatePayload: any = { extra_services: mergedExtras };
       if (type === 'monthly') {
         updatePayload.price = finalTotal;
+      } else if (type === 'daycare') {
+        updatePayload.total_price = finalTotal;
       }
 
       const { data: updatedData, error } = await supabase

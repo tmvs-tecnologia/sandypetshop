@@ -1293,15 +1293,14 @@ const calculateExtraServicesTotal = (extraServices: any): number => {
 
 // Função para calcular o valor total da fatura da creche
 const calculateDaycareInvoiceTotal = (enrollment: DaycareRegistration): number => {
-    // Se total_price foi definido manualmente pelo admin, ele representa o valor final completo.
-    // Não somamos extras em cima, pois o admin já definiu o total correto.
-    // NOTA: Supabase pode retornar total_price como string ou número, então verificamos ambos.
+    // Se total_price foi definido (no Editar Matrícula ou atualizado pelo modal de extras), ele representa o valor final completo.
+    // Retornamos esse valor diretamente para manter a consistência absoluta do preço.
     const totalPriceValue = parseFloat(String(enrollment.total_price ?? ''));
     if (!isNaN(totalPriceValue) && totalPriceValue > 0) {
         return totalPriceValue;
     }
 
-    // Se não há total_price definido, calculamos a partir do plano contratado + extras
+    // Se não há total_price definido, calculamos a partir do plano contratado + extras de fallback
     const base = (enrollment.contracted_plan && DAYCARE_PLAN_PRICES[enrollment.contracted_plan])
         ? DAYCARE_PLAN_PRICES[enrollment.contracted_plan]
         : 0;
@@ -1309,24 +1308,28 @@ const calculateDaycareInvoiceTotal = (enrollment: DaycareRegistration): number =
     let extras = 0;
     const es: any = enrollment.extra_services as any;
     if (es) {
-        // Novo formato (enabled/value/quantity)
-        if (es.pernoite?.enabled) extras += Number(es.pernoite.value ?? DAYCARE_EXTRA_SERVICES_PRICES.pernoite);
-        if (es.banho_tosa?.enabled) extras += Number(es.banho_tosa.value ?? DAYCARE_EXTRA_SERVICES_PRICES.banho_tosa);
-        if (es.so_banho?.enabled) extras += Number(es.so_banho.value ?? DAYCARE_EXTRA_SERVICES_PRICES.so_banho);
-        if (es.adestrador?.enabled) extras += Number(es.adestrador.value ?? DAYCARE_EXTRA_SERVICES_PRICES.adestrador);
-        if (es.despesa_medica?.enabled) extras += Number(es.despesa_medica.value ?? DAYCARE_EXTRA_SERVICES_PRICES.despesa_medica);
-        if (es.dias_extras?.quantity && es.dias_extras.quantity > 0) {
-            extras += Number(es.dias_extras.quantity) * Number(es.dias_extras.value ?? DAYCARE_EXTRA_SERVICES_PRICES.dia_extra);
-        }
+        // Percorrer todas as chaves do objeto 'es' para garantir que qualquer serviço extra
+        // ativado no modal (novo ou legado) seja somado de forma dinâmica e precisa.
+        Object.entries(es).forEach(([key, service]: [string, any]) => {
+            if (service && typeof service === 'object') {
+                if (service.enabled) {
+                    if (key === 'dias_extras' && service.quantity) {
+                        extras += (Number(service.value) || 0) * service.quantity;
+                    } else {
+                        extras += Number(service.value) || 0;
+                    }
+                }
+            } else {
+                // Suporte para o formato legado (boolean)
+                if (service === true) {
+                    extras += DAYCARE_EXTRA_SERVICES_PRICES[key] || 0;
+                }
+            }
+        });
 
-        // Formato antigo (booleans e número para dia_extra)
-        if (es.pernoite === true) extras += DAYCARE_EXTRA_SERVICES_PRICES.pernoite;
-        if (es.banho_tosa === true) extras += DAYCARE_EXTRA_SERVICES_PRICES.banho_tosa;
-        if (es.so_banho === true) extras += DAYCARE_EXTRA_SERVICES_PRICES.so_banho;
-        if (es.adestrador === true) extras += DAYCARE_EXTRA_SERVICES_PRICES.adestrador;
-        if (es.despesa_medica === true) extras += DAYCARE_EXTRA_SERVICES_PRICES.despesa_medica;
+        // Suporte legado específico para dia_extra como um número diretamente
         if (typeof es.dia_extra === 'number' && es.dia_extra > 0) {
-            extras += es.dia_extra * DAYCARE_EXTRA_SERVICES_PRICES.dia_extra;
+            extras += es.dia_extra * (DAYCARE_EXTRA_SERVICES_PRICES.dia_extra || 30);
         }
     }
 
