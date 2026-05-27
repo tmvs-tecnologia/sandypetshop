@@ -8759,12 +8759,12 @@ const DaycareEnrollmentCard: React.FC<{
                 {/* Header Section */}
                         <div className="flex items-center justify-between mb-4 gap-2">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <div className="relative flex-shrink-0">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
+                                <div className="relative flex-shrink-0 isolate">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity pointer-events-none z-0" />
                                     <SafeImage 
                                         src={enrollment.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/11201/11201086.png'} 
                                         alt={enrollment.pet_name} 
-                                        className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform" 
+                                        className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform z-10 opacity-100 brightness-100" 
                                         loading="eager" 
                                         onClick={(e) => { e.stopPropagation(); onChangePhoto(enrollment); }} 
                                     />
@@ -13440,7 +13440,8 @@ const DaycareCardForHotelView: React.FC<{
     type: 'diaria' | 'pernoite';
     onArchive?: (enrollment: DaycareRegistration) => void;
     onDelete?: (enrollment: DaycareRegistration) => void;
-}> = ({ enrollment, type, onArchive, onDelete }) => {
+    onChangePhoto?: (enrollment: DaycareRegistration) => void;
+}> = ({ enrollment, type, onArchive, onDelete, onChangePhoto }) => {
     const { pet_name, tutor_name, contact_phone } = enrollment;
     
     // Recupera o valor configurado em extra_services ou usa o fallback
@@ -13489,13 +13490,14 @@ const DaycareCardForHotelView: React.FC<{
 
             <div className="flex items-center justify-between mb-4 gap-2">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="relative flex-shrink-0">
-                        <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity"></div>
+                    <div className="relative flex-shrink-0 isolate">
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity pointer-events-none z-0"></div>
                         <SafeImage 
                             src={enrollment.pet_photo_url || 'https://cdn-icons-png.flaticon.com/512/11201/11201086.png'} 
                             alt={pet_name} 
-                            className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md hover:scale-105 transition-transform" 
+                            className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md hover:scale-105 transition-transform cursor-pointer z-10 opacity-100 brightness-100" 
                             loading="eager" 
+                            onClick={(e) => { e.stopPropagation(); onChangePhoto && onChangePhoto(enrollment); }}
                         />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -13610,6 +13612,12 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
     const [selectedPhotoName, setSelectedPhotoName] = useState<string>('');
     const [isUploadingChecklistMap, setIsUploadingChecklistMap] = useState<Record<string, boolean>>({});
 
+    const [isUploadDaycarePhotoModalOpen, setIsUploadDaycarePhotoModalOpen] = useState(false);
+    const [uploadTargetDaycareEnrollment, setUploadTargetDaycareEnrollment] = useState<DaycareRegistration | null>(null);
+    const [isUploadingDaycarePhoto, setIsUploadingDaycarePhoto] = useState(false);
+    const [daycareUploadError, setDaycareUploadError] = useState<string | null>(null);
+    const [selectedDaycarePhotoName, setSelectedDaycarePhotoName] = useState<string>('');
+
     const handlePetPhotoUpload = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setUploadError(null);
@@ -13648,6 +13656,47 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
         } finally {
             setIsUploadingPhoto(false);
             setSelectedPhotoName('');
+        }
+    };
+
+    const handleDaycarePetPhotoUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setDaycareUploadError(null);
+        const input = (e.currentTarget.elements.namedItem('daycare_pet_photo') as HTMLInputElement);
+        const file = input?.files?.[0];
+        if (!file) { setDaycareUploadError('Selecione uma imagem'); return; }
+        setIsUploadingDaycarePhoto(true);
+        try {
+            const enr = uploadTargetDaycareEnrollment as DaycareRegistration;
+            const ext = (file.name.split('.')?.pop() || 'jpg').toLowerCase();
+            const base = (enr.id || enr.pet_name.replace(/\s+/g, '_'));
+            const path = `${base}_${Date.now()}.${ext}`;
+            const oldUrl = (enr as any).pet_photo_url as string | undefined;
+            if (oldUrl) {
+                try {
+                    const u = new URL(oldUrl);
+                    const prefix = '/storage/v1/object/public/daycare_pet_photos/';
+                    const idx = u.pathname.indexOf(prefix);
+                    if (idx !== -1) {
+                        const oldPath = u.pathname.substring(idx + prefix.length);
+                        await supabase.storage.from('daycare_pet_photos').remove([oldPath]);
+                    }
+                } catch { }
+            }
+            const { error: upErr } = await supabase.storage.from('daycare_pet_photos').upload(path, file, { upsert: true, contentType: file.type });
+            if (upErr) throw upErr;
+            const { data } = supabase.storage.from('daycare_pet_photos').getPublicUrl(path);
+            const publicUrl = data.publicUrl;
+            const { data: updated, error: dbErr } = await supabase.from('daycare_enrollments').update({ pet_photo_url: publicUrl }).eq('id', enr.id as string).select().single();
+            if (dbErr) throw dbErr;
+            setDaycareEnrollmentsForHotel(prev => prev.map(e => e.id === enr.id ? (updated as DaycareRegistration) : e));
+            setIsUploadDaycarePhotoModalOpen(false);
+            setUploadTargetDaycareEnrollment(null);
+        } catch (err: any) {
+            setDaycareUploadError(err.message || 'Falha ao enviar');
+        } finally {
+            setIsUploadingDaycarePhoto(false);
+            setSelectedDaycarePhotoName('');
         }
     };
 
@@ -15034,6 +15083,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                                             enrollment={enrollment} 
                                             type="diaria" 
                                             onDelete={(e) => handleDeleteDaycareExtra(e, 'diaria')}
+                                            onChangePhoto={(enr) => { setUploadTargetDaycareEnrollment(enr); setIsUploadDaycarePhotoModalOpen(true); }}
                                         />
                                     </div>
                                 ))}
@@ -15043,6 +15093,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                                             enrollment={enrollment} 
                                             type="pernoite" 
                                             onDelete={(e) => handleDeleteDaycareExtra(e, 'pernoite')}
+                                            onChangePhoto={(enr) => { setUploadTargetDaycareEnrollment(enr); setIsUploadDaycarePhotoModalOpen(true); }}
                                         />
                                     </div>
                                 ))}
@@ -15067,6 +15118,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                                             type="diaria" 
                                             onArchive={(e) => handleArchiveDaycareExtra(e, 'diaria')}
                                             onDelete={(e) => handleDeleteDaycareExtra(e, 'diaria')}
+                                            onChangePhoto={(enr) => { setUploadTargetDaycareEnrollment(enr); setIsUploadDaycarePhotoModalOpen(true); }}
                                         />
                                     </div>
                                 ))}
@@ -15091,6 +15143,7 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                                             type="pernoite" 
                                             onArchive={(e) => handleArchiveDaycareExtra(e, 'pernoite')}
                                             onDelete={(e) => handleDeleteDaycareExtra(e, 'pernoite')}
+                                            onChangePhoto={(enr) => { setUploadTargetDaycareEnrollment(enr); setIsUploadDaycarePhotoModalOpen(true); }}
                                         />
                                     </div>
                                 ))}
@@ -15199,6 +15252,26 @@ const HotelView: React.FC<{ refreshKey?: number; setShowHotelStatistics?: (show:
                             <div className="flex justify-end gap-2">
                                 <button type="button" onClick={() => { setIsUploadPhotoModalOpen(false); setUploadTargetRegistration(null); setSelectedPhotoName(''); }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">Cancelar</button>
                                 <button type="submit" disabled={isUploadingPhoto} className="px-4 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50">{isUploadingPhoto ? 'Enviando...' : 'Salvar'}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {isUploadDaycarePhotoModalOpen && uploadTargetDaycareEnrollment && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Trocar foto do pet (Creche)</h3>
+                        <form onSubmit={handleDaycarePetPhotoUpload}>
+                            <input id="hotel_daycare_pet_photo_input" type="file" name="daycare_pet_photo" accept="image/*" className="sr-only" onChange={(e) => setSelectedDaycarePhotoName(e.target.files?.[0]?.name || '')} />
+                            <div className="flex items-center gap-3 mb-4">
+                                <label htmlFor="hotel_daycare_pet_photo_input" className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 cursor-pointer">Escolher arquivo</label>
+                                <span className="text-sm text-gray-600">{selectedDaycarePhotoName || 'Nenhum arquivo selecionado'}</span>
+                            </div>
+                            {daycareUploadError && <p className="text-red-600 text-sm mb-2">{daycareUploadError}</p>}
+                            <div className="flex justify-end gap-2">
+                                <button type="button" onClick={() => { setIsUploadDaycarePhotoModalOpen(false); setUploadTargetDaycareEnrollment(null); setSelectedDaycarePhotoName(''); }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">Cancelar</button>
+                                <button type="submit" disabled={isUploadingDaycarePhoto} className="px-4 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50">{isUploadingDaycarePhoto ? 'Enviando...' : 'Salvar'}</button>
                             </div>
                         </form>
                     </div>
