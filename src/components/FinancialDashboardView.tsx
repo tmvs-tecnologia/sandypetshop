@@ -1488,7 +1488,8 @@ const FinancialDashboardView: React.FC = () => {
                 textAnchor="middle"
                 fontSize="10"
                 fontWeight={isActive ? '900' : isZero ? '500' : '700'}
-                fill={isActive ? '#db2777' : isZero ? '#d1d5db' : '#9ca3af'}
+                className={`${isActive ? 'fill-pink-600 dark:fill-pink-400 font-black' : isZero ? 'fill-gray-300 dark:fill-slate-700' : 'fill-gray-400 dark:fill-slate-400'}`}
+                fill="currentColor"
               >
                 {months[idx].substring(0, 3)}
               </text>
@@ -1507,11 +1508,11 @@ const FinancialDashboardView: React.FC = () => {
                 <text
                   x={bar.xCenter}
                   y={bar.y - 8}
-                  fill={isActive ? '#be185d' : '#db2777'}
+                  className={`transition-all duration-200 group-hover/bar:fill-gray-900 dark:group-hover/bar:fill-white font-sans tracking-tight ${isActive ? 'fill-pink-700 dark:fill-pink-300' : 'fill-pink-600 dark:fill-pink-400'}`}
+                  fill="currentColor"
                   fontSize="12"
                   fontWeight="900"
                   textAnchor="middle"
-                  className="transition-all duration-200 group-hover/bar:fill-gray-900 font-sans tracking-tight"
                 >
                   R$ {Math.round(bar.val).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                 </text>
@@ -1618,20 +1619,20 @@ const FinancialDashboardView: React.FC = () => {
               );
             })}
           </svg>
-          <div className="absolute inset-0 m-auto w-20 h-20 bg-white/95 rounded-full border border-pink-100/50 shadow-inner flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Total</span>
-            <span className="text-xs font-black text-pink-600">R$ <AnimatedCounter value={consolidatedMetrics.summary.monthTotal} decimals={0} /></span>
+          <div className="absolute inset-0 m-auto w-20 h-20 bg-white/95 dark:bg-slate-800/95 rounded-full border border-pink-100/50 dark:border-slate-700/50 shadow-inner flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-[10px] text-gray-400 dark:text-slate-400 font-black uppercase tracking-wider">Total</span>
+            <span className="text-xs font-black text-pink-600 dark:text-pink-400">R$ <AnimatedCounter value={consolidatedMetrics.summary.monthTotal} decimals={0} /></span>
           </div>
         </div>
 
         <div className="flex-1 space-y-2.5 w-full">
           {allServices.map((item, idx) => (
-            <div key={idx} className="flex justify-between items-center bg-white/40 p-2.5 rounded-2xl border border-gray-100 hover:bg-white/80 transition-colors shadow-sm">
+            <div key={idx} className="flex justify-between items-center bg-white/40 dark:bg-slate-850/40 p-2.5 rounded-2xl border border-gray-100 dark:border-slate-700 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-colors shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 rounded-full block border border-white" style={{ backgroundColor: item.color }} />
-                <span className="text-xs font-black text-gray-700">{item.name}</span>
+                <span className="w-3.5 h-3.5 rounded-full block border border-white dark:border-slate-700" style={{ backgroundColor: item.color }} />
+                <span className="text-xs font-black text-gray-700 dark:text-slate-200">{item.name}</span>
               </div>
-              <span className="text-xs font-black text-pink-600">R$ {item.amount.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} ({item.value.toFixed(1)}%)</span>
+              <span className="text-xs font-black text-pink-600 dark:text-pink-400">R$ {item.amount.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} ({item.value.toFixed(1)}%)</span>
             </div>
           ))}
         </div>
@@ -1701,20 +1702,20 @@ const FinancialDashboardView: React.FC = () => {
               );
             })}
           </svg>
-          <div className="absolute inset-0 m-auto w-20 h-20 bg-white/95 rounded-full border border-pink-100/50 shadow-inner flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Gastos</span>
-            <span className="text-xs font-black text-red-500">R$ <AnimatedCounter value={expensesMetrics.total} decimals={0} /></span>
+          <div className="absolute inset-0 m-auto w-20 h-20 bg-white/95 dark:bg-slate-800/95 rounded-full border border-pink-100/50 dark:border-slate-700/50 shadow-inner flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-[10px] text-gray-400 dark:text-slate-400 font-black uppercase tracking-wider">Gastos</span>
+            <span className="text-xs font-black text-red-500 dark:text-red-400">R$ <AnimatedCounter value={expensesMetrics.total} decimals={0} /></span>
           </div>
         </div>
 
         <div className="flex-1 space-y-2.5 w-full">
           {data.map((item, idx) => (
-            <div key={idx} className="flex justify-between items-center bg-white/40 p-2.5 rounded-2xl border border-gray-100 hover:bg-white/80 transition-colors shadow-sm">
+            <div key={idx} className="flex justify-between items-center bg-white/40 dark:bg-slate-850/40 p-2.5 rounded-2xl border border-gray-100 dark:border-slate-700 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-colors shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 rounded-full block border border-white" style={{ backgroundColor: item.color }} />
-                <span className="text-xs font-black text-gray-700">{item.name}</span>
+                <span className="w-3.5 h-3.5 rounded-full block border border-white dark:border-slate-700" style={{ backgroundColor: item.color }} />
+                <span className="text-xs font-black text-gray-700 dark:text-slate-200">{item.name}</span>
               </div>
-              <span className="text-xs font-black text-red-500">R$ {item.amount.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} ({item.value.toFixed(0)}%)</span>
+              <span className="text-xs font-black text-red-500 dark:text-red-450">R$ {item.amount.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} ({item.value.toFixed(0)}%)</span>
             </div>
           ))}
         </div>
@@ -1792,7 +1793,8 @@ const FinancialDashboardView: React.FC = () => {
                 textAnchor="middle"
                 fontSize="10"
                 fontWeight={isActive ? '900' : isZero ? '500' : '700'}
-                fill={isActive ? '#e11d48' : isZero ? '#d1d5db' : '#9ca3af'}
+                className={`${isActive ? 'fill-red-600 dark:fill-red-400 font-black' : isZero ? 'fill-gray-300 dark:fill-slate-700' : 'fill-gray-400 dark:fill-slate-400'}`}
+                fill="currentColor"
               >
                 {months[idx].substring(0, 3)}
               </text>
@@ -1811,11 +1813,11 @@ const FinancialDashboardView: React.FC = () => {
                 <text
                   x={bar.xCenter}
                   y={bar.y - 8}
-                  fill={isActive ? '#be185d' : '#e11d48'}
-                  fontSize="12" // Fonte aumentada de 9 para 12 para excelente legibilidade!
-                  fontWeight="900" // Peso black
+                  className={`transition-all duration-200 group-hover/bar:fill-gray-900 dark:group-hover/bar:fill-white group-hover/bar:scale-105 origin-center font-sans tracking-tight ${isActive ? 'fill-red-700 dark:fill-red-400' : 'fill-red-600 dark:fill-red-500'}`}
+                  fill="currentColor"
+                  fontSize="12"
+                  fontWeight="900"
                   textAnchor="middle"
-                  className="transition-all duration-200 group-hover/bar:fill-gray-900 group-hover/bar:scale-105 origin-center font-sans tracking-tight"
                 >
                   R$ {Math.round(bar.val).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                 </text>

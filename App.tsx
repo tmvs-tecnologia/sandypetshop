@@ -17331,6 +17331,23 @@ const AdminDashboard: React.FC<{
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [loyaltyPreview, setLoyaltyPreview] = useState<{ pet: string; owner: string } | null>(null);
 
+    const [adminTheme, setAdminTheme] = useState<'light' | 'dark'>(() => {
+        try {
+            const saved = localStorage.getItem('admin-theme');
+            return (saved === 'dark' || saved === 'light') ? saved : 'light';
+        } catch {
+            return 'light';
+        }
+    });
+
+    const toggleTheme = () => {
+        const nextTheme = adminTheme === 'dark' ? 'light' : 'dark';
+        setAdminTheme(nextTheme);
+        try {
+            localStorage.setItem('admin-theme', nextTheme);
+        } catch {}
+    };
+
     const handleShowLoyalty = (pet: string, owner: string) => {
         setLoyaltyPreview({ pet, owner });
     };
@@ -18116,23 +18133,23 @@ const AdminDashboard: React.FC<{
     );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/20 to-gray-100">
-            <header className="bg-white border-b-2 border-pink-100 shadow-lg fixed top-0 left-0 right-0 z-50 backdrop-blur-sm bg-white/95">
+        <div className={`min-h-screen admin-dashboard-container admin-bg-primary-override ${adminTheme === 'dark' ? 'dark bg-slate-900 text-slate-100' : 'bg-gradient-to-br from-gray-50 via-pink-50/20 to-gray-100'}`} data-theme={adminTheme}>
+            <header className="bg-white border-b-2 border-pink-100 shadow-lg fixed top-0 left-0 right-0 z-50 backdrop-blur-sm bg-white/95 admin-bg-card-override admin-border-override">
                 <div className="w-full px-2">
                     <div className="flex justify-between items-center h-20">
                         <div className="flex items-center gap-4">
                             <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Logo" className="h-12 w-12 drop-shadow-md" loading="eager" />
                             <div>
-                                <div className="font-brand text-pink-800 leading-none whitespace-nowrap text-[clamp(1.25rem,7vw,2.25rem)] hidden md:block">{adminTitle}</div>
+                                <div className="font-brand text-pink-800 leading-none whitespace-nowrap text-[clamp(1.25rem,7vw,2.25rem)] hidden md:block admin-text-primary-override">{adminTitle}</div>
                             </div>
                             <div className="flex-1 flex items-center justify-end pr-6 md:hidden">
-                                <div className="font-brand text-pink-800 leading-none whitespace-nowrap text-[clamp(1rem,6vw,1.5rem)]">{adminTitle}</div>
+                                <div className="font-brand text-pink-800 leading-none whitespace-nowrap text-[clamp(1rem,6vw,1.5rem)] admin-text-primary-override">{adminTitle}</div>
                             </div>
                         </div>
                         <div className="hidden md:flex items-center gap-3">
                             <button
                                 onClick={() => setIsPriceManagementOpen(true)}
-                                className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all shadow-sm hover:shadow text-pink-700 bg-pink-50 hover:bg-pink-100"
+                                className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all shadow-sm hover:shadow text-pink-700 bg-pink-50 hover:bg-pink-100 dark:text-pink-400 dark:bg-pink-950/20 dark:hover:bg-pink-900/30"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -18142,20 +18159,42 @@ const AdminDashboard: React.FC<{
                             <button
                                 onClick={() => setIsScheduleOpen(!isScheduleOpen)}
                                 className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all shadow-sm hover:shadow ${isScheduleOpen
-                                    ? 'text-green-700 bg-green-50 hover:bg-green-100'
-                                    : 'text-red-700 bg-red-50 hover:bg-red-100'
+                                    ? 'text-green-700 bg-green-50 hover:bg-green-100 dark:text-green-400 dark:bg-green-950/20 dark:hover:bg-green-900/30'
+                                    : 'text-red-700 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-950/20 dark:hover:bg-red-900/30'
                                     }`}
                             >
                                 {isScheduleOpen ? <LockOpenIcon /> : <LockClosedIcon />}
                                 {isScheduleOpen ? 'Fechar Agenda' : 'Abrir Agenda'}
                             </button>
                             <NotificationBell onViewFeedbacks={() => setActiveView('feedbacks')} />
-                            <button onClick={onLogout} className="flex items-center gap-3 text-base font-semibold text-gray-600 hover:text-pink-600 bg-gray-50 hover:bg-pink-50 px-5 py-3 rounded-xl transition-all shadow-sm hover:shadow">
+                            <button
+                                onClick={toggleTheme}
+                                className="flex items-center justify-center p-2.5 rounded-xl transition-all shadow-sm hover:shadow text-gray-600 dark:text-slate-300 hover:text-pink-600 dark:hover:text-pink-400 bg-gray-50 dark:bg-slate-800 hover:bg-pink-50 dark:hover:bg-slate-700 border border-gray-100 dark:border-slate-700"
+                                title={adminTheme === 'dark' ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'}
+                            >
+                                {adminTheme === 'dark' ? (
+                                    <span className="text-lg leading-none">☀️</span>
+                                ) : (
+                                    <span className="text-lg leading-none">🌙</span>
+                                )}
+                            </button>
+                            <button onClick={onLogout} className="flex items-center gap-3 text-base font-semibold text-gray-600 hover:text-pink-600 bg-gray-50 hover:bg-pink-50 px-5 py-3 rounded-xl transition-all shadow-sm hover:shadow dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-pink-950/20 dark:hover:text-pink-400">
                                 <LogoutIcon /> Sair
                             </button>
                         </div>
                         <div className="md:hidden flex items-center gap-2">
                             <NotificationBell onViewFeedbacks={() => setActiveView('feedbacks')} />
+                            <button
+                                onClick={toggleTheme}
+                                className="p-2 rounded-xl text-gray-600 dark:text-slate-300 hover:bg-pink-50 dark:hover:bg-slate-800"
+                                title={adminTheme === 'dark' ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'}
+                            >
+                                {adminTheme === 'dark' ? (
+                                    <span className="text-lg leading-none">☀️</span>
+                                ) : (
+                                    <span className="text-lg leading-none">🌙</span>
+                                )}
+                            </button>
                             {!showMobileMenu && (
                                 <button onClick={openMobileMenu} className="p-3 rounded-xl text-gray-500 hover:bg-pink-50 hover:text-pink-600 transition-colors" aria-label="Menu">
                                     <MenuIcon />
@@ -18174,7 +18213,7 @@ const AdminDashboard: React.FC<{
             )}
 
             {isDrawerVisible && (
-                <div className={`fixed left-0 top-0 h-full w-[75vw] max-w-[20rem] bg-white shadow-[20px_0_40px_rgba(0,0,0,0.1)] z-[9999] md:hidden p-4 rounded-r-3xl transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-pink-100 ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col overflow-y-hidden`}>
+                <div className={`fixed left-0 top-0 h-full w-[75vw] max-w-[20rem] bg-white shadow-[20px_0_40px_rgba(0,0,0,0.1)] z-[9999] md:hidden p-4 rounded-r-3xl transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-pink-100 ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col overflow-y-hidden admin-bg-card-override admin-border-override`}>
                     <div className={`flex items-center justify-between mb-4 transition-all duration-500 delay-100 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
                         <h3 className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Lobster Two, cursive' }}>Menu</h3>
                         <button onClick={closeMobileMenu} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Fechar menu">
@@ -18262,7 +18301,7 @@ const AdminDashboard: React.FC<{
                     <aside className={`
                         md:w-64 flex-shrink-0
                         md:sticky md:top-20 md:h-[calc(100vh-5rem)] md:bg-white md:p-0 md:z-10
-                        hidden md:block shadow-sm rounded-xl
+                        hidden md:block shadow-sm rounded-xl admin-bg-card-override border border-pink-100/50 admin-border-override
                     `}>
                         <NavMenu />
                         <div className="mt-6 space-y-1.5 pt-4 border-t border-pink-100/50">
