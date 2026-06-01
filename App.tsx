@@ -7463,7 +7463,7 @@ const EditMonthlyClientModal: React.FC<{ client: MonthlyClient; onClose: () => v
     );
 };
 
-const MonthlyClientDetailsModal: React.FC<{ client: MonthlyClient | null; onClose: () => void; }> = ({ client, onClose }) => {
+const MonthlyClientDetailsModal: React.FC<{ client: MonthlyClient | null; onClose: () => void; onChangePhoto?: (client: MonthlyClient) => void; }> = ({ client, onClose, onChangePhoto }) => {
     const [data, setData] = useState<MonthlyClient | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -7528,7 +7528,8 @@ const MonthlyClientDetailsModal: React.FC<{ client: MonthlyClient | null; onClos
                         <img
                             src={(data?.pet_photo_url || client.pet_photo_url) || 'https://cdn-icons-png.flaticon.com/512/3009/3009489.png'}
                             alt={String(data?.pet_name || client.pet_name || 'Pet')}
-                            className="w-12 h-12 rounded-full object-cover"
+                            className="w-12 h-12 rounded-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => onChangePhoto && onChangePhoto(data || client)}
                         />
                         <h2 className="text-2xl font-bold text-gray-800">Detalhes do Mensalista</h2>
                     </div>
@@ -8632,7 +8633,11 @@ const MonthlyClientsView: React.FC<{
 
 
             {viewingClient && (
-                <MonthlyClientDetailsModal client={viewingClient} onClose={() => setViewingClient(null)} />
+                <MonthlyClientDetailsModal 
+                    client={viewingClient} 
+                    onClose={() => setViewingClient(null)} 
+                    onChangePhoto={(mc) => { setUploadTargetMonthlyClient(mc); setIsUploadMonthlyPhotoModalOpen(true); }}
+                />
             )}
 
             {isUploadMonthlyPhotoModalOpen && uploadTargetMonthlyClient && (

@@ -395,17 +395,17 @@ const MonthlyClientCard: React.FC<{
                 <div className="flex items-start justify-between mb-4 gap-2">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="relative flex-shrink-0">
-                            <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity pointer-events-none" />
                             {client.pet_photo_url ? (
                                 <SafeImage
                                     src={client.pet_photo_url}
                                     alt={client.pet_name}
-                                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform"
+                                    className="relative z-10 w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform"
                                     onClick={(e) => { e.stopPropagation(); onChangePhoto(client); }}
                                 />
                             ) : (
                                 <div 
-                                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white flex items-center justify-center border-2 border-pink-50 shadow-sm text-2xl cursor-pointer hover:scale-105 transition-transform"
+                                    className="relative z-10 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white flex items-center justify-center border-2 border-pink-50 shadow-sm text-2xl cursor-pointer hover:scale-105 transition-transform"
                                     onClick={(e) => { e.stopPropagation(); onChangePhoto(client); }}
                                 >
                                     🐶

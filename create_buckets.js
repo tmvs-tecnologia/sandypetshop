@@ -7,24 +7,32 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 const buckets = ['monthly_pet_photos', 'daycare_pet_photos', 'pet_photos'];
 
-async function createBuckets() {
+async function createAndUpdateBuckets() {
   for (const bucket of buckets) {
-    const { data, error } = await supabase.storage.createBucket(bucket, {
+    console.log(`Updating configuration for bucket: ${bucket}...`);
+    const { data: updateData, error: updateError } = await supabase.storage.updateBucket(bucket, {
       public: true,
-      fileSizeLimit: 5242880, // 5MB limit
-      allowedMimeTypes: ['image/png', 'image/jpeg', 'image/webp']
+      fileSizeLimit: 52428800, // 50MB limit (52428800 bytes)
+      allowedMimeTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
     });
 
-    if (error) {
-      if(error.message.includes('already exists')) {
-         console.log(`Bucket ${bucket} already exists.`);
+    if (updateError) {
+      console.log(`Bucket ${bucket} does not exist or failed to update. Attempting to create...`);
+      const { data, error } = await supabase.storage.createBucket(bucket, {
+        public: true,
+        fileSizeLimit: 52428800, // 50MB limit
+        allowedMimeTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+      });
+
+      if (error) {
+        console.error(`Error with bucket ${bucket}:`, error.message);
       } else {
-         console.error(`Error creating bucket ${bucket}:`, error.message);
+        console.log(`Successfully created bucket: ${bucket} with 50MB limit`);
       }
     } else {
-      console.log(`Successfully created bucket: ${bucket}`);
+      console.log(`Successfully updated bucket ${bucket} configuration to 50MB limit.`);
     }
   }
 }
 
-createBuckets();
+createAndUpdateBuckets();
