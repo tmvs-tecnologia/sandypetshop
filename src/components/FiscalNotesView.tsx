@@ -161,8 +161,8 @@ const FiscalNotesView: React.FC = () => {
       // Lógica de Hidratação para buscar nomes reais e contatos
       try {
         const [daycareRes, monthlyRes, apptRes, petMovelRes, hotelRes, banhoRes] = await Promise.all([
-          supabase.from('daycare_enrollments').select('id, pet_name, tutor_name, tutor_phone, total_price'),
-          supabase.from('monthly_clients').select('id, pet_name, owner_name, tutor_phone, price'),
+          supabase.from('daycare_enrollments').select('id, pet_name, tutor_name, contact_phone, total_price'),
+          supabase.from('monthly_clients').select('id, pet_name, owner_name, whatsapp, price'),
           supabase.from('appointments').select('id, pet_name, owner_name, whatsapp, price'),
           supabase.from('pet_movel_appointments').select('id, pet_name, owner_name, whatsapp, price'),
           supabase.from('hotel_registrations').select('id, pet_name, tutor_name, tutor_phone, total_services_price'),
@@ -170,8 +170,8 @@ const FiscalNotesView: React.FC = () => {
         ]);
         
         const allRecords: { id: string, pet: string, tutor: string, phone: string, price: number }[] = [
-          ...(daycareRes.data?.map(d => ({ id: d.id, pet: d.pet_name, tutor: d.tutor_name, phone: d.tutor_phone, price: Number(d.total_price || 0) })) || []),
-          ...(monthlyRes.data?.map(m => ({ id: m.id, pet: m.pet_name, tutor: m.owner_name, phone: m.tutor_phone, price: Number(m.price || 0) })) || []),
+          ...(daycareRes.data?.map(d => ({ id: d.id, pet: d.pet_name, tutor: d.tutor_name, phone: d.contact_phone, price: Number(d.total_price || 0) })) || []),
+          ...(monthlyRes.data?.map(m => ({ id: m.id, pet: m.pet_name, tutor: m.owner_name, phone: m.whatsapp, price: Number(m.price || 0) })) || []),
           ...(apptRes.data?.map(a => ({ id: a.id, pet: a.pet_name, tutor: a.owner_name, phone: a.whatsapp, price: Number(a.price || 0) })) || []),
           ...(petMovelRes.data?.map(p => ({ id: p.id, pet: p.pet_name, tutor: p.owner_name, phone: p.whatsapp, price: Number(p.price || 0) })) || []),
           ...(hotelRes.data?.map(h => ({ id: h.id, pet: h.pet_name, tutor: h.tutor_name, phone: h.tutor_phone, price: Number(h.total_services_price || 0) })) || []),
