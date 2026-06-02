@@ -33,6 +33,7 @@ import LoyaltyCardPage from './src/components/LoyaltyCardPage';
 import LoyaltyModal from './src/components/LoyaltyModal';
 import LoyaltyDashboardView from './src/components/LoyaltyDashboardView';
 import FiscalNotesView from './src/components/FiscalNotesView';
+import FiscalFeedbackModal from './src/components/FiscalFeedbackModal';
 import { AdoptionPublicView } from './src/components/AdoptionPublicView';
 import { AdoptionAdminView } from './src/components/AdoptionAdminView';
 import TestimonialsCarousel from './src/components/TestimonialsCarousel';
@@ -17660,6 +17661,40 @@ const AdminDashboard: React.FC<{
         item: AdminAppointment | MonthlyClient | DaycareRegistration;
     } | null>(null);
 
+    const [fiscalFeedback, setFiscalFeedback] = useState<{
+        isOpen: boolean;
+        type: 'success' | 'processing' | 'error' | 'warning';
+        title: string;
+        message: string;
+        pdfUrl?: string;
+    } | null>(null);
+
+    const isValidCPF = (cpf: string): boolean => {
+        const cleanCPF = cpf.replace(/\D/g, '');
+        if (cleanCPF.length !== 11) return false;
+        if (/^(\d)\1{10}$/.test(cleanCPF)) return false;
+        
+        let sum = 0;
+        let remainder;
+        
+        for (let i = 1; i <= 9; i++) {
+            sum = sum + parseInt(cleanCPF.substring(i - 1, i)) * (11 - i);
+        }
+        remainder = (sum * 10) % 11;
+        if (remainder === 10 || remainder === 11) remainder = 0;
+        if (remainder !== parseInt(cleanCPF.substring(9, 10))) return false;
+        
+        sum = 0;
+        for (let i = 1; i <= 10; i++) {
+            sum = sum + parseInt(cleanCPF.substring(i - 1, i)) * (12 - i);
+        }
+        remainder = (sum * 10) % 11;
+        if (remainder === 10 || remainder === 11) remainder = 0;
+        if (remainder !== parseInt(cleanCPF.substring(10, 11))) return false;
+        
+        return true;
+    };
+
     const handleEmitNFe = (item: AdminAppointment | MonthlyClient | DaycareRegistration) => {
         if (emittingNFeId) return;
 
@@ -17667,12 +17702,25 @@ const AdminDashboard: React.FC<{
         const isAppointment = 'appointment_time' in item;
         const isMonthly = !isDaycare && !isAppointment;
 
+        const rawCpf = (item as any).owner_cpf || (item as any).cpf || '';
+        const tutorName = isDaycare ? (item as DaycareRegistration).tutor_name : (item as any).owner_name || 'Tutor';
+        
+        if (!isValidCPF(rawCpf)) {
+            setFiscalFeedback({
+                isOpen: true,
+                type: 'warning',
+                title: 'CPF Inválido ou Ausente',
+                message: `O tutor "${tutorName}" precisa ter um CPF válido cadastrado no sistema para emitir a Nota Fiscal. O CPF cadastrado é "${rawCpf || 'Vazio'}". Por favor, atualize o cadastro do cliente.`
+            });
+            return;
+        }
+
         const amount = isDaycare ? calculateDaycareInvoiceTotal(item as DaycareRegistration) : (item as AdminAppointment | MonthlyClient).price || 0;
         const serviceName = isDaycare ? 'Creche Pet' : (isMonthly ? 'Mensalidade PetShop' : (item as AdminAppointment).service);
 
         setFiscalModalData({
             petName: item.pet_name,
-            ownerName: isDaycare ? (item as DaycareRegistration).tutor_name : (item as any).owner_name,
+            ownerName: tutorName,
             serviceName: serviceName,
             amount: amount,
             isMonthly: isMonthly,
@@ -17691,6 +17739,17 @@ const AdminDashboard: React.FC<{
         const isDaycare = 'contracted_plan' in item;
         const isMonthly = 'recurrence_type' in item;
         const reference_type = isDaycare ? 'daycare' : (isMonthly ? 'monthly_client' : 'appointment');
+
+        const rawCpf = (item as any).owner_cpf || (item as any).cpf || '';
+        if (!isValidCPF(rawCpf)) {
+            setFiscalFeedback({
+                isOpen: true,
+                type: 'warning',
+                title: 'CPF Inválido ou Ausente',
+                message: `O tutor "${fiscalModalData.ownerName}" precisa ter um CPF válido cadastrado no sistema para emitir a Nota Fiscal.`
+            });
+            return;
+        }
 
         setIsFiscalModalOpen(false);
         setEmittingNFeId(item.id);
@@ -17717,18 +17776,39 @@ const AdminDashboard: React.FC<{
                     }));
                     // Abrir PDF em nova aba
                     window.open(pdfUrl, '_blank');
-                    alert('Nota Fiscal emitida com sucesso! O PDF foi aberto em uma nova aba.');
+                    setFiscalFeedback({
+                        isOpen: true,
+                        type: 'success',
+                        title: 'Nota Gerada com Sucesso!',
+                        message: `A Nota Fiscal para o pet ${fiscalModalData.petName} (tutor: ${fiscalModalData.ownerName}) foi emitida com sucesso. O PDF da NFS-e foi aberto em uma nova aba.`,
+                        pdfUrl: pdfUrl
+                    });
                 } else {
-                    alert('Nota Fiscal enviada com sucesso! Você poderá consultar o status em instantes no painel de Notas Fiscais.');
+                    setFiscalFeedback({
+                        isOpen: true,
+                        type: 'processing',
+                        title: 'Nota em Processamento',
+                        message: `A Nota Fiscal para o pet ${fiscalModalData.petName} foi enviada para a prefeitura com sucesso! O status atual é "${data.status || 'processando_autorizacao'}". Você poderá consultar o status final no painel de Notas Fiscais.`
+                    });
                 }
             } else {
                 const errorMsg = data.error || data.focus_result?.mensagem || 'Erro interno da função';
-                alert('Erro na função: ' + errorMsg);
+                setFiscalFeedback({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Falha na Emissão da Nota',
+                    message: `A FocusNFe retornou o seguinte erro: ${errorMsg}`
+                });
             }
         } catch (error: any) {
             console.error('Erro na emissão da NFe:', error);
             const detail = error.context?.statusText || error.message || 'Erro de rede';
-            alert(`Falha na comunicação: ${detail} (Verifique se o deploy foi concluído e as secrets foram configuradas)`);
+            setFiscalFeedback({
+                isOpen: true,
+                type: 'error',
+                title: 'Erro de Comunicação',
+                message: `Falha na comunicação com o servidor de Notas Fiscais: ${detail}. Por favor, verifique a conexão e se a Edge function foi implantada.`
+            });
         } finally {
             setEmittingNFeId(null);
             setFiscalModalData(null);
@@ -18449,6 +18529,16 @@ const AdminDashboard: React.FC<{
                     amount={fiscalModalData.amount}
                     isMonthly={fiscalModalData.isMonthly}
                     isDaycare={fiscalModalData.isDaycare}
+                />
+            )}
+            {fiscalFeedback && fiscalFeedback.isOpen && (
+                <FiscalFeedbackModal
+                    isOpen={fiscalFeedback.isOpen}
+                    onClose={() => setFiscalFeedback(prev => prev ? { ...prev, isOpen: false } : null)}
+                    type={fiscalFeedback.type}
+                    title={fiscalFeedback.title}
+                    message={fiscalFeedback.message}
+                    pdfUrl={fiscalFeedback.pdfUrl}
                 />
             )}
 

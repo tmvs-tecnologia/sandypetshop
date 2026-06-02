@@ -14,7 +14,91 @@ serve(async (req) => {
 
   let step = 'inicializando'
   try {
-    const { reference_id, reference_type, pet_name: req_pet_name, tutor_name: req_tutor_name } = await req.json()
+    const body = await req.json()
+    const { action, focus_nfe_reference, reference_id, reference_type, pet_name: req_pet_name, tutor_name: req_tutor_name } = body
+
+    if (action === 'consult') {
+      step = 'consultando FocusNFe'
+      const focusEnv = Deno.env.get('FOCUS_NFE_ENVIRONMENT') || 'homologacao'
+      const baseUrl = focusEnv === 'producao' 
+        ? 'https://api.focusnfe.com.br/v2/nfsen' 
+        : 'https://homologacao.focusnfe.com.br/v2/nfsen'
+      
+      const rawApiKey = Deno.env.get('FOCUS_NFE_API_KEY')
+      if (!rawApiKey) throw new Error('A variável FOCUS_NFE_API_KEY não está configurada.')
+      const apiKey = rawApiKey.trim()
+
+      console.log(`[FocusNFe] Consultando status da NFS-e para a referência: ${focus_nfe_reference}`)
+
+      const consultRes = await fetch(`${baseUrl}/${focus_nfe_reference}`, {
+          method: 'GET',
+          headers: {
+              'Authorization': `Basic ${btoa(apiKey + ':')}`,
+          }
+      })
+
+      if (!consultRes.ok) {
+          const rawText = await consultRes.text()
+          throw new Error(`Erro ao consultar nota na FocusNFe: ${rawText}`)
+      }
+
+      const consultData = await consultRes.json()
+      const finalStatus = consultData.status
+      let pdfUrl = consultData.url_danfse || null
+
+      if (!pdfUrl && consultData.id) {
+          pdfUrl = `${baseUrl}/${consultData.id}.pdf?token=${apiKey}`
+      }
+
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      )
+
+      step = 'atualizando registro no banco'
+      
+      // Buscar o registro existente para preservar o pet_name e tutor_real_name se existirem
+      const { data: existingNote } = await supabase
+          .from('fiscal_notes')
+          .select('raw_response')
+          .eq('focus_nfe_reference', focus_nfe_reference)
+          .maybeSingle()
+
+      const existingRaw = existingNote?.raw_response || {}
+      const petName = existingRaw.pet_name || 'Pet'
+      const tutorRealName = existingRaw.tutor_real_name || 'Cliente'
+      const valorServico = existingRaw.valor_servico || 0
+
+      const { data: updatedNote, error: updateError } = await supabase
+          .from('fiscal_notes')
+          .update({
+              status: finalStatus || 'pending',
+              nfe_url_pdf: pdfUrl,
+              raw_response: {
+                ...consultData,
+                pet_name: petName,
+                tutor_real_name: tutorRealName,
+                valor_servico: valorServico
+              }
+          })
+          .eq('focus_nfe_reference', focus_nfe_reference)
+          .select()
+
+      if (updateError) {
+          throw new Error(`Erro ao atualizar banco de dados: ${updateError.message}`)
+      }
+
+      return new Response(JSON.stringify({ 
+          success: true, 
+          status: finalStatus,
+          pdf_url: pdfUrl,
+          data: consultData
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      })
+    }
+
     console.log(`[FocusNFe] Iniciando emissão para ${reference_type}: ${reference_id} (Pet: ${req_pet_name})`)
 
     const rawApiKey = Deno.env.get('FOCUS_NFE_API_KEY')
@@ -75,7 +159,8 @@ serve(async (req) => {
       email: data.owner_email || data.email || data.client_email || data.tutor_email || '',
       endereco: data.owner_address || data.address || data.tutor_address || 'Não informado',
       price: data.price || data.total_price || data.total_services_price || 0,
-      service: data.service || data.plan || (data._source_table === 'hotel_registrations' ? 'Hospedagem Pet' : (data._source_table === 'daycare_enrollments' ? 'Creche Pet' : 'Serviço de PetShop'))
+      service: data.service || data.plan || (data._source_table === 'hotel_registrations' ? 'Hospedagem Pet' : (data._source_table === 'daycare_enrollments' ? 'Creche Pet' : 'Serviço de PetShop')),
+      cep: data.cep || data.owner_cep || data.tutor_cep || data.client_cep || ''
     }
 
     if (!customer.cpf || customer.cpf.replace(/\D/g, '').length < 11) {
@@ -205,7 +290,8 @@ serve(async (req) => {
         raw_response: {
           ...consultData,
           pet_name: petName,
-          tutor_real_name: customer.nome
+          tutor_real_name: customer.nome,
+          valor_servico: customer.price
         }
     })
 

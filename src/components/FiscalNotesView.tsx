@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../supabaseClient';
+import FiscalFeedbackModal from './FiscalFeedbackModal';
 import { 
   FileText, 
   ExternalLink, 
@@ -24,6 +25,8 @@ interface FiscalNote {
   raw_response: any;
   hydrated_pet_name?: string;
   hydrated_tutor_name?: string;
+  hydrated_phone?: string;
+  hydrated_price?: number;
 }
 
 const FiscalNotesView: React.FC = () => {
@@ -34,6 +37,86 @@ const FiscalNotesView: React.FC = () => {
 
   const [sentItems, setSentItems] = useState<Record<string, boolean>>({});
   const [sendingIds, setSendingIds] = useState<Record<string, boolean>>({});
+  const [consultingIds, setConsultingIds] = useState<Record<string, boolean>>({});
+  const [fiscalFeedback, setFiscalFeedback] = useState<{
+      isOpen: boolean;
+      type: 'success' | 'processing' | 'error' | 'warning';
+      title: string;
+      message: string;
+      pdfUrl?: string;
+  } | null>(null);
+
+  const handleConsultNote = async (note: FiscalNote) => {
+      if (consultingIds[note.id]) return;
+      setConsultingIds(prev => ({ ...prev, [note.id]: true }));
+
+      try {
+          const { data, error } = await supabase.functions.invoke('focus-nfe', {
+              body: { 
+                  action: 'consult',
+                  focus_nfe_reference: note.focus_nfe_reference
+              }
+          });
+
+          if (error) throw error;
+
+          if (data.success) {
+              const newStatus = data.status;
+              const newPdfUrl = data.pdf_url;
+              
+              // Atualizar a lista local de notas
+              setNotes(prev => prev.map(n => n.id === note.id ? { 
+                  ...n, 
+                  status: newStatus || n.status,
+                  nfe_url_pdf: newPdfUrl || n.nfe_url_pdf,
+                  raw_response: data.data || n.raw_response
+              } : n));
+
+              if (newStatus === 'autorizado') {
+                  setFiscalFeedback({
+                      isOpen: true,
+                      type: 'success',
+                      title: 'Nota Autorizada!',
+                      message: `A NFS-e para a referência "${note.focus_nfe_reference.split('-').slice(0,2).join('-')}" foi autorizada com sucesso pela prefeitura!`,
+                      pdfUrl: newPdfUrl
+                  });
+              } else if (newStatus === 'erro_autorizacao' || newStatus === 'negado') {
+                  const errorMsg = data.data?.erros?.[0]?.mensagem || data.data?.mensagem || 'Erro de validação ou processamento.';
+                  setFiscalFeedback({
+                      isOpen: true,
+                      type: 'error',
+                      title: 'Erro na Autorização',
+                      message: `A FocusNFe retornou que a nota falhou com o status: "${newStatus}". Detalhes: ${errorMsg}`
+                  });
+              } else {
+                  setFiscalFeedback({
+                      isOpen: true,
+                      type: 'processing',
+                      title: 'Ainda em Processamento',
+                      message: `A NFS-e continua no status "${newStatus}". Por favor, aguarde alguns instantes e consulte novamente.`
+                  });
+              }
+          } else {
+              const errorMsg = data.error || 'Erro na consulta';
+              setFiscalFeedback({
+                  isOpen: true,
+                  type: 'error',
+                  title: 'Falha na Consulta',
+                  message: `Ocorreu um erro ao consultar o status da nota: ${errorMsg}`
+              });
+          }
+      } catch (err: any) {
+          console.error('Erro ao consultar nota:', err);
+          setFiscalFeedback({
+              isOpen: true,
+              type: 'error',
+              title: 'Erro de Conectividade',
+              message: `Falha na requisição da consulta: ${err.message || 'Erro indefinido'}`
+          });
+      } finally {
+          setConsultingIds(prev => ({ ...prev, [note.id]: false }));
+      }
+  };
 
   const fetchNotes = async () => {
     setLoading(true);
@@ -50,21 +133,21 @@ const FiscalNotesView: React.FC = () => {
       // Lógica de Hidratação para buscar nomes reais e contatos
       try {
         const [daycareRes, monthlyRes, apptRes, petMovelRes, hotelRes, banhoRes] = await Promise.all([
-          supabase.from('daycare_enrollments').select('id, pet_name, tutor_name, tutor_phone'),
-          supabase.from('monthly_clients').select('id, pet_name, owner_name, tutor_phone'),
-          supabase.from('appointments').select('id, pet_name, owner_name, whatsapp'),
-          supabase.from('pet_movel_appointments').select('id, pet_name, owner_name, whatsapp'),
-          supabase.from('hotel_registrations').select('id, pet_name, tutor_name, tutor_phone'),
-          supabase.from('agendamento_banhotosa').select('id, pet_name, owner_name, whatsapp')
+          supabase.from('daycare_enrollments').select('id, pet_name, tutor_name, tutor_phone, total_price'),
+          supabase.from('monthly_clients').select('id, pet_name, owner_name, tutor_phone, price'),
+          supabase.from('appointments').select('id, pet_name, owner_name, whatsapp, price'),
+          supabase.from('pet_movel_appointments').select('id, pet_name, owner_name, whatsapp, price'),
+          supabase.from('hotel_registrations').select('id, pet_name, tutor_name, tutor_phone, total_services_price'),
+          supabase.from('agendamento_banhotosa').select('id, pet_name, owner_name, whatsapp, price')
         ]);
         
-        const allRecords: { id: string, pet: string, tutor: string, phone: string }[] = [
-          ...(daycareRes.data?.map(d => ({ id: d.id, pet: d.pet_name, tutor: d.tutor_name, phone: d.tutor_phone })) || []),
-          ...(monthlyRes.data?.map(m => ({ id: m.id, pet: m.pet_name, tutor: m.owner_name, phone: m.tutor_phone })) || []),
-          ...(apptRes.data?.map(a => ({ id: a.id, pet: a.pet_name, tutor: a.owner_name, phone: a.whatsapp })) || []),
-          ...(petMovelRes.data?.map(p => ({ id: p.id, pet: p.pet_name, tutor: p.owner_name, phone: p.whatsapp })) || []),
-          ...(hotelRes.data?.map(h => ({ id: h.id, pet: h.pet_name, tutor: h.tutor_name, phone: h.tutor_phone })) || []),
-          ...(banhoRes.data?.map(b => ({ id: b.id, pet: b.pet_name, tutor: b.owner_name, phone: b.whatsapp })) || [])
+        const allRecords: { id: string, pet: string, tutor: string, phone: string, price: number }[] = [
+          ...(daycareRes.data?.map(d => ({ id: d.id, pet: d.pet_name, tutor: d.tutor_name, phone: d.tutor_phone, price: Number(d.total_price || 0) })) || []),
+          ...(monthlyRes.data?.map(m => ({ id: m.id, pet: m.pet_name, tutor: m.owner_name, phone: m.tutor_phone, price: Number(m.price || 0) })) || []),
+          ...(apptRes.data?.map(a => ({ id: a.id, pet: a.pet_name, tutor: a.owner_name, phone: a.whatsapp, price: Number(a.price || 0) })) || []),
+          ...(petMovelRes.data?.map(p => ({ id: p.id, pet: p.pet_name, tutor: p.owner_name, phone: p.whatsapp, price: Number(p.price || 0) })) || []),
+          ...(hotelRes.data?.map(h => ({ id: h.id, pet: h.pet_name, tutor: h.tutor_name, phone: h.tutor_phone, price: Number(h.total_services_price || 0) })) || []),
+          ...(banhoRes.data?.map(b => ({ id: b.id, pet: b.pet_name, tutor: b.owner_name, phone: b.whatsapp, price: Number(b.price || 0) })) || [])
         ];
         
         const hydrated = rawNotes.map(note => {
@@ -84,7 +167,8 @@ const FiscalNotesView: React.FC = () => {
               ...note,
               hydrated_pet_name: match.pet,
               hydrated_tutor_name: match.tutor,
-              hydrated_phone: match.phone
+              hydrated_phone: match.phone,
+              hydrated_price: match.price
             };
           }
           return note;
@@ -336,12 +420,25 @@ const FiscalNotesView: React.FC = () => {
                 <div className="text-right hidden md:block">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Valor do Serviço</p>
                   <p className="text-lg font-black text-pink-600">
-                    R$ {note.raw_response?.valor_servico ? Number(note.raw_response.valor_servico).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}
+                    R$ {Number(note.hydrated_price || note.raw_response?.valor_servico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
 
                 <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 w-full sm:w-auto justify-end">
-                  {note.status !== 'autorizado' && getStatusBadge(note.status)}
+                  {note.status !== 'autorizado' && (
+                    <div className="flex flex-wrap items-center gap-2 justify-end">
+                      {getStatusBadge(note.status)}
+                      <button
+                        onClick={() => handleConsultNote(note)}
+                        disabled={consultingIds[note.id]}
+                        className={`flex items-center gap-1 px-3 py-1.5 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded-xl text-xs font-bold transition-all shadow-sm border border-pink-100 ${consultingIds[note.id] ? 'opacity-50 cursor-wait' : ''}`}
+                        title="Consultar status atualizado na FocusNFe"
+                      >
+                        <RefreshCw size={12} className={consultingIds[note.id] ? 'animate-spin' : ''} />
+                        <span>{consultingIds[note.id] ? 'Consultando...' : 'Atualizar'}</span>
+                      </button>
+                    </div>
+                  )}
                   {note.status === 'autorizado' && note.nfe_url_pdf && (
                     <div className="flex items-center gap-2">
                       <a 
@@ -391,6 +488,17 @@ const FiscalNotesView: React.FC = () => {
           ))
         )}
       </div>
+
+      {fiscalFeedback && fiscalFeedback.isOpen && (
+        <FiscalFeedbackModal
+          isOpen={fiscalFeedback.isOpen}
+          onClose={() => setFiscalFeedback(prev => prev ? { ...prev, isOpen: false } : null)}
+          type={fiscalFeedback.type}
+          title={fiscalFeedback.title}
+          message={fiscalFeedback.message}
+          pdfUrl={fiscalFeedback.pdfUrl}
+        />
+      )}
     </div>
   );
 };
