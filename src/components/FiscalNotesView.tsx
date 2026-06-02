@@ -11,7 +11,8 @@ import {
   Search,
   RefreshCw,
   AlertCircle,
-  Send
+  Send,
+  Trash2
 } from 'lucide-react';
 
 interface FiscalNote {
@@ -38,6 +39,8 @@ const FiscalNotesView: React.FC = () => {
   const [sentItems, setSentItems] = useState<Record<string, boolean>>({});
   const [sendingIds, setSendingIds] = useState<Record<string, boolean>>({});
   const [consultingIds, setConsultingIds] = useState<Record<string, boolean>>({});
+  const [noteToDelete, setNoteToDelete] = useState<FiscalNote | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [fiscalFeedback, setFiscalFeedback] = useState<{
       isOpen: boolean;
       type: 'success' | 'processing' | 'error' | 'warning';
@@ -45,6 +48,31 @@ const FiscalNotesView: React.FC = () => {
       message: string;
       pdfUrl?: string;
   } | null>(null);
+
+  const handleDeleteNote = async () => {
+    if (!noteToDelete || deletingId) return;
+    setDeletingId(noteToDelete.id);
+    try {
+      const { error } = await supabase
+        .from('fiscal_notes')
+        .delete()
+        .eq('id', noteToDelete.id);
+      if (error) throw error;
+      setNotes(prev => prev.filter(n => n.id !== noteToDelete.id));
+      setNoteToDelete(null);
+    } catch (err: any) {
+      console.error('Erro ao excluir nota:', err);
+      setFiscalFeedback({
+        isOpen: true,
+        type: 'error',
+        title: 'Erro ao Excluir',
+        message: `Não foi possível excluir a nota: ${err.message || 'Erro desconhecido'}`
+      });
+      setNoteToDelete(null);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleConsultNote = async (note: FiscalNote) => {
       if (consultingIds[note.id]) return;
@@ -368,9 +396,17 @@ const FiscalNotesView: React.FC = () => {
           filteredNotes.map((note) => (
             <div 
               key={note.id} 
-              className="group bg-white p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 border-l-4 hover:border-l-pink-500 flex flex-col sm:flex-row items-center justify-between gap-4"
+              className="group relative bg-white p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 border-l-4 hover:border-l-pink-500 flex flex-col sm:flex-row items-center justify-between gap-4"
               style={{ borderLeftColor: note.status === 'autorizado' ? '#22c55e' : (note.status === 'erro_autorizacao' ? '#ef4444' : '#e5e7eb') }}
             >
+              {/* Botão de excluir discreto */}
+              <button
+                onClick={() => setNoteToDelete(note)}
+                className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 z-10"
+                title="Excluir nota fiscal"
+              >
+                <Trash2 size={14} />
+              </button>
               <div className="flex items-center gap-4 w-full sm:w-auto">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${note.status === 'autorizado' ? 'bg-green-50 text-green-600' : (note.status === 'erro_autorizacao' ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-400')}`}>
                   <FileText size={24} />
@@ -498,6 +534,45 @@ const FiscalNotesView: React.FC = () => {
           message={fiscalFeedback.message}
           pdfUrl={fiscalFeedback.pdfUrl}
         />
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {noteToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}>
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full flex flex-col items-center gap-5 animate-[fadeInScale_0.2s_ease]">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center text-red-500">
+              <Trash2 size={32} />
+            </div>
+            <div className="text-center">
+              <h3 className="text-xl font-black text-gray-800 mb-2">Excluir Nota Fiscal?</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                A nota de <span className="font-bold text-gray-700">{noteToDelete.hydrated_pet_name || noteToDelete.raw_response?.pet_name || 'este registro'}</span> será
+                removida permanentemente do sistema. Esta ação não pode ser desfeita.
+              </p>
+            </div>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setNoteToDelete(null)}
+                disabled={!!deletingId}
+                className="flex-1 py-3 rounded-2xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteNote}
+                disabled={!!deletingId}
+                className="flex-1 py-3 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-all shadow-lg shadow-red-100 flex items-center justify-center gap-2"
+              >
+                {deletingId ? (
+                  <><RefreshCw size={16} className="animate-spin" /> Excluindo...</>
+                ) : (
+                  <><Trash2 size={16} /> Excluir
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

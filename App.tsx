@@ -17696,7 +17696,6 @@ const AdminDashboard: React.FC<{
     };
 
     const handleEmitNFe = (item: AdminAppointment | MonthlyClient | DaycareRegistration) => {
-        if (emittingNFeId) return;
 
         const isDaycare = 'contracted_plan' in item;
         const isAppointment = 'appointment_time' in item;
@@ -17732,7 +17731,7 @@ const AdminDashboard: React.FC<{
     };
 
     const executeEmitNFe = async () => {
-        if (!fiscalModalData || emittingNFeId) return;
+        if (!fiscalModalData) return;
         const { item } = fiscalModalData;
         console.log('Emitting NFe for item:', item);
         
