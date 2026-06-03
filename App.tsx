@@ -18169,7 +18169,7 @@ const AdminDashboard: React.FC<{
             case 'closeDay': return <CloseDayView onBack={() => setActiveView(previousView)} />;
             case 'insights': return <InsightsDashboard key={dataKey} onBack={() => setActiveView('resumo')} />;
             case 'fiscalNotes': return <FiscalNotesView />;
-            case 'financial': return <FinancialDashboardProtected />;
+            case 'financial': return <FinancialDashboardProtected onBack={() => setActiveView('resumo')} />;
 
             case 'feedbacks': return <FeedbacksView key={dataKey} />;
             case 'album': return <AlbumManagementView />;

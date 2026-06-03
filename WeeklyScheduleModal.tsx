@@ -16,6 +16,7 @@ interface WeeklyAppointment {
   service: string;
   status: string;
   type: 'Banho & Tosa' | 'Pet Móvel';
+  monthly_client_id?: string;
 }
 
 const getSaoPauloDateString = () => {
@@ -98,20 +99,40 @@ const getSaoPauloDateString = () => {
       const startStr = `${sunday.toISOString().split('T')[0]}T00:00:00`;
       const endStr = `${saturday.toISOString().split('T')[0]}T23:59:59`;
 
+      // Fetch inactive monthly clients
+      const { data: inactiveClients, error: inactiveError } = await supabase
+        .from('monthly_clients')
+        .select('id')
+        .eq('is_active', false);
+
+      if (inactiveError) throw inactiveError;
+      const inactiveSet = new Set((inactiveClients || []).map(c => c.id));
+      const nowTime = new Date().getTime();
+
       // Fetch from appointments table (Banho & Tosa)
       const { data: btData, error: btError } = await supabase
         .from('appointments')
-        .select('id, pet_name, owner_name, appointment_time, service, status')
+        .select('id, pet_name, owner_name, appointment_time, service, status, monthly_client_id')
         .gte('appointment_time', startStr)
         .lte('appointment_time', endStr)
         .in('status', ['AGENDADO', 'pending', 'CONCLUÍDO']);
 
       if (btError) throw btError;
 
+      // Fetch from agendamento_banhotosa table (Banho & Tosa Fixo)
+      const { data: abData, error: abError } = await supabase
+        .from('agendamento_banhotosa')
+        .select('id, pet_name, owner_name, appointment_time, service, status, monthly_client_id')
+        .gte('appointment_time', startStr)
+        .lte('appointment_time', endStr)
+        .in('status', ['AGENDADO', 'pending', 'CONCLUÍDO']);
+
+      if (abError) throw abError;
+
       // Fetch from pet_movel_appointments table (Pet Móvel)
       const { data: pmData, error: pmError } = await supabase
         .from('pet_movel_appointments')
-        .select('id, pet_name, owner_name, appointment_time, service, status')
+        .select('id, pet_name, owner_name, appointment_time, service, status, monthly_client_id')
         .gte('appointment_time', startStr)
         .lte('appointment_time', endStr)
         .in('status', ['AGENDADO', 'pending', 'CONCLUÍDO']);
@@ -123,9 +144,21 @@ const getSaoPauloDateString = () => {
         pet_name: apt.pet_name,
         owner_name: apt.owner_name || '',
         appointment_time: apt.appointment_time,
+        service: apt.service || 'Pet Móvel',
+        status: apt.status,
+        type: 'Pet Móvel',
+        monthly_client_id: apt.monthly_client_id
+      }));
+
+      const abList: WeeklyAppointment[] = (abData || []).map(apt => ({
+        id: apt.id,
+        pet_name: apt.pet_name,
+        owner_name: apt.owner_name || '',
+        appointment_time: apt.appointment_time,
         service: apt.service || 'Banho & Tosa',
         status: apt.status,
-        type: 'Banho & Tosa'
+        type: 'Banho & Tosa',
+        monthly_client_id: apt.monthly_client_id
       }));
 
       const pmList: WeeklyAppointment[] = (pmData || []).map(apt => ({
@@ -135,13 +168,21 @@ const getSaoPauloDateString = () => {
         appointment_time: apt.appointment_time,
         service: apt.service || 'Pet Móvel',
         status: apt.status,
-        type: 'Pet Móvel'
+        type: 'Pet Móvel',
+        monthly_client_id: apt.monthly_client_id
       }));
 
-      // Group and sort combined appointments
-      const combined = [...btList, ...pmList].sort((a, b) => {
-        return new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime();
-      });
+      // Group, filter out future appointments of inactive monthly clients, and sort combined appointments
+      const combined = [...btList, ...abList, ...pmList]
+        .filter(apt => {
+          if (apt.monthly_client_id && inactiveSet.has(apt.monthly_client_id)) {
+            return new Date(apt.appointment_time).getTime() < nowTime;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          return new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime();
+        });
 
       setAppointments(combined);
     } catch (err) {

@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import FinancialDashboardView from './FinancialDashboardView';
 
+interface FinancialDashboardProtectedProps {
+  onBack?: () => void;
+}
+
 // Wrapper that blocks access to the Financial Dashboard behind a password.
 // Password is hard‑coded as "172702" as requested.
-const FinancialDashboardProtected: React.FC = () => {
+const FinancialDashboardProtected: React.FC<FinancialDashboardProtectedProps> = ({ onBack }) => {
   const [unlocked, setUnlocked] = useState(false);
   const [pwd, setPwd] = useState('');
   const [error, setError] = useState('');
@@ -31,10 +35,18 @@ const FinancialDashboardProtected: React.FC = () => {
                 setError('Senha incorreta');
               }
             }}
-            className="w-full bg-pink-600 text-white py-2 rounded hover:bg-pink-700 transition"
+            className="w-full bg-pink-600 text-white py-2 rounded hover:bg-pink-700 transition font-bold"
           >
             Entrar
           </button>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="w-full bg-gray-100 text-gray-700 py-2 rounded hover:bg-gray-200 transition mt-2 font-bold"
+            >
+              Voltar
+            </button>
+          )}
         </div>
       </div>
     );

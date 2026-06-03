@@ -119,6 +119,81 @@ const deserializeExpense = (item: any) => {
   };
 };
 
+const parseDaycareExtras = (d: any) => {
+  let diariasTotal = 0;
+  let pernoitesTotal = 0;
+  
+  // Vamos mapear os valores de extras por mês e ano para podermos distribuir na série histórica
+  const monthlyExtras: { [monthYearKey: string]: { diarias: number; pernoites: number } } = {};
+  
+  const addExtra = (dateStr: string | undefined, type: 'diaria' | 'pernoite', amount: number) => {
+    if (amount <= 0) return;
+    const date = dateStr ? new Date(dateStr) : (d.created_at ? new Date(d.created_at) : new Date());
+    if (isNaN(date.getTime())) return;
+    
+    const year = date.getFullYear();
+    const month = date.getMonth(); // 0 a 11
+    const key = `${year}-${month}`;
+    
+    if (!monthlyExtras[key]) {
+      monthlyExtras[key] = { diarias: 0, pernoites: 0 };
+    }
+    
+    if (type === 'diaria') {
+      diariasTotal += amount;
+      monthlyExtras[key].diarias += amount;
+    } else {
+      pernoitesTotal += amount;
+      monthlyExtras[key].pernoites += amount;
+    }
+  };
+
+  let es = d.extra_services;
+  if (typeof es === 'string') {
+    try {
+      es = JSON.parse(es);
+    } catch (e) {
+      es = null;
+    }
+  }
+
+  if (es && typeof es === 'object') {
+    // 1. Pernoite
+    if (es.pernoite) {
+      if (typeof es.pernoite === 'object') {
+        if (es.pernoite.enabled) {
+          const val = Number(es.pernoite.value !== undefined ? es.pernoite.value : 50);
+          addExtra(es.pernoite.date, 'pernoite', val);
+        }
+      } else if (es.pernoite === true || es.pernoite === 'true') {
+        addExtra(undefined, 'pernoite', 50);
+      }
+    }
+    
+    // 2. Diárias Extras / Dias Extras
+    if (es.dias_extras) {
+      if (typeof es.dias_extras === 'object') {
+        if (es.dias_extras.enabled) {
+          const qty = Number(es.dias_extras.quantity || 0);
+          const val = Number(es.dias_extras.value !== undefined ? es.dias_extras.value : 30);
+          addExtra(es.dias_extras.date, 'diaria', qty * val);
+        }
+      }
+    }
+    
+    if (typeof es.dia_extra === 'number' && es.dia_extra > 0) {
+      addExtra(undefined, 'diaria', es.dia_extra * 30);
+    }
+  }
+  
+  return {
+    diariasTotal,
+    pernoitesTotal,
+    totalExtras: diariasTotal + pernoitesTotal,
+    monthlyExtras
+  };
+};
+
 const defaultExpenses: any[] = [];
 
 const FinancialDashboardView: React.FC = () => {
@@ -230,8 +305,8 @@ const FinancialDashboardView: React.FC = () => {
       const banhoRes = await supabase.from('agendamento_banhotosa').select('price, appointment_time, status, pet_name, owner_name');
       const apptRes = await supabase.from('appointments').select('price, appointment_time, status, service, pet_name, owner_name');
       const pmRes = await supabase.from('pet_movel_appointments').select('price, appointment_time, status, pet_name, owner_name');
-      const daycareRes = await supabase.from('daycare_enrollments').select('total_price, created_at, status, pet_name, pet_breed, tutor_name');
-      const hotelRes = await supabase.from('hotel_registrations').select('total_services_price, check_in_date, check_out_date, status, pet_name, pet_breed, tutor_name, registration_date');
+      const daycareRes = await supabase.from('daycare_enrollments').select('total_price, created_at, status, pet_name, pet_breed, tutor_name, extra_services');
+      const hotelRes = await supabase.from('hotel_registrations').select('id, total_services_price, check_in_date, check_out_date, status, pet_name, pet_breed, tutor_name, registration_date, extra_services, service_daily_rate');
 
       setDbData({
         banhoTosa: banhoRes.data || [],
@@ -898,36 +973,180 @@ const FinancialDashboardView: React.FC = () => {
       })
       .reduce((sum, d) => sum + d.price, 0);
 
-    const realCreche = dbData.daycare.map(d => ({
-      price: Number(d.total_price || 0),
-      date: d.created_at ? new Date(d.created_at) : new Date(),
-      status: d.status,
-      paid: isConcluido(d.status),
-      created_at: d.created_at,
-      pet_name: d.pet_name || 'Pet sem nome',
-      tutor_name: d.tutor_name || 'Tutor não informado'
-    }));
+    const realCreche = dbData.daycare.map(d => {
+      const extras = parseDaycareExtras(d);
+      return {
+        price: Number(d.total_price || 0) - extras.totalExtras,
+        date: d.created_at ? new Date(d.created_at) : new Date(),
+        status: d.status,
+        paid: isConcluido(d.status),
+        created_at: d.created_at,
+        pet_name: d.pet_name || 'Pet sem nome',
+        tutor_name: d.tutor_name || 'Tutor não informado'
+      };
+    });
 
-    // Total de matrículas aprovadas (sem filtro de data)
+    // Total de matrículas aprovadas (sem filtro de data), deduzindo os extras
     const totalCrecheAprovado = dbData.daycare
       .filter(d => isConcluido(d.status))
-      .reduce((sum, d) => sum + Number(d.total_price || 0), 0);
+      .reduce((sum, d) => {
+        const extras = parseDaycareExtras(d);
+        return sum + Number(d.total_price || 0) - extras.totalExtras;
+      }, 0);
 
     const approvedCrechePets = dbData.daycare
       .filter(d => isConcluido(d.status))
-      .map(d => ({
-        petName: d.pet_name || 'Pet sem nome',
-        petBreed: d.pet_breed || 'Sem raça definida',
-        price: Number(d.total_price || 0),
-        tutorName: d.tutor_name || 'Tutor não informado'
-      }))
+      .map(d => {
+        const extras = parseDaycareExtras(d);
+        return {
+          petName: d.pet_name || 'Pet sem nome',
+          petBreed: d.pet_breed || 'Sem raça definida',
+          price: Number(d.total_price || 0) - extras.totalExtras,
+          tutorName: d.tutor_name || 'Tutor não informado'
+        };
+      })
       .sort((a, b) => a.petName.localeCompare(b.petName));
 
-    const realHotel: any[] = [];
+    const realHotel = dbData.hotel.map(d => {
+      const price = Number(d.total_services_price || 0);
+      let pernoiteVal = 0;
+      if (d.extra_services) {
+        let extras = d.extra_services;
+        if (typeof extras === 'string') {
+          try {
+            extras = JSON.parse(extras);
+          } catch (e) {
+            extras = null;
+          }
+        }
+        if (extras) {
+          if (extras.pernoite && typeof extras.pernoite === 'object') {
+            if (extras.pernoite.enabled) {
+              pernoiteVal = Number(extras.pernoite.value || 0);
+            }
+          } else if (extras.pernoite === true || extras.pernoite === 'true') {
+            const qty = Number(extras.pernoite_quantity || 1);
+            const pricePern = Number(extras.pernoite_price || 0);
+            pernoiteVal = qty * pricePern;
+          }
+        }
+      }
+      const diariaVal = Math.max(0, price - pernoiteVal);
+      return {
+        id: d.id,
+        price,
+        pernoite: pernoiteVal,
+        diaria: diariaVal,
+        date: d.check_in_date ? new Date(d.check_in_date) : d.registration_date ? new Date(d.registration_date) : new Date(),
+        check_in_date: d.check_in_date || d.registration_date || d.created_at,
+        registration_date: d.registration_date || d.check_in_date || d.created_at,
+        status: d.status,
+        pet_name: d.pet_name || 'Pet sem nome',
+        pet_breed: d.pet_breed || 'Sem raça definida',
+        tutor_name: d.tutor_name || 'Tutor não informado'
+      };
+    });
 
-    const totalHotelAprovado = 0;
+    const isHotelAprovadoStatus = (s: string) => {
+      const up = String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return up === 'APROVADO' || up === 'APPROVED';
+    };
 
-    const approvedHotelPets: any[] = [];
+    const hotelAprovadosNoMes = realHotel.filter(d => {
+      if (!isHotelAprovadoStatus(d.status)) return false;
+      const { year, month } = parseYearMonth(d.check_in_date);
+      return year === currentYear && month === currentMonth;
+    });
+
+    // Calcular os extras do daycare para o mês/ano ativos
+    let daycareDiariasMesAtivo = 0;
+    let daycarePernoitesMesAtivo = 0;
+
+    dbData.daycare
+      .filter(d => isConcluido(d.status))
+      .forEach(d => {
+        const extras = parseDaycareExtras(d);
+        const key = `${currentYear}-${currentMonth}`;
+        if (extras.monthlyExtras[key]) {
+          daycareDiariasMesAtivo += extras.monthlyExtras[key].diarias;
+          daycarePernoitesMesAtivo += extras.monthlyExtras[key].pernoites;
+        }
+      });
+
+    const totalHotelAprovado = hotelAprovadosNoMes.reduce((sum, d) => sum + d.price, 0) + daycareDiariasMesAtivo + daycarePernoitesMesAtivo;
+    const totalDiariasAprovado = hotelAprovadosNoMes.reduce((sum, d) => sum + d.diaria, 0) + daycareDiariasMesAtivo;
+    const totalPernoitesAprovado = hotelAprovadosNoMes.reduce((sum, d) => sum + d.pernoite, 0) + daycarePernoitesMesAtivo;
+
+    const approvedHotelPets = hotelAprovadosNoMes.map(d => ({
+      petName: d.pet_name,
+      petBreed: d.pet_breed,
+      price: d.price,
+      tutorName: d.tutor_name
+    })).sort((a, b) => a.petName.localeCompare(b.petName));
+
+    // Adicionar os pets da creche com diárias/pernoites no mês atual al hotel
+    dbData.daycare
+      .filter(d => isConcluido(d.status))
+      .forEach(d => {
+        const extras = parseDaycareExtras(d);
+        const key = `${currentYear}-${currentMonth}`;
+        if (extras.monthlyExtras[key]) {
+          const valExtras = extras.monthlyExtras[key].diarias + extras.monthlyExtras[key].pernoites;
+          if (valExtras > 0) {
+            approvedHotelPets.push({
+              petName: `${d.pet_name || 'Pet sem nome'} (Creche)`,
+              petBreed: d.pet_breed || 'Sem raça definida',
+              price: valExtras,
+              tutorName: d.tutor_name || 'Tutor não informado'
+            });
+          }
+        }
+      });
+    approvedHotelPets.sort((a, b) => a.petName.localeCompare(b.petName));
+
+    const getHotelMonthlyData = () => {
+      const totalHotelData: number[] = [];
+      const diariaHotelData: number[] = [];
+      const pernoiteHotelData: number[] = [];
+
+      for (let m = 0; m < 12; m++) {
+        const monthAprovados = realHotel.filter(d => {
+          if (!isHotelAprovadoStatus(d.status)) return false;
+          const { year, month } = parseYearMonth(d.check_in_date);
+          return year === currentYear && month === m;
+        });
+
+        let daycareDiariasNoMes = 0;
+        let daycarePernoitesNoMes = 0;
+
+        dbData.daycare
+          .filter(d => isConcluido(d.status))
+          .forEach(d => {
+            const extras = parseDaycareExtras(d);
+            const key = `${currentYear}-${m}`;
+            if (extras.monthlyExtras[key]) {
+              daycareDiariasNoMes += extras.monthlyExtras[key].diarias;
+              daycarePernoitesNoMes += extras.monthlyExtras[key].pernoites;
+            }
+          });
+
+        const monthTotal = monthAprovados.reduce((sum, d) => sum + d.price, 0) + daycareDiariasNoMes + daycarePernoitesNoMes;
+        const monthDiaria = monthAprovados.reduce((sum, d) => sum + d.diaria, 0) + daycareDiariasNoMes;
+        const monthPernoite = monthAprovados.reduce((sum, d) => sum + d.pernoite, 0) + daycarePernoitesNoMes;
+
+        totalHotelData.push(monthTotal);
+        diariaHotelData.push(monthDiaria);
+        pernoiteHotelData.push(monthPernoite);
+      }
+
+      return {
+        total: totalHotelData,
+        diarias: diariaHotelData,
+        pernoites: pernoiteHotelData
+      };
+    };
+
+    const hotelMonthlyData = getHotelMonthlyData();
 
     // Séries Temporais de Creche: matrícula recorrente — o total aprovado é lançado no mês selecionado
     // (não filtra por created_at pois matrículas podem ter sido criadas em anos anteriores)
@@ -937,7 +1156,7 @@ const FinancialDashboardView: React.FC = () => {
       return 0;
     });
 
-    const chartHotel = getMonthlyChartData(realHotel.map(d => ({ price: d.price, dateStr: d.registration_date, status: d.status })));
+    const chartHotel = hotelMonthlyData.total;
 
     const crecheMes = chartCreche[currentMonth];
     const hotelMes = chartHotel[currentMonth];
@@ -994,21 +1213,22 @@ const FinancialDashboardView: React.FC = () => {
       month: hotelMes
     };
 
-    const totalMonth = metricsBanhoTosa.month + metricsPetMovel.month + metricsCreche.month;
+    const totalMonth = metricsBanhoTosa.month + metricsPetMovel.month + metricsCreche.month + metricsHotel.month;
     const totalPrevMonth =
       chartBanhoTosa[selectedMonth === 0 ? 11 : selectedMonth - 1] +
       chartPetMovel[selectedMonth === 0 ? 11 : selectedMonth - 1] +
-      chartCreche[selectedMonth === 0 ? 11 : selectedMonth - 1];
+      chartCreche[selectedMonth === 0 ? 11 : selectedMonth - 1] +
+      chartHotel[selectedMonth === 0 ? 11 : selectedMonth - 1];
 
     const overallDifference = totalMonth - totalPrevMonth;
     const overallPercentage = totalPrevMonth > 0 ? (overallDifference / totalPrevMonth) * 100 : 0;
 
-    const totalYear = metricsBanhoTosa.year + metricsPetMovel.year + metricsCreche.year;
+    const totalYear = metricsBanhoTosa.year + metricsPetMovel.year + metricsCreche.year + metricsHotel.year;
 
     const shareBanhoTosa = totalMonth > 0 ? (metricsBanhoTosa.month / totalMonth) * 100 : 0;
     const sharePetMovel = totalMonth > 0 ? (metricsPetMovel.month / totalMonth) * 100 : 0;
     const shareCreche = totalMonth > 0 ? (metricsCreche.month / totalMonth) * 100 : 0;
-    const shareHotel = 0;
+    const shareHotel = totalMonth > 0 ? (metricsHotel.month / totalMonth) * 100 : 0;
 
     const servicesList = [
       { name: 'Banho & Tosa', value: metricsBanhoTosa.month, key: 'banhotosa' },
@@ -1109,6 +1329,22 @@ const FinancialDashboardView: React.FC = () => {
         }
       });
 
+      realHotel.forEach(d => {
+        if (isConcluido(d.status)) {
+          const date = d.date;
+          const matchUTC = date.getUTCMonth() === currentMonth && date.getUTCFullYear() === currentYear;
+          if (matchUTC) {
+            items.push({
+              origem: 'Hotel Pet',
+              pet_name: d.pet_name || 'Pet sem nome',
+              valor: Number(d.price || 0),
+              date,
+              timeStr: d.check_in_date && d.check_in_date.length > 10 ? new Date(d.check_in_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'
+            });
+          }
+        }
+      });
+
       return items.sort((a, b) => b.date.getTime() - a.date.getTime());
     })();
 
@@ -1157,7 +1393,10 @@ const FinancialDashboardView: React.FC = () => {
       totalCrecheAprovado,
       approvedCrechePets,
       totalHotelAprovado,
+      totalDiariasAprovado,
+      totalPernoitesAprovado,
       approvedHotelPets,
+      hotelMonthlyData,
       banhoTosaMesDetalhes,
       petMovelMesDetalhes,
       crecheMesDetalhes,
@@ -1409,6 +1648,92 @@ const FinancialDashboardView: React.FC = () => {
     );
   };
 
+  const renderHotelChart = (data: { total: number[]; diarias: number[]; pernoites: number[] }) => {
+    const width = 500;
+    const height = 130;
+    const maxVal = Math.max(...data.total, 1000) * 1.15;
+    const minVal = 0;
+
+    const getPoints = (series: number[]) => {
+      return series.map((val, i) => {
+        const x = (i * (width - 40)) / 11 + 20;
+        const y = height - (val * (height - 30)) / maxVal - 15;
+        return { x, y, val };
+      });
+    };
+
+    const totalPoints = getPoints(data.total);
+
+    const getPathD = (points: { x: number; y: number }[]) => {
+      let pathD = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 0; i < points.length - 1; i++) {
+        const curr = points[i];
+        const next = points[i + 1];
+        const cpX1 = curr.x + (next.x - curr.x) / 3;
+        const cpY1 = curr.y;
+        const cpX2 = curr.x + (2 * (next.x - curr.x)) / 3;
+        const cpY2 = next.y;
+        pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${next.x} ${next.y}`;
+      }
+      return pathD;
+    };
+
+    const totalPath = getPathD(totalPoints);
+
+    return (
+      <div className="relative group w-full h-[155px] mt-4 bg-amber-50/10 backdrop-blur-md rounded-2xl p-2 border border-amber-100/10">
+        <div className="flex justify-between items-center px-2 mb-1">
+          <span className="text-[9px] font-black text-amber-600 uppercase tracking-wider">Histórico Hotel {selectedYear}</span>
+          <div className="flex gap-2 text-[8px] font-black">
+            <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>Hotel Total</span>
+          </div>
+        </div>
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-[115px] overflow-visible">
+          <line x1="20" y1={height - 15} x2={width - 20} y2={height - 15} stroke="rgba(245,158,11,0.06)" strokeWidth="1" />
+          <line x1="20" y1={height / 2} x2={width - 20} y2={height / 2} stroke="rgba(245,158,11,0.06)" strokeWidth="1" />
+          <line x1="20" y1="15" x2={width - 20} y2="15" stroke="rgba(245,158,11,0.06)" strokeWidth="1" />
+
+          <path d={totalPath} fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+          {totalPoints.map((pt, idx) => {
+            const isMonthActive = idx === selectedMonth;
+            return (
+              <g key={idx} className="cursor-pointer group/dot">
+                <circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={isMonthActive ? "4.5" : "3"}
+                  fill={isMonthActive ? "#f59e0b" : "#ffffff"}
+                  stroke="#f59e0b"
+                  strokeWidth="2"
+                  className="transition-all duration-200 group-hover/dot:stroke-[3px]"
+                />
+                <circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r="12"
+                  fill="transparent"
+                  className="cursor-pointer"
+                />
+                <g className="opacity-0 pointer-events-none group-hover/dot:opacity-100 transition-opacity duration-200">
+                  <path d={`M ${pt.x - 4} ${pt.y - 12} L ${pt.x} ${pt.y - 8} L ${pt.x + 4} ${pt.y - 12} Z`} fill="#1f2937" />
+                  <rect x={pt.x - 55} y={pt.y - 32} width="110" height="20" rx="5" fill="#1f2937" className="shadow-lg" />
+                  <text x={pt.x} y={pt.y - 19} fill="#ffffff" fontSize="7" fontWeight="black" textAnchor="middle">
+                    Hotel Total: R$ {pt.val.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                  </text>
+                </g>
+              </g>
+            );
+          })}
+        </svg>
+        <div className="flex justify-between text-[8px] font-bold text-gray-400 mt-0.5 px-3">
+          <span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span>
+          <span>Jul</span><span>Ago</span><span>Set</span><span>Out</span><span>Nov</span><span>Dez</span>
+        </div>
+      </div>
+    );
+  };
+
   // Gráfico de Evolução Geral de Faturamento (Visão Geral)
   // Gráfico de Evolução Geral de Faturamento (Visão Geral - Barras SVG Premium)
   const renderEvolucaoChart = () => {
@@ -1420,7 +1745,8 @@ const FinancialDashboardView: React.FC = () => {
       totalData.push(
         consolidatedMetrics.chart.banhotosa[m] +
         consolidatedMetrics.chart.petmovel[m] +
-        consolidatedMetrics.chart.creche[m]
+        consolidatedMetrics.chart.creche[m] +
+        consolidatedMetrics.chart.hotel[m]
       );
     }
 
@@ -1562,7 +1888,8 @@ const FinancialDashboardView: React.FC = () => {
     const allServices = [
       { name: 'Banho & Tosa', value: shares.banhotosa, color: '#ec4899', amount: shares.valBanhoTosa },
       { name: 'Pet Móvel', value: shares.petmovel, color: '#06b6d4', amount: shares.valPetMovel },
-      { name: 'Creche Pet', value: shares.creche, color: '#8b5cf6', amount: shares.valCreche }
+      { name: 'Creche Pet', value: shares.creche, color: '#8b5cf6', amount: shares.valCreche },
+      { name: 'Hotel Pet', value: shares.hotel, color: '#f59e0b', amount: shares.valHotel }
     ];
 
     // Fatias do donut apenas para valores maiores que zero
@@ -1919,10 +2246,24 @@ const FinancialDashboardView: React.FC = () => {
     const entradasBanhoTosa = consolidatedMetrics.banhoTosaMesDetalhes || [];
     const entradasPetMovel = consolidatedMetrics.petMovelMesDetalhes || [];
     const entradasCreche = consolidatedMetrics.crecheMesDetalhes || [];
+    const entradasHotel = dbData.hotel
+      .filter(d => {
+        const up = String(d.status || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (up !== 'APROVADO' && up !== 'APPROVED') return false;
+        const { year, month } = parseYearMonth(d.check_in_date || d.registration_date);
+        return year === selectedYear && month === selectedMonth;
+      })
+      .map(d => ({
+        date: d.check_in_date ? new Date(d.check_in_date) : d.registration_date ? new Date(d.registration_date) : new Date(),
+        pet_name: d.pet_name || 'Pet sem nome',
+        tutor_name: d.tutor_name || 'Tutor não informado',
+        price: Number(d.total_services_price || 0)
+      }));
 
     const totalEntradasBanhoTosa = entradasBanhoTosa.reduce((sum, item) => sum + item.price, 0);
     const totalEntradasPetMovel = entradasPetMovel.reduce((sum, item) => sum + item.price, 0);
     const totalEntradasCreche = entradasCreche.reduce((sum, item) => sum + item.price, 0);
+    const totalEntradasHotel = entradasHotel.reduce((sum, item) => sum + item.price, 0);
 
     const totalEntradas = consolidatedMetrics.summary.monthTotal;
 
@@ -2196,6 +2537,46 @@ const FinancialDashboardView: React.FC = () => {
                     </thead>
                     <tbody className="font-bold text-gray-600">
                       {entradasCreche.map((item, idx) => (
+                        <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2">{new Date(item.date).toLocaleDateString('pt-BR')}</td>
+                          <td className="py-2 font-black text-gray-800">{item.pet_name}</td>
+                          <td className="py-2">{item.tutor_name}</td>
+                          <td className="py-2 text-right text-gray-800">R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* SERVIÇO: HOTEL */}
+            <div className="bg-gray-50/20 p-5 rounded-2xl border border-gray-100">
+              <div className="flex justify-between items-center mb-3">
+                <h5 className="text-xs font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                  Hotel Pet
+                </h5>
+                <span className="text-xs font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+                  Total: R$ {totalEntradasHotel.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              {entradasHotel.length === 0 ? (
+                <p className="text-xs text-gray-400 font-bold italic py-2">Nenhum serviço de Hotel Pet realizado no período.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-400 font-black uppercase tracking-wider">
+                        <th className="py-2">Data</th>
+                        <th className="py-2">Pet</th>
+                        <th className="py-2">Tutor</th>
+                        <th className="py-2 text-right">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-bold text-gray-600">
+                      {entradasHotel.map((item, idx) => (
                         <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                           <td className="py-2">{new Date(item.date).toLocaleDateString('pt-BR')}</td>
                           <td className="py-2 font-black text-gray-800">{item.pet_name}</td>
@@ -2700,7 +3081,7 @@ const FinancialDashboardView: React.FC = () => {
               </div>
 
               {/* Card Creche Pet – Total de Aprovações */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-6 border border-pink-100/60 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-purple-200 flex flex-col justify-between min-h-[380px]">
+              <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-6 border border-pink-100/60 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-purple-200 flex flex-col justify-between min-h-[570px]">
                 <div className="absolute top-0 right-0 -mt-6 -mr-6 w-20 h-20 bg-purple-400 rounded-full blur-2xl opacity-20"></div>
 
                 <div>
@@ -2756,7 +3137,7 @@ const FinancialDashboardView: React.FC = () => {
               </div>
 
               {/* Card Hotel Pet – Total de Hospedagens */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-6 border border-pink-100/60 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-amber-200 flex flex-col justify-between min-h-[380px]">
+              <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-6 border border-pink-100/60 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-amber-200 flex flex-col justify-between min-h-[570px]">
                 <div className="absolute top-0 right-0 -mt-6 -mr-6 w-20 h-20 bg-amber-400 rounded-full blur-2xl opacity-20"></div>
 
                 <div>
@@ -2780,6 +3161,18 @@ const FinancialDashboardView: React.FC = () => {
                       <span className="text-base font-extrabold mr-1 text-amber-500">R$</span>
                       <AnimatedCounter value={consolidatedMetrics.totalHotelAprovado} decimals={0} />
                     </span>
+
+                    {/* Subtotais de Diárias e Pernoites */}
+                    <div className="flex justify-between w-full mt-3 pt-2 border-t border-amber-100/60 z-10 text-[10px] font-black uppercase text-gray-500">
+                      <div className="flex flex-col items-center">
+                        <span className="text-[8px] text-amber-600 font-bold">Diárias</span>
+                        <span className="text-xs text-amber-700 font-black">R$ <AnimatedCounter value={consolidatedMetrics.totalDiariasAprovado} decimals={0} /></span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span className="text-[8px] text-amber-600 font-bold">Pernoites</span>
+                        <span className="text-xs text-amber-700 font-black">R$ <AnimatedCounter value={consolidatedMetrics.totalPernoitesAprovado} decimals={0} /></span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Lista de Hóspedes (Com Rolagem Interna) */}
@@ -2811,6 +3204,9 @@ const FinancialDashboardView: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Gráfico Mensal do Hotel */}
+                {renderHotelChart(consolidatedMetrics.hotelMonthlyData)}
               </div>
 
             </div>
