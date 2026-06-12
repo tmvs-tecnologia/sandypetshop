@@ -4610,7 +4610,7 @@ const AdminAddAppointmentModal: React.FC<{
 
         const isBathGroomAdmin = !!selectedService && [ServiceType.BATH, ServiceType.GROOMING_ONLY, ServiceType.BATH_AND_GROOMING].includes(selectedService);
         const isPetMovelSubmit = !!selectedCondo && !isBathGroomAdmin;
-        const targetTable = isBathGroomAdmin ? 'agendamento_banhotosa' : (isPetMovelSubmit ? 'pet_movel_appointments' : 'appointments');
+        const targetTable = (isBathGroomAdmin || isVisitService) ? 'agendamento_banhotosa' : (isPetMovelSubmit ? 'pet_movel_appointments' : 'appointments');
 
         try {
             const startOfDay = new Date(selectedDate);
@@ -8436,6 +8436,7 @@ const MonthlyClientsView: React.FC<{
                                             onEmitNFe={onEmitNFe}
                                             isEmittingNFe={emittingNFeId === client.id}
                                             fiscalNotesMap={fiscalNotesMap}
+                                            onStatusChanged={onDataChanged}
                                         />
                                     </div>
                                 );
@@ -8488,6 +8489,7 @@ const MonthlyClientsView: React.FC<{
                                             onEmitNFe={onEmitNFe}
                                             isEmittingNFe={emittingNFeId === client.id}
                                             fiscalNotesMap={fiscalNotesMap}
+                                            onStatusChanged={onDataChanged}
                                         />
                                     </div>
                                 );
@@ -8583,6 +8585,7 @@ const MonthlyClientsView: React.FC<{
                                                                     onView={(mc) => setViewingClient(mc)}
                                                                     onEmitNFe={onEmitNFe}
                                                                     isEmittingNFe={emittingNFeId === client.id}
+                                                                    onStatusChanged={onDataChanged}
                                                                 />
                                                             </div>
                                                         );
@@ -12566,7 +12569,7 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
             setIsSubmitting(false);
             return;
         }
-        const targetTable = isPetMovelSubmit ? 'pet_movel_appointments' : isBathGroomService ? 'agendamento_banhotosa' : 'appointments';
+        const targetTable = isPetMovelSubmit ? 'pet_movel_appointments' : (isBathGroomService || isVisitService) ? 'agendamento_banhotosa' : 'appointments';
 
         const basePayload = {
             appointment_time: appointmentTime.toISOString(),
@@ -18071,7 +18074,14 @@ const AdminDashboard: React.FC<{
                     // Merge: use fetched data as the base, but preserve any appointments
                     // in current state that are NOT yet in the DB result (e.g. just inserted)
                     const fetchedIds = new Set(filteredCombined.map(a => a.id));
-                    const localOnly = prev.filter(a => !fetchedIds.has(a.id));
+                    const localOnly = prev.filter(a => {
+                        if (fetchedIds.has(a.id)) return false;
+                        if (a.monthly_client_id && inactiveIds.has(a.monthly_client_id)) {
+                            // Filter out future appointments of inactive monthly clients
+                            return new Date(a.appointment_time).getTime() < nowTime;
+                        }
+                        return true;
+                    });
                     return [...filteredCombined, ...localOnly].sort((a, b) =>
                         new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime()
                     );
@@ -18157,6 +18167,7 @@ const AdminDashboard: React.FC<{
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
             case 'clients': return <ClientsView key={dataKey} refreshKey={dataKey} />;
             case 'monthlyClients': return <MonthlyClientsView 
+                key={dataKey}
                 onAddClient={handleAddMonthlyClient} 
                 onDataChanged={handleDataChanged} 
                 onOpenDashboard={() => handleOpenDashboard('monthlyClients')} 
@@ -19346,8 +19357,8 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
         e.preventDefault();
         if (!date || time === '' || !petName || !ownerName || !whatsapp) return;
         setIsSubmitting(true);
-        const d = new Date(date);
-        const appt = toSaoPauloUTC(d.getFullYear(), d.getMonth(), d.getDate(), Number(time));
+        const [year, month, day] = date.split('-').map(Number);
+        const appt = toSaoPauloUTC(year, month - 1, day, Number(time));
         const payload = {
             appointment_time: appt.toISOString(),
             pet_name: petName,

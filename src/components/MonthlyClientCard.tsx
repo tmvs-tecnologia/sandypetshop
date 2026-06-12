@@ -211,7 +211,8 @@ const MonthlyClientCard: React.FC<{
     onEmitNFe?: (client: MonthlyClient) => void;
     isEmittingNFe?: boolean;
     fiscalNotesMap?: Record<string, string>;
-}> = ({ client, onClick, onEdit, onDelete, onAddExtraServices, onTogglePaymentStatus, onChangePhoto, onView, onEmitNFe, isEmittingNFe, fiscalNotesMap }) => {
+    onStatusChanged?: () => void;
+}> = ({ client, onClick, onEdit, onDelete, onAddExtraServices, onTogglePaymentStatus, onChangePhoto, onView, onEmitNFe, isEmittingNFe, fiscalNotesMap, onStatusChanged }) => {
 
     const { hasDaycare, hasHotel } = useServiceValidation(client.whatsapp);
 
@@ -232,6 +233,7 @@ const MonthlyClientCard: React.FC<{
             if (error) throw error;
             setShowPauseConfirm(false);
             setShowPauseSuccess(true);
+            onStatusChanged?.();
         } catch (err) {
             console.error('Failed to pause monthly client:', err);
         } finally {
@@ -253,6 +255,7 @@ const MonthlyClientCard: React.FC<{
             if (error) throw error;
             setShowReactivateConfirm(false);
             setShowReactivateSuccess(true);
+            onStatusChanged?.();
         } catch (err) {
             console.error('Failed to reactivate monthly client:', err);
         } finally {
@@ -347,7 +350,9 @@ const MonthlyClientCard: React.FC<{
         ? '...' 
         : upcomingAppointments.length > 0 
             ? upcomingAppointments[0].date 
-            : getNextAppointmentDateText(client);
+            : client.is_active 
+                ? getNextAppointmentDateText(client)
+                : 'Pausado';
 
     const getRecurrenceText = (client: MonthlyClient) => {
         if (client.recurrence_type === 'weekly') return 'Semanal';
@@ -791,7 +796,7 @@ const MonthlyClientCard: React.FC<{
                             <button 
                                 onClick={() => {
                                     setShowPauseSuccess(false);
-                                    window.location.reload();
+                                    onStatusChanged?.();
                                 }}
                                 className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all backdrop-blur-md"
                             >
@@ -845,7 +850,7 @@ const MonthlyClientCard: React.FC<{
                         <button
                             onClick={() => {
                                 setShowPauseSuccess(false);
-                                window.location.reload();
+                                onStatusChanged?.();
                             }}
                             className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-green-100 hover:shadow-green-200 active:scale-[0.98] transition-all duration-300 font-outfit"
                         >
@@ -955,7 +960,7 @@ const MonthlyClientCard: React.FC<{
                             <button 
                                 onClick={() => {
                                     setShowReactivateSuccess(false);
-                                    window.location.reload();
+                                    onStatusChanged?.();
                                 }}
                                 className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all backdrop-blur-md"
                             >
@@ -1002,7 +1007,7 @@ const MonthlyClientCard: React.FC<{
                         <button
                             onClick={() => {
                                 setShowReactivateSuccess(false);
-                                window.location.reload();
+                                onStatusChanged?.();
                             }}
                             className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-green-100 hover:shadow-green-200 active:scale-[0.98] transition-all duration-300 font-outfit"
                         >
