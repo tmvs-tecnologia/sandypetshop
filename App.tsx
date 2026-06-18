@@ -5875,8 +5875,17 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
 
     // Filter for Pet Movel related tables only
     const petMovelOnlyAppointments = useMemo(() => {
-        return (appointments || []).filter(app => app.table === 'appointments' || app.table === 'pet_movel_appointments');
-    }, [appointments]);
+        const activeMonthlyIds = new Set((monthlyClients || []).map(c => c.id));
+        const nowTime = new Date().getTime();
+        return (appointments || []).filter(app => {
+            if (app.table !== 'appointments' && app.table !== 'pet_movel_appointments') return false;
+            // Filter out future appointments of inactive monthly clients
+            if (app.monthly_client_id && !activeMonthlyIds.has(app.monthly_client_id)) {
+                return new Date(app.appointment_time).getTime() < nowTime;
+            }
+            return true;
+        });
+    }, [appointments, monthlyClients]);
 
     const filteredAppointments = useMemo(() => {
         if (!searchTerm) return petMovelOnlyAppointments;
@@ -6378,8 +6387,17 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
 
     // Filter appointments belonging to agendamento_banhotosa from the global appointments prop
     const banhoTosaAppointments = useMemo(() => {
-        return (appointments || []).filter(app => app.table === 'agendamento_banhotosa');
-    }, [appointments]);
+        const activeMonthlyIds = new Set((monthlyClients || []).map(c => c.id));
+        const nowTime = new Date().getTime();
+        return (appointments || []).filter(app => {
+            if (app.table !== 'agendamento_banhotosa') return false;
+            // Filter out future appointments of inactive monthly clients
+            if (app.monthly_client_id && !activeMonthlyIds.has(app.monthly_client_id)) {
+                return new Date(app.appointment_time).getTime() < nowTime;
+            }
+            return true;
+        });
+    }, [appointments, monthlyClients]);
 
     const handleOpenAddModal = () => onOpenAddModal?.();
     const handleCloseAddModal = () => onCloseAddModal?.();
@@ -17033,13 +17051,23 @@ const ResumoView: React.FC<{
     onDataChanged?: () => void;
     onAddNewPet?: () => void;
     onCloseMobileMenu?: () => void;
-}> = ({ appointments, setActiveView, onDataChanged, onAddNewPet, onCloseMobileMenu }) => {
+    monthlyClients?: MonthlyClient[];
+}> = ({ appointments, setActiveView, onDataChanged, onAddNewPet, onCloseMobileMenu, monthlyClients = [] }) => {
     const [isAgendaMenuOpen, setIsAgendaMenuOpen] = useState(false);
     const now = new Date();
     
     const todayAppointments = useMemo(() => {
-        return (appointments || []).filter(app => isSameSaoPauloDay(new Date(app.appointment_time), now));
-    }, [appointments]);
+        const activeMonthlyIds = new Set((monthlyClients || []).map(c => c.id));
+        const nowTime = new Date().getTime();
+        return (appointments || [])
+            .filter(app => isSameSaoPauloDay(new Date(app.appointment_time), now))
+            .filter(app => {
+                if (app.monthly_client_id && !activeMonthlyIds.has(app.monthly_client_id)) {
+                    return new Date(app.appointment_time).getTime() < nowTime;
+                }
+                return true;
+            });
+    }, [appointments, now, monthlyClients]);
 
     const stats = useMemo(() => {
         const banhoTosa = todayAppointments.filter(app => app.table === 'agendamento_banhotosa');
@@ -18116,7 +18144,7 @@ const AdminDashboard: React.FC<{
 
     const renderActiveView = () => {
         switch (activeView) {
-            case 'resumo': return <ResumoView appointments={appointments} setActiveView={setActiveView} onDataChanged={handleDataChanged} onAddNewPet={handleOpenAddModal} onCloseMobileMenu={closeMobileMenu} />;
+            case 'resumo': return <ResumoView appointments={appointments} setActiveView={setActiveView} onDataChanged={handleDataChanged} onAddNewPet={handleOpenAddModal} onCloseMobileMenu={closeMobileMenu} monthlyClients={monthlyClients} />;
             case 'appointments': return <AppointmentsView 
                 key={dataKey} 
                 refreshKey={dataKey} 
