@@ -236,7 +236,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                             )}
                         </div>
                         <div>
-                            <h3 className="font-outfit font-bold text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors">
+                            <h3 className={`font-outfit font-bold text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors ${isCancelledByClient ? 'line-through text-gray-400' : ''}`}>
                                 {pet_name}
                             </h3>
                             <div className="flex flex-wrap gap-1 mt-1.5">
@@ -286,7 +286,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                         <UserIcon className="w-4 h-4 text-gray-400" />
                         <div className="flex flex-col">
                             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Tutor</span>
-                            <span className="text-xs font-medium text-gray-700 truncate max-w-[100px]">{owner_name}</span>
+                            <span className={`text-xs font-medium text-gray-700 truncate max-w-[100px] ${isCancelledByClient ? 'line-through text-gray-400' : ''}`}>{owner_name}</span>
                         </div>
                     </div>
 
@@ -295,7 +295,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                         <div className="flex flex-col w-full">
                             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Serviço</span>
                             <div className="flex items-center justify-between w-full">
-                                <span className="text-xs font-medium text-gray-700">{service}</span>
+                                <span className={`text-xs font-medium text-gray-700 ${isCancelledByClient ? 'line-through text-gray-400' : ''}`}>{service}</span>
                             </div>
                         </div>
                     </div>

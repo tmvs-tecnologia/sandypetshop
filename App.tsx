@@ -4447,7 +4447,7 @@ const AdminAddAppointmentModal: React.FC<{
     // Calendar day restrictions based on service type
     useEffect(() => {
         if (serviceStepView === 'bath_groom') {
-            setAllowedDays([2, 3, 4, 5]); // Terça (2), Quarta (3), Quinta (4), Sexta (5)
+            setAllowedDays([1, 2, 3, 4, 5]); // Segunda (1), Terça (2), Quarta (3), Quinta (4), Sexta (5)
         } else if (serviceStepView === 'pet_movel') {
             setAllowedDays(undefined);
         } else {
@@ -5926,7 +5926,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
 
     const dailyCompleted = useMemo(() => dailyAppointments.filter(a => {
         const s = String(a.status || '').toUpperCase();
-        return s === 'CONCLUÍDO' || s === 'CONCLUIDO';
+        return s === 'CONCLUÍDO' || s === 'CONCLUIDO' || s === 'CANCELADO' || s === 'CANCELLED';
     }), [dailyAppointments]);
 
     const { upcomingAppointments, pastAppointments } = useMemo(() => {
@@ -6438,7 +6438,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
 
     const completedDaily = useMemo(() => dailyAppointments.filter(a => {
         const s = (a.status || '').toUpperCase();
-        return s === 'CONCLUIDO' || s === 'CONCLUÍDO';
+        return s === 'CONCLUIDO' || s === 'CONCLUÍDO' || s === 'CANCELADO' || s === 'CANCELLED';
     }), [dailyAppointments]);
 
     // All view (upcoming / past)
