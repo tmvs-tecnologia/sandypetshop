@@ -16634,11 +16634,9 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
     };
 
     const handleCobrancaCreche = () => {
-        const inDaycareIds = new Set(petsInDaycareNow.map(p => p.id));
         const toCharge = enrollments.filter(e => 
-            e.status === 'Aprovado' && 
-            e.payment_status === 'Pendente' && 
-            !inDaycareIds.has(e.id)
+            e.status?.toLowerCase() === 'aprovado' && 
+            e.payment_status?.toLowerCase() === 'pendente'
         );
 
         if (toCharge.length === 0) {

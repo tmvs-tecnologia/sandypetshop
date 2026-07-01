@@ -194,6 +194,27 @@ const parseDaycareExtras = (d: any) => {
   };
 };
 
+const parseYearMonth = (dateStr?: string) => {
+  if (!dateStr) return { year: -1, month: -1 };
+  const cleanStr = String(dateStr).trim();
+  const parts = cleanStr.slice(0, 10).split('-');
+  if (parts.length >= 2) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    if (!isNaN(year) && !isNaN(month)) {
+      return { year, month };
+    }
+  }
+  return { year: -1, month: -1 };
+};
+
+const isHotelApproved = (d: any) => {
+  const appStatus = String(d.approval_status || '').trim().toLowerCase();
+  const isApproved = appStatus === 'approved' || appStatus === 'aprovado';
+  const isCancelled = String(d.status || '').trim().toLowerCase() === 'cancelado';
+  return isApproved && !isCancelled;
+};
+
 const defaultExpenses: any[] = [];
 
 const FinancialDashboardView: React.FC = () => {
@@ -306,7 +327,7 @@ const FinancialDashboardView: React.FC = () => {
       const apptRes = await supabase.from('appointments').select('price, appointment_time, status, service, pet_name, owner_name');
       const pmRes = await supabase.from('pet_movel_appointments').select('price, appointment_time, status, pet_name, owner_name');
       const daycareRes = await supabase.from('daycare_enrollments').select('total_price, created_at, status, pet_name, pet_breed, tutor_name, extra_services');
-      const hotelRes = await supabase.from('hotel_registrations').select('id, total_services_price, check_in_date, check_out_date, status, pet_name, pet_breed, tutor_name, registration_date, extra_services, service_daily_rate');
+      const hotelRes = await supabase.from('hotel_registrations').select('id, total_services_price, check_in_date, check_out_date, status, pet_name, pet_breed, tutor_name, registration_date, extra_services, service_daily_rate, approval_status');
 
       setDbData({
         banhoTosa: banhoRes.data || [],
@@ -759,19 +780,7 @@ const FinancialDashboardView: React.FC = () => {
       return up === 'CONCLUIDO' || up === 'COMPLETED' || up === 'DONE' || up === 'FINALIZADO' || up === 'APROVADO' || up === 'APPROVED';
     };
 
-    const parseYearMonth = (dateStr?: string) => {
-      if (!dateStr) return { year: -1, month: -1 };
-      const cleanStr = String(dateStr).trim();
-      const parts = cleanStr.slice(0, 10).split('-');
-      if (parts.length >= 2) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        if (!isNaN(year) && !isNaN(month)) {
-          return { year, month };
-        }
-      }
-      return { year: -1, month: -1 };
-    };
+
 
     const getMonthlyChartData = (realData: { price: number; dateStr?: string; status: string }[]) => {
       const data: number[] = [];
@@ -1041,19 +1050,22 @@ const FinancialDashboardView: React.FC = () => {
         check_in_date: d.check_in_date || d.registration_date || d.created_at,
         registration_date: d.registration_date || d.check_in_date || d.created_at,
         status: d.status,
+        approval_status: d.approval_status,
         pet_name: d.pet_name || 'Pet sem nome',
         pet_breed: d.pet_breed || 'Sem raça definida',
         tutor_name: d.tutor_name || 'Tutor não informado'
       };
     });
 
-    const isHotelAprovadoStatus = (s: string) => {
-      const up = String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      return up === 'APROVADO' || up === 'APPROVED';
+    const isHotelApproved = (d: any) => {
+      const appStatus = String(d.approval_status || '').trim().toLowerCase();
+      const isApproved = appStatus === 'approved' || appStatus === 'aprovado';
+      const isCancelled = String(d.status || '').trim().toLowerCase() === 'cancelado';
+      return isApproved && !isCancelled;
     };
 
     const hotelAprovadosNoMes = realHotel.filter(d => {
-      if (!isHotelAprovadoStatus(d.status)) return false;
+      if (!isHotelApproved(d)) return false;
       const { year, month } = parseYearMonth(d.check_in_date);
       return year === currentYear && month === currentMonth;
     });
@@ -1063,7 +1075,7 @@ const FinancialDashboardView: React.FC = () => {
     let daycarePernoitesMesAtivo = 0;
 
     dbData.daycare
-      .filter(d => isConcluido(d.status))
+      .filter(d => String(d.status || '').trim().toLowerCase() !== 'pendente')
       .forEach(d => {
         const extras = parseDaycareExtras(d);
         const key = `${currentYear}-${currentMonth}`;
@@ -1086,7 +1098,7 @@ const FinancialDashboardView: React.FC = () => {
 
     // Adicionar os pets da creche com diárias/pernoites no mês atual al hotel
     dbData.daycare
-      .filter(d => isConcluido(d.status))
+      .filter(d => String(d.status || '').trim().toLowerCase() !== 'pendente')
       .forEach(d => {
         const extras = parseDaycareExtras(d);
         const key = `${currentYear}-${currentMonth}`;
@@ -1111,7 +1123,7 @@ const FinancialDashboardView: React.FC = () => {
 
       for (let m = 0; m < 12; m++) {
         const monthAprovados = realHotel.filter(d => {
-          if (!isHotelAprovadoStatus(d.status)) return false;
+          if (!isHotelApproved(d)) return false;
           const { year, month } = parseYearMonth(d.check_in_date);
           return year === currentYear && month === m;
         });
@@ -1120,7 +1132,7 @@ const FinancialDashboardView: React.FC = () => {
         let daycarePernoitesNoMes = 0;
 
         dbData.daycare
-          .filter(d => isConcluido(d.status))
+          .filter(d => String(d.status || '').trim().toLowerCase() !== 'pendente')
           .forEach(d => {
             const extras = parseDaycareExtras(d);
             const key = `${currentYear}-${m}`;
@@ -2248,8 +2260,7 @@ const FinancialDashboardView: React.FC = () => {
     const entradasCreche = consolidatedMetrics.crecheMesDetalhes || [];
     const entradasHotel = dbData.hotel
       .filter(d => {
-        const up = String(d.status || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        if (up !== 'APROVADO' && up !== 'APPROVED') return false;
+        if (!isHotelApproved(d)) return false;
         const { year, month } = parseYearMonth(d.check_in_date || d.registration_date);
         return year === selectedYear && month === selectedMonth;
       })
