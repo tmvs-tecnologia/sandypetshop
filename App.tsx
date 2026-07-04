@@ -5881,7 +5881,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
             if (app.table !== 'appointments' && app.table !== 'pet_movel_appointments') return false;
             // Filter out future appointments of inactive monthly clients
             if (app.monthly_client_id && !activeMonthlyIds.has(app.monthly_client_id)) {
-                return new Date(app.appointment_time).getTime() < nowTime;
+                return false;
             }
             return true;
         });
@@ -6393,7 +6393,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
             if (app.table !== 'agendamento_banhotosa') return false;
             // Filter out future appointments of inactive monthly clients
             if (app.monthly_client_id && !activeMonthlyIds.has(app.monthly_client_id)) {
-                return new Date(app.appointment_time).getTime() < nowTime;
+                return false;
             }
             return true;
         });
@@ -17061,7 +17061,7 @@ const ResumoView: React.FC<{
             .filter(app => isSameSaoPauloDay(new Date(app.appointment_time), now))
             .filter(app => {
                 if (app.monthly_client_id && !activeMonthlyIds.has(app.monthly_client_id)) {
-                    return new Date(app.appointment_time).getTime() < nowTime;
+                    return false;
                 }
                 return true;
             });
@@ -18086,12 +18086,17 @@ const AdminDashboard: React.FC<{
                     .from('monthly_clients')
                     .select('id')
                     .eq('is_active', false);
+                const { data: activeMonthlyData } = await supabase
+                    .from('monthly_clients')
+                    .select('*')
+                    .eq('is_active', true);
+
                 const inactiveIds = new Set((inactiveClients || []).map((c: any) => c.id));
                 const nowTime = new Date().getTime();
 
                 const filteredCombined = combined.filter(app => {
                     if (app.monthly_client_id && inactiveIds.has(app.monthly_client_id)) {
-                        return new Date(app.appointment_time).getTime() < nowTime;
+                        return false;
                     }
                     return true;
                 });
@@ -18103,8 +18108,7 @@ const AdminDashboard: React.FC<{
                     const localOnly = prev.filter(a => {
                         if (fetchedIds.has(a.id)) return false;
                         if (a.monthly_client_id && inactiveIds.has(a.monthly_client_id)) {
-                            // Filter out future appointments of inactive monthly clients
-                            return new Date(a.appointment_time).getTime() < nowTime;
+                            return false;
                         }
                         return true;
                     });
@@ -18112,6 +18116,8 @@ const AdminDashboard: React.FC<{
                         new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime()
                     );
                 });
+
+                if (activeMonthlyData) setMonthlyClients(activeMonthlyData as MonthlyClient[]);
             } catch (err) {
                 console.warn('Falha ao recarregar agendamentos após alteração de dados:', err);
             }
@@ -19161,7 +19167,7 @@ const App: React.FC<AppProps> = ({ prefillService, prefillDate, prefillTime }) =
 
                 const filteredCombined = combined.filter(app => {
                     if (app.monthly_client_id && inactiveIds.has(app.monthly_client_id)) {
-                        return new Date(app.appointment_time).getTime() < nowTime;
+                        return false;
                     }
                     return true;
                 });
