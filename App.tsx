@@ -17915,8 +17915,9 @@ const AdminDashboard: React.FC<{
             if (newStatus === 'CONCLUÍDO') {
                 const visitLabels = [SERVICES[ServiceType.VISIT_DAYCARE].label, SERVICES[ServiceType.VISIT_HOTEL].label];
                 const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
+                const isMonthly = !!appointmentToUpdate.monthly_client_id;
                 
-                if (!isVisit) {
+                if (!isVisit && !isMonthly) {
                     // URL base sempre aponta para produção (Vercel), não para localhost
                     const appBaseUrl = 'https://agendamento-sandyspetshop.vercel.app/';
                     const feedbackParams = new URLSearchParams({
