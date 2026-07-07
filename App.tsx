@@ -19405,9 +19405,40 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
             owner_address: ownerAddress || null,
             observation: observation || null,
         };
-        const { error } = await supabase.from('agendamento_banhotosa').insert([payload]);
+        const { data: newDbAppointment, error } = await supabase
+            .from('agendamento_banhotosa')
+            .insert([payload])
+            .select()
+            .single();
         setIsSubmitting(false);
-        if (!error) setIsSuccess(true);
+        if (!error) {
+            try {
+                const webhookPayload = {
+                    id: newDbAppointment?.id || null,
+                    appointment_time: appt.toISOString(),
+                    pet_name: petName,
+                    pet_breed: petBreed || null,
+                    owner_name: ownerName,
+                    whatsapp: formatPhoneForWebhook(whatsapp),
+                    whatsapp_original: whatsapp,
+                    service: serviceLabel,
+                    weight: 'N/A',
+                    price: 0,
+                    status: 'AGENDADO',
+                    owner_address: ownerAddress || null,
+                    observation: observation || null,
+                };
+                const webhookUrl = 'https://n8n.intelektus.tech/webhook/visitaAgendada';
+                fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(webhookPayload),
+                }).catch(err => console.error('Error invoking visit webhook:', err));
+            } catch (webhookError) {
+                console.error('Error sending new visit appointment webhook:', webhookError);
+            }
+            setIsSuccess(true);
+        }
     };
 
     if (isSuccess) {
