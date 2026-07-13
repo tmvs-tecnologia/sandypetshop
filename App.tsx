@@ -17917,7 +17917,12 @@ const AdminDashboard: React.FC<{
                 const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
                 const isMonthly = !!appointmentToUpdate.monthly_client_id;
                 
-                if (!isVisit && !isMonthly) {
+                // Determina se é um serviço de Banho & Tosa (avulso, móvel ou fixo/mensalista)
+                const isBathOrGrooming = targetTable === 'agendamento_banhotosa' || 
+                    targetTable === 'pet_movel_appointments' ||
+                    ['Banho', 'Banho & Tosa', 'Só Tosa', 'Banho (Pet Móvel)', 'Banho & Tosa (Pet Móvel)', 'Só Tosa (Pet Móvel)'].includes(appointmentToUpdate.service);
+                
+                if (!isVisit && (!isMonthly || isBathOrGrooming)) {
                     // URL base sempre aponta para produção (Vercel), não para localhost
                     const appBaseUrl = 'https://agendamento-sandyspetshop.vercel.app/';
                     const feedbackParams = new URLSearchParams({

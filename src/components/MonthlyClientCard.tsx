@@ -218,6 +218,8 @@ const MonthlyClientCard: React.FC<{
 
     const [upcomingAppointments, setUpcomingAppointments] = useState<{date: string, status: string, isPast: boolean}[]>([]);
     const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
+    const [completedBathsCount, setCompletedBathsCount] = useState<number>(0);
+    const [totalBathsThisMonthCount, setTotalBathsThisMonthCount] = useState<number>(0);
 
     // Estados para o fluxo de confirmação e sucesso ao pausar mensalista
     const [showPauseConfirm, setShowPauseConfirm] = useState(false);
@@ -266,6 +268,8 @@ const MonthlyClientCard: React.FC<{
     useEffect(() => {
         if (!client.is_active) {
             setUpcomingAppointments([]);
+            setCompletedBathsCount(0);
+            setTotalBathsThisMonthCount(0);
             setIsLoadingAppointments(false);
             return;
         }
@@ -274,24 +278,70 @@ const MonthlyClientCard: React.FC<{
             setIsLoadingAppointments(true);
             try {
                 const now = new Date();
+                
+                // Datas para buscar agendamentos concluídos do mês corrente
+                const y = now.getFullYear();
+                const m = now.getMonth();
+                const startOfMonth = new Date(y, m, 1, 0, 0, 0, 0).toISOString();
+                const endOfMonth = new Date(y, m + 1, 0, 23, 59, 59, 999).toISOString();
+
                 const yesterday = new Date(now);
                 yesterday.setDate(yesterday.getDate() - 1);
                 const fetchAfter = yesterday.toISOString(); // Fetch from yesterday to ensure we don't miss any due to timezone
 
-                const [apptsRes, petMovelRes] = await Promise.all([
+                const [apptsRes, petMovelRes, completedApptsRes, completedPetMovelRes] = await Promise.all([
                     supabase
                         .from('appointments')
                         .select('appointment_time, status')
                         .eq('monthly_client_id', client.id)
-                        .gte('appointment_time', fetchAfter),
+                        .gte('appointment_time', startOfMonth),
                     supabase
                         .from('pet_movel_appointments')
                         .select('appointment_time, status')
                         .eq('monthly_client_id', client.id)
-                        .gte('appointment_time', fetchAfter)
+                        .gte('appointment_time', startOfMonth),
+                    supabase
+                        .from('appointments')
+                        .select('id')
+                        .eq('monthly_client_id', client.id)
+                        .eq('status', 'CONCLUÍDO')
+                        .gte('appointment_time', startOfMonth)
+                        .lte('appointment_time', endOfMonth),
+                    supabase
+                        .from('pet_movel_appointments')
+                        .select('id')
+                        .eq('monthly_client_id', client.id)
+                        .eq('status', 'CONCLUÍDO')
+                        .gte('appointment_time', startOfMonth)
+                        .lte('appointment_time', endOfMonth)
                 ]);
 
                 if (!isMounted) return;
+
+                const completedCount = (completedApptsRes.data || []).length + (completedPetMovelRes.data || []).length;
+                setCompletedBathsCount(completedCount);
+
+                // Calcular total de serviços no mês atual (concluídos ou agendados)
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                const totalApptsThisMonth = [
+                    ...(apptsRes.data || []),
+                    ...(petMovelRes.data || [])
+                ].filter(appt => {
+                    const d = new Date(appt.appointment_time);
+                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                });
+
+                const seenDatesForCount = new Set();
+                let monthAppointmentsCount = 0;
+                for (const appt of totalApptsThisMonth) {
+                    const dateStr = formatDateToBR(new Date(appt.appointment_time));
+                    if (!seenDatesForCount.has(dateStr)) {
+                        seenDatesForCount.add(dateStr);
+                        monthAppointmentsCount++;
+                    }
+                }
+                setTotalBathsThisMonthCount(monthAppointmentsCount);
 
                 const combined = [
                     ...(apptsRes.data || []),
@@ -323,14 +373,16 @@ const MonthlyClientCard: React.FC<{
                     }
                 }
 
-                // Filter out past dates that are just catching "yesterday" due to timezone, unless they are the only ones
-                // Actually, let's just find the dates >= today
-                const todayFormatted = formatDateToBR(now);
+                // Filter to include current month's history and future dates
                 const filtered = uniqueDates.filter(item => {
                     const [d, m, y] = item.date.split('/').map(Number);
                     const itemDate = new Date(y, m - 1, d);
                     const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    return itemDate >= todayDate;
+                    
+                    const isCurrentMonth = itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+                    const isFuture = itemDate >= todayDate;
+                    
+                    return isCurrentMonth || isFuture;
                 });
 
                 setUpcomingAppointments(filtered.slice(0, 8));
@@ -361,12 +413,26 @@ const MonthlyClientCard: React.FC<{
         return 'Não definido';
     };
 
-    const calculateTotalInvoiceValue = (client: MonthlyClient) => {
-        // price already includes extras (saved as total in DB)
-        return Number(client.price || 0);
+    const calculateTotalInvoiceValue = (client: MonthlyClient, totalAppointments: number) => {
+        const basePrice = Number(client.price || 0);
+        if (!client.is_active || basePrice === 0) return 0;
+
+        const factor = client.recurrence_type === 'weekly' 
+            ? 4 
+            : client.recurrence_type === 'bi-weekly' 
+                ? 2 
+                : 1; // monthly ou outro
+                
+        if (totalAppointments > factor) {
+            const unitPrice = basePrice / factor;
+            const extraCount = totalAppointments - factor;
+            return basePrice + unitPrice * extraCount;
+        }
+        
+        return basePrice;
     };
 
-    const totalInvoiceValue = calculateTotalInvoiceValue(client);
+    const totalInvoiceValue = calculateTotalInvoiceValue(client, totalBathsThisMonthCount);
     const hasMonthlyExtras = Boolean(
         client.extra_services && Object.entries(client.extra_services).some(([key, s]: [string, any]) =>
             s.enabled
@@ -423,13 +489,23 @@ const MonthlyClientCard: React.FC<{
                                 </div>
                             )}
                         </div>
-                        <div className="min-w-0 flex-1">
-<h3 className="font-outfit font-bold text-lg sm:text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors truncate">
-                                            {client.pet_name}
-                                            {!client.is_active && (
-                                                <span className="ml-2 text-xs font-medium text-gray-500 bg-gray-200 rounded-full px-2 py-0.5">Pausado</span>
-                                            )}
-                                        </h3>
+                         <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                <h3 className="font-outfit font-bold text-lg sm:text-xl text-gray-900 leading-tight group-hover:text-pink-600 transition-colors truncate">
+                                    {client.pet_name}
+                                </h3>
+                                {!client.is_active && (
+                                    <span className="text-[10px] font-medium text-gray-500 bg-gray-200 rounded-full px-2 py-0.5 flex-shrink-0">Pausado</span>
+                                )}
+                                {client.is_active && (
+                                    <div 
+                                        className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-100 text-pink-700 font-extrabold text-[10px] border border-pink-200 shadow-sm flex-shrink-0" 
+                                        title={`${completedBathsCount} banho(s) concluído(s) no mês`}
+                                    >
+                                        {completedBathsCount}
+                                    </div>
+                                )}
+                            </div>
                             <div className="flex items-center gap-1.5 mt-1 flex-nowrap overflow-x-auto custom-scrollbar-hide">
                                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-100 uppercase tracking-wide flex-shrink-0">
                                     {getRecurrenceText(client)}
