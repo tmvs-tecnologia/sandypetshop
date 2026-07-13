@@ -289,7 +289,7 @@ const MonthlyClientCard: React.FC<{
                 yesterday.setDate(yesterday.getDate() - 1);
                 const fetchAfter = yesterday.toISOString(); // Fetch from yesterday to ensure we don't miss any due to timezone
 
-                const [apptsRes, petMovelRes, completedApptsRes, completedPetMovelRes] = await Promise.all([
+                const [apptsRes, petMovelRes, bathGroomRes, completedApptsRes, completedPetMovelRes, completedBathGroomRes] = await Promise.all([
                     supabase
                         .from('appointments')
                         .select('appointment_time, status')
@@ -297,6 +297,11 @@ const MonthlyClientCard: React.FC<{
                         .gte('appointment_time', startOfMonth),
                     supabase
                         .from('pet_movel_appointments')
+                        .select('appointment_time, status')
+                        .eq('monthly_client_id', client.id)
+                        .gte('appointment_time', startOfMonth),
+                    supabase
+                        .from('agendamento_banhotosa')
                         .select('appointment_time, status')
                         .eq('monthly_client_id', client.id)
                         .gte('appointment_time', startOfMonth),
@@ -313,12 +318,22 @@ const MonthlyClientCard: React.FC<{
                         .eq('monthly_client_id', client.id)
                         .eq('status', 'CONCLUÍDO')
                         .gte('appointment_time', startOfMonth)
+                        .lte('appointment_time', endOfMonth),
+                    supabase
+                        .from('agendamento_banhotosa')
+                        .select('id')
+                        .eq('monthly_client_id', client.id)
+                        .eq('status', 'CONCLUÍDO')
+                        .gte('appointment_time', startOfMonth)
                         .lte('appointment_time', endOfMonth)
                 ]);
 
                 if (!isMounted) return;
 
-                const completedCount = (completedApptsRes.data || []).length + (completedPetMovelRes.data || []).length;
+                const completedCount = 
+                    (completedApptsRes.data || []).length + 
+                    (completedPetMovelRes.data || []).length + 
+                    (completedBathGroomRes.data || []).length;
                 setCompletedBathsCount(completedCount);
 
                 // Calcular total de serviços no mês atual (concluídos ou agendados)
@@ -326,7 +341,8 @@ const MonthlyClientCard: React.FC<{
                 const currentYear = now.getFullYear();
                 const totalApptsThisMonth = [
                     ...(apptsRes.data || []),
-                    ...(petMovelRes.data || [])
+                    ...(petMovelRes.data || []),
+                    ...(bathGroomRes.data || [])
                 ].filter(appt => {
                     const d = new Date(appt.appointment_time);
                     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
@@ -345,7 +361,8 @@ const MonthlyClientCard: React.FC<{
 
                 const combined = [
                     ...(apptsRes.data || []),
-                    ...(petMovelRes.data || [])
+                    ...(petMovelRes.data || []),
+                    ...(bathGroomRes.data || [])
                 ];
 
                 combined.sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
