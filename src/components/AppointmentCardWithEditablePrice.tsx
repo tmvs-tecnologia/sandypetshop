@@ -119,7 +119,8 @@ const AppointmentCardWithEditablePrice: React.FC<AppointmentCardWithEditablePric
         observation,
         condominium,
         pet_photo_url,
-        recurrence_type
+        recurrence_type,
+        pet_breed
     } = appointment;
 
     const isCompleted = status === 'CONCLUÍDO';
@@ -383,12 +384,24 @@ const AppointmentCardWithEditablePrice: React.FC<AppointmentCardWithEditablePric
                     </a>
 
                     {!isVisit && (
-                        <div className="flex items-center gap-2 col-span-2">
+                        <div className="flex items-center gap-2">
                             <div className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">🏢</div>
                             <div className="flex flex-col">
                                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Condomínio</span>
                                 <span className="text-xs font-medium text-gray-700">
                                     {(!condominium || condominium === 'Nenhum Condomínio') ? 'Banho & Tosa Fixo' : condominium}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {pet_breed && (
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">🐾</div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Raça</span>
+                                <span className="text-xs font-medium text-gray-700 truncate max-w-[120px]">
+                                    {pet_breed}
                                 </span>
                             </div>
                         </div>

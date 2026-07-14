@@ -34,6 +34,11 @@ self.addEventListener('install', (event) => {
 
 // Fetch event: serve from cache, falling back to network
 self.addEventListener('fetch', (event) => {
+  // Evitar fazer cache ou interceptar chamadas da API do Supabase e Webhooks
+  if (event.request.url.includes('supabase.co') || event.request.url.includes('webhook')) {
+    return;
+  }
+
   // We only want to cache GET requests for our assets.
   if (event.request.method !== 'GET') {
     return;

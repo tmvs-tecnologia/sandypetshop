@@ -17056,16 +17056,16 @@ const ResumoView: React.FC<{
     
     const todayAppointments = useMemo(() => {
         const activeMonthlyIds = new Set((monthlyClients || []).map(c => c.id));
-        const nowTime = new Date().getTime();
+        const targetDate = new Date();
         return (appointments || [])
-            .filter(app => isSameSaoPauloDay(new Date(app.appointment_time), now))
+            .filter(app => isSameSaoPauloDay(new Date(app.appointment_time), targetDate))
             .filter(app => {
                 if (app.monthly_client_id && !activeMonthlyIds.has(app.monthly_client_id)) {
                     return false;
                 }
                 return true;
             });
-    }, [appointments, now, monthlyClients]);
+    }, [appointments, monthlyClients]);
 
     const stats = useMemo(() => {
         const banhoTosa = todayAppointments.filter(app => app.table === 'agendamento_banhotosa');
@@ -18839,8 +18839,22 @@ const App: React.FC<AppProps> = ({ prefillService, prefillDate, prefillTime }) =
     const [isObservationModalOpen, setObservationModalOpen] = useState(false);
     const [selectedAppointmentForObservation, setSelectedAppointmentForObservation] = useState<AdminAppointment | null>(null);
     const [observationText, setObservationText] = useState('');
-    const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
-    const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>([]);
+    const [appointments, setAppointments] = useState<AdminAppointment[]>(() => {
+        try {
+            const cached = localStorage.getItem('cached_admin_appointments');
+            return cached ? JSON.parse(cached) : [];
+        } catch {
+            return [];
+        }
+    });
+    const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>(() => {
+        try {
+            const cached = localStorage.getItem('cached_monthly_clients');
+            return cached ? JSON.parse(cached) : [];
+        } catch {
+            return [];
+        }
+    });
 
     // Hooks de carregamento serão posicionados após a autenticação
 
@@ -19086,19 +19100,71 @@ const App: React.FC<AppProps> = ({ prefillService, prefillDate, prefillTime }) =
         }
     }, [isScheduleOpen]);
 
-    // Ao autenticar, carregar agendamentos de Banho & Tosa, Pet Móvel e Mensalistas
+    // Ao autenticar, carregar agendamentos de Banho & Tosa, Pet Móvel e Mensalistas, e configurar Realtime
     useEffect(() => {
         if (!isAuthenticated) return;
         let cancelled = false;
+        let channel: any = null;
 
         const loadAllAdminAppointments = async () => {
-            try {
-                // FIX: Added same date filter as in AdminDashboard to prevent overwriting global state
-                // with truncated data due to the 1000-row limit in Supabase.
-                const now = new Date();
-                const windowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
+            const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
 
-                const fetchPaginated = async (table: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa', start: string) => {
+            const normalize = (arr: any[] | null | undefined, tableName: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa'): AdminAppointment[] => {
+                if (!arr) return [];
+                return arr.map((rec: any) => ({
+                    id: rec.id,
+                    appointment_time: rec.appointment_time,
+                    pet_name: rec.pet_name,
+                    pet_breed: rec.pet_breed ?? undefined,
+                    owner_name: rec.owner_name ?? rec.client_name ?? '',
+                    owner_address: rec.owner_address ?? rec.address ?? undefined,
+                    whatsapp: rec.whatsapp ?? rec.phone ?? '',
+                    service: rec.service,
+                    weight: rec.weight,
+                    addons: rec.addons ?? [],
+                    price: rec.price ?? 0,
+                    status: rec.status,
+                    monthly_client_id: rec.monthly_client_id ?? undefined,
+                    condominium: rec.condominium ?? rec.condo ?? undefined,
+                    extra_services: rec.extra_services ?? undefined,
+                    observation: rec.observation ?? rec.notes ?? undefined,
+                    pet_photo_url: rec.monthly_clients?.pet_photo_url ?? undefined,
+                    recurrence_type: rec.monthly_clients?.recurrence_type ?? undefined,
+                    responsible: rec.responsible ?? undefined,
+                    owner_cpf: rec.owner_cpf ?? undefined,
+                    table: tableName,
+                }));
+            };
+
+            // Fase 1: Carregamento prioritário de hoje para exibição visual instantânea no Resumo do Dia
+            try {
+                const [todayBath, todayMovel, todayBanhoTosa] = await Promise.all([
+                    supabase.from('appointments').select('*, monthly_clients(pet_photo_url, recurrence_type)').gte('appointment_time', startOfToday).lte('appointment_time', endOfToday),
+                    supabase.from('pet_movel_appointments').select('*, monthly_clients(pet_photo_url, recurrence_type)').gte('appointment_time', startOfToday).lte('appointment_time', endOfToday),
+                    supabase.from('agendamento_banhotosa').select('*, monthly_clients(pet_photo_url, recurrence_type)').gte('appointment_time', startOfToday).lte('appointment_time', endOfToday)
+                ]);
+
+                const todayCombined = [
+                    ...normalize(todayBath.data, 'appointments'),
+                    ...normalize(todayMovel.data, 'pet_movel_appointments'),
+                    ...normalize(todayBanhoTosa.data, 'agendamento_banhotosa')
+                ].sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+
+                if (!cancelled) {
+                    setAppointments(todayCombined);
+                }
+            } catch (todayErr) {
+                console.warn('Falha no carregamento prioritário de hoje:', todayErr);
+            }
+
+            // Fase 2: Carregamento completo (-30 dias a +90 dias) em background
+            try {
+                const windowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+                const windowEnd = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
+
+                const fetchPaginated = async (table: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa', start: string, end: string) => {
                     let allData: any[] = [];
                     let page = 0;
                     while (true) {
@@ -19106,6 +19172,7 @@ const App: React.FC<AppProps> = ({ prefillService, prefillDate, prefillTime }) =
                             .from(table)
                             .select('*, monthly_clients(pet_photo_url, recurrence_type)')
                             .gte('appointment_time', start)
+                            .lte('appointment_time', end)
                             .order('appointment_time', { ascending: false })
                             .range(page * 1000, (page + 1) * 1000 - 1);
                         if (error) {
@@ -19119,44 +19186,18 @@ const App: React.FC<AppProps> = ({ prefillService, prefillDate, prefillTime }) =
                     return allData;
                 };
 
-                const bathAppointments = await fetchPaginated('appointments', windowStart);
-                const petMovelAppointments = await fetchPaginated('pet_movel_appointments', windowStart);
-                const banhoTosaAppointments = await fetchPaginated('agendamento_banhotosa', windowStart);
+                const [bathAppointments, petMovelAppointments, banhoTosaAppointments, monthlyClientsRes] = await Promise.all([
+                    fetchPaginated('appointments', windowStart, windowEnd),
+                    fetchPaginated('pet_movel_appointments', windowStart, windowEnd),
+                    fetchPaginated('agendamento_banhotosa', windowStart, windowEnd),
+                    supabase.from('monthly_clients').select('*').eq('is_active', true)
+                ]);
 
-                const { data: monthlyClientsData } = await supabase
-                    .from('monthly_clients')
-                    .select('*')
-                    .eq('is_active', true);
-
-                if (!cancelled && monthlyClientsData) setMonthlyClients(monthlyClientsData);
-
-                const normalize = (arr: any[] | null | undefined, tableName: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa'): AdminAppointment[] => {
-                    if (!arr) return [];
-                    return arr.map((rec: any) => ({
-                        id: rec.id,
-                        appointment_time: rec.appointment_time,
-                        pet_name: rec.pet_name,
-                        pet_breed: rec.pet_breed ?? undefined,
-                        // Fallbacks para registros de Pet Móvel com nomenclatura diferente
-                        owner_name: rec.owner_name ?? rec.client_name ?? '',
-                        owner_address: rec.owner_address ?? rec.address ?? undefined,
-                        whatsapp: rec.whatsapp ?? rec.phone ?? '',
-                        service: rec.service,
-                        weight: rec.weight,
-                        addons: rec.addons ?? [],
-                        price: rec.price ?? 0,
-                        status: rec.status,
-                        monthly_client_id: rec.monthly_client_id ?? undefined,
-                        condominium: rec.condominium ?? rec.condo ?? undefined,
-                        extra_services: rec.extra_services ?? undefined,
-                        observation: rec.observation ?? rec.notes ?? undefined,
-                        pet_photo_url: rec.monthly_clients?.pet_photo_url ?? undefined,
-                        recurrence_type: rec.monthly_clients?.recurrence_type ?? undefined,
-                        responsible: rec.responsible ?? undefined,
-                        owner_cpf: rec.owner_cpf ?? undefined,
-                        table: tableName,
-                    }));
-                };
+                const monthlyClientsData = monthlyClientsRes.data || [];
+                if (!cancelled && monthlyClientsRes.data) {
+                    setMonthlyClients(monthlyClientsData);
+                    try { localStorage.setItem('cached_monthly_clients', JSON.stringify(monthlyClientsData)); } catch {}
+                }
 
                 const combined = [
                     ...normalize(bathAppointments, 'appointments'),
@@ -19169,7 +19210,6 @@ const App: React.FC<AppProps> = ({ prefillService, prefillDate, prefillTime }) =
                     .select('id')
                     .eq('is_active', false);
                 const inactiveIds = new Set((inactiveClients || []).map((c: any) => c.id));
-                const nowTime = new Date().getTime();
 
                 const filteredCombined = combined.filter(app => {
                     if (app.monthly_client_id && inactiveIds.has(app.monthly_client_id)) {
@@ -19178,16 +19218,188 @@ const App: React.FC<AppProps> = ({ prefillService, prefillDate, prefillTime }) =
                     return true;
                 });
 
-                if (!cancelled) setAppointments(filteredCombined);
+                if (!cancelled) {
+                    setAppointments(filteredCombined);
+                    try { localStorage.setItem('cached_admin_appointments', JSON.stringify(filteredCombined)); } catch {}
+                }
             } catch (err) {
-                console.warn('Falha ao carregar agendamentos:', err);
+                console.warn('Falha ao carregar agendamentos completos:', err);
             }
         };
 
         loadAllAdminAppointments();
 
+        // Configurar Supabase Realtime para atualizações em tempo real
+        try {
+            const normalizeSingleRecord = (rec: any, tableName: 'appointments' | 'pet_movel_appointments' | 'agendamento_banhotosa', activeMensalistas: MonthlyClient[]): AdminAppointment => {
+                const mInfo = rec.monthly_client_id 
+                    ? activeMensalistas.find(c => c.id === rec.monthly_client_id) 
+                    : null;
+                return {
+                    id: rec.id,
+                    appointment_time: rec.appointment_time,
+                    pet_name: rec.pet_name,
+                    pet_breed: rec.pet_breed ?? undefined,
+                    owner_name: rec.owner_name ?? rec.client_name ?? '',
+                    owner_address: rec.owner_address ?? rec.address ?? undefined,
+                    whatsapp: rec.whatsapp ?? rec.phone ?? '',
+                    service: rec.service,
+                    weight: rec.weight,
+                    addons: rec.addons ?? [],
+                    price: rec.price ?? 0,
+                    status: rec.status,
+                    monthly_client_id: rec.monthly_client_id ?? undefined,
+                    condominium: rec.condominium ?? rec.condo ?? undefined,
+                    extra_services: rec.extra_services ?? undefined,
+                    observation: rec.observation ?? rec.notes ?? undefined,
+                    pet_photo_url: rec.monthly_clients?.pet_photo_url ?? mInfo?.pet_photo_url ?? undefined,
+                    recurrence_type: rec.monthly_clients?.recurrence_type ?? mInfo?.recurrence_type ?? undefined,
+                    responsible: rec.responsible ?? undefined,
+                    owner_cpf: rec.owner_cpf ?? undefined,
+                    table: tableName,
+                };
+            };
+
+            channel = supabase.channel('admin_changes_realtime')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'appointments' },
+                    (payload) => {
+                        const { eventType, new: newRec, old: oldRec } = payload;
+                        setAppointments(prev => {
+                            let updated = [...prev];
+                            if (eventType === 'INSERT') {
+                                setMonthlyClients(mList => {
+                                    const norm = normalizeSingleRecord(newRec, 'appointments', mList);
+                                    if (!updated.some(app => app.id === norm.id)) {
+                                        updated.push(norm);
+                                    }
+                                    return mList;
+                                });
+                            } else if (eventType === 'UPDATE') {
+                                setMonthlyClients(mList => {
+                                    const norm = normalizeSingleRecord(newRec, 'appointments', mList);
+                                    updated = updated.map(app => app.id === norm.id ? norm : app);
+                                    return mList;
+                                });
+                            } else if (eventType === 'DELETE') {
+                                updated = updated.filter(app => app.id !== oldRec.id);
+                            }
+                            updated.sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+                            try { localStorage.setItem('cached_admin_appointments', JSON.stringify(updated)); } catch {}
+                            return updated;
+                        });
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'pet_movel_appointments' },
+                    (payload) => {
+                        const { eventType, new: newRec, old: oldRec } = payload;
+                        setAppointments(prev => {
+                            let updated = [...prev];
+                            if (eventType === 'INSERT') {
+                                setMonthlyClients(mList => {
+                                    const norm = normalizeSingleRecord(newRec, 'pet_movel_appointments', mList);
+                                    if (!updated.some(app => app.id === norm.id)) {
+                                        updated.push(norm);
+                                    }
+                                    return mList;
+                                });
+                            } else if (eventType === 'UPDATE') {
+                                setMonthlyClients(mList => {
+                                    const norm = normalizeSingleRecord(newRec, 'pet_movel_appointments', mList);
+                                    updated = updated.map(app => app.id === norm.id ? norm : app);
+                                    return mList;
+                                });
+                            } else if (eventType === 'DELETE') {
+                                updated = updated.filter(app => app.id !== oldRec.id);
+                            }
+                            updated.sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+                            try { localStorage.setItem('cached_admin_appointments', JSON.stringify(updated)); } catch {}
+                            return updated;
+                        });
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'agendamento_banhotosa' },
+                    (payload) => {
+                        const { eventType, new: newRec, old: oldRec } = payload;
+                        setAppointments(prev => {
+                            let updated = [...prev];
+                            if (eventType === 'INSERT') {
+                                setMonthlyClients(mList => {
+                                    const norm = normalizeSingleRecord(newRec, 'agendamento_banhotosa', mList);
+                                    if (!updated.some(app => app.id === norm.id)) {
+                                        updated.push(norm);
+                                    }
+                                    return mList;
+                                });
+                            } else if (eventType === 'UPDATE') {
+                                setMonthlyClients(mList => {
+                                    const norm = normalizeSingleRecord(newRec, 'agendamento_banhotosa', mList);
+                                    updated = updated.map(app => app.id === norm.id ? norm : app);
+                                    return mList;
+                                });
+                            } else if (eventType === 'DELETE') {
+                                updated = updated.filter(app => app.id !== oldRec.id);
+                            }
+                            updated.sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+                            try { localStorage.setItem('cached_admin_appointments', JSON.stringify(updated)); } catch {}
+                            return updated;
+                        });
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'monthly_clients' },
+                    (payload) => {
+                        const { eventType, new: newRec, old: oldRec } = payload;
+                        setMonthlyClients(prev => {
+                            let updated = [...prev];
+                            if (eventType === 'INSERT') {
+                                if (newRec.is_active && !updated.some(c => c.id === newRec.id)) {
+                                    updated.push(newRec as MonthlyClient);
+                                }
+                            } else if (eventType === 'UPDATE') {
+                                if (newRec.is_active) {
+                                    if (updated.some(c => c.id === newRec.id)) {
+                                        updated = updated.map(c => c.id === newRec.id ? (newRec as MonthlyClient) : c);
+                                    } else {
+                                        updated.push(newRec as MonthlyClient);
+                                    }
+                                } else {
+                                    updated = updated.filter(c => c.id !== newRec.id);
+                                    setAppointments(appsPrev => {
+                                        const appsUpdated = appsPrev.filter(app => app.monthly_client_id !== newRec.id);
+                                        try { localStorage.setItem('cached_admin_appointments', JSON.stringify(appsUpdated)); } catch {}
+                                        return appsUpdated;
+                                    });
+                                }
+                            } else if (eventType === 'DELETE') {
+                                updated = updated.filter(c => c.id !== oldRec.id);
+                                setAppointments(appsPrev => {
+                                    const appsUpdated = appsPrev.filter(app => app.monthly_client_id !== oldRec.id);
+                                    try { localStorage.setItem('cached_admin_appointments', JSON.stringify(appsUpdated)); } catch {}
+                                    return appsUpdated;
+                                });
+                            }
+                            try { localStorage.setItem('cached_monthly_clients', JSON.stringify(updated)); } catch {}
+                            return updated;
+                        });
+                    }
+                )
+                .subscribe();
+        } catch (realtimeErr) {
+            console.warn('Falha ao configurar canal de Realtime do Supabase:', realtimeErr);
+        }
+
         return () => {
             cancelled = true;
+            if (channel) {
+                try { supabase.removeChannel(channel); } catch {}
+            }
         };
     }, [isAuthenticated]);
 
