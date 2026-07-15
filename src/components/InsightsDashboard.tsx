@@ -114,23 +114,33 @@ const InsightsDashboard: React.FC = () => {
             const [
                 apptsRes,
                 petMovelRes,
+                banhoTosaRes,
                 monthlyRes,
                 clientsRes
             ] = await Promise.all([
                 supabase.from('appointments').select('*').order('appointment_time', { ascending: false }).limit(2000),
                 supabase.from('pet_movel_appointments').select('*').order('appointment_time', { ascending: false }).limit(2000),
+                supabase.from('agendamento_banhotosa').select('*').order('appointment_time', { ascending: false }).limit(2000),
                 supabase.from('monthly_clients').select('*'),
                 supabase.from('clients').select('*')
             ]);
 
             // Filter out appointments for inactive monthly clients
             const inactiveMonthlyIds = new Set((monthlyRes.data || []).filter((m: any) => !m.is_active).map((m: any) => m.id));
-            const appts: AdminAppointment[] = (apptsRes.data || []).filter((a: any) => !(a.monthly_client_id && inactiveMonthlyIds.has(a.monthly_client_id)));
-            const petMovelAppts: PetMovelAppointment[] = (petMovelRes.data || []).filter((a: any) => !(a.monthly_client_id && inactiveMonthlyIds.has(a.monthly_client_id)));
-            const allAppts = [...appts, ...petMovelAppts];
+            const appts: AdminAppointment[] = (apptsRes.data || [])
+                .filter((a: any) => !(a.monthly_client_id && inactiveMonthlyIds.has(a.monthly_client_id)))
+                .map((a: any) => ({ ...a, table: 'appointments' }));
+            const petMovelAppts: PetMovelAppointment[] = (petMovelRes.data || [])
+                .filter((a: any) => !(a.monthly_client_id && inactiveMonthlyIds.has(a.monthly_client_id)))
+                .map((a: any) => ({ ...a, table: 'pet_movel_appointments' }));
+            const banhoTosaAppts: any[] = (banhoTosaRes.data || [])
+                .filter((a: any) => !(a.monthly_client_id && inactiveMonthlyIds.has(a.monthly_client_id)))
+                .map((a: any) => ({ ...a, table: 'agendamento_banhotosa' }));
+
+            const allAppts = [...appts, ...petMovelAppts, ...banhoTosaAppts];
 
             // 1. Top 3 Clientes Avulsos Loja (Banho & Tosa)
-            const avulsoLojas = appts.filter(a => !a.monthly_client_id);
+            const avulsoLojas = [...appts, ...banhoTosaAppts].filter(a => !a.monthly_client_id);
             const lojasGrouped = avulsoLojas.reduce((acc, a) => {
                 const name = a.owner_name || 'Desconhecido';
                 if (!acc[name]) acc[name] = { total: 0, count: 0 };
@@ -316,7 +326,7 @@ const InsightsDashboard: React.FC = () => {
             const returnControl: Record<string, Date[]> = {};
 
             let lojaRev30d = 0, lojaCount30d = 0;
-            appts.forEach(a => {
+            [...appts, ...banhoTosaAppts].forEach(a => {
                 const dText = a.appointment_time || (a as any).date;
                 if (!dText) return;
                 const d = new Date(dText);

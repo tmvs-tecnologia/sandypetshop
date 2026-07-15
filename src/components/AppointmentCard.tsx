@@ -10,7 +10,7 @@ import {
     DocumentTextIcon,
     ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline';
-import { AdminAppointment, ServiceType, PetWeight } from '../../types';
+import { AdminAppointment, ServiceType, PetWeight, MonthlyClient } from '../../types';
 import { SERVICE_PRICES, PET_WEIGHT_OPTIONS } from '../../constants';
 
 // --- Helpers ---
@@ -77,6 +77,7 @@ interface AppointmentCardProps {
     onEmitNFe?: (appointment: AdminAppointment) => void;
     isEmittingNFe?: boolean;
     fiscalNotesMap?: Record<string, string>;
+    monthlyClients?: MonthlyClient[];
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -92,7 +93,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     onShowLoyalty,
     onEmitNFe,
     isEmittingNFe,
-    fiscalNotesMap
+    fiscalNotesMap,
+    monthlyClients = []
 }) => {
     const {
         id,
@@ -127,7 +129,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         Object.entries(es).forEach(([key, value]: [string, any]) => {
 
             if (value && typeof value === 'object') {
-                if (key === 'dias_extras' && value.quantity > 0) {
+                if (key === 'dias_extras' && value.enabled && value.quantity > 0) {
                     total += Number(value.quantity) * Number(value.value || 0);
                 } else if (value.enabled) {
                     total += Number(value.value || 0);
@@ -152,7 +154,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
             if (value) {
                 if (key === 'dias_extras') {
-                    if (Number(value.quantity) > 0) activeExtras.push('Dias Extras');
+                    if (value.enabled && Number(value.quantity) > 0) activeExtras.push('Dias Extras');
                 } else if (value.enabled || value === true) {
                     activeExtras.push(formatExtraName(key));
                 }
@@ -162,7 +164,18 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
     const hasExtras = activeExtras.length > 0;
 
-    const basePrice = Number(price || 0);
+    // Encontrar o mensalista correspondente na lista, se houver
+    const monthlyClient = monthly_client_id && monthlyClients 
+        ? monthlyClients.find(c => c.id === monthly_client_id)
+        : null;
+
+    if (pet_name === 'Blue' || monthly_client_id) {
+        console.log(`[Depuração] Pet: ${pet_name}, ID do mensalista no card: ${monthly_client_id}, Mensalista encontrado:`, monthlyClient ? `Sim (Preço: ${monthlyClient.price})` : 'Não', `Total de mensalistas recebidos: ${monthlyClients.length}`);
+    }
+
+    // Se o mensalista correspondente estiver ativo e com valor de mensalidade zerado, zeramos o preço base do agendamento
+    const isMonthlyPriceZero = monthlyClient && Number(monthlyClient.price || 0) === 0;
+    const basePrice = isMonthlyPriceZero ? 0 : Number(price || 0);
 
     const displayPrice: number = basePrice + extrasTotal;
 

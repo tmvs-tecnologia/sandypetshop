@@ -2371,7 +2371,7 @@ const AddMonthlyClientView: React.FC<{ onBack: () => void; onSuccess: () => void
                 ServiceType.PET_MOBILE_GROOMING_ONLY
             ];
             const primaryType = primaryServiceOrder.find(s => Number(serviceQuantities[s] || 0) > 0) || null;
-            const unitPrice = getUnitPriceByType(selectedWeight!, primaryType || null) || finalPrice;
+            const unitPrice = finalPrice === 0 ? 0 : (getUnitPriceByType(selectedWeight!, primaryType || null) || finalPrice);
             const canonicalServiceLabel = primaryType ? SERVICES[primaryType].label : SERVICES[ServiceType.BATH].label;
             const isBanhoTosaFixo = formData.condominium === 'Banho & Tosa Fixo' || formData.condominium === 'Nenhum Condomínio';
             const { data: existingAppts } = await supabase
@@ -3812,7 +3812,7 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
         if (es.penteado?.enabled) total += Number(es.penteado.value || 0);
         if (es.desembolo?.enabled) total += Number(es.desembolo.value || 0);
         if (es.transporte?.enabled) total += Number(es.transporte.value || 0);
-        if (es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
+        if (es.dias_extras?.enabled && es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
         return total;
     };
 
@@ -5957,6 +5957,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
             onEmitNFe={onEmitNFe}
             isEmittingNFe={emittingNFeId === appt.id}
             fiscalNotesMap={fiscalNotesMap}
+            monthlyClients={monthlyClients}
         />
     );
 
@@ -6036,6 +6037,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                                     onShowLoyalty={onShowLoyalty}
                                     onEmitNFe={onEmitNFe}
                                     isEmittingNFe={emittingNFeId === app.id}
+                                    monthlyClients={monthlyClients}
                                 />
                                     </div>
                                 ))}
@@ -6163,7 +6165,7 @@ const EditPetMovelAppointmentModal: React.FC<{
         if (es.penteado?.enabled) total += Number(es.penteado.value || 0);
         if (es.desembolo?.enabled) total += Number(es.desembolo.value || 0);
         if (es.transporte?.enabled) total += Number(es.transporte.value || 0);
-        if (es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
+        if (es.dias_extras?.enabled && es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
         return total;
     };
 
@@ -6478,6 +6480,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
             onEmitNFe={onEmitNFe}
             isEmittingNFe={emittingNFeId === appt.id}
             fiscalNotesMap={fiscalNotesMap}
+            monthlyClients={monthlyClients}
         />
     );
 
@@ -17875,7 +17878,7 @@ const AdminDashboard: React.FC<{
                 whatsapp: appointmentToUpdate.whatsapp,
                 service: appointmentToUpdate.service,
                 weight: appointmentToUpdate.weight || 'PEQUENO',
-                price: appointmentToUpdate.price || 0,
+                price: finalPrice !== undefined ? finalPrice : (appointmentToUpdate.price || 0),
                 status: newStatus,
                 monthly_client_id: appointmentToUpdate.monthly_client_id,
                 owner_address: appointmentToUpdate.owner_address || '',
@@ -17898,6 +17901,7 @@ const AdminDashboard: React.FC<{
 
         const updatePayload: any = { status: newStatus };
         if (responsible) updatePayload.responsible = responsible;
+        if (finalPrice !== undefined) updatePayload.price = finalPrice;
 
         const targetTable = appointmentToUpdate.table || tableToInsert || 'appointments';
         const { error: updateError } = await supabase.from(targetTable).update(updatePayload).eq('id', actualId).select();
@@ -17908,7 +17912,8 @@ const AdminDashboard: React.FC<{
                 id: actualId, 
                 status: newStatus, 
                 table: targetTable,
-                ...(responsible ? { responsible } : {}) 
+                ...(responsible ? { responsible } : {}),
+                ...(finalPrice !== undefined ? { price: finalPrice } : {})
             };
             setAppointments(prev => prev.map(app => app.id === id ? updatedAppointment : app));
             

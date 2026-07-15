@@ -8,7 +8,7 @@ import {
     PencilSquareIcon as EditIcon,
     SparklesIcon
 } from '@heroicons/react/24/outline';
-import { AdminAppointment, ServiceType, PetWeight } from '../../types';
+import { AdminAppointment, ServiceType, PetWeight, MonthlyClient } from '../../types';
 import { SERVICE_PRICES, PET_WEIGHT_OPTIONS } from '../../constants';
 
 // --- Helpers ---
@@ -90,6 +90,7 @@ interface AppointmentCardWithEditablePriceProps {
     isUpdating?: boolean;
     isDeleting?: boolean;
     onPriceChange?: (id: string, newPrice: number) => void; // Nova prop para lidar com mudança de preço
+    monthlyClients?: MonthlyClient[];
 }
 
 const AppointmentCardWithEditablePrice: React.FC<AppointmentCardWithEditablePriceProps> = ({
@@ -101,7 +102,8 @@ const AppointmentCardWithEditablePrice: React.FC<AppointmentCardWithEditablePric
     onDeleteObservation,
     isUpdating = false,
     isDeleting = false,
-    onPriceChange
+    onPriceChange,
+    monthlyClients = []
 }) => {
     const {
         id,
@@ -140,11 +142,20 @@ const AppointmentCardWithEditablePrice: React.FC<AppointmentCardWithEditablePric
         if (es.penteado?.enabled) total += Number(es.penteado.value || 0);
         if (es.desembolo?.enabled) total += Number(es.desembolo.value || 0);
         if (es.transporte?.enabled) total += Number(es.transporte.value || 0);
-        if (es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
+        if (es.dias_extras?.enabled && es.dias_extras?.quantity > 0) total += Number(es.dias_extras.quantity) * Number(es.dias_extras.value || 0);
         return total;
     })();
 
-    const initialTotal = Number(price || 0) + initialExtrasTotal;
+    // Encontrar o mensalista correspondente na lista, se houver
+    const monthlyClient = monthly_client_id && monthlyClients 
+        ? monthlyClients.find(c => c.id === monthly_client_id)
+        : null;
+
+    // Se o mensalista correspondente estiver ativo e com valor de mensalidade zerado, zeramos o preço base do agendamento
+    const isMonthlyPriceZero = monthlyClient && Number(monthlyClient.price || 0) === 0;
+    const initialBasePrice = isMonthlyPriceZero ? 0 : Number(price || 0);
+
+    const initialTotal = initialBasePrice + initialExtrasTotal;
     
     const [currentPrice, setCurrentPrice] = useState(initialTotal);
     const [priceInputValue, setPriceInputValue] = useState(initialTotal.toString());
@@ -161,7 +172,7 @@ const AppointmentCardWithEditablePrice: React.FC<AppointmentCardWithEditablePric
 
             if (value) {
                 if (key === 'dias_extras') {
-                    if (Number(value.quantity) > 0) activeExtras.push('Dias Extras');
+                    if (value.enabled && Number(value.quantity) > 0) activeExtras.push('Dias Extras');
                 } else if (value.enabled || value === true) {
                     activeExtras.push(formatExtraName(key));
                 }

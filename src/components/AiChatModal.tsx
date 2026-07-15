@@ -224,15 +224,17 @@ Para listagens detalhadas (nomes, horários, serviços específicos), você DEVE
                             const startStr = `${normalizedStart}T00:00:00`;
                             const endStr = `${normalizedEnd}T23:59:59`;
 
-                            const [lojaRes, movelRes] = await Promise.all([
+                            const [lojaRes, movelRes, banhoTosaRes] = await Promise.all([
                                 supabase.from('appointments').select('*').gte('appointment_time', startStr).lte('appointment_time', endStr).order('appointment_time', { ascending: true }),
-                                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', startStr).lte('appointment_time', endStr).order('appointment_time', { ascending: true })
+                                supabase.from('pet_movel_appointments').select('*').gte('appointment_time', startStr).lte('appointment_time', endStr).order('appointment_time', { ascending: true }),
+                                supabase.from('agendamento_banhotosa').select('*').gte('appointment_time', startStr).lte('appointment_time', endStr).order('appointment_time', { ascending: true })
                             ]);
 
                             const formatAppt = (a: any) => `${new Date(a.appointment_time || a.date).toLocaleString('pt-BR')} - Pet: ${a.pet_name} - Tutor: ${a.owner_name || a.client_name || ''} - Serviço: ${a.service} - Status: ${a.status || ''}`;
                             const allResults = [
-                                ...(lojaRes.data || []).map(a => `[Loja] ` + formatAppt(a)),
-                                ...(movelRes.data || []).map(a => `[Pet Móvel] ` + formatAppt(a))
+                                ...(lojaRes.data || []).map(a => `[Loja Outros] ` + formatAppt(a)),
+                                ...(movelRes.data || []).map(a => `[Pet Móvel] ` + formatAppt(a)),
+                                ...(banhoTosaRes.data || []).map(a => `[Banho & Tosa Loja] ` + formatAppt(a))
                             ];
                             
                             const contentStr = allResults.length > 0 ? allResults.join('\n') : `Nenhum agendamento encontrado entre ${args.data_inicio} e ${args.data_fim}.`;
