@@ -166,6 +166,7 @@ export interface DaycareRegistration {
     attendance_days?: number[];
     // Serviços extras
     extra_services?: {
+        checked_in?: boolean;
         pernoite?: boolean;
         banho_tosa?: boolean;
         so_banho?: boolean;

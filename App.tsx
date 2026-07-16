@@ -9472,6 +9472,7 @@ const EditDaycareEnrollmentModal: React.FC<{
                 const es: any = (formData as any);
                 const getNum = (v: any) => v === '' || v === undefined || v === null ? undefined : Number(v);
                 return {
+                    checked_in: enrollment.extra_services?.checked_in,
                     pernoite: es.pernoite || false,
                     pernoite_quantity: es.pernoite ? getNum(es.pernoite_quantity ?? 1) : undefined,
                     pernoite_price: es.pernoite ? getNum(es.pernoite_price ?? 0) : undefined,
@@ -16080,7 +16081,9 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
             if (error) {
                 alert('Erro ao agendar pernoite: ' + error.message);
             } else {
-                setEnrollments(prev => prev.map(e => e.id === enrollmentForQuickAction.id ? (data as DaycareRegistration) : e));
+                const updated = data as DaycareRegistration;
+                setEnrollments(prev => prev.map(e => e.id === enrollmentForQuickAction.id ? updated : e));
+                setPetsInDaycareNow(prev => prev.map(e => e.id === enrollmentForQuickAction.id ? updated : e));
                 localStorage.setItem('hotel_active_tab', 'pernoite');
                 setQuickActionSuccessMessage(`Pernoite para o pet ${enrollmentForQuickAction.pet_name} agendada com sucesso com o valor de R$ ${priceVal.toFixed(2).replace('.', ',')}! Você será redirecionado para a aba Pernoites no Hotel Pet.`);
                 setIsPernoiteConfirmOpen(false);
@@ -16157,7 +16160,9 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
             if (error) {
                 alert('Erro ao agendar diária: ' + error.message);
             } else {
-                setEnrollments(prev => prev.map(e => e.id === enrollmentForQuickAction.id ? (data as DaycareRegistration) : e));
+                const updated = data as DaycareRegistration;
+                setEnrollments(prev => prev.map(e => e.id === enrollmentForQuickAction.id ? updated : e));
+                setPetsInDaycareNow(prev => prev.map(e => e.id === enrollmentForQuickAction.id ? updated : e));
                 localStorage.setItem('hotel_active_tab', 'diaria');
                 setQuickActionSuccessMessage(`Diária extra para o pet ${enrollmentForQuickAction.pet_name} agendada com sucesso com o valor de R$ ${priceVal.toFixed(2).replace('.', ',')}! Você será redirecionado para a aba Diárias no Hotel Pet.`);
                 setIsDiariaConfirmOpen(false);
@@ -16194,14 +16199,24 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
             const { data, error } = await supabase.from('daycare_enrollments').select('*').order('created_at', { ascending: false });
             if (error) {
                 const cached = localStorage.getItem('cached_daycare_enrollments_all');
-                if (cached) setEnrollments(JSON.parse(cached));
+                if (cached) {
+                    const parsed = JSON.parse(cached) as DaycareRegistration[];
+                    setEnrollments(parsed);
+                    setPetsInDaycareNow(parsed.filter(e => e.extra_services?.checked_in === true));
+                }
             } else {
-                setEnrollments(data as DaycareRegistration[]);
+                const fetched = data as DaycareRegistration[];
+                setEnrollments(fetched);
+                setPetsInDaycareNow(fetched.filter(e => e.extra_services?.checked_in === true));
                 try { localStorage.setItem('cached_daycare_enrollments_all', JSON.stringify(data || [])); } catch { }
             }
         } catch (_) {
             const cached = localStorage.getItem('cached_daycare_enrollments_all');
-            if (cached) setEnrollments(JSON.parse(cached));
+            if (cached) {
+                const parsed = JSON.parse(cached) as DaycareRegistration[];
+                setEnrollments(parsed);
+                setPetsInDaycareNow(parsed.filter(e => e.extra_services?.checked_in === true));
+            }
         } finally {
             setLoading(false);
         }
@@ -16241,7 +16256,9 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
             .single();
         if (!error) {
             const updatedId = data && (data as any).id !== undefined ? String((data as any).id) : String(enrollment.id);
-            setEnrollments(prev => prev.map(r => String(r.id) === updatedId ? { ...r, payment_status: next } : r));
+            const updated = data as DaycareRegistration;
+            setEnrollments(prev => prev.map(r => String(r.id) === updatedId ? updated : r));
+            setPetsInDaycareNow(prev => prev.map(r => String(r.id) === updatedId ? updated : r));
         } else {
             alert('Erro ao atualizar status de pagamento');
         }
@@ -16263,6 +16280,7 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
 
     const handleEnrollmentUpdated = (updated: DaycareRegistration) => {
         setEnrollments(prev => prev.map(e => e.id === updated.id ? updated : e));
+        setPetsInDaycareNow(prev => prev.map(e => e.id === updated.id ? updated : e));
         setIsEditModalOpen(false);
         setSelectedEnrollment(null);
     };
@@ -16280,6 +16298,7 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
 
     const handleExtraServicesUpdated = (updated: DaycareRegistration) => {
         setEnrollments(prev => prev.map(e => e.id === updated.id ? updated : e));
+        setPetsInDaycareNow(prev => prev.map(e => e.id === updated.id ? updated : e));
         setIsExtraServicesModalOpen(false);
         setEnrollmentForExtraServices(null);
     };
@@ -16504,18 +16523,74 @@ const DaycareView: React.FC<{ refreshKey?: number; onFiscalNote?: (enrollment: D
                 try { await sendDaycareApprovalWebhook(data as DaycareRegistration); } catch { }
             }
         } else if (source === 'approved' && target === 'inDaycare') {
-            setPetsInDaycareNow(prev => [...prev, enrollmentToMove]);
+            const currentExtras = enrollmentToMove.extra_services && typeof enrollmentToMove.extra_services === 'object'
+                ? { ...enrollmentToMove.extra_services }
+                : {};
+            currentExtras.checked_in = true;
+            
+            const { data, error } = await supabase
+                .from('daycare_enrollments')
+                .update({ extra_services: currentExtras })
+                .eq('id', id)
+                .select()
+                .single();
+                
+            if (error) {
+                alert('Erro ao atualizar presença na creche');
+            } else {
+                const updated = data as DaycareRegistration;
+                setEnrollments(prev => prev.map(e => e.id === id ? updated : e));
+                setPetsInDaycareNow(prev => [...prev, updated]);
+            }
         } else if (source === 'inDaycare' && target === 'approved') {
-            setPetsInDaycareNow(prev => prev.filter(en => en.id !== id));
+            const currentExtras = enrollmentToMove.extra_services && typeof enrollmentToMove.extra_services === 'object'
+                ? { ...enrollmentToMove.extra_services }
+                : {};
+            currentExtras.checked_in = false;
+            
+            const { data, error } = await supabase
+                .from('daycare_enrollments')
+                .update({ extra_services: currentExtras })
+                .eq('id', id)
+                .select()
+                .single();
+                
+            if (error) {
+                alert('Erro ao atualizar presença na creche');
+            } else {
+                const updated = data as DaycareRegistration;
+                setEnrollments(prev => prev.map(e => e.id === id ? updated : e));
+                setPetsInDaycareNow(prev => prev.filter(en => en.id !== id));
+            }
         }
     };
 
-    const handleToggleDaycarePresence = (enrollment: DaycareRegistration) => {
+    const handleToggleDaycarePresence = async (enrollment: DaycareRegistration) => {
         const isInDaycare = petsInDaycareNow.some(p => p.id === enrollment.id);
-        if (isInDaycare) {
-            setPetsInDaycareNow(prev => prev.filter(p => p.id !== enrollment.id));
+        const nextCheckedIn = !isInDaycare;
+        
+        const currentExtras = enrollment.extra_services && typeof enrollment.extra_services === 'object'
+            ? { ...enrollment.extra_services }
+            : {};
+        currentExtras.checked_in = nextCheckedIn;
+        
+        const { data, error } = await supabase
+            .from('daycare_enrollments')
+            .update({ extra_services: currentExtras })
+            .eq('id', enrollment.id)
+            .select()
+            .single();
+            
+        if (error) {
+            alert('Erro ao atualizar presença na creche');
         } else {
-            setPetsInDaycareNow(prev => [...prev, enrollment]);
+            const updated = data as DaycareRegistration;
+            setEnrollments(prev => prev.map(e => e.id === enrollment.id ? updated : e));
+            if (nextCheckedIn) {
+                setPetsInDaycareNow(prev => [...prev, updated]);
+            } else {
+                setPetsInDaycareNow(prev => prev.filter(p => p.id !== enrollment.id));
+            }
         }
     };
 
