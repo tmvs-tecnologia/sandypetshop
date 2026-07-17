@@ -66,30 +66,30 @@ const TestimonialsCarousel: React.FC = () => {
   // Determine a responsive font size and line height dynamically to fit any text size inside the strict card height
   const getFontSizeClass = (text: string) => {
     const len = text.length;
-    if (len > 280) return 'text-[10px] sm:text-[11px] leading-tight';
-    if (len > 200) return 'text-[11px] sm:text-[12px] leading-tight';
-    if (len > 130) return 'text-xs sm:text-[13px] leading-snug';
-    if (len > 70) return 'text-sm sm:text-base leading-snug';
-    return 'text-base sm:text-lg leading-normal';
+    if (len > 280) return 'text-[9.5px] sm:text-[10px] leading-none sm:leading-tight';
+    if (len > 200) return 'text-[10px] sm:text-[11px] leading-tight';
+    if (len > 130) return 'text-[11px] sm:text-[12px] leading-snug';
+    if (len > 70) return 'text-xs sm:text-sm leading-snug';
+    return 'text-sm sm:text-base leading-normal';
   };
   const commentFontClass = getFontSizeClass(comment);
 
   return (
     <div className="my-8 flex justify-center px-4">
-      {/* Formato retangular ultra-achatado (max-w-3xl e altura fixa otimizada com tipografia dinâmica) para máxima elegância sem layout shifts */}
-      <div className="relative max-w-3xl w-full flex flex-col justify-between bg-gradient-to-r from-pink-100 via-pink-50 to-pink-100 p-3 sm:p-4 rounded-2xl shadow-xl border border-pink-200/50 h-[180px] xs:h-[155px] sm:h-[135px] md:h-[115px] transition-all duration-500">
+      {/* Formato retangular ultra-achatado original restaurado (max-w-3xl e p-2.5/p-3) com tipografia ultra-adaptável para caber tudo sem layout shifts */}
+      <div className="relative max-w-3xl w-full flex flex-col justify-between bg-gradient-to-r from-pink-100 via-pink-50 to-pink-100 p-2.5 sm:py-3 sm:px-4 rounded-2xl shadow-xl border border-pink-200/50 h-[170px] xs:h-[145px] sm:h-[125px] md:h-[110px] transition-all duration-500">
         
         {starDisplay}
         
-        {/* O container de comentário com espaço horizontal estendido de 768px para ocupar pouquíssimas linhas de altura */}
-        <div className="flex-grow flex items-center justify-center overflow-y-auto px-2 scrollbar-thin">
+        {/* O container de comentário com overflow-hidden para eliminar barras de rolagem e setas do navegador */}
+        <div className="flex-grow flex items-center justify-center overflow-hidden px-2">
           <p className={`${commentFontClass} text-pink-900 italic text-center px-2`}>
             "{comment}"
           </p>
         </div>
 
         {/* Rodapé com tutor e seta minimalista discreta */}
-        <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-pink-200/40 z-10">
+        <div className="flex items-center justify-between mt-1 pt-1 border-t border-pink-200/40 z-10">
           <p className="text-pink-700 font-semibold text-xs sm:text-sm">
             - {owner_name || 'Cliente'}
           </p>
