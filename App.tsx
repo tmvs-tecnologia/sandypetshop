@@ -12724,22 +12724,22 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
                     <p className="text-pink-700/70 text-sm sm:text-base md:text-lg font-medium tracking-wide max-w-md" style={{ fontFamily: '"Lobster Two", cursive' }}>Onde cada patinha é tratada com amor 🐾</p>
 
                     {/* Chips de ação rápida — glassmorphism */}
-                    <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-8 w-full max-w-2xl px-2">
-                        <button onClick={() => setIsPriceModalOpen(true)} className="group flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-white/60 backdrop-blur-xl text-pink-800 font-bold rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:shadow-pink-300/40 hover:-translate-y-0.5 transition-all duration-300">
-                            <span className="text-lg sm:text-xl">📋</span>
-                            <span className="uppercase tracking-wider text-[10px] sm:text-xs font-black">Preços</span>
+                    <div className="grid grid-cols-4 gap-1.5 sm:gap-3 mt-8 w-full max-w-2xl px-1 sm:px-4">
+                        <button onClick={() => setIsPriceModalOpen(true)} className="group flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 w-full py-2.5 sm:py-3 bg-white/60 backdrop-blur-xl text-pink-800 font-bold rounded-2xl sm:rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:shadow-pink-300/40 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-base sm:text-xl">📋</span>
+                            <span className="uppercase tracking-wider text-[9px] xs:text-[10px] sm:text-xs font-black">Preços</span>
                         </button>
-                        <button onClick={() => setShowPublicAlbum(true)} className="group flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-white/60 backdrop-blur-xl text-pink-800 font-bold rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:shadow-pink-300/40 hover:-translate-y-0.5 transition-all duration-300">
-                            <span className="text-lg sm:text-xl">📸</span>
-                            <span className="uppercase tracking-wider text-[10px] sm:text-xs font-black">Álbum</span>
+                        <button onClick={() => setShowPublicAlbum(true)} className="group flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 w-full py-2.5 sm:py-3 bg-white/60 backdrop-blur-xl text-pink-800 font-bold rounded-2xl sm:rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:shadow-pink-300/40 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-base sm:text-xl">📸</span>
+                            <span className="uppercase tracking-wider text-[9px] xs:text-[10px] sm:text-xs font-black">Álbum</span>
                         </button>
-                        <button onClick={() => setIsWeeklyScheduleOpen(true)} className="group flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-white/60 backdrop-blur-xl text-pink-800 font-bold rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:shadow-pink-300/40 hover:-translate-y-0.5 transition-all duration-300">
-                            <span className="text-lg sm:text-xl">📅</span>
-                            <span className="uppercase tracking-wider text-[10px] sm:text-xs font-black">Agenda</span>
+                        <button onClick={() => setIsWeeklyScheduleOpen(true)} className="group flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 w-full py-2.5 sm:py-3 bg-white/60 backdrop-blur-xl text-pink-800 font-bold rounded-2xl sm:rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:shadow-pink-300/40 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-base sm:text-xl">📅</span>
+                            <span className="uppercase tracking-wider text-[9px] xs:text-[10px] sm:text-xs font-black">Agenda</span>
                         </button>
-                        <button onClick={openAdoption} className="group flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-orange-400 to-pink-500 text-white font-bold rounded-full shadow-lg shadow-pink-300/40 border border-pink-300/50 hover:shadow-xl hover:shadow-pink-400/50 hover:-translate-y-0.5 transition-all duration-300">
-                            <span className="text-lg sm:text-xl">🏠</span>
-                            <span className="uppercase tracking-wider text-[10px] sm:text-xs font-black">Adote um Pet</span>
+                        <button onClick={openAdoption} className="group flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 w-full py-2.5 sm:py-3 bg-white/60 backdrop-blur-xl text-pink-800 font-bold rounded-2xl sm:rounded-full shadow-lg shadow-pink-200/30 border border-pink-100/80 hover:bg-white hover:shadow-xl hover:shadow-pink-300/40 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-base sm:text-xl">🏠</span>
+                            <span className="uppercase tracking-wider text-[9px] xs:text-[10px] sm:text-xs font-black">Adote</span>
                         </button>
                     </div>
                 </header>
@@ -12830,7 +12830,7 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
                         {/* Saudação refinada */}
                         <div className="mb-10 text-center max-w-2xl mx-auto">
                             <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-pink-950 mb-3 tracking-tight">
-                                Escolha o serviço ideal para seu <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400">melhor amigo</span>
+                                Escolha o serviço ideal para seu <TypingWords />
                             </h2>
                             <p className="text-pink-800/60 text-sm sm:text-base leading-relaxed">
                                 Agende com carinho em poucos toques 💗
@@ -18881,6 +18881,54 @@ const ScheduleClosedPage: React.FC<{ setView: (view: string) => void }> = ({ set
 import MonthlyResetManager from './src/components/MonthlyResetManager';
 import PriceManagementModal from './src/components/PriceManagementModal';
 import FiscalConfirmationModal from './src/components/FiscalConfirmationModal';
+
+const TypingWords: React.FC = () => {
+    const words = useMemo(() => ["melhor amigo", "fiel companheiro", "amigo de quatro patas", "parceiro de aventuras", "peludinho"], []);
+    const [currentWordIndex, setCurrentWordIndex] = useState(0);
+    const [currentText, setCurrentText] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [typingSpeed, setTypingSpeed] = useState(150);
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        const handleType = () => {
+            const fullWord = words[currentWordIndex];
+            if (!isDeleting) {
+                setCurrentText(fullWord.substring(0, currentText.length + 1));
+                setTypingSpeed(100);
+
+                if (currentText === fullWord) {
+                    timer = setTimeout(() => setIsDeleting(true), 2000);
+                    return;
+                }
+            } else {
+                setCurrentText(fullWord.substring(0, currentText.length - 1));
+                setTypingSpeed(50);
+
+                if (currentText === "") {
+                    setIsDeleting(false);
+                    setCurrentWordIndex((prev) => (prev + 1) % words.length);
+                    setTypingSpeed(500);
+                    return;
+                }
+            }
+
+            timer = setTimeout(handleType, typingSpeed);
+        };
+
+        timer = setTimeout(handleType, typingSpeed);
+        return () => clearTimeout(timer);
+    }, [currentText, isDeleting, currentWordIndex, words, typingSpeed]);
+
+    return (
+        <span className="inline-block text-left min-w-[190px] xs:min-w-[220px] sm:min-w-[310px] md:min-w-[360px] align-baseline">
+            <span className="relative inline text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400 pr-[4px]">
+                {currentText || "\u200b"}
+                <span className="absolute right-0 top-[10%] bottom-[10%] w-[3px] bg-gradient-to-r from-pink-500 to-rose-400 animate-pulse"></span>
+            </span>
+        </span>
+    );
+};
 
 interface AppProps {
   prefillService?: string | null;
