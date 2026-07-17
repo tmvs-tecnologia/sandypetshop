@@ -12830,7 +12830,9 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
                         {/* Saudação refinada */}
                         <div className="mb-10 text-center max-w-2xl mx-auto">
                             <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-pink-950 mb-3 tracking-tight">
-                                Escolha o serviço ideal para seu <TypingWords />
+                                Escolha o serviço ideal para seu
+                                <br />
+                                <TypingWords />
                             </h2>
                             <p className="text-pink-800/60 text-sm sm:text-base leading-relaxed">
                                 Agende com carinho em poucos toques 💗
@@ -18921,11 +18923,11 @@ const TypingWords: React.FC = () => {
     }, [currentText, isDeleting, currentWordIndex, words, typingSpeed]);
 
     return (
-        <span className="inline-block text-left min-w-[190px] xs:min-w-[220px] sm:min-w-[310px] md:min-w-[360px] align-baseline">
-            <span className="relative inline text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400 pr-[4px]">
+        <span className="inline-block text-center min-w-[190px] xs:min-w-[220px] sm:min-w-[310px] md:min-w-[360px] align-baseline">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400">
                 {currentText || "\u200b"}
-                <span className="absolute right-0 top-[10%] bottom-[10%] w-[3px] bg-gradient-to-r from-pink-500 to-rose-400 animate-pulse"></span>
             </span>
+            <span className="inline-block w-[3px] h-[0.9em] ml-[2px] bg-gradient-to-r from-pink-500 to-rose-400 animate-pulse align-middle"></span>
         </span>
     );
 };
