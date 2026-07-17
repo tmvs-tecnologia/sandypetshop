@@ -33,11 +33,26 @@ declare global {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const STAR_COLORS = ['#f43f5e', '#fb923c', '#facc15', '#a3e635', '#2dd4bf'];
+const getStarColor = (index: number, isDark: boolean) => {
+    if (isDark) {
+        return '#a0a0a0'; // Tons de cinza Notion no modo escuro
+    }
+    const colors = ['#f43f5e', '#fb923c', '#facc15', '#a3e635', '#2dd4bf'];
+    return colors[index] || '#fbbf24';
+};
+
+const getStarColorWithAlpha = (index: number, alphaHex: string, isDark: boolean) => {
+    if (isDark) {
+        return `#2e2e2e${alphaHex}`; // Cinza divisor Notion com opacidade no modo escuro
+    }
+    const colors = ['#f43f5e', '#fb923c', '#facc15', '#a3e635', '#2dd4bf'];
+    return `${colors[index] || '#fbbf24'}${alphaHex}`;
+};
+
 const STAR_LABELS = ['Ruim', 'Regular', 'Bom', 'Ótimo', 'Excelente'];
 
-function StarRow({ count, fbId, animate }: { count: number; fbId: string; animate?: boolean }) {
-    const color = STAR_COLORS[count - 1] || '#fbbf24';
+function StarRow({ count, fbId, animate, isDark }: { count: number; fbId: string; animate?: boolean; isDark: boolean }) {
+    const color = getStarColor(count - 1, isDark);
     return (
         <div className="flex items-center gap-1.5">
             {[1, 2, 3, 4, 5].map((n) => {
@@ -77,18 +92,18 @@ function StarRow({ count, fbId, animate }: { count: number; fbId: string; animat
     );
 }
 
-function RatingBadge({ stars }: { stars: number }) {
-    const color = STAR_COLORS[stars - 1] || '#9ca3af';
+function RatingBadge({ stars, isDark }: { stars: number; isDark: boolean }) {
+    const color = getStarColor(stars - 1, isDark);
     const label = STAR_LABELS[stars - 1] || 'Nota';
     return (
         <span
             className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider"
             style={{
-                background: `${color}15`,
-                color,
-                border: `1px solid ${color}30`,
+                background: isDark ? 'var(--admin-bg-hover)' : `${color}15`,
+                color: isDark ? 'var(--admin-text-primary)' : color,
+                border: isDark ? '1px solid var(--admin-border-color)' : `1px solid ${color}30`,
                 fontFamily: '"Outfit", sans-serif',
-                boxShadow: `0 2px 10px ${color}10`,
+                boxShadow: isDark ? 'none' : `0 2px 10px ${color}10`,
             }}
         >
             {stars}★ {label}
@@ -96,14 +111,16 @@ function RatingBadge({ stars }: { stars: number }) {
     );
 }
 
-function SafeImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+function SafeImage({ src, alt, className, style }: { src: string; alt: string; className?: string; style?: React.CSSProperties }) {
     const [err, setErr] = useState(false);
+    const isDark = document.body.classList.contains('dark') || document.documentElement.classList.contains('dark');
     if (!src || err) {
         return (
             <div
                 className={`${className} flex items-center justify-center overflow-hidden`}
                 style={{
-                    background: 'linear-gradient(135deg, #fdf2f8 0%, #fff1f7 100%)',
+                    ...style,
+                    background: isDark ? 'var(--admin-bg-hover)' : 'linear-gradient(135deg, #fdf2f8 0%, #fff1f7 100%)',
                     borderRadius: 'inherit'
                 }}
             >
@@ -120,7 +137,7 @@ function SafeImage({ src, alt, className }: { src: string; alt: string; classNam
             </div>
         );
     }
-    return <img src={src} alt={alt} className={className} onError={() => setErr(true)} crossOrigin="anonymous" referrerPolicy="no-referrer" />;
+    return <img src={src} alt={alt} className={className} style={style} onError={() => setErr(true)} crossOrigin="anonymous" referrerPolicy="no-referrer" />;
 }
 
 function timeAgo(dateStr: string): string {
@@ -134,8 +151,13 @@ function timeAgo(dateStr: string): string {
     return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(past);
 }
 
+interface FeedbacksViewProps {
+    adminTheme?: 'light' | 'dark';
+}
+
 // ─── Componente Principal ─────────────────────────────────────────────────────
-const FeedbacksView: React.FC = () => {
+const FeedbacksView: React.FC<FeedbacksViewProps> = ({ adminTheme }) => {
+    const isDark = adminTheme === 'dark';
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
@@ -301,14 +323,11 @@ const FeedbacksView: React.FC = () => {
                 >
                     {exporting ? 'Exportando...' : 'Exportar CSV'}
                 </button>
-                <button
+                 <button
                     onClick={fetchFeedbacks}
                     disabled={loading}
-                    className="absolute left-0 top-1 filter-btn flex items-center justify-center w-10 h-10 rounded-xl transition-all"
+                    className="absolute left-0 top-1 filter-btn flex items-center justify-center w-10 h-10 rounded-xl transition-all bg-pink-50 text-pink-600 border border-pink-100"
                     style={{
-                        background: 'rgba(252, 231, 243, 0.4)',
-                        border: '1px solid rgba(252, 231, 243, 0.5)',
-                        color: '#db2777',
                         cursor: loading ? 'not-allowed' : 'pointer',
                         opacity: loading ? 0.6 : 0.7,
                     }}
@@ -326,11 +345,10 @@ const FeedbacksView: React.FC = () => {
                 </button>
 
                 <div>
-                    <h1 style={{
+                    <h1 className="text-pink-600" style={{
                         fontFamily: '"Lobster Two", cursive',
                         fontSize: '2.25rem',
                         fontWeight: 700,
-                        color: '#db2777',
                         lineHeight: 1.1,
                         marginBottom: '0.2rem',
                     }}>
@@ -349,9 +367,14 @@ const FeedbacksView: React.FC = () => {
                     <div
                         className="rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center relative overflow-hidden h-full"
                         style={{
-                            background: 'linear-gradient(135deg, #ec4899 0%, #f97316 100%)',
-                            boxShadow: '0 12px 40px rgba(236,72,153,0.3)',
+                            background: isDark 
+                                ? 'var(--admin-bg-card)' 
+                                : 'linear-gradient(135deg, #ec4899 0%, #f97316 100%)',
+                            boxShadow: isDark
+                                ? 'none'
+                                : '0 12px 40px rgba(236,72,153,0.3)',
                             color: 'white',
+                            border: isDark ? '1px solid var(--admin-border-color)' : 'none',
                         }}
                     >
                         <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-10 -mt-10" />
@@ -364,10 +387,10 @@ const FeedbacksView: React.FC = () => {
 
                     {/* Total de avaliações */}
                     <div
-                        className="rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center h-full"
-                        style={{ background: 'white', border: '1px solid #fce7f3', boxShadow: '0 4px 20px rgba(236,72,153,0.07)' }}
+                        className="rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center h-full bg-white border border-pink-100 shadow-sm"
+                        style={{ boxShadow: '0 4px 20px rgba(236,72,153,0.07)' }}
                     >
-                        <span style={{ fontSize: 'clamp(2.2rem, 10vw, 3.2rem)', fontWeight: 900, color: '#db2777', lineHeight: 1 }}>
+                        <span className="text-pink-600" style={{ fontSize: 'clamp(2.2rem, 10vw, 3.2rem)', fontWeight: 900, lineHeight: 1 }}>
                             {feedbacks.length}
                         </span>
                         <span className="mt-1 text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Avaliações</span>
@@ -375,21 +398,21 @@ const FeedbacksView: React.FC = () => {
 
                     {/* Distribuição por estrelas */}
                     <div
-                        className="rounded-2xl p-4 flex flex-col gap-1.5 col-span-2 lg:col-span-1"
-                        style={{ background: 'white', border: '1px solid #fce7f3', boxShadow: '0 4px 20px rgba(236,72,153,0.07)' }}
+                        className="rounded-2xl p-4 flex flex-col gap-1.5 col-span-2 lg:col-span-1 bg-white border border-pink-100 shadow-sm"
+                        style={{ boxShadow: '0 4px 20px rgba(236,72,153,0.07)' }}
                     >
                         {dist.map(({ stars: s, count }) => {
                             const pct = feedbacks.length > 0 ? (count / feedbacks.length) * 100 : 0;
                             return (
                                 <div key={s} className="flex items-center gap-2">
-                                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: STAR_COLORS[s - 1], width: 14, textAlign: 'right', flexShrink: 0 }}>{s}★</span>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: getStarColor(s - 1, isDark), width: 14, textAlign: 'right', flexShrink: 0 }}>{s}★</span>
                                     <div className="flex-1 bg-gray-100 rounded-full overflow-hidden" style={{ height: 6 }}>
                                         <div
                                             className="bar-fill h-full rounded-full"
                                             style={{
                                                 width: `${pct}%`,
                                                 '--bar-w': `${pct}%`,
-                                                background: STAR_COLORS[s - 1],
+                                                background: getStarColor(s - 1, isDark),
                                             } as React.CSSProperties}
                                         />
                                     </div>
@@ -403,8 +426,8 @@ const FeedbacksView: React.FC = () => {
 
             {/* ── Filtros ─────────────────────────────────────────────────────── */}
             <div
-                className="flex flex-col sm:flex-row gap-3 mb-6 p-4 rounded-2xl"
-                style={{ background: 'white', border: '1px solid #fce7f3', boxShadow: '0 2px 12px rgba(236,72,153,0.06)' }}
+                className="flex flex-col sm:flex-row gap-3 mb-6 p-4 rounded-2xl bg-white border border-pink-100 shadow-sm"
+                style={{ boxShadow: '0 2px 12px rgba(236,72,153,0.06)' }}
             >
                 {/* Filtro por nome do pet */}
                 <div className="relative flex-1">
@@ -417,6 +440,7 @@ const FeedbacksView: React.FC = () => {
                         onChange={e => setFilterPet(e.target.value)}
                         placeholder="Filtrar por nome do pet..."
                         list="pet-names-list"
+                        className="bg-pink-50/20 text-gray-700 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         style={{
                             width: '100%',
                             padding: '0.6rem 0.9rem 0.6rem 2.4rem',
@@ -424,8 +448,6 @@ const FeedbacksView: React.FC = () => {
                             border: '1.5px solid #fce7f3',
                             fontFamily: '"Outfit", sans-serif',
                             fontSize: '0.9rem',
-                            color: '#374151',
-                            background: '#fdf2f8',
                             outline: 'none',
                             transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
                         }}
@@ -541,18 +563,17 @@ const FeedbacksView: React.FC = () => {
                 {filtered.map((fb, idx) => (
                     <div
                         key={fb.id}
-                        className="fb-card rounded-2xl p-5 relative overflow-hidden"
+                        className="fb-card rounded-2xl p-5 relative overflow-hidden bg-white"
                         style={{
-                            background: 'white',
-                            border: `1px solid ${STAR_COLORS[fb.stars - 1]}22`,
-                            boxShadow: `0 4px 24px rgba(0,0,0,0.05), 0 0 0 0 ${STAR_COLORS[fb.stars - 1]}`,
+                            border: `1px solid ${getStarColorWithAlpha(fb.stars - 1, '22', isDark)}`,
+                            boxShadow: isDark ? 'none' : `0 4px 24px rgba(0,0,0,0.05), 0 0 0 0 ${getStarColor(fb.stars - 1, isDark)}`,
                             animationDelay: `${idx * 60}ms`,
                         }}
                     >
                         {/* Acento de cor lateral por estrela */}
                         <div
                             className="absolute left-0 top-0 bottom-0 w-1 rounded-full"
-                            style={{ background: `linear-gradient(to bottom, ${STAR_COLORS[fb.stars - 1]}, ${STAR_COLORS[fb.stars - 1]}44)` }}
+                            style={{ background: `linear-gradient(to bottom, ${getStarColor(fb.stars - 1, isDark)}, ${getStarColorWithAlpha(fb.stars - 1, '44', isDark)})` }}
                         />
 
                         <div className="flex items-start gap-4 pl-3">
@@ -560,13 +581,13 @@ const FeedbacksView: React.FC = () => {
                             <div className="relative flex-shrink-0">
                                 <div
                                     className="absolute inset-0 rounded-full"
-                                    style={{ background: `${STAR_COLORS[fb.stars - 1]}22`, filter: 'blur(6px)', transform: 'scale(1.15)' }}
+                                    style={{ background: `${getStarColorWithAlpha(fb.stars - 1, '22', isDark)}`, filter: 'blur(6px)', transform: 'scale(1.15)' }}
                                 />
                                 <SafeImage
                                     src={fb.pet_photo_url || ''}
                                     alt={fb.pet_name}
                                     className="relative w-14 h-14 rounded-full object-cover"
-                                    style={{ border: `3px solid ${STAR_COLORS[fb.stars - 1]}44`, boxShadow: `0 4px 16px ${STAR_COLORS[fb.stars - 1]}33` } as React.CSSProperties}
+                                    style={{ border: `3px solid ${getStarColorWithAlpha(fb.stars - 1, '44', isDark)}`, boxShadow: isDark ? 'none' : `0 4px 16px ${getStarColorWithAlpha(fb.stars - 1, '33', isDark)}` } as React.CSSProperties}
                                 />
                             </div>
 
@@ -574,7 +595,7 @@ const FeedbacksView: React.FC = () => {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2 mb-1.5 flex-wrap">
                                     <div>
-                                        <span style={{ fontWeight: 800, fontSize: '1rem', color: '#111827', letterSpacing: '-0.01em' }}>
+                                        <span className="text-gray-800" style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.01em' }}>
                                             {fb.pet_name}
                                         </span>
                                         {fb.owner_name && (
@@ -584,7 +605,7 @@ const FeedbacksView: React.FC = () => {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2 flex-shrink-0">
-                                        <RatingBadge stars={fb.stars} />
+                                        <RatingBadge stars={fb.stars} isDark={isDark} />
                                         <span style={{ fontSize: '0.72rem', color: '#d1d5db', fontWeight: 500 }}>
                                             {timeAgo(fb.submitted_at)}
                                         </span>
@@ -592,17 +613,16 @@ const FeedbacksView: React.FC = () => {
                                 </div>
 
                                 <div className="mb-2">
-                                    <StarRow count={fb.stars} fbId={fb.id} animate />
+                                    <StarRow count={fb.stars} fbId={fb.id} animate isDark={isDark} />
                                 </div>
 
                                 {fb.service && (
                                     <span
+                                        className="text-pink-700 bg-pink-50"
                                         style={{
                                             display: 'inline-block',
                                             fontSize: '0.72rem',
                                             fontWeight: 700,
-                                            color: '#be185d',
-                                            background: '#fce7f3',
                                             borderRadius: '0.5rem',
                                             padding: '0.2rem 0.6rem',
                                             marginBottom: '0.6rem',
@@ -615,14 +635,13 @@ const FeedbacksView: React.FC = () => {
 
                                 {fb.comment ? (
                                     <p
+                                        className="text-gray-700 bg-gray-50"
                                         style={{
                                             fontSize: '0.88rem',
-                                            color: '#374151',
                                             lineHeight: 1.65,
-                                            background: '#fafafa',
                                             borderRadius: '0.75rem',
                                             padding: '0.7rem 0.9rem',
-                                            borderLeft: `3px solid ${STAR_COLORS[fb.stars - 1]}55`,
+                                            borderLeft: `3px solid ${getStarColorWithAlpha(fb.stars - 1, '55', isDark)}`,
                                             margin: 0,
                                             fontStyle: 'italic',
                                         }}

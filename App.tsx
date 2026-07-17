@@ -8443,7 +8443,7 @@ const MonthlyClientsView: React.FC<{
                                     return phoneMatch || (!clientPhone && nameMatch);
                                 });
                                 return (
-                                    <div key={client.id} className="flex-none w-full max-w-[420px] lg:max-w-[460px] md:min-w-0 snap-center px-4">
+                                    <div key={client.id} className="flex-none w-full md:max-w-none max-w-[420px] md:min-w-0 snap-center px-4">
                                         <MonthlyClientCard
                                             client={client}
                                             onEdit={() => setEditingClient(client)}
@@ -17461,6 +17461,20 @@ const AdminDashboard: React.FC<{
         } catch {}
     };
 
+    useEffect(() => {
+        if (adminTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.body.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            document.body.classList.remove('dark');
+            document.documentElement.removeAttribute('data-theme');
+            document.body.removeAttribute('data-theme');
+        }
+    }, [adminTheme]);
+
     const handleShowLoyalty = (pet: string, owner: string) => {
         setLoyaltyPreview({ pet, owner });
     };
@@ -18300,7 +18314,7 @@ const AdminDashboard: React.FC<{
             case 'fiscalNotes': return <FiscalNotesView />;
             case 'financial': return <FinancialDashboardProtected onBack={() => setActiveView('resumo')} />;
 
-            case 'feedbacks': return <FeedbacksView key={dataKey} />;
+            case 'feedbacks': return <FeedbacksView key={dataKey} adminTheme={adminTheme} />;
             case 'album': return <AlbumManagementView />;
             case 'loyalty': return <LoyaltyDashboardView onBack={() => setActiveView('resumo')} />;
             default: return <AppointmentsView 

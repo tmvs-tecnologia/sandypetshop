@@ -219,15 +219,15 @@
       .dark,
       [data-theme="dark"],
       .admin-dashboard-container.dark {
-        --admin-bg-primary: #0f172a;
-        --admin-bg-secondary: #111827;
-        --admin-bg-card: #1e293b;
-        --admin-bg-hover: #334155;
-        --admin-border-color: #475569;
-        --admin-text-primary: #f8fafc;
-        --admin-text-secondary: #cbd5e1;
-        --admin-text-disabled: #94a3b8;
-        --admin-color-brand: #ec4899;
+        --admin-bg-primary: #121212;      /* Fundo geral da página (Preto/cinza Notion escuro) */
+        --admin-bg-secondary: #1c1c1c;    /* Fundo de blocos/listas/tabelas */
+        --admin-bg-card: #222222;         /* Fundo de cartões/cards destacados */
+        --admin-bg-hover: #2c2c2c;        /* Hover de itens e abas ativas */
+        --admin-border-color: #262626;     /* Divisores e bordas */
+        --admin-text-primary: #ffffff;     /* Texto branco puro */
+        --admin-text-secondary: #a0a0a0;   /* Texto cinza Notion */
+        --admin-text-disabled: #5a5a5a;    /* Texto desativado */
+        --admin-color-brand: #ffffff;      /* Marca neutra branca */
       }
 
       /* Suporte a transições globais suaves no painel administrativo */
@@ -239,415 +239,400 @@
                     box-shadow 0.25s ease;
       }
 
-      /* Sobrescritas para forçar o tema escuro em elementos com classes utilitárias padrões */
+      /* Sobrescritas para forçar o tema escuro Notion em elementos estruturais */
+      .dark.admin-bg-primary-override,
       .dark .admin-bg-primary-override,
+      .admin-dashboard-container.dark.admin-bg-primary-override,
       .admin-dashboard-container.dark .admin-bg-primary-override,
+      [data-theme="dark"].admin-bg-primary-override,
       [data-theme="dark"] .admin-bg-primary-override {
         background-color: var(--admin-bg-primary) !important;
         background-image: none !important;
       }
+      .dark.admin-bg-secondary-override,
       .dark .admin-bg-secondary-override,
+      .admin-dashboard-container.dark.admin-bg-secondary-override,
       .admin-dashboard-container.dark .admin-bg-secondary-override,
+      [data-theme="dark"].admin-bg-secondary-override,
       [data-theme="dark"] .admin-bg-secondary-override {
         background-color: var(--admin-bg-secondary) !important;
         background-image: none !important;
       }
+      .dark.admin-bg-card-override,
       .dark .admin-bg-card-override,
+      .admin-dashboard-container.dark.admin-bg-card-override,
       .admin-dashboard-container.dark .admin-bg-card-override,
+      [data-theme="dark"].admin-bg-card-override,
       [data-theme="dark"] .admin-bg-card-override {
         background-color: var(--admin-bg-card) !important;
         background-image: none !important;
       }
+      .dark.admin-border-override,
       .dark .admin-border-override,
+      .admin-dashboard-container.dark.admin-border-override,
       .admin-dashboard-container.dark .admin-border-override,
+      [data-theme="dark"].admin-border-override,
       [data-theme="dark"] .admin-border-override {
         border-color: var(--admin-border-color) !important;
       }
+      .dark.admin-text-primary-override,
       .dark .admin-text-primary-override,
+      .admin-dashboard-container.dark.admin-text-primary-override,
       .admin-dashboard-container.dark .admin-text-primary-override,
+      [data-theme="dark"].admin-text-primary-override,
       [data-theme="dark"] .admin-text-primary-override {
         color: var(--admin-text-primary) !important;
       }
+      .dark.admin-text-secondary-override,
       .dark .admin-text-secondary-override,
+      .admin-dashboard-container.dark.admin-text-secondary-override,
       .admin-dashboard-container.dark .admin-text-secondary-override,
+      [data-theme="dark"].admin-text-secondary-override,
       [data-theme="dark"] .admin-text-secondary-override {
         color: var(--admin-text-secondary) !important;
       }
 
-      /* Sobrescrita de classes Tailwind padrão sob o escopo .dark */
+      /* Sobrescrita de classes Tailwind de Fundo */
       .dark .bg-white,
       .admin-dashboard-container.dark .bg-white,
       [data-theme="dark"] .bg-white,
       .dark section.bg-white,
-      .admin-dashboard-container.dark section.bg-white {
+      .admin-dashboard-container.dark section.bg-white,
+      .dark .bg-slate-50,
+      .dark .bg-gray-50,
+      .dark .bg-gray-100,
+      .dark .bg-slate-100 {
+        background-color: var(--admin-bg-card) !important;
+        background-image: none !important;
+      }
+
+      /* Sobrescrita do fundo da página (bg-slate-900 que vem da raiz do App.tsx e body) */
+      .dark body,
+      body.dark,
+      [data-theme="dark"] body,
+      .dark.bg-slate-900,
+      .dark .bg-slate-900,
+      .dark.bg-slate-950,
+      .dark .bg-slate-950,
+      .dark.bg-gray-900,
+      .dark .bg-gray-900,
+      .dark.bg-zinc-950,
+      .dark .bg-zinc-950,
+      .dark.bg-neutral-950,
+      .dark .bg-neutral-950,
+      .admin-dashboard-container.dark.bg-slate-900,
+      .admin-dashboard-container.dark .bg-slate-900,
+      [data-theme="dark"].bg-slate-900,
+      [data-theme="dark"] .bg-slate-900 {
+        background-color: var(--admin-bg-primary) !important;
+        background-image: none !important;
+      }
+      
+      /* ANULAR TODOS OS FUNDOS COM OPACIDADE (GLASSMORPHISM) COLORIDOS DE SUB-CARDS E CONTÊINERES */
+      .dark [class*="bg-white/"],
+      .dark [class*="bg-pink-50/"],
+      .dark [class*="bg-pink-100/"],
+      .dark [class*="bg-purple-50/"],
+      .dark [class*="bg-purple-100/"],
+      .dark [class*="bg-indigo-50/"],
+      .dark [class*="bg-indigo-100/"],
+      .dark [class*="bg-blue-50/"],
+      .dark [class*="bg-blue-100/"],
+      .dark [class*="bg-cyan-50/"],
+      .dark [class*="bg-cyan-100/"],
+      .dark [class*="bg-yellow-50/"],
+      .dark [class*="bg-yellow-100/"],
+      .dark [class*="bg-amber-50/"],
+      .dark [class*="bg-amber-100/"],
+      .dark [class*="bg-green-50/"],
+      .dark [class*="bg-green-100/"],
+      .dark [class*="bg-emerald-50/"],
+      .dark [class*="bg-emerald-100/"],
+      .dark [class*="bg-rose-50/"],
+      .dark [class*="bg-rose-100/"],
+      .dark [class*="bg-red-50/"],
+      .dark [class*="bg-red-100/"],
+      .dark [class*="bg-gray-50/"],
+      .dark [class*="bg-gray-100/"],
+      .dark [class*="bg-slate-50/"],
+      .dark [class*="bg-slate-100/"] {
+        background-color: var(--admin-bg-secondary) !important;
+        border-color: var(--admin-border-color) !important;
+        color: var(--admin-text-primary) !important;
+        background-image: none !important;
+      }
+
+      /* Modais e Popovers suspensos que usam alta opacidade devem usar o fundo do cartão */
+      .dark [class*="bg-white/96"],
+      .dark [class*="bg-white/95"],
+      .dark [class*="bg-white/90"] {
         background-color: var(--admin-bg-card) !important;
       }
-      .dark .bg-gray-50,
-      .admin-dashboard-container.dark .bg-gray-50,
-      [data-theme="dark"] .bg-gray-50,
-      .dark .bg-slate-50,
-      .admin-dashboard-container.dark .bg-slate-50 {
+
+      /* ANULAR TODOS OS FUNDOS COLORIDOS NO MODO ESCURO (NOTION STYLE) */
+      .dark [class*="bg-pink-"],
+      .dark [class*="bg-purple-"],
+      .dark [class*="bg-indigo-"],
+      .dark [class*="bg-blue-"],
+      .dark [class*="bg-yellow-"],
+      .dark [class*="bg-amber-"],
+      .dark [class*="bg-orange-"],
+      .dark [class*="bg-red-"],
+      .dark [class*="bg-rose-"],
+      .dark [class*="bg-green-"],
+      .dark [class*="bg-emerald-"],
+      .dark [class*="bg-teal-"],
+      .dark [class*="bg-cyan-"] {
         background-color: var(--admin-bg-secondary) !important;
-      }
-      .dark .bg-pink-50\/20,
-      .admin-dashboard-container.dark .bg-pink-50\/20 {
-        background-color: transparent !important;
-      }
-      .dark .bg-gradient-to-br,
-      .admin-dashboard-container.dark .bg-gradient-to-br {
+        color: var(--admin-text-primary) !important;
+        border-color: var(--admin-border-color) !important;
         background-image: none !important;
-        background-color: var(--admin-bg-primary) !important;
       }
-      
-      /* Hover e Seleções */
+
+      /* Hover em elementos de cores */
       .dark .hover\:bg-gray-50:hover,
-      .admin-dashboard-container.dark .hover\:bg-gray-50:hover,
       .dark .hover\:bg-pink-50:hover,
-      .admin-dashboard-container.dark .hover\:bg-pink-50:hover,
       .dark .hover\:bg-pink-100\/30:hover,
-      .admin-dashboard-container.dark .hover\:bg-pink-100\/30:hover {
+      .dark .hover\:bg-pink-100:hover,
+      .dark .hover\:bg-pink-900\/30:hover,
+      .dark .hover\:bg-green-900\/30:hover,
+      .dark .hover\:bg-red-900\/30:hover,
+      .dark .hover\:bg-white:hover,
+      .dark .hover\:bg-white\/80:hover,
+      .dark .hover\:bg-white\/30:hover,
+      .dark .hover\:bg-white\/50:hover,
+      .dark .hover\:bg-gray-200\/50:hover {
         background-color: var(--admin-bg-hover) !important;
-      }
-      .dark .bg-pink-100,
-      .admin-dashboard-container.dark .bg-pink-100 {
-        background-color: var(--admin-bg-hover) !important;
-      }
-      
-      /* Textos */
-      .dark .text-gray-900, .admin-dashboard-container.dark .text-gray-900,
-      .dark .text-slate-900, .admin-dashboard-container.dark .text-slate-900,
-      .dark .text-gray-850, .admin-dashboard-container.dark .text-gray-850,
-      .dark .text-gray-800, .admin-dashboard-container.dark .text-gray-800 {
         color: var(--admin-text-primary) !important;
       }
-      .dark .text-gray-700, .admin-dashboard-container.dark .text-gray-700,
-      .dark .text-gray-600, .admin-dashboard-container.dark .text-gray-600,
-      .dark .text-slate-600, .admin-dashboard-container.dark .text-slate-600,
-      .dark .text-slate-500, .admin-dashboard-container.dark .text-slate-500 {
+
+      /* ANULAR TODOS OS GRADIENTES DE FUNDO E DETALHES NO MODO ESCURO */
+      .dark .bg-gradient-to-br,
+      .dark .bg-gradient-to-r,
+      .dark .bg-gradient-to-tr,
+      .dark .bg-gradient-to-t,
+      .dark .bg-gradient-to-b {
+        background-image: none !important;
+        background-color: var(--admin-bg-card) !important;
+      }
+      
+      /* Barra decorativa do topo do card e cabeçalhos em degradê */
+      .dark [class*="bg-gradient-to-r from-pink-"],
+      .dark [class*="bg-gradient-to-br from-pink-"],
+      .dark [class*="bg-gradient-to-r from-purple-"],
+      .dark [class*="bg-gradient-to-br from-purple-"] {
+        background-image: none !important;
+        background-color: var(--admin-border-color) !important;
+      }
+
+      /* Anular gradientes de fundo coloridos específicos da tela de IA e financeiro */
+      .dark [class*="from-pink-"],
+      .dark [class*="to-pink-"],
+      .dark [class*="from-purple-"],
+      .dark [class*="to-purple-"],
+      .dark [class*="from-cyan-"],
+      .dark [class*="to-cyan-"],
+      .dark [class*="from-amber-"],
+      .dark [class*="to-amber-"] {
+        background-image: none !important;
+        background-color: var(--admin-bg-card) !important;
+        color: var(--admin-text-primary) !important;
+      }
+
+      /* Barras de gráficos de receita e insights de IA (ex: from-pink-300 to-pink-500) no modo escuro */
+      .dark [class*="from-pink-300"][class*="to-pink-500"] {
+        background-image: none !important;
+        background-color: var(--admin-text-secondary) !important;
+      }
+
+      /* Anular sombras coloridas neons brilhantes no modo escuro */
+      .dark [class*="shadow-pink-"],
+      .dark [class*="shadow-purple-"],
+      .dark [class*="shadow-indigo-"],
+      .dark [class*="shadow-cyan-"],
+      .dark [class*="shadow-amber-"] {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important;
+      }
+
+      /* Anular todas as cores de marca de textos nos insights de IA e financeiro */
+      .dark [class*="text-pink-"],
+      .dark [class*="text-purple-"],
+      .dark [class*="text-indigo-"],
+      .dark [class*="text-cyan-"],
+      .dark [class*="text-amber-"] {
+        color: var(--admin-text-primary) !important;
+      }
+
+      /* Anular classes arbitrárias de cores do Tailwind no modo escuro */
+      .dark [class*="bg-\["],
+      .dark [class*="text-\["],
+      .dark [class*="border-\["] {
+        background-color: var(--admin-bg-secondary) !important;
+        background-image: none !important;
+        color: var(--admin-text-primary) !important;
+        border-color: var(--admin-border-color) !important;
+      }
+
+      /* ANULAR TODAS AS CORES DE TEXTO NO MODO ESCURO */
+      .dark .text-gray-900, .dark .text-slate-900, .dark .text-gray-850, .dark .text-gray-800,
+      .dark .text-pink-600, .dark .text-pink-700, .dark .text-pink-800, .dark .text-pink-900,
+      .dark .text-purple-600, .dark .text-purple-700, .dark .text-purple-800, .dark .text-purple-900,
+      .dark .text-indigo-600, .dark .text-indigo-700, .dark .text-indigo-800, .dark .text-indigo-900,
+      .dark .text-blue-600, .dark .text-blue-700, .dark .text-blue-800, .dark .text-blue-900,
+      .dark .text-yellow-600, .dark .text-yellow-700, .dark .text-yellow-800, .dark .text-yellow-900,
+      .dark .text-green-600, .dark .text-green-700, .dark .text-green-800, .dark .text-green-900,
+      .dark .text-emerald-600, .dark .text-emerald-700, .dark .text-emerald-750, .dark .text-emerald-800, .dark .text-emerald-900,
+      .dark .text-amber-600, .dark .text-amber-700, .dark .text-amber-800, .dark .text-amber-900,
+      .dark .text-rose-600, .dark .text-rose-700, .dark .text-rose-800, .dark .text-rose-900,
+      .dark .text-orange-600, .dark .text-orange-700, .dark .text-orange-800, .dark .text-orange-900,
+      .dark .text-red-500, .dark .text-red-650, .dark .text-red-700, .dark .text-red-900,
+      .dark .text-cyan-600, .dark .text-cyan-700, .dark .text-cyan-800, .dark .text-cyan-900 {
+        color: var(--admin-text-primary) !important;
+      }
+
+      .dark .text-gray-700, .dark .text-gray-600, .dark .text-slate-600, .dark .text-slate-500, .dark .text-gray-500 {
         color: var(--admin-text-secondary) !important;
       }
       
-      /* Divisórias e Bordas */
-      .dark .border-gray-100, .admin-dashboard-container.dark .border-gray-100,
-      .dark .border-gray-200, .admin-dashboard-container.dark .border-gray-200,
-      .dark .border-gray-300, .admin-dashboard-container.dark .border-gray-300,
-      .dark .border-slate-100, .admin-dashboard-container.dark .border-slate-100,
-      .dark .border-pink-100, .admin-dashboard-container.dark .border-pink-100,
-      .dark .border-pink-100\/50, .admin-dashboard-container.dark .border-pink-100\/50,
-      .dark .border-pink-100\/40, .admin-dashboard-container.dark .border-pink-100\/40,
-      .dark .border-pink-200, .admin-dashboard-container.dark .border-pink-200 {
+      .dark .text-gray-400, .dark .text-slate-400 {
+        color: var(--admin-text-disabled) !important;
+      }
+
+      /* ANULAR TODAS AS BORDAS COLORIDAS NO MODO ESCURO */
+      .dark .border-gray-100, .dark .border-gray-200, .dark .border-gray-300,
+      .dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300,
+      .dark .border-pink-50, .dark .border-pink-100, .dark .border-pink-200, .dark .border-pink-300,
+      .dark .border-purple-50, .dark .border-purple-100, .dark .border-purple-200, .dark .border-purple-300,
+      .dark .border-indigo-50, .dark .border-indigo-100, .dark .border-indigo-200, .dark .border-indigo-300,
+      .dark .border-green-50, .dark .border-green-100, .dark .border-green-200, .dark .border-green-300,
+      .dark .border-yellow-50, .dark .border-yellow-100, .dark .border-yellow-200, .dark .border-yellow-300,
+      .dark .border-blue-50, .dark .border-blue-100, .dark .border-blue-200, .dark .border-blue-300,
+      .dark .border-rose-50, .dark .border-rose-100, .dark .border-rose-200,
+      .dark .border-amber-50, .dark .border-amber-100, .dark .border-amber-200,
+      .dark .border-orange-50, .dark .border-orange-100, .dark .border-orange-200 {
         border-color: var(--admin-border-color) !important;
       }
-      .dark .border-b-2, .admin-dashboard-container.dark .border-b-2 {
+      .dark .border-b-2 {
         border-bottom-color: var(--admin-border-color) !important;
       }
-      
-      /* Inputs e Fichas */
+
+      /* Formulários, Inputs e Selects */
       .dark input,
-      .admin-dashboard-container.dark input,
       .dark select,
-      .admin-dashboard-container.dark select,
-      .dark textarea,
-      .admin-dashboard-container.dark textarea {
+      .dark textarea {
         background-color: var(--admin-bg-secondary) !important;
         color: var(--admin-text-primary) !important;
         border-color: var(--admin-border-color) !important;
       }
       .dark input::placeholder,
-      .admin-dashboard-container.dark input::placeholder,
-      .dark textarea::placeholder,
-      .admin-dashboard-container.dark textarea::placeholder {
+      .dark textarea::placeholder {
         color: var(--admin-text-disabled) !important;
       }
-      .dark input:focus, .admin-dashboard-container.dark input:focus,
-      .dark select:focus, .admin-dashboard-container.dark select:focus,
-      .dark textarea:focus, .admin-dashboard-container.dark textarea:focus {
-        border-color: var(--admin-color-brand) !important;
-        box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2) !important;
+      .dark input:focus,
+      .dark select:focus,
+      .dark textarea:focus {
+        border-color: var(--admin-text-secondary) !important;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1) !important;
       }
-      .dark input:disabled, .admin-dashboard-container.dark input:disabled,
-      .dark select:disabled, .admin-dashboard-container.dark select:disabled,
-      .dark textarea:disabled, .admin-dashboard-container.dark textarea:disabled {
+      .dark input:disabled,
+      .dark select:disabled,
+      .dark textarea:disabled {
         background-color: var(--admin-bg-primary) !important;
         color: var(--admin-text-disabled) !important;
-        opacity: 0.6;
+        opacity: 0.5;
       }
-      .dark input[type="date"]::-webkit-calendar-picker-indicator,
-      .admin-dashboard-container.dark input[type="date"]::-webkit-calendar-picker-indicator {
+      .dark input[type="date"]::-webkit-calendar-picker-indicator {
         filter: invert(1);
       }
+
+      /* Scrollbar para Modo Escuro */
+      .dark ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1) !important;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+      }
+
+      /* Sombras no Modo Escuro */
+      .dark .shadow-lg,
+      .dark .shadow-xl,
+      .dark .shadow-2xl,
+      .dark .shadow-md,
+      .dark .shadow-sm,
+      .dark .shadow {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important;
+      }
       
-      /* Scrollbar Custom para Dark Mode */
-      .dark ::-webkit-scrollbar-thumb,
-      .admin-dashboard-container.dark ::-webkit-scrollbar-thumb {
-        background: rgba(236, 72, 153, 0.3) !important;
+      /* Abas Selecionadas no Dark Mode */
+      .dark .bg-white.text-pink-600,
+      .dark .bg-white.text-pink-700 {
+        background-color: var(--admin-bg-hover) !important;
+        color: var(--admin-text-primary) !important;
+        box-shadow: none !important;
+        border: 1px solid var(--admin-border-color) !important;
       }
-      .dark ::-webkit-scrollbar-thumb:hover,
-      .admin-dashboard-container.dark ::-webkit-scrollbar-thumb:hover {
-        background: rgba(236, 72, 153, 0.5) !important;
-      }
-
-      /* Sombras Sobrecritas no Escuro */
-      .dark .shadow-lg, .admin-dashboard-container.dark .shadow-lg,
-      .dark .shadow-xl, .admin-dashboard-container.dark .shadow-xl,
-      .dark .shadow-2xl, .admin-dashboard-container.dark .shadow-2xl,
-      .dark .shadow-md, .admin-dashboard-container.dark .shadow-md,
-      .dark .shadow-sm, .admin-dashboard-container.dark .shadow-sm,
-      .dark .shadow, .admin-dashboard-container.dark .shadow {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
-      }
-
-      /* ==========================================
-         REFINAMENTOS ESPECÍFICOS DE ACESSIBILIDADE
-         ========================================== */
-         
-      /* Ajuste específico do Calendário em modo escuro */
-      .dark .bg-white\/80,
-      .admin-dashboard-container.dark .bg-white\/80,
-      [data-theme="dark"] .bg-white\/80 {
-        background-color: var(--admin-bg-card) !important;
+      .dark .border-gray-100\/50,
+      .dark .border-gray-50\/50 {
         border-color: var(--admin-border-color) !important;
       }
+
+      /* Glassmorphism e Opacidades de Branco no Modo Escuro Notion */
+      .dark .bg-white\/96 { background-color: rgba(37, 37, 37, 0.96) !important; }
+      .dark .bg-white\/95 { background-color: rgba(37, 37, 37, 0.95) !important; }
+      .dark .bg-white\/90 { background-color: rgba(37, 37, 37, 0.9) !important; }
+      .dark .bg-white\/80 { background-color: rgba(37, 37, 37, 0.85) !important; }
+      .dark .bg-white\/70 { background-color: rgba(37, 37, 37, 0.8) !important; }
+      .dark .bg-white\/60 { background-color: rgba(32, 32, 32, 0.8) !important; }
+      .dark .bg-white\/50 { background-color: rgba(32, 32, 32, 0.7) !important; }
+      .dark .bg-white\/45 { background-color: rgba(32, 32, 32, 0.65) !important; }
+      .dark .bg-white\/40 { background-color: rgba(32, 32, 32, 0.6) !important; }
+      .dark .bg-white\/30,
+      .dark .bg-white\/25,
+      .dark .bg-white\/20,
+      .dark .bg-white\/15,
+      .dark .bg-white\/10,
+      .dark .bg-white\/5 {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+      }
+
+      /* Hover nas classes com opacidades */
+      .dark .hover\:bg-white:hover { background-color: rgba(255, 255, 255, 0.06) !important; }
+      .dark .hover\:bg-white\/80:hover { background-color: rgba(255, 255, 255, 0.06) !important; }
+      .dark .hover\:bg-white\/30:hover { background-color: rgba(255, 255, 255, 0.04) !important; }
+      .dark .hover\:bg-white\/50:hover { background-color: rgba(255, 255, 255, 0.06) !important; }
+
+      /* Ajuste específico do Calendário e DatePicker no Modo Escuro Notion */
       .dark .text-pink-950,
-      .admin-dashboard-container.dark .text-pink-950,
-      [data-theme="dark"] .text-pink-950 {
+      .dark .text-pink-800\/60,
+      .dark .text-pink-700,
+      .dark .text-pink-600 {
         color: var(--admin-text-primary) !important;
       }
-      .dark .text-pink-800\/60,
-      .admin-dashboard-container.dark .text-pink-800\/60,
-      [data-theme="dark"] .text-pink-800\/60 {
-        color: var(--admin-text-secondary) !important;
-      }
-      .dark .text-pink-900\/30,
-      .admin-dashboard-container.dark .text-pink-900\/30,
-      [data-theme="dark"] .text-pink-900\/30 {
+      
+      .dark .text-pink-900\/30 {
         color: var(--admin-text-disabled) !important;
         opacity: 0.35 !important;
       }
+
       .dark .hover\:bg-pink-100\/80:hover,
-      .admin-dashboard-container.dark .hover\:bg-pink-100\/80:hover,
       .dark .hover\:bg-pink-100:hover,
-      .admin-dashboard-container.dark .hover\:bg-pink-100:hover {
+      .dark .hover\:bg-pink-50:hover {
         background-color: var(--admin-bg-hover) !important;
         color: var(--admin-text-primary) !important;
       }
+
+      /* Dia selecionado do calendário no modo escuro Notion (círculo branco com texto preto) */
       .dark .bg-gradient-to-r.from-pink-500.to-rose-400.text-white,
-      .admin-dashboard-container.dark .bg-gradient-to-r.from-pink-500.to-rose-400.text-white {
-        background-image: linear-gradient(to right, #ec4899, #f43f5e) !important;
-        color: #ffffff !important;
+      .dark .bg-gradient-to-r.from-pink-500.to-rose-400 {
+        background-image: none !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        box-shadow: none !important;
       }
 
-      /* Ajuste para barra de abas e abas inativas de todos os submenus (Creche, Hotel, Banho e Tosa, etc.) */
-      .dark .bg-gray-100\/80,
-      .admin-dashboard-container.dark .bg-gray-100\/80,
-      .dark .bg-gray-100\/50,
-      .admin-dashboard-container.dark .bg-gray-100\/50,
-      .dark .bg-gray-100,
-      .admin-dashboard-container.dark .bg-gray-100,
-      [data-theme="dark"] .bg-gray-100\/80,
-      [data-theme="dark"] .bg-gray-100\/50,
-      [data-theme="dark"] .bg-gray-100 {
-        background-color: var(--admin-bg-secondary) !important;
-        border: 1px solid var(--admin-border-color) !important;
-      }
-      .dark .text-gray-500,
-      .admin-dashboard-container.dark .text-gray-500,
-      [data-theme="dark"] .text-gray-500 {
-        color: var(--admin-text-secondary) !important;
-      }
-      .dark .hover\:text-gray-700:hover,
-      .admin-dashboard-container.dark .hover\:text-gray-700:hover,
-      [data-theme="dark"] .hover\:text-gray-700:hover {
-        color: var(--admin-text-primary) !important;
-      }
-      .dark .hover\:bg-gray-200\/50:hover,
-      .admin-dashboard-container.dark .hover\:bg-gray-200\/50:hover,
-      [data-theme="dark"] .hover\:bg-gray-200\/50:hover {
-        background-color: var(--admin-bg-hover) !important;
-      }
-      
-      /* Abas Ativas Selecionadas (Fundo branco no modo claro) */
-      .dark .bg-white.text-pink-600,
-      .admin-dashboard-container.dark .bg-white.text-pink-600,
-      [data-theme="dark"] .bg-white.text-pink-600,
-      .dark .bg-white.text-pink-700,
-      .admin-dashboard-container.dark .bg-white.text-pink-700 {
-        background-color: var(--admin-bg-card) !important;
-        color: var(--admin-color-brand) !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4) !important;
-        border: 1px solid var(--admin-border-color) !important;
-      }
-
-      /* Ajuste dos Grids de informações internas (bg-gray-50/50 e semelhantes) */
-      .dark .bg-gray-50\/50,
-      .admin-dashboard-container.dark .bg-gray-50\/50,
-      [data-theme="dark"] .bg-gray-50\/50 {
-        background-color: rgba(15, 23, 42, 0.4) !important;
-        border-color: var(--admin-border-color) !important;
-      }
-      .dark .text-gray-400,
-      .admin-dashboard-container.dark .text-gray-400,
-      [data-theme="dark"] .text-gray-400 {
-        color: var(--admin-text-disabled) !important;
-      }
-      .dark .text-green-600,
-      .admin-dashboard-container.dark .text-green-600 {
-        color: #34d399 !important;
-      }
-
-      /* Cards de Resumo Coloridos Translúcidos no Dark Mode */
-      .dark .bg-green-50, .admin-dashboard-container.dark .bg-green-50 {
-        background-color: rgba(16, 185, 129, 0.08) !important;
-        border-color: rgba(16, 185, 129, 0.2) !important;
-      }
-      .dark .text-green-700, .admin-dashboard-container.dark .text-green-700 {
-        color: #34d399 !important;
-      }
-      .dark .text-green-900, .admin-dashboard-container.dark .text-green-900 {
-        color: #f0fdf4 !important;
-      }
-      .dark .bg-green-200, .admin-dashboard-container.dark .bg-green-200 {
-        background-color: rgba(16, 185, 129, 0.25) !important;
-      }
-
-      .dark .bg-blue-50, .admin-dashboard-container.dark .bg-blue-50 {
-        background-color: rgba(59, 130, 246, 0.08) !important;
-        border-color: rgba(59, 130, 246, 0.2) !important;
-      }
-      .dark .text-blue-700, .admin-dashboard-container.dark .text-blue-700 {
-        color: #60a5fa !important;
-      }
-      .dark .text-blue-900, .admin-dashboard-container.dark .text-blue-900 {
-        color: #eff6ff !important;
-      }
-      .dark .bg-blue-200, .admin-dashboard-container.dark .bg-blue-200 {
-        background-color: rgba(59, 130, 246, 0.25) !important;
-      }
-
-      .dark .bg-yellow-50, .admin-dashboard-container.dark .bg-yellow-50 {
-        background-color: rgba(245, 158, 11, 0.08) !important;
-        border-color: rgba(245, 158, 11, 0.2) !important;
-      }
-      .dark .text-yellow-700, .admin-dashboard-container.dark .text-yellow-700 {
-        color: #fbbf24 !important;
-      }
-      .dark .text-yellow-900, .admin-dashboard-container.dark .text-yellow-900 {
-        color: #fffbeb !important;
-      }
-      .dark .bg-yellow-200, .admin-dashboard-container.dark .bg-yellow-200 {
-        background-color: rgba(245, 158, 11, 0.25) !important;
-      }
-
-      .dark .bg-purple-50, .admin-dashboard-container.dark .bg-purple-50 {
-        background-color: rgba(139, 92, 246, 0.08) !important;
-        border-color: rgba(139, 92, 246, 0.2) !important;
-      }
-      .dark .text-purple-700, .admin-dashboard-container.dark .text-purple-700 {
-        color: #a78bfa !important;
-      }
-      .dark .text-purple-900, .admin-dashboard-container.dark .text-purple-900 {
-        color: #f5f3ff !important;
-      }
-      .dark .bg-purple-200, .admin-dashboard-container.dark .bg-purple-200 {
-        background-color: rgba(139, 92, 246, 0.25) !important;
-      }
-
-      .dark .bg-indigo-50, .admin-dashboard-container.dark .bg-indigo-50 {
-        background-color: rgba(99, 102, 241, 0.08) !important;
-        border-color: rgba(99, 102, 241, 0.2) !important;
-      }
-      .dark .text-indigo-700, .admin-dashboard-container.dark .text-indigo-700 {
-        color: #818cf8 !important;
-      }
-      .dark .text-indigo-900, .admin-dashboard-container.dark .text-indigo-900 {
-        color: #eef2ff !important;
-      }
-      .dark .bg-indigo-200, .admin-dashboard-container.dark .bg-indigo-200 {
-        background-color: rgba(99, 102, 241, 0.25) !important;
-      }
-
-      /* ==========================================================================
-         SOBRESCRIÇÕES COMPLEMENTARES DE GLASSMORPHISM E TEXTOS COLORIDOS (DARK MODE)
-         ========================================================================== */
-
-      /* Glassmorphism e Opacidades de Branco no Modo Escuro */
-      .dark .bg-white\/95, .admin-dashboard-container.dark .bg-white\/95, [data-theme="dark"] .bg-white\/95 { background-color: rgba(30, 41, 59, 0.95) !important; }
-      .dark .bg-white\/90, .admin-dashboard-container.dark .bg-white\/90, [data-theme="dark"] .bg-white\/90 { background-color: rgba(30, 41, 59, 0.9) !important; }
-      .dark .bg-white\/80, .admin-dashboard-container.dark .bg-white\/80, [data-theme="dark"] .bg-white\/80 { background-color: rgba(30, 41, 59, 0.8) !important; }
-      .dark .bg-white\/70, .admin-dashboard-container.dark .bg-white\/70, [data-theme="dark"] .bg-white\/70 { background-color: rgba(30, 41, 59, 0.7) !important; }
-      .dark .bg-white\/60, .admin-dashboard-container.dark .bg-white\/60, [data-theme="dark"] .bg-white\/60 { background-color: rgba(30, 41, 59, 0.6) !important; }
-      .dark .bg-white\/50, .admin-dashboard-container.dark .bg-white\/50, [data-theme="dark"] .bg-white\/50 { background-color: rgba(30, 41, 59, 0.5) !important; }
-      .dark .bg-white\/45, .admin-dashboard-container.dark .bg-white\/45, [data-theme="dark"] .bg-white\/45 { background-color: rgba(30, 41, 59, 0.45) !important; }
-      .dark .bg-white\/40, .admin-dashboard-container.dark .bg-white\/40, [data-theme="dark"] .bg-white\/40 { background-color: rgba(30, 41, 59, 0.4) !important; }
-      .dark .bg-white\/30, .admin-dashboard-container.dark .bg-white\/30, [data-theme="dark"] .bg-white\/30 { background-color: rgba(30, 41, 59, 0.3) !important; }
-      .dark .bg-white\/25, .admin-dashboard-container.dark .bg-white\/25, [data-theme="dark"] .bg-white\/25 { background-color: rgba(30, 41, 59, 0.25) !important; }
-      .dark .bg-white\/20, .admin-dashboard-container.dark .bg-white\/20, [data-theme="dark"] .bg-white\/20 { background-color: rgba(30, 41, 59, 0.2) !important; }
-      .dark .bg-white\/15, .admin-dashboard-container.dark .bg-white\/15, [data-theme="dark"] .bg-white\/15 { background-color: rgba(30, 41, 59, 0.15) !important; }
-      .dark .bg-white\/10, .admin-dashboard-container.dark .bg-white\/10, [data-theme="dark"] .bg-white\/10 { background-color: rgba(30, 41, 59, 0.1) !important; }
-      .dark .bg-white\/5,  .admin-dashboard-container.dark .bg-white\/5,  [data-theme="dark"] .bg-white\/5  { background-color: rgba(30, 41, 59, 0.05) !important; }
-
-      /* Hover nas classes com opacidades */
-      .dark .hover\:bg-white:hover, .admin-dashboard-container.dark .hover\:bg-white:hover, [data-theme="dark"] .hover\:bg-white:hover { background-color: rgba(30, 41, 59, 0.95) !important; }
-      .dark .hover\:bg-white\/80:hover, .admin-dashboard-container.dark .hover\:bg-white\/80:hover { background-color: rgba(30, 41, 59, 0.9) !important; }
-      .dark .hover\:bg-white\/30:hover, .admin-dashboard-container.dark .hover\:bg-white\/30:hover { background-color: rgba(30, 41, 59, 0.4) !important; }
-      .dark .hover\:bg-white\/50:hover, .admin-dashboard-container.dark .hover\:bg-white\/50:hover { background-color: rgba(30, 41, 59, 0.7) !important; }
-
-      /* Textos Coloridos de Alta Visibilidade e Contraste no Dark Mode */
-      .dark .text-pink-900, .admin-dashboard-container.dark .text-pink-900, [data-theme="dark"] .text-pink-900 { color: #fbcfe8 !important; }
-      .dark .text-purple-900, .admin-dashboard-container.dark .text-purple-900, [data-theme="dark"] .text-purple-900 { color: #e9d5ff !important; }
-      .dark .text-indigo-900, .admin-dashboard-container.dark .text-indigo-900, [data-theme="dark"] .text-indigo-900 { color: #e0e7ff !important; }
-      .dark .text-amber-900, .admin-dashboard-container.dark .text-amber-900, [data-theme="dark"] .text-amber-900 { color: #fde68a !important; }
-      .dark .text-green-900, .admin-dashboard-container.dark .text-green-900, [data-theme="dark"] .text-green-900 { color: #a7f3d0 !important; }
-      .dark .text-cyan-900, .admin-dashboard-container.dark .text-cyan-900, [data-theme="dark"] .text-cyan-900 { color: #cffafe !important; }
-      .dark .text-rose-900, .admin-dashboard-container.dark .text-rose-900, [data-theme="dark"] .text-rose-900 { color: #fecdd3 !important; }
-
-      .dark .text-pink-800, .admin-dashboard-container.dark .text-pink-800, [data-theme="dark"] .text-pink-800 { color: #f9a8d4 !important; }
-      .dark .text-purple-800, .admin-dashboard-container.dark .text-purple-800, [data-theme="dark"] .text-purple-800 { color: #d8b4fe !important; }
-      .dark .text-indigo-800, .admin-dashboard-container.dark .text-indigo-800, [data-theme="dark"] .text-indigo-800 { color: #c7d2fe !important; }
-      .dark .text-amber-800, .admin-dashboard-container.dark .text-amber-800, [data-theme="dark"] .text-amber-800 { color: #fcd34d !important; }
-      .dark .text-green-800, .admin-dashboard-container.dark .text-green-800, [data-theme="dark"] .text-green-800 { color: #6ee7b7 !important; }
-      .dark .text-cyan-800, .admin-dashboard-container.dark .text-cyan-800, [data-theme="dark"] .text-cyan-800 { color: #67e8f9 !important; }
-      .dark .text-rose-800, .admin-dashboard-container.dark .text-rose-800, [data-theme="dark"] .text-rose-800 { color: #fda4af !important; }
-
-      .dark .text-pink-700, .admin-dashboard-container.dark .text-pink-700, [data-theme="dark"] .text-pink-700 { color: #f472b6 !important; }
-      .dark .text-purple-700, .admin-dashboard-container.dark .text-purple-700, [data-theme="dark"] .text-purple-700 { color: #c084fc !important; }
-      .dark .text-indigo-700, .admin-dashboard-container.dark .text-indigo-700, [data-theme="dark"] .text-indigo-700 { color: #818cf8 !important; }
-      .dark .text-amber-700, .admin-dashboard-container.dark .text-amber-700, [data-theme="dark"] .text-amber-700 { color: #fbbf24 !important; }
-      .dark .text-green-700, .admin-dashboard-container.dark .text-green-700, [data-theme="dark"] .text-green-700 { color: #34d399 !important; }
-      .dark .text-cyan-700, .admin-dashboard-container.dark .text-cyan-700, [data-theme="dark"] .text-cyan-700 { color: #22d3ee !important; }
-      .dark .text-rose-700, .admin-dashboard-container.dark .text-rose-700, [data-theme="dark"] .text-rose-700 { color: #fb7185 !important; }
-
-      .dark .text-pink-600, .admin-dashboard-container.dark .text-pink-600, [data-theme="dark"] .text-pink-600 { color: #ec4899 !important; }
-      .dark .text-purple-600, .admin-dashboard-container.dark .text-purple-600, [data-theme="dark"] .text-purple-600 { color: #a78bfa !important; }
-      .dark .text-indigo-600, .admin-dashboard-container.dark .text-indigo-600, [data-theme="dark"] .text-indigo-600 { color: #6366f1 !important; }
-      .dark .text-amber-600, .admin-dashboard-container.dark .text-amber-600, [data-theme="dark"] .text-amber-600 { color: #f59e0b !important; }
-      .dark .text-green-600, .admin-dashboard-container.dark .text-green-600, [data-theme="dark"] .text-green-600 { color: #10b981 !important; }
-      .dark .text-cyan-600, .admin-dashboard-container.dark .text-cyan-600, [data-theme="dark"] .text-cyan-600 { color: #06b6d4 !important; }
-
-      /* Bordas Translúcidas Coloridas Elegantes no Dark Mode */
-      .dark .border-pink-200, .admin-dashboard-container.dark .border-pink-200,
-      .dark .border-pink-200\/50, .admin-dashboard-container.dark .border-pink-200\/50,
-      .dark .border-pink-100, .admin-dashboard-container.dark .border-pink-100,
-      .dark .border-pink-100\/60, .admin-dashboard-container.dark .border-pink-100\/60,
-      .dark .border-pink-100\/50, .admin-dashboard-container.dark .border-pink-100\/50,
-      .dark .border-pink-100\/40, .admin-dashboard-container.dark .border-pink-100\/40,
-      .dark .border-pink-100\/30, .admin-dashboard-container.dark .border-pink-100\/30,
-      .dark .border-pink-50, .admin-dashboard-container.dark .border-pink-50,
-      .dark .border-pink-50\/50, .admin-dashboard-container.dark .border-pink-50\/50 {
-        border-color: rgba(236, 72, 153, 0.25) !important;
-      }
-      .dark .border-cyan-200, .admin-dashboard-container.dark .border-cyan-200,
-      .dark .border-cyan-100\/50, .admin-dashboard-container.dark .border-cyan-100\/50,
-      .dark .border-cyan-200\/50, .admin-dashboard-container.dark .border-cyan-200\/50 { border-color: rgba(34, 211, 238, 0.25) !important; }
-      .dark .border-purple-200, .admin-dashboard-container.dark .border-purple-200,
-      .dark .border-purple-100\/50, .admin-dashboard-container.dark .border-purple-100\/50,
-      .dark .border-purple-200\/50, .admin-dashboard-container.dark .border-purple-200\/50 { border-color: rgba(192, 132, 252, 0.25) !important; }
-      .dark .border-amber-200, .admin-dashboard-container.dark .border-amber-200,
-      .dark .border-amber-100\/50, .admin-dashboard-container.dark .border-amber-100\/50,
-      .dark .border-amber-200\/50, .admin-dashboard-container.dark .border-amber-200\/50 { border-color: rgba(251, 191, 36, 0.25) !important; }
-      .dark .border-gray-100\/50, .admin-dashboard-container.dark .border-gray-100\/50,
-      .dark .border-gray-50\/50, .admin-dashboard-container.dark .border-gray-50\/50 {
-        border-color: rgba(71, 85, 105, 0.4) !important;
+      /* Sombra do calendário e grafismo no modo escuro Notion */
+      .dark [class*="shadow-[0_8px_30px_rgb(244,114,182"] {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
       }
     </style>
 

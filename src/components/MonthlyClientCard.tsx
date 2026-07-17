@@ -56,10 +56,27 @@ const formatDateToBR = (date: Date) => {
     return `${day}/${month}/${year}`;
 };
 
+const formatPhoneNumber = (phone: string | undefined | null) => {
+    if (!phone) return '-';
+    let digits = phone.replace(/\D/g, '');
+    if (digits.startsWith('55') && digits.length > 10) {
+        digits = digits.substring(2);
+    }
+    if (digits.length === 11) {
+        return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    } else if (digits.length === 10) {
+        return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    }
+    return phone;
+};
+
 const getLastDayOfCurrentMonth = () => {
     const now = new Date();
-    // Sempre retornar o dia 30 do mês atual para o vencimento do pagamento
-    return new Date(now.getFullYear(), now.getMonth(), 30);
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const targetDay = Math.min(30, lastDay);
+    return new Date(year, month, targetDay);
 };
 
 const getNextAppointmentDateText = (client: MonthlyClient) => {
@@ -561,7 +578,7 @@ const MonthlyClientCard: React.FC<{
                         <div className="flex flex-col min-w-0">
                             <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">WhatsApp</span>
                             <span className="text-xs font-medium text-gray-700 truncate">
-                                {client.whatsapp ? client.whatsapp.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : '-'}
+                                {formatPhoneNumber(client.whatsapp)}
                             </span>
                         </div>
                     </div>
@@ -699,10 +716,24 @@ const MonthlyClientCard: React.FC<{
                                 setShowReactivateConfirm(true);
                             }
                         }}
-                        className={client.is_active ? "px-3 py-1.5 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200 font-medium text-xs transition-all" : "px-3 py-1.5 rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 border border-gray-300 font-medium text-xs transition-all"}
+                        className={`px-3 py-1.5 rounded-lg border font-medium text-xs transition-all flex items-center justify-center gap-1.5 ${
+                            client.is_active 
+                                ? "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200 hover:border-amber-300" 
+                                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 hover:border-emerald-300"
+                        }`}
                         title={client.is_active ? "Pausar cliente" : "Reativar cliente"}
                     >
-                        {client.is_active ? "⏸ Pausar" : "▶ Ativar"}
+                        {client.is_active ? (
+                            <>
+                                <PauseIcon className="w-3.5 h-3.5" />
+                                <span>Pausar</span>
+                            </>
+                        ) : (
+                            <>
+                                <PlayIcon className="w-3.5 h-3.5" />
+                                <span>Ativar</span>
+                            </>
+                        )}
                     </button>
                     <div className="flex items-center justify-between gap-3">
                         <button
