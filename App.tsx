@@ -498,22 +498,22 @@ const AlbumManagementView: React.FC = () => {
             <div className="w-full max-w-lg mb-8 bg-pink-50/50 p-1.5 rounded-2xl border border-pink-100 flex gap-2">
                 <button
                     onClick={() => setActiveTab('gallery')}
-                    className={`flex-1 py-3 px-1 sm:px-6 rounded-xl font-bold whitespace-nowrap text-xs sm:text-base transition-all ${activeTab === 'gallery' ? 'bg-white text-pink-600 shadow-md' : 'text-pink-800/50 hover:text-pink-600'}`}
+                    className={`flex-1 py-2.5 px-1 sm:px-4 rounded-xl font-bold whitespace-nowrap text-[11px] sm:text-sm transition-all ${activeTab === 'gallery' ? 'bg-white text-pink-600 shadow-md' : 'text-pink-800/50 hover:text-pink-600'}`}
                 >
-                    Galeria de Fotos
+                    Galeria<span className="hidden sm:inline"> de Fotos</span>
                 </button>
                 <button
                     onClick={() => setActiveTab('fame')}
-                    className={`flex-1 py-3 px-1 sm:px-6 rounded-xl font-bold whitespace-nowrap text-xs sm:text-base transition-all flex items-center justify-center gap-1 sm:gap-2 ${activeTab === 'fame' ? 'bg-white text-pink-600 shadow-md' : 'text-pink-800/50 hover:text-pink-600'}`}
+                    className={`flex-1 py-2.5 px-1 sm:px-4 rounded-xl font-bold whitespace-nowrap text-[11px] sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-1.5 ${activeTab === 'fame' ? 'bg-white text-pink-600 shadow-md' : 'text-pink-800/50 hover:text-pink-600'}`}
                 >
-                    <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                    Mural da Fama
+                    <SparklesIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                    Mural<span className="hidden sm:inline"> da Fama</span>
                 </button>
                 <button
                     onClick={() => setActiveTab('adocao')}
-                    className={`flex-1 py-3 px-1 sm:px-6 rounded-xl font-bold whitespace-nowrap text-xs sm:text-base transition-all flex items-center justify-center gap-1 sm:gap-2 ${activeTab === 'adocao' ? 'bg-white text-pink-600 shadow-md' : 'text-pink-800/50 hover:text-pink-600'}`}
+                    className={`flex-1 py-2.5 px-1 sm:px-4 rounded-xl font-bold whitespace-nowrap text-[11px] sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-1.5 ${activeTab === 'adocao' ? 'bg-white text-pink-600 shadow-md' : 'text-pink-800/50 hover:text-pink-600'}`}
                 >
-                    <span className="text-base sm:text-xl leading-none">🐾</span>
+                    <span className="text-sm sm:text-base leading-none">🐾</span>
                     Adoção
                 </button>
             </div>

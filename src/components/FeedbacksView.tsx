@@ -319,15 +319,23 @@ const FeedbacksView: React.FC<FeedbacksViewProps> = ({ adminTheme }) => {
                 <button
                     onClick={exportFeedbacksCsv}
                     disabled={loading || exporting}
-                    className="ml-4 mb-2 px-4 py-2 bg-gradient-to-r from-[#FF9A44] to-[#E93D8E] text-white rounded-xl hover:brightness-110 transition-colors disabled:opacity-60"
+                    className="ml-4 mb-2 px-4 py-2 text-white rounded-xl hover:brightness-110 transition-colors disabled:opacity-60"
+                    style={{
+                        background: isDark ? 'var(--admin-bg-hover)' : 'linear-gradient(to right, #FF9A44, #E93D8E)',
+                        border: isDark ? '1px solid var(--admin-border-color)' : 'none',
+                        color: isDark ? 'var(--admin-text-primary)' : 'white',
+                    }}
                 >
                     {exporting ? 'Exportando...' : 'Exportar CSV'}
                 </button>
                  <button
                     onClick={fetchFeedbacks}
                     disabled={loading}
-                    className="absolute left-0 top-1 filter-btn flex items-center justify-center w-10 h-10 rounded-xl transition-all bg-pink-50 text-pink-600 border border-pink-100"
+                    className="absolute left-0 top-1 filter-btn flex items-center justify-center w-10 h-10 rounded-xl transition-all"
                     style={{
+                        background: isDark ? 'var(--admin-bg-hover)' : 'rgba(252, 231, 243, 0.4)',
+                        border: isDark ? '1px solid var(--admin-border-color)' : '1px solid rgba(252, 231, 243, 0.5)',
+                        color: isDark ? 'var(--admin-text-primary)' : '#db2777',
                         cursor: loading ? 'not-allowed' : 'pointer',
                         opacity: loading ? 0.6 : 0.7,
                     }}
@@ -445,9 +453,11 @@ const FeedbacksView: React.FC<FeedbacksViewProps> = ({ adminTheme }) => {
                             width: '100%',
                             padding: '0.6rem 0.9rem 0.6rem 2.4rem',
                             borderRadius: '0.75rem',
-                            border: '1.5px solid #fce7f3',
+                            border: isDark ? '1px solid var(--admin-border-color)' : '1.5px solid #fce7f3',
                             fontFamily: '"Outfit", sans-serif',
                             fontSize: '0.9rem',
+                            color: isDark ? 'var(--admin-text-primary)' : '#374151',
+                            background: isDark ? 'var(--admin-bg-secondary)' : '#fdf2f8',
                             outline: 'none',
                             transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
                         }}
@@ -474,9 +484,15 @@ const FeedbacksView: React.FC<FeedbacksViewProps> = ({ adminTheme }) => {
                             onClick={() => setFilterStars(s)}
                             className="filter-btn px-3 py-1.5 rounded-xl text-xs font-bold"
                             style={{
-                                background: filterStars === s ? 'linear-gradient(135deg, #ec4899, #f97316)' : '#fdf2f8',
-                                color: filterStars === s ? 'white' : '#9ca3af',
-                                border: filterStars === s ? '1.5px solid transparent' : '1.5px solid #fce7f3',
+                                background: filterStars === s 
+                                    ? (isDark ? 'var(--admin-bg-hover)' : 'linear-gradient(135deg, #ec4899, #f97316)') 
+                                    : (isDark ? 'var(--admin-bg-secondary)' : '#fdf2f8'),
+                                color: filterStars === s 
+                                    ? (isDark ? 'var(--admin-text-primary)' : 'white') 
+                                    : '#9ca3af',
+                                border: filterStars === s 
+                                    ? (isDark ? '1px solid var(--admin-border-color)' : '1.5px solid transparent') 
+                                    : (isDark ? '1px solid var(--admin-border-color)' : '1.5px solid #fce7f3'),
                             }}
                         >
                             {s === 0 ? 'Todas' : `${s}★`}
@@ -491,11 +507,11 @@ const FeedbacksView: React.FC<FeedbacksViewProps> = ({ adminTheme }) => {
                     style={{
                         padding: '0.6rem 0.9rem',
                         borderRadius: '0.75rem',
-                        border: '1.5px solid #fce7f3',
+                        border: isDark ? '1px solid var(--admin-border-color)' : '1.5px solid #fce7f3',
                         fontFamily: '"Outfit", sans-serif',
                         fontSize: '0.85rem',
-                        color: '#374151',
-                        background: '#fdf2f8',
+                        color: isDark ? 'var(--admin-text-primary)' : '#374151',
+                        background: isDark ? 'var(--admin-bg-secondary)' : '#fdf2f8',
                         outline: 'none',
                         cursor: 'pointer',
                     }}
@@ -664,9 +680,10 @@ const FeedbacksView: React.FC<FeedbacksViewProps> = ({ adminTheme }) => {
                                             }}
                                             className="action-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold"
                                             style={{
-                                                background: 'linear-gradient(135deg, #db2777 0%, #ec4899 100%)',
-                                                color: 'white',
-                                                boxShadow: '0 4px 12px rgba(219,39,119,0.2)',
+                                                background: isDark ? 'var(--admin-bg-hover)' : 'linear-gradient(135deg, #db2777 0%, #ec4899 100%)',
+                                                color: isDark ? 'var(--admin-text-primary)' : 'white',
+                                                boxShadow: isDark ? 'none' : '0 4px 12px rgba(219,39,119,0.2)',
+                                                border: isDark ? '1px solid var(--admin-border-color)' : 'none',
                                             }}
                                         >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -683,9 +700,9 @@ const FeedbacksView: React.FC<FeedbacksViewProps> = ({ adminTheme }) => {
                                             }}
                                             className="action-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold"
                                             style={{
-                                                background: 'rgba(5, 150, 105, 0.08)',
-                                                color: '#059669',
-                                                border: '1px solid rgba(5, 150, 105, 0.15)',
+                                                background: isDark ? 'var(--admin-bg-hover)' : 'rgba(5, 150, 105, 0.08)',
+                                                color: isDark ? 'var(--admin-text-primary)' : '#059669',
+                                                border: isDark ? '1px solid var(--admin-border-color)' : '1px solid rgba(5, 150, 105, 0.15)',
                                             }}
                                         >
                                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -952,7 +969,13 @@ const FeedbacksView: React.FC<FeedbacksViewProps> = ({ adminTheme }) => {
                                     }
                                 }}
                                 disabled={isSharing}
-                                className="flex-[2.2] py-4 bg-white text-pink-600 rounded-2xl font-black shadow-xl shadow-pink-900/40 transform active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
+                                className="flex-[2.2] py-4 rounded-2xl font-black transform active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
+                                style={{
+                                    background: isDark ? 'var(--admin-bg-hover)' : 'white',
+                                    color: isDark ? 'var(--admin-text-primary)' : '#db2777',
+                                    border: isDark ? '1px solid var(--admin-border-color)' : 'none',
+                                    boxShadow: isDark ? 'none' : '0 12px 24px rgba(219,39,119,0.15)',
+                                }}
                             >
                                 {isSharing ? (
                                     <>
