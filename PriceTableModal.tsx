@@ -94,7 +94,7 @@ const PriceTableModal: React.FC<PriceTableModalProps> = ({ isOpen, onClose }) =>
              <div className="relative w-full rounded-[1.5rem] p-2 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/80 transition-transform duration-500 hover:-translate-y-1">
               {!img2Error ? (
                 <img 
-                  src="https://i.imgur.com/imbgDQv.jpeg" 
+                  src="https://i.imgur.com/ep7MZ0P.jpeg" 
                   alt="Creche Pet - Preço" 
                   className="w-full h-auto rounded-[1rem] object-contain"
                   loading="eager"

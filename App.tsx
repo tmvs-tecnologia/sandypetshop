@@ -12798,18 +12798,18 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
                 {/* VISÃO DO ÁLBUM PREMIUM */}
                 {showPublicAlbum && (
                     <div className="fixed inset-0 z-[150] bg-[#fff0f5] overflow-y-auto animate-fadeIn flex flex-col">
-                        <div className="w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col flex-1">
+                        <button 
+                            onClick={() => setShowPublicAlbum(false)}
+                            className="absolute top-5 left-5 z-[160] p-2.5 bg-white/90 backdrop-blur-md text-pink-700 rounded-full shadow-md border border-pink-100/80 hover:bg-pink-600 hover:text-white hover:border-pink-600 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center group"
+                            title="Voltar"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 group-hover:-translate-x-1 transition-transform">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                            </svg>
+                        </button>
+                        <div className="w-full max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col flex-1 pl-14 sm:pl-4">
                             <header className="flex flex-col md:flex-row items-center justify-between mb-12 gap-8 animate-slideDown">
                                 <div className="flex items-center gap-6">
-                                    <button 
-                                        onClick={() => setShowPublicAlbum(false)}
-                                        className="absolute top-4 left-4 z-50 p-2.5 bg-white/80 backdrop-blur-sm text-pink-700 rounded-full shadow-md border border-pink-100 hover:bg-pink-600 hover:text-white transition-all duration-300 hover:scale-110 flex items-center justify-center group"
-                                        title="Voltar"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                                        </svg>
-                                    </button>
                                     <div className="text-center md:text-left">
                                         <h2 className="text-5xl font-bold text-pink-600 leading-none" style={{ fontFamily: 'Lobster Two, cursive' }}>Álbum</h2>
                                         <p className="text-pink-600 font-extrabold text-[10px] uppercase tracking-[0.3em] mt-2">Momentos Inesquecíveis</p>

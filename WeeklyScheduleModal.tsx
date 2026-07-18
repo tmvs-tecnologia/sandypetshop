@@ -17,6 +17,7 @@ interface WeeklyAppointment {
   status: string;
   type: 'Banho & Tosa' | 'Pet Móvel';
   monthly_client_id?: string;
+  pet_photo_url?: string | null;
 }
 
 const getSaoPauloDateString = () => {
@@ -29,6 +30,35 @@ const getSaoPauloDateString = () => {
     });
     return formatter.format(now);
   };
+
+const PetWeeklyAvatar: React.FC<{ src?: string | null; name: string; isBanho: boolean }> = ({ src, name, isBanho }) => {
+  const [hasError, setHasError] = useState(false);
+
+  if (src && !hasError) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className="w-11 h-11 rounded-full object-cover border border-pink-100 shadow-sm shrink-0"
+        referrerPolicy="no-referrer"
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+
+  const fallbackSrc = isBanho 
+    ? "https://cdn-icons-png.flaticon.com/512/14969/14969909.png" 
+    : "https://cdn-icons-png.flaticon.com/512/10754/10754045.png";
+
+  return (
+    <img
+      src={fallbackSrc}
+      alt={isBanho ? "Banho & Tosa" : "Pet Móvel"}
+      className="w-11 h-11 rounded-full object-cover border border-pink-100 shadow-sm shrink-0 bg-pink-50/30"
+      referrerPolicy="no-referrer"
+    />
+  );
+};
 
   const WeeklyScheduleModal: React.FC<WeeklyScheduleModalProps> = ({ isOpen, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -99,47 +129,109 @@ const getSaoPauloDateString = () => {
       const startStr = `${sunday.toISOString().split('T')[0]}T00:00:00`;
       const endStr = `${saturday.toISOString().split('T')[0]}T23:59:59`;
 
-      // Fetch inactive monthly clients
-      const { data: inactiveClients, error: inactiveError } = await supabase
-        .from('monthly_clients')
-        .select('id')
-        .eq('is_active', false);
+      // Fetch inactive monthly clients and photos in parallel
+      const [
+        inactiveClientsRes,
+        monthlyClientsRes,
+        daycareEnrollmentsRes,
+        hotelRegistrationsRes,
+        btRes,
+        abRes,
+        pmRes
+      ] = await Promise.all([
+        supabase.from('monthly_clients').select('id').eq('is_active', false),
+        supabase.from('monthly_clients').select('id, pet_name, owner_name, pet_photo_url'),
+        supabase.from('daycare_enrollments').select('pet_name, tutor_name, pet_photo_url'),
+        supabase.from('hotel_registrations').select('pet_name, tutor_name, pet_photo_url'),
+        supabase.from('appointments')
+          .select('id, pet_name, owner_name, appointment_time, service, status, monthly_client_id')
+          .gte('appointment_time', startStr)
+          .lte('appointment_time', endStr)
+          .in('status', ['AGENDADO', 'pending', 'CONCLUÍDO']),
+        supabase.from('agendamento_banhotosa')
+          .select('id, pet_name, owner_name, appointment_time, service, status, monthly_client_id')
+          .gte('appointment_time', startStr)
+          .lte('appointment_time', endStr)
+          .in('status', ['AGENDADO', 'pending', 'CONCLUÍDO']),
+        supabase.from('pet_movel_appointments')
+          .select('id, pet_name, owner_name, appointment_time, service, status, monthly_client_id')
+          .gte('appointment_time', startStr)
+          .lte('appointment_time', endStr)
+          .in('status', ['AGENDADO', 'pending', 'CONCLUÍDO'])
+      ]);
 
-      if (inactiveError) throw inactiveError;
-      const inactiveSet = new Set((inactiveClients || []).map(c => c.id));
+      if (inactiveClientsRes.error) throw inactiveClientsRes.error;
+      if (btRes.error) throw btRes.error;
+      if (abRes.error) throw abRes.error;
+      if (pmRes.error) throw pmRes.error;
+
+      const inactiveSet = new Set((inactiveClientsRes.data || []).map(c => c.id));
       const nowTime = new Date().getTime();
 
-      // Fetch from appointments table (Banho & Tosa)
-      const { data: btData, error: btError } = await supabase
-        .from('appointments')
-        .select('id, pet_name, owner_name, appointment_time, service, status, monthly_client_id')
-        .gte('appointment_time', startStr)
-        .lte('appointment_time', endStr)
-        .in('status', ['AGENDADO', 'pending', 'CONCLUÍDO']);
+      // Maps to associate photos
+      const photoMapById = new Map<string, string>();
+      const photoMapByNameAndTutor = new Map<string, string>();
+      const photoMapByPetName = new Map<string, string>();
 
-      if (btError) throw btError;
+      const registerPhoto = (petName: string, tutorName: string, photoUrl: string) => {
+        const pName = petName.toLowerCase().trim();
+        const tName = tutorName.toLowerCase().trim();
+        if (pName && tName) {
+          const key = `${pName}_${tName}`;
+          if (!photoMapByNameAndTutor.has(key)) {
+            photoMapByNameAndTutor.set(key, photoUrl);
+          }
+        }
+        if (pName && !photoMapByPetName.has(pName)) {
+          photoMapByPetName.set(pName, photoUrl);
+        }
+      };
 
-      // Fetch from agendamento_banhotosa table (Banho & Tosa Fixo)
-      const { data: abData, error: abError } = await supabase
-        .from('agendamento_banhotosa')
-        .select('id, pet_name, owner_name, appointment_time, service, status, monthly_client_id')
-        .gte('appointment_time', startStr)
-        .lte('appointment_time', endStr)
-        .in('status', ['AGENDADO', 'pending', 'CONCLUÍDO']);
+      if (monthlyClientsRes.data) {
+        monthlyClientsRes.data.forEach(item => {
+          if (item.pet_photo_url) {
+            photoMapById.set(item.id, item.pet_photo_url);
+            registerPhoto(item.pet_name, item.owner_name, item.pet_photo_url);
+          }
+        });
+      }
 
-      if (abError) throw abError;
+      if (daycareEnrollmentsRes.data) {
+        daycareEnrollmentsRes.data.forEach(item => {
+          if (item.pet_photo_url) {
+            registerPhoto(item.pet_name, item.tutor_name, item.pet_photo_url);
+          }
+        });
+      }
 
-      // Fetch from pet_movel_appointments table (Pet Móvel)
-      const { data: pmData, error: pmError } = await supabase
-        .from('pet_movel_appointments')
-        .select('id, pet_name, owner_name, appointment_time, service, status, monthly_client_id')
-        .gte('appointment_time', startStr)
-        .lte('appointment_time', endStr)
-        .in('status', ['AGENDADO', 'pending', 'CONCLUÍDO']);
+      if (hotelRegistrationsRes.data) {
+        hotelRegistrationsRes.data.forEach(item => {
+          if (item.pet_photo_url) {
+            registerPhoto(item.pet_name, item.tutor_name, item.pet_photo_url);
+          }
+        });
+      }
 
-      if (pmError) throw pmError;
+      const getPetPhoto = (monthlyClientId?: string, petName?: string, ownerName?: string) => {
+        if (monthlyClientId && photoMapById.has(monthlyClientId)) {
+          return photoMapById.get(monthlyClientId) || null;
+        }
+        if (petName && ownerName) {
+          const key = `${petName.toLowerCase().trim()}_${ownerName.toLowerCase().trim()}`;
+          if (photoMapByNameAndTutor.has(key)) {
+            return photoMapByNameAndTutor.get(key) || null;
+          }
+        }
+        if (petName) {
+          const petKey = petName.toLowerCase().trim();
+          if (photoMapByPetName.has(petKey)) {
+            return photoMapByPetName.get(petKey) || null;
+          }
+        }
+        return null;
+      };
 
-      const btList: WeeklyAppointment[] = (btData || []).map(apt => ({
+      const btList: WeeklyAppointment[] = (btRes.data || []).map(apt => ({
         id: apt.id,
         pet_name: apt.pet_name,
         owner_name: apt.owner_name || '',
@@ -147,10 +239,11 @@ const getSaoPauloDateString = () => {
         service: apt.service || 'Pet Móvel',
         status: apt.status,
         type: 'Pet Móvel',
-        monthly_client_id: apt.monthly_client_id
+        monthly_client_id: apt.monthly_client_id,
+        pet_photo_url: getPetPhoto(apt.monthly_client_id, apt.pet_name, apt.owner_name)
       }));
 
-      const abList: WeeklyAppointment[] = (abData || []).map(apt => ({
+      const abList: WeeklyAppointment[] = (abRes.data || []).map(apt => ({
         id: apt.id,
         pet_name: apt.pet_name,
         owner_name: apt.owner_name || '',
@@ -158,10 +251,11 @@ const getSaoPauloDateString = () => {
         service: apt.service || 'Banho & Tosa',
         status: apt.status,
         type: 'Banho & Tosa',
-        monthly_client_id: apt.monthly_client_id
+        monthly_client_id: apt.monthly_client_id,
+        pet_photo_url: getPetPhoto(apt.monthly_client_id, apt.pet_name, apt.owner_name)
       }));
 
-      const pmList: WeeklyAppointment[] = (pmData || []).map(apt => ({
+      const pmList: WeeklyAppointment[] = (pmRes.data || []).map(apt => ({
         id: apt.id,
         pet_name: apt.pet_name,
         owner_name: apt.owner_name || '',
@@ -169,7 +263,8 @@ const getSaoPauloDateString = () => {
         service: apt.service || 'Pet Móvel',
         status: apt.status,
         type: 'Pet Móvel',
-        monthly_client_id: apt.monthly_client_id
+        monthly_client_id: apt.monthly_client_id,
+        pet_photo_url: getPetPhoto(apt.monthly_client_id, apt.pet_name, apt.owner_name)
       }));
 
       // Group, filter out future appointments of inactive monthly clients, and sort combined appointments
@@ -247,7 +342,16 @@ const getSaoPauloDateString = () => {
         className={`relative bg-white w-full h-full sm:h-[85vh] sm:max-w-4xl sm:rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(244,114,182,0.3)] flex flex-col transform transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] border-0 sm:border border-pink-100/50 overflow-hidden ${isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}
       >
         {/* Header */}
-        <div className="sticky top-0 z-30 flex flex-col gap-4 p-5 sm:p-8 bg-gradient-to-b from-pink-50 to-white border-b border-pink-50/50 rounded-t-none sm:rounded-t-[2.5rem] shrink-0">
+        <div className="sticky top-0 z-30 flex flex-col gap-4 p-5 sm:p-8 bg-gradient-to-b from-pink-50 to-white border-b border-pink-50/50 rounded-t-none sm:rounded-t-[2.5rem] shrink-0 pl-16 sm:pl-20 relative">
+          <button 
+              onClick={onClose}
+              className="absolute top-5 left-5 z-50 p-2.5 bg-white/90 backdrop-blur-md text-pink-700 rounded-full shadow-md border border-pink-100/80 hover:bg-pink-600 hover:text-white hover:border-pink-600 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center group"
+              title="Voltar"
+          >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 group-hover:-translate-x-1 transition-transform">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+          </button>
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <span className="text-3xl sm:text-4xl">📅</span>
@@ -256,13 +360,6 @@ const getSaoPauloDateString = () => {
                 <p className="text-pink-800/60 text-[11px] sm:text-sm font-medium">Confirme se o agendamento do seu pet está na lista</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2.5 bg-white rounded-full text-pink-400 hover:text-pink-600 hover:bg-pink-50 transition-all duration-300 shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_16px_rgba(244,114,182,0.2)] hover:scale-110 focus:outline-none focus:ring-2 focus:ring-pink-400"
-              aria-label="Fechar"
-            >
-              <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6 stroke-[2.5]" />
-            </button>
           </div>
 
           {/* Controls: Search and Filter */}
@@ -363,9 +460,11 @@ const getSaoPauloDateString = () => {
                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${isBanho ? 'bg-blue-400' : 'bg-purple-400'}`} />
 
                                 <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                                  <div className="w-11 h-11 rounded-full bg-pink-50/50 border border-pink-100 flex items-center justify-center text-2xl shrink-0">
-                                    {isBanho ? '🧼' : '🚐'}
-                                  </div>
+                                  <PetWeeklyAvatar 
+                                    src={apt.pet_photo_url} 
+                                    name={apt.pet_name} 
+                                    isBanho={isBanho} 
+                                  />
                                   <div className="min-w-0 flex-1">
                                     <h4 className="font-bold text-pink-950 text-sm sm:text-base leading-tight group-hover:text-pink-600 transition-colors truncate">
                                       {apt.pet_name}

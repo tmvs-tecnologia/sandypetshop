@@ -138,16 +138,20 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
                 <div className="absolute -bottom-24 left-1/3 w-96 h-96 bg-[#E93D8E]/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
             </div>
 
-            <div className="relative z-10 w-full max-w-5xl mx-auto px-5 py-6 flex flex-col flex-1">
+            <button 
+                onClick={onClose}
+                className="absolute top-5 left-5 z-[210] p-2.5 bg-white/90 backdrop-blur-md text-pink-700 rounded-full shadow-md border border-pink-100/80 hover:bg-pink-600 hover:text-white hover:border-pink-600 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center group"
+                title="Voltar"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 group-hover:-translate-x-1 transition-transform">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+            </button>
+
+            <div className="relative z-10 w-full max-w-5xl mx-auto px-5 py-6 flex flex-col flex-1 pl-14 sm:pl-5">
                 {/* HEADER */}
                 <header className="flex flex-col gap-2 mb-8 animate-fadeIn">
-                    <div className="relative w-full flex items-center justify-center pl-12 sm:pl-0">
-                        <button 
-                            onClick={onClose}
-                            className="absolute left-4 p-3 bg-white/80 backdrop-blur-md text-[#4A0D2B] rounded-2xl shadow-sm border border-white hover:bg-[#E93D8E] hover:text-white hover:shadow-pink-300/50 transition-all duration-300 active:scale-95 group"
-                        >
-                            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                        </button>
+                    <div className="relative w-full flex items-center justify-center">
                         <h1 className="text-4xl sm:text-5xl font-black tracking-tighter mb-0 relative inline-block flex items-center" style={{ fontFamily: '"Lobster Two", cursive' }}>
                             <span className="font-brand text-pink-900">Sandy's</span>
                             <span className="ml-2 text-[#4A0D2B]">adoção</span>
