@@ -164,23 +164,56 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
                 </p>
 
                 {/* ANIMATED MOTIVATIONAL CARD */}
-                <div className="relative overflow-hidden rounded-3xl mb-6 group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#FF9A44] via-[#E93D8E] to-[#D91A77] opacity-90"></div>
-                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                <div className="relative overflow-hidden rounded-3xl mb-6 group motivational-card-container shadow-[0_8px_30px_rgba(244,114,182,0.1)] isolate">
+                    <style dangerouslySetInnerHTML={{ __html: `
+                        @keyframes cardMessageEnter {
+                            0% {
+                                opacity: 0;
+                                transform: translateY(8px);
+                            }
+                            100% {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+                        .animate-message-change {
+                            animation: cardMessageEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                        }
+                        .motivational-card-container * {
+                            color: #ffffff !important;
+                        }
+                        .motivational-card-container svg, 
+                        .motivational-card-container svg path {
+                            stroke: #ffffff !important;
+                        }
+                        .motivational-card-container .icon-bg {
+                            background-color: rgba(255, 255, 255, 0.2) !important;
+                        }
+                        .motivational-card-container .progress-dot {
+                            background-color: rgba(255, 255, 255, 0.35) !important;
+                            border: none !important;
+                        }
+                        .motivational-card-container .progress-dot.active {
+                            background-color: #ffffff !important;
+                        }
+                    `}} />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#FF9A44] via-[#E93D8E] to-[#D91A77] opacity-95 z-0"></div>
+                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay z-0"></div>
                     
                     {/* Floating particles */}
-                    <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute inset-0 overflow-hidden z-0">
                         <div className="absolute top-2 left-4 w-2 h-2 bg-white/30 rounded-full animate-pulse"></div>
                         <div className="absolute top-8 right-8 w-3 h-3 bg-white/20 rounded-full animate-pulse" style={{ animationDelay: '500ms' }}></div>
                         <div className="absolute bottom-4 left-1/3 w-2 h-2 bg-white/25 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
                     </div>
                     
                     {/* Message content with animation */}
-                    <div className="relative z-10 px-6 py-5 flex items-center gap-4">
+                    <div className="relative z-[60] px-6 py-5 flex items-center gap-4" style={{ zIndex: 60 }}>
                         <div className="relative flex-shrink-0">
-                            <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg">
+                            <div key={currentMessage} className="w-14 h-14 icon-bg backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg animate-message-change">
                                 {React.createElement(ADOPTION_MESSAGES[currentMessage].icon, { 
-                                    className: "w-7 h-7 text-white" 
+                                    className: "w-7 h-7",
+                                    color: "#ffffff"
                                 })}
                             </div>
                             <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full animate-ping"></div>
@@ -188,15 +221,15 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
                         
                         <div className="flex-1 min-w-0 overflow-hidden">
                             <div className="flex items-center gap-2 mb-1">
-                                <Sparkles className="w-3 h-3 text-white/80 animate-spin-slow" />
-                                <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Motivo para Adotar</span>
+                                <Sparkles className="w-3.5 h-3.5 text-white/80 animate-spin-slow" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-white/80">Motivo para Adotar</span>
                             </div>
-                            <div className="overflow-hidden min-h-[4rem]">
+                            <div className="overflow-hidden min-h-[4.5rem] flex items-center">
                                 <p 
                                     key={currentMessage}
-                                    className="text-white font-bold text-sm leading-snug whitespace-normal break-words transition-all duration-500 ease-out"
+                                    className="text-white font-extrabold text-sm leading-snug whitespace-normal break-words animate-message-change"
                                     style={{
-                                        animation: 'slideIn 0.5s ease-out'
+                                        textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                                     }}
                                 >
                                     {ADOPTION_MESSAGES[currentMessage].text}
@@ -208,10 +241,10 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
                                     <button
                                         key={idx}
                                         onClick={() => setCurrentMessage(idx)}
-                                        className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                                        className={`w-1.5 h-1.5 rounded-full transition-all duration-300 progress-dot ${
                                             idx === currentMessage 
-                                                ? 'bg-white w-3' 
-                                                : 'bg-white/30 hover:bg-white/50'
+                                                ? 'w-3 active' 
+                                                : 'hover:bg-white/50'
                                         }`}
                                         aria-label={`Ver mensagem ${idx + 1}`}
                                     />
@@ -270,15 +303,14 @@ export const AdoptionPublicView: React.FC<{ onClose: () => void }> = ({ onClose 
                                 <div 
                                     key={pet.id}
                                     onClick={() => setSelectedPet(pet)}
-                                    className="group bg-white rounded-[2.5rem] p-4 shadow-xl shadow-pink-100/50 border border-white flex flex-col transform-gpu hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-pink-200/60 relative cursor-pointer"
+                                    className="group bg-white rounded-[2.5rem] p-4 shadow-xl shadow-pink-100/50 border border-white flex flex-col hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-pink-200/60 relative cursor-pointer"
                                     style={{ 
                                         animation: 'bloom 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards',
-                                        animationDelay: `${idx * 100}ms`,
-                                        transformStyle: 'preserve-3d'
+                                        animationDelay: `${idx * 100}ms`
                                     }}
                                 >
                                     {/* Media Container (Simulating Carousel support) */}
-                                    <div className="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden bg-gray-100 mb-5 transform-gpu" style={{ transform: 'translateZ(10px)' }}>
+                                    <div className="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden bg-gray-100 mb-5">
                                         <img 
                                             src={pet.photo_url || FallbackImage} 
                                             alt={pet.name} 

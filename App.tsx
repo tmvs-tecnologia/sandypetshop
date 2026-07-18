@@ -19816,118 +19816,119 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
     }
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-pink-100 to-rose-100">
-            <header className="text-center mb-6 animate-fadeInUp">
-                <SafeImage src="https://i.imgur.com/M3Gt3OA.png" alt="Sandy's Pet Shop Logo" className="h-24 w-24 mx-auto mb-4 drop-shadow-lg" loading="eager" />
-                <h1 className="font-brand text-6xl text-pink-800 mb-2">Sandy's Pet Shop</h1>
-                <p className="text-gray-600 text-xl font-medium">Agendamento de Visita — {serviceLabel}</p>
-            </header>
-            <main className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100/40 backdrop-blur-sm">
-                <form onSubmit={handleSubmit} className="relative p-6 sm:p-8 transition-all duration-300 animate-slideInFromRight">
-                    <div className="mb-4">
-                        <button type="button" onClick={onBack} className="p-2 rounded-full bg-white/80 hover:bg-white text-pink-600 hover:text-pink-800 shadow-sm border border-pink-100 transition-all" title="Voltar">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-6 h-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path>
-                            </svg>
-                        </button>
+        <div className="fixed inset-0 z-[100] bg-white sm:bg-[#fff0f5] animate-slideUpFull flex flex-col">
+            {/* Orbs decorativos - visible only on desktop */}
+            <div className="hidden sm:block absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-gradient-to-bl from-pink-200/40 via-rose-100/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+            <div className="hidden sm:block absolute bottom-[-10%] left-[-5%] w-[300px] h-[300px] bg-gradient-to-tr from-orange-100/30 via-pink-100/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+
+            {/* Área de rolagem isolada */}
+            <div className="absolute inset-0 overflow-y-auto sm:py-8 bg-white sm:bg-transparent">
+                <main className="relative w-full max-w-3xl mx-auto px-0 sm:px-6">
+                    <div className="bg-white w-full min-h-screen sm:min-h-0 sm:rounded-[2.5rem] shadow-none sm:shadow-[0_20px_60px_-15px_rgba(236,72,153,0.15)] overflow-hidden border-0 sm:border border-pink-100/60 flex flex-col">
+                        <form onSubmit={handleSubmit} className="relative p-6 sm:p-8 pt-10 sm:pt-8 flex flex-col flex-1 transition-all duration-300 animate-slideInFromRight">
+                            {/* Botão de voltar premium padronizado no canto superior esquerdo */}
+                            <button
+                                type="button"
+                                onClick={onBack}
+                                className="absolute top-6 left-4 z-[110] flex items-center justify-center w-10 h-10 bg-pink-50 text-pink-700 font-bold rounded-full shadow-sm hover:bg-pink-100 hover:shadow-md transition-all duration-300"
+                                title="Voltar"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                                </svg>
+                            </button>
+
+                            <div className="space-y-7 border-b border-gray-100 pb-8 pl-12 sm:pl-14">
+                                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 leading-tight tracking-tight">Informações do Pet e Dono</h2>
+
+                                <div>
+                                    <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                            <SafeImage alt="User Icon" className="h-7 w-7 opacity-60" src="https://cdn-icons-png.flaticon.com/512/10754/10754012.png" />
+                                        </span>
+                                        <input id="ownerName" required value={ownerName} onChange={e => setOwnerName(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Nome completo" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                            <SafeImage alt="WhatsApp Icon" className="h-5 w-5 opacity-60" src="https://cdn-icons-png.flaticon.com/512/15713/15713434.png" />
+                                        </span>
+                                        <input id="whatsapp" required value={whatsapp} onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} placeholder="(XX) XXXXX-XXXX" maxLength={15} className="block w-full pl-10 pr-10 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="tel" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                            <SafeImage alt="Pet Icon" className="h-7 w-7 opacity-60" src="https://static.thenounproject.com/png/pet-icon-6939415-512.png" />
+                                        </span>
+                                        <input id="petName" required value={petName} onChange={e => setPetName(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Nome do seu pet" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                            <SafeImage alt="Breed Icon" className="h-7 w-7 opacity-60" src="https://cdn-icons-png.flaticon.com/512/616/616408.png" />
+                                        </span>
+                                        <input id="petBreed" value={petBreed} onChange={e => setPetBreed(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Raça do seu pet (ex: Poodle, SRD...)" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Endereço Residencial (Opcional)</label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                            <SafeImage alt="Map Pin Icon" className="h-6 w-6 opacity-60" src="https://cdn-icons-png.flaticon.com/512/854/854878.png" />
+                                        </span>
+                                        <input id="ownerAddress" value={ownerAddress} onChange={e => setOwnerAddress(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Rua, número, complemento e condomínio" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="observation" className="block text-base font-semibold text-gray-700">Observações Especiais (Opcional)</label>
+                                    <div className="relative mt-1">
+                                        <textarea id="observation" value={observation} onChange={e => setObservation(e.target.value)} className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 h-28" placeholder="Ex: alergias, cuidados médicos, rotinas alimentares..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6 pt-6 pb-8 pl-12 sm:pl-14">
+                                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 leading-tight tracking-tight">Agendamento</h2>
+
+                                <div>
+                                    <label htmlFor="date" className="block text-base font-semibold text-gray-700">Data</label>
+                                    <div className="relative mt-1">
+                                        <input id="date" type="date" required value={date} onChange={e => setDate(e.target.value)} className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="time" className="block text-base font-semibold text-gray-700">Horário</label>
+                                    <div className="relative mt-1">
+                                        <select id="time" required value={time} onChange={e => setTime(Number(e.target.value))} className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 appearance-none">
+                                            <option value="" disabled>Selecione um horário</option>
+                                            {VISIT_WORKING_HOURS.map(h => (<option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pt-4 pl-12 sm:pl-14">
+                                <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-pink-600 text-white font-bold rounded-xl hover:bg-pink-700 shadow-lg hover:shadow-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed transform hover:-translate-y-1">
+                                    {isSubmitting ? 'Agendando...' : 'Confirmar Agendamento'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-
-                    <div className="space-y-7 border-b border-gray-100 pb-8">
-                        <h2 className="text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Informações do Pet e Dono</h2>
-
-                        <div>
-                            <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
-                            <div className="relative mt-1">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <SafeImage alt="User Icon" className="h-7 w-7 opacity-60" src="https://cdn-icons-png.flaticon.com/512/10754/10754012.png" />
-                                </span>
-                                <input id="ownerName" required value={ownerName} onChange={e => setOwnerName(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Nome completo" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="whatsapp" className="block text-base font-semibold text-gray-700">WhatsApp</label>
-                            <div className="relative mt-1">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <SafeImage alt="WhatsApp Icon" className="h-5 w-5 opacity-60" src="https://cdn-icons-png.flaticon.com/512/15713/15713434.png" />
-                                </span>
-                                <input id="whatsapp" required value={whatsapp} onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} placeholder="(XX) XXXXX-XXXX" maxLength={15} className="block w-full pl-10 pr-10 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="tel" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="petName" className="block text-base font-semibold text-gray-700">Nome do Pet</label>
-                            <div className="relative mt-1">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <SafeImage alt="Pet Icon" className="h-7 w-7 opacity-60" src="https://static.thenounproject.com/png/pet-icon-6939415-512.png" />
-                                </span>
-                                <input id="petName" required value={petName} onChange={e => setPetName(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Nome do seu pet" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="petBreed" className="block text-base font-semibold text-gray-700">Raça do Pet</label>
-                            <div className="relative mt-1">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <SafeImage alt="Breed Icon" className="h-7 w-7 opacity-60" src="https://static.thenounproject.com/png/pet-icon-7326432-512.png" />
-                                </span>
-                                <input id="petBreed" value={petBreed} onChange={e => setPetBreed(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Raça (opcional)" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="ownerAddress" className="block text-base font-semibold text-gray-700">Seu Endereço</label>
-                            <div className="relative mt-1">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <SafeImage alt="Address Icon" className="h-7 w-7 opacity-60" src="https://static.thenounproject.com/png/location-icon-7979305-512.png" />
-                                </span>
-                                <input id="ownerAddress" value={ownerAddress} onChange={e => setOwnerAddress(e.target.value)} className="block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" type="text" placeholder="Endereço completo (opcional)" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="visit-observation" className="block text-base font-semibold text-gray-700">Observações sobre o Pet</label>
-                            <div className="relative mt-1">
-                                <textarea 
-                                    id="visit-observation" 
-                                    value={observation} 
-                                    onChange={e => setObservation(e.target.value)} 
-                                    rows={2} 
-                                    placeholder="Ex: Cão Bravo, Não colocar laço, Não passar perfume" 
-                                    className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 resize-none"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-6 pt-6 pb-8">
-                        <h2 className="text-3xl font-bold text-gray-800 whitespace-nowrap leading-none tracking-tight">Agendamento</h2>
-
-                        <div>
-                            <label htmlFor="date" className="block text-base font-semibold text-gray-700">Data</label>
-                            <div className="relative mt-1">
-                                <input id="date" type="date" required value={date} onChange={e => setDate(e.target.value)} className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="time" className="block text-base font-semibold text-gray-700">Horário</label>
-                            <div className="relative mt-1">
-                                <select id="time" required value={time} onChange={e => setTime(Number(e.target.value))} className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 appearance-none">
-                                    <option value="" disabled>Selecione um horário</option>
-                                    {VISIT_WORKING_HOURS.map(h => (<option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>))}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="pt-4">
-                        <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-pink-600 text-white font-bold rounded-xl hover:bg-pink-700 shadow-lg hover:shadow-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed transform hover:-translate-y-1">
-                            {isSubmitting ? 'Agendando...' : 'Confirmar Agendamento'}
-                        </button>
-                    </div>
-                </form>
-            </main>
+                </main>
+            </div>
         </div>
     );
 };
