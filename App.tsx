@@ -19817,6 +19817,20 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
 
     return (
         <div className="fixed inset-0 z-[100] bg-white sm:bg-[#fff0f5] animate-slideUpFull flex flex-col">
+            <style dangerouslySetInnerHTML={{ __html: `
+                .date-input-placeholder-override::-webkit-datetime-edit-text,
+                .date-input-placeholder-override::-webkit-datetime-edit-month-field,
+                .date-input-placeholder-override::-webkit-datetime-edit-day-field,
+                .date-input-placeholder-override::-webkit-datetime-edit-year-field {
+                    color: #9ca3af !important;
+                }
+                .date-input-placeholder-override.has-value::-webkit-datetime-edit-text,
+                .date-input-placeholder-override.has-value::-webkit-datetime-edit-month-field,
+                .date-input-placeholder-override.has-value::-webkit-datetime-edit-day-field,
+                .date-input-placeholder-override.has-value::-webkit-datetime-edit-year-field {
+                    color: #111827 !important;
+                }
+            `}} />
             {/* Orbs decorativos - visible only on desktop */}
             <div className="hidden sm:block absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-gradient-to-bl from-pink-200/40 via-rose-100/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
             <div className="hidden sm:block absolute bottom-[-10%] left-[-5%] w-[300px] h-[300px] bg-gradient-to-tr from-orange-100/30 via-pink-100/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
@@ -19838,8 +19852,8 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
                                 </svg>
                             </button>
 
-                            <div className="space-y-7 border-b border-gray-100 pb-8 pl-12 sm:pl-14">
-                                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 leading-tight tracking-tight">Informações do Pet e Dono</h2>
+                            <div className="space-y-7 border-b border-gray-100 pb-8 pl-0 sm:pl-14">
+                                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 leading-tight tracking-tight pl-12 sm:pl-0">Informações do Pet e Dono</h2>
 
                                 <div>
                                     <label htmlFor="ownerName" className="block text-base font-semibold text-gray-700">Seu Nome</label>
@@ -19899,28 +19913,37 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
                                 </div>
                             </div>
 
-                            <div className="space-y-6 pt-6 pb-8 pl-12 sm:pl-14">
+                            <div className="space-y-6 pt-6 pb-8 pl-0 sm:pl-14">
                                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 leading-tight tracking-tight">Agendamento</h2>
 
                                 <div>
                                     <label htmlFor="date" className="block text-base font-semibold text-gray-700">Data</label>
                                     <div className="relative mt-1">
-                                        <input id="date" type="date" required value={date} onChange={e => setDate(e.target.value)} className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300" />
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                            <SafeImage alt="Date Icon" className="h-5 w-5 opacity-60" src="https://cdn-icons-png.flaticon.com/512/10754/10754041.png" />
+                                        </span>
+                                        <input id="date" type="date" required value={date} onChange={e => setDate(e.target.value)} className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 date-input-placeholder-override ${date ? 'has-value' : ''}`} />
                                     </div>
                                 </div>
 
                                 <div>
                                     <label htmlFor="time" className="block text-base font-semibold text-gray-700">Horário</label>
                                     <div className="relative mt-1">
-                                        <select id="time" required value={time} onChange={e => setTime(Number(e.target.value))} className="block w-full px-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 appearance-none">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                            <SafeImage alt="Time Icon" className="h-5 w-5 opacity-60" src="https://cdn-icons-png.flaticon.com/512/10754/10754020.png" />
+                                        </span>
+                                        <select id="time" required value={time} onChange={e => setTime(Number(e.target.value))} className="block w-full pl-10 pr-10 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 appearance-none">
                                             <option value="" disabled>Selecione um horário</option>
                                             {VISIT_WORKING_HOURS.map(h => (<option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>))}
                                         </select>
+                                        <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="pt-4 pl-12 sm:pl-14">
+                            <div className="pt-4 pl-0 sm:pl-14">
                                 <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-pink-600 text-white font-bold rounded-xl hover:bg-pink-700 shadow-lg hover:shadow-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed transform hover:-translate-y-1">
                                     {isSubmitting ? 'Agendando...' : 'Confirmar Agendamento'}
                                 </button>

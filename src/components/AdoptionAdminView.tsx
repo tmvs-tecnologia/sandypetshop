@@ -347,19 +347,19 @@ export const AdoptionAdminView: React.FC = () => {
                             </div>
 
                             {/* Modal Content */}
-                            <div className="p-4 sm:p-8 h-[calc(100vh-180px)] md:h-auto md:max-h-[70vh] overflow-y-auto no-scrollbar pb-24 md:pb-6">
+                            <div className="p-6 sm:p-8 h-[calc(100vh-180px)] md:h-auto md:max-h-[70vh] overflow-y-auto no-scrollbar pb-24 md:pb-6">
                                 <form onSubmit={handleAddPet} className="space-y-6">
                                     {/* Photo Upload */}
                                     <div className="flex flex-col items-center">
                                         <label className="cursor-pointer group">
-                                            <div className={`relative w-32 h-32 rounded-full overflow-hidden border-4 border-dashed transition-all ${
+                                            <div className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-dashed transition-all ${
                                                 photoPreview ? 'border-[#E93D8E]' : 'border-pink-200 group-hover:border-[#E93D8E]'
                                             }`}>
                                                 {photoPreview ? (
                                                     <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full bg-gradient-to-br from-pink-50 to-rose-50 flex items-center justify-center">
-                                                        <Upload className="w-8 h-8 text-pink-300 group-hover:text-[#E93D8E] transition-colors" />
+                                                        <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-pink-300 group-hover:text-[#E93D8E] transition-colors" />
                                                     </div>
                                                 )}
                                             </div>
@@ -404,7 +404,7 @@ export const AdoptionAdminView: React.FC = () => {
                                     </div>
 
                                     {/* Age, Size, Gender */}
-                                    <div className="grid grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div>
                                             <label className="block text-sm font-black text-[#4A0D2B] mb-2 flex items-center gap-2">
                                                 <Clock className="w-4 h-4 text-[#E93D8E]" /> Idade
