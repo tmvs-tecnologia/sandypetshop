@@ -7622,6 +7622,55 @@ const MonthlyClientDetailsModal: React.FC<{ client: MonthlyClient | null; onClos
 
 
 
+const getYearMonthString = (date: Date): string => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+};
+
+const getMonthName = (date: Date): string => {
+    const months = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    return months[date.getMonth()];
+};
+
+const getClientPaymentStatusForMonth = (client: any, monthStr: string): 'Pago' | 'Pendente' => {
+    if (!client.payment_status) return 'Pendente';
+    if (client.payment_status.startsWith('{')) {
+        try {
+            const history = JSON.parse(client.payment_status);
+            return history[monthStr] || 'Pendente';
+        } catch (e) {
+            console.error("Error parsing payment history JSON:", e);
+        }
+    }
+    const currentMonthStr = new Date().toISOString().slice(0, 7);
+    if (monthStr === currentMonthStr) {
+        return client.payment_status === 'Pago' ? 'Pago' : 'Pendente';
+    }
+    return 'Pendente';
+};
+
+const updateClientPaymentStatusForMonth = (client: any, monthStr: string, newStatus: 'Pago' | 'Pendente'): string => {
+    let history: Record<string, string> = {};
+    if (client.payment_status && client.payment_status.startsWith('{')) {
+        try {
+            history = JSON.parse(client.payment_status);
+        } catch (e) {
+            console.error("Error parsing payment history JSON:", e);
+        }
+    } else {
+        const currentMonthStr = new Date().toISOString().slice(0, 7);
+        if (client.payment_status === 'Pago') {
+            history[currentMonthStr] = 'Pago';
+        }
+    }
+    history[monthStr] = newStatus;
+    return JSON.stringify(history);
+};
+
 const MonthlyClientsView: React.FC<{ 
     onAddClient: () => void; 
     onDataChanged: () => void; 
@@ -7630,7 +7679,30 @@ const MonthlyClientsView: React.FC<{
     emittingNFeId: string | null;
     fiscalNotesMap?: Record<string, string>;
 }> = ({ onAddClient, onDataChanged, onOpenDashboard, onEmitNFe, emittingNFeId, fiscalNotesMap }) => {
+    const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
     const [monthlyClients, setMonthlyClients] = useState<MonthlyClient[]>([]);
+
+    const handlePrevMonth = () => {
+        setSelectedDate(prev => {
+            const next = new Date(prev);
+            next.setMonth(next.getMonth() - 1);
+            return next;
+        });
+    };
+
+    const handleNextMonth = () => {
+        setSelectedDate(prev => {
+            const next = new Date(prev);
+            next.setMonth(next.getMonth() + 1);
+            return next;
+        });
+    };
+
+    const handleMonthSelect = (value: string) => {
+        if (!value) return;
+        const [y, m] = value.split('-').map(Number);
+        setSelectedDate(new Date(y, m - 1, 1));
+    };
     const [loading, setLoading] = useState(true);
     const [editingClient, setEditingClient] = useState<MonthlyClient | null>(null);
     const [deletingClient, setDeletingClient] = useState<MonthlyClient | null>(null);
@@ -7693,8 +7765,14 @@ const MonthlyClientsView: React.FC<{
     const [activeHotelRegistrations, setActiveHotelRegistrations] = useState<HotelRegistration[]>([]);
     const [activeDaycareEnrollments, setActiveDaycareEnrollments] = useState<DaycareRegistration[]>([]);
 
-    const archivedCount = useMemo(() => monthlyClients.filter(c => c.payment_status === 'Pago').length, [monthlyClients]);
-    const pendingCount = useMemo(() => monthlyClients.filter(c => c.payment_status === 'Pendente').length, [monthlyClients]);
+    const archivedCount = useMemo(() => {
+        const monthStr = getYearMonthString(selectedDate);
+        return monthlyClients.filter(c => getClientPaymentStatusForMonth(c, monthStr) === 'Pago').length;
+    }, [monthlyClients, selectedDate]);
+    const pendingCount = useMemo(() => {
+        const monthStr = getYearMonthString(selectedDate);
+        return monthlyClients.filter(c => getClientPaymentStatusForMonth(c, monthStr) === 'Pendente').length;
+    }, [monthlyClients, selectedDate]);
 
     const createTestData = async () => {
         console.log('Criando dados de teste...');
@@ -7931,9 +8009,10 @@ const MonthlyClientsView: React.FC<{
     };
 
     const handleCobrancaMensalistas = async () => {
-        const pendentes = monthlyClients.filter(c => c.payment_status === 'Pendente').length;
+        const monthStr = getYearMonthString(selectedDate);
+        const pendentes = monthlyClients.filter(c => getClientPaymentStatusForMonth(c, monthStr) === 'Pendente').length;
         if (pendentes === 0) {
-            alert('Não há clientes mensalistas com status pendente para cobrar.');
+            alert(`Não há clientes mensalistas com status pendente para cobrar em ${getMonthName(selectedDate)}/${selectedDate.getFullYear()}.`);
             return;
         }
         setPendentesCount(pendentes);
@@ -7945,6 +8024,14 @@ const MonthlyClientsView: React.FC<{
         try {
             await fetch('https://n8n.intelektus.tech/webhook/cobraMensalistas', {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    selected_month: selectedDate.getMonth() + 1,
+                    selected_year: selectedDate.getFullYear(),
+                    competencia: getYearMonthString(selectedDate)
+                }),
                 mode: 'no-cors'
             });
             setAlertInfo({ title: 'Sucesso!', message: 'Solicitação de cobrança enviada com sucesso!', variant: 'success' });
@@ -7960,6 +8047,7 @@ const MonthlyClientsView: React.FC<{
     // Filter and sort clients based on search term, filters and archive toggle
     const filteredClients = useMemo(() => {
         let filtered = monthlyClients;
+        const monthStr = getYearMonthString(selectedDate);
 
         // Filtro por termo de busca
         if (searchTerm.trim()) {
@@ -8008,9 +8096,9 @@ const MonthlyClientsView: React.FC<{
             filtered = filtered.filter(client => String(client.recurrence_time) === filterTime);
         }
 
-        // Filtro por status de pagamento (Pendente/Pago)
+        // Filtro por status de pagamento (Pendente/Pago) usando o mês selecionado
         if (filterPaymentStatus) {
-            filtered = filtered.filter(client => client.payment_status === filterPaymentStatus);
+            filtered = filtered.filter(client => getClientPaymentStatusForMonth(client, monthStr) === filterPaymentStatus);
         }
 
         // Ordenação
@@ -8024,7 +8112,7 @@ const MonthlyClientsView: React.FC<{
         }
 
         return filtered;
-    }, [monthlyClients, searchTerm, filterCondominium, filterDueDate, filterRecurrence, filterDayOfWeek, filterTime, sortBy, filterPaymentStatus]);
+    }, [monthlyClients, searchTerm, filterCondominium, filterDueDate, filterRecurrence, filterDayOfWeek, filterTime, sortBy, filterPaymentStatus, selectedDate]);
 
     const folderClients = useMemo(() => {
         const groups = new Map<string, MonthlyClient[]>();
@@ -8039,19 +8127,22 @@ const MonthlyClientsView: React.FC<{
 
     const handleTogglePaymentStatus = async (client: MonthlyClient, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent the card's onClick from firing
-        const newStatus = client.payment_status === 'Pendente' ? 'Pago' : 'Pendente';
+        const monthStr = getYearMonthString(selectedDate);
+        const currentStatus = getClientPaymentStatusForMonth(client, monthStr);
+        const newStatus = currentStatus === 'Pendente' ? 'Pago' : 'Pendente';
+        const newPaymentHistory = updateClientPaymentStatusForMonth(client, monthStr, newStatus);
         const originalStatus = client.payment_status;
 
         // Optimistic UI update
         setMonthlyClients(prevClients =>
             prevClients.map(c =>
-                c.id === client.id ? { ...c, payment_status: newStatus } : c
+                c.id === client.id ? { ...c, payment_status: newPaymentHistory } : c
             )
         );
 
         const { error } = await supabase
             .from('monthly_clients')
-            .update({ payment_status: newStatus })
+            .update({ payment_status: newPaymentHistory })
             .eq('id', client.id);
 
         if (error) {
@@ -8140,7 +8231,43 @@ const MonthlyClientsView: React.FC<{
                         </div>
                     </div>
                     
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 flex-wrap md:flex-nowrap">
+                        {/* Seletor de Mês */}
+                        <div className="flex items-center bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm hover:border-pink-300 transition-all gap-2 h-11 flex-1 md:flex-none justify-between md:justify-start">
+                            <button
+                                onClick={handlePrevMonth}
+                                className="p-1 rounded-lg hover:bg-pink-50 text-gray-500 hover:text-pink-600 transition-colors"
+                                title="Mês Anterior"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            
+                            <div className="relative flex items-center font-bold text-gray-700 text-sm whitespace-nowrap min-w-[110px] justify-center gap-1 cursor-pointer">
+                                <span className="font-outfit text-pink-600">{getMonthName(selectedDate)}/{selectedDate.getFullYear()}</span>
+                                <input
+                                    type="month"
+                                    value={getYearMonthString(selectedDate)}
+                                    onChange={(e) => handleMonthSelect(e.target.value)}
+                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    title="Selecionar Mês/Ano"
+                                />
+                                <svg className="w-3.5 h-3.5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                            
+                            <button
+                                onClick={handleNextMonth}
+                                className="p-1 rounded-lg hover:bg-pink-50 text-gray-500 hover:text-pink-600 transition-colors"
+                                title="Próximo Mês"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
                         <button
                             onClick={onAddClient}
                             className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold h-11 px-3 sm:px-6 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-md hover:shadow-lg focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
@@ -8446,6 +8573,7 @@ const MonthlyClientsView: React.FC<{
                                     <div key={client.id} className="flex-none w-full md:max-w-none max-w-[420px] md:min-w-0 snap-center px-4">
                                         <MonthlyClientCard
                                             client={client}
+                                            selectedDate={selectedDate}
                                             onEdit={() => setEditingClient(client)}
                                             onDelete={() => setDeletingClient(client)}
                                             onAddExtraServices={() => handleAddExtraServices(client)}
@@ -8499,6 +8627,7 @@ const MonthlyClientsView: React.FC<{
                                     <div key={client.id} className="px-4">
                                         <MonthlyClientCard
                                             client={client}
+                                            selectedDate={selectedDate}
                                             onEdit={() => setEditingClient(client)}
                                             onDelete={() => setDeletingClient(client)}
                                             onAddExtraServices={() => handleAddExtraServices(client)}
@@ -8596,6 +8725,7 @@ const MonthlyClientsView: React.FC<{
                                                             <div key={client.id} className="transform transition-all hover:-translate-y-1">
                                                                 <MonthlyClientCard
                                                                     client={client}
+                                                                    selectedDate={selectedDate}
                                                                     onEdit={() => setEditingClient(client)}
                                                                     onDelete={() => setDeletingClient(client)}
                                                                     onAddExtraServices={() => handleAddExtraServices(client)}

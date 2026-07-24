@@ -79,67 +79,40 @@ const getLastDayOfCurrentMonth = () => {
     return new Date(year, month, targetDay);
 };
 
-const getNextAppointmentDateText = (client: MonthlyClient) => {
+const getNextAppointmentDateText = (client: MonthlyClient, selectedDate: Date = new Date()) => {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Reset time
-    const currentDayOfWeek = today.getDay() || 7; // 1=Mon ... 7=Sun (JS default 0=Sun)
-    // Adjust JS getDay() to match typical 1=Mon logic if stored that way. 
-    // Assuming client.recurrence_day follows 1=Mon, 2=Tue... 7=Sun (or 0=Sun? Let's assume ISO 1-7 or 0-6).
-    // The previous code had `weekDaysLabel` using 1=Seg. Let's assume 1=Segunda, 5=Sexta.
-    // JS: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat.
+    // Se selectedDate for no passado, calculamos a partir do primeiro dia do mês selecionado.
+    // Caso contrário, calculamos a partir de hoje.
+    const isPastMonth = (selectedDate.getFullYear() < now.getFullYear()) || 
+                        (selectedDate.getFullYear() === now.getFullYear() && selectedDate.getMonth() < now.getMonth());
+    
+    const baseDate = isPastMonth 
+        ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+        : new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Map JS day to our system day (1=Mon ... 5=Fri, maybe 6=Sat, 7=Sun?)
-    // Let's standardise: if client.recurrence_day is 1 (Seg), and today is 1 (Mon), next is today if time hasn't passed? 
-    // Or strictly future? Usually "Next" implies >= Today.
+    const today = baseDate;
 
     let nextDate = new Date(today);
 
     if (client.recurrence_type === 'monthly') {
-        // Recurrence day is day of month (1-31)
         const targetDay = client.recurrence_day;
-
-        // Check if day has passed in current month
         if (today.getDate() <= targetDay) {
             nextDate.setDate(targetDay);
         } else {
-            // Move to next month
             nextDate.setMonth(nextDate.getMonth() + 1);
             nextDate.setDate(targetDay);
         }
     } else {
-        // Weekly or Bi-weekly
-        // recurrence_day is 1=Seg, 2=Ter... 
-        // JS: 1=Mon ...
-        const targetDayOfWeek = client.recurrence_day; // Assuming 1=Mon, 5=Fri
-
-        // Calculate days until next occurrence
-        // JS Day: 0(Sun), 1(Mon)... 6(Sat)
-        // System: 1(Mon)... 5(Fri)
-        // Need to map system day to JS day. If system 1=Mon, it matches JS 1.
-        // If system 7=Sun (or whatever), we need to handle.
-        // Let's assume 1-5 map directly.
-
-        const currentJsDay = today.getDay() === 0 ? 7 : today.getDay(); // Make Sun=7 for easier math
-        const targetJsDay = targetDayOfWeek; // Assuming 1-7 input
+        const targetDayOfWeek = client.recurrence_day;
+        const currentJsDay = today.getDay() === 0 ? 7 : today.getDay();
+        const targetJsDay = targetDayOfWeek;
 
         let daysToAdd = targetJsDay - currentJsDay;
         if (daysToAdd < 0) {
-            // Target day already passed this week
             daysToAdd += 7;
         }
 
         nextDate.setDate(today.getDate() + daysToAdd);
-
-        // If bi-weekly, logic is complex without a reference "start date". 
-        // We'll treat as weekly for "Next Appointment" approximation or assume active cycle.
-        // For accurate bi-weekly, we need `last_appointment_date`. 
-        // If not available, we show the weekly equivalent.
-        if (client.recurrence_type === 'bi-weekly') {
-            // Ideally we'd check if this week is the "on" week. 
-            // Without history, we just show the next matching weekday.
-            // Adding a suffix to indicate uncertainty? No, user wants a date.
-            // We'll leave it as next weekday occurrence.
-        }
     }
 
     return formatDateToBR(nextDate);
@@ -216,6 +189,7 @@ const isAppointmentCompleted = (dateStr: string) => {
 
 const MonthlyClientCard: React.FC<{
     client: MonthlyClient;
+    selectedDate?: Date;
     onClick?: (client: MonthlyClient) => void;
     onEdit: (client: MonthlyClient) => void;
     onDelete: (client: MonthlyClient) => void;
@@ -229,7 +203,33 @@ const MonthlyClientCard: React.FC<{
     isEmittingNFe?: boolean;
     fiscalNotesMap?: Record<string, string>;
     onStatusChanged?: () => void;
-}> = ({ client, onClick, onEdit, onDelete, onAddExtraServices, onTogglePaymentStatus, onChangePhoto, onView, onEmitNFe, isEmittingNFe, fiscalNotesMap, onStatusChanged }) => {
+}> = ({ client, selectedDate, onClick, onEdit, onDelete, onAddExtraServices, onTogglePaymentStatus, onChangePhoto, onView, onEmitNFe, isEmittingNFe, fiscalNotesMap, onStatusChanged }) => {
+
+    const getYearMonthString = (date: Date): string => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}`;
+    };
+
+    const getClientPaymentStatusForMonth = (client: any, monthStr: string): 'Pago' | 'Pendente' => {
+        if (!client.payment_status) return 'Pendente';
+        if (client.payment_status.startsWith('{')) {
+            try {
+                const history = JSON.parse(client.payment_status);
+                return history[monthStr] || 'Pendente';
+            } catch (e) {
+                console.error("Error parsing payment history JSON:", e);
+            }
+        }
+        const currentMonthStr = new Date().toISOString().slice(0, 7);
+        if (monthStr === currentMonthStr) {
+            return client.payment_status === 'Pago' ? 'Pago' : 'Pendente';
+        }
+        return 'Pendente';
+    };
+
+    const monthStr = getYearMonthString(selectedDate || new Date());
+    const isPaid = getClientPaymentStatusForMonth(client, monthStr) === 'Pago';
 
     const { hasDaycare, hasHotel } = useServiceValidation(client.whatsapp);
 
@@ -295,33 +295,33 @@ const MonthlyClientCard: React.FC<{
             setIsLoadingAppointments(true);
             try {
                 const now = new Date();
+                const selDate = selectedDate || new Date();
                 
-                // Datas para buscar agendamentos concluídos do mês corrente
-                const y = now.getFullYear();
-                const m = now.getMonth();
+                // Datas para buscar agendamentos concluídos do mês selecionado
+                const y = selDate.getFullYear();
+                const m = selDate.getMonth();
                 const startOfMonth = new Date(y, m, 1, 0, 0, 0, 0).toISOString();
                 const endOfMonth = new Date(y, m + 1, 0, 23, 59, 59, 999).toISOString();
-
-                const yesterday = new Date(now);
-                yesterday.setDate(yesterday.getDate() - 1);
-                const fetchAfter = yesterday.toISOString(); // Fetch from yesterday to ensure we don't miss any due to timezone
 
                 const [apptsRes, petMovelRes, bathGroomRes, completedApptsRes, completedPetMovelRes, completedBathGroomRes] = await Promise.all([
                     supabase
                         .from('appointments')
                         .select('appointment_time, status')
                         .eq('monthly_client_id', client.id)
-                        .gte('appointment_time', startOfMonth),
+                        .gte('appointment_time', startOfMonth)
+                        .lte('appointment_time', endOfMonth),
                     supabase
                         .from('pet_movel_appointments')
                         .select('appointment_time, status')
                         .eq('monthly_client_id', client.id)
-                        .gte('appointment_time', startOfMonth),
+                        .gte('appointment_time', startOfMonth)
+                        .lte('appointment_time', endOfMonth),
                     supabase
                         .from('agendamento_banhotosa')
                         .select('appointment_time, status')
                         .eq('monthly_client_id', client.id)
-                        .gte('appointment_time', startOfMonth),
+                        .gte('appointment_time', startOfMonth)
+                        .lte('appointment_time', endOfMonth),
                     supabase
                         .from('appointments')
                         .select('id')
@@ -353,17 +353,12 @@ const MonthlyClientCard: React.FC<{
                     (completedBathGroomRes.data || []).length;
                 setCompletedBathsCount(completedCount);
 
-                // Calcular total de serviços no mês atual (concluídos ou agendados)
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
+                // Calcular total de serviços no mês selecionado (concluídos ou agendados)
                 const totalApptsThisMonth = [
                     ...(apptsRes.data || []),
                     ...(petMovelRes.data || []),
                     ...(bathGroomRes.data || [])
-                ].filter(appt => {
-                    const d = new Date(appt.appointment_time);
-                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-                });
+                ];
 
                 const seenDatesForCount = new Set();
                 let monthAppointmentsCount = 0;
@@ -384,8 +379,6 @@ const MonthlyClientCard: React.FC<{
 
                 combined.sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
 
-                // Filter to only included today and future, or past if status isn't clear, actually we'll just format them
-                // and show the next 8
                 const formatted = combined.map(app => {
                     const d = new Date(app.appointment_time);
                     const isPast = d < now;
@@ -401,25 +394,12 @@ const MonthlyClientCard: React.FC<{
                 const seen = new Set();
                 for (const item of formatted) {
                     if (!seen.has(item.date)) {
-                        // Only add if it's today or future, OR if it's the very first one we see
                         seen.add(item.date);
                         uniqueDates.push(item);
                     }
                 }
 
-                // Filter to include current month's history and future dates
-                const filtered = uniqueDates.filter(item => {
-                    const [d, m, y] = item.date.split('/').map(Number);
-                    const itemDate = new Date(y, m - 1, d);
-                    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    
-                    const isCurrentMonth = itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
-                    const isFuture = itemDate >= todayDate;
-                    
-                    return isCurrentMonth || isFuture;
-                });
-
-                setUpcomingAppointments(filtered.slice(0, 8));
+                setUpcomingAppointments(uniqueDates.slice(0, 8));
             } catch (err) {
                 console.error("Error fetching appointments:", err);
             } finally {
@@ -430,14 +410,23 @@ const MonthlyClientCard: React.FC<{
         fetchAppointments();
 
         return () => { isMounted = false; };
-    }, [client.id]);
+    }, [client.id, selectedDate]);
 
     const nextAppointmentText = isLoadingAppointments 
         ? '...' 
         : upcomingAppointments.length > 0 
-            ? upcomingAppointments[0].date 
+            ? (() => {
+                const now = new Date();
+                now.setHours(0,0,0,0);
+                const futureAppts = upcomingAppointments.filter(app => {
+                    const [d, m, y] = app.date.split('/').map(Number);
+                    const appDate = new Date(y, m - 1, d);
+                    return appDate >= now;
+                });
+                return futureAppts.length > 0 ? futureAppts[0].date : upcomingAppointments[0].date;
+              })()
             : client.is_active 
-                ? getNextAppointmentDateText(client)
+                ? getNextAppointmentDateText(client, selectedDate)
                 : 'Pausado';
 
     const getRecurrenceText = (client: MonthlyClient) => {
@@ -680,26 +669,12 @@ const MonthlyClientCard: React.FC<{
                                 );
                             })
                         ) : (
-                            getNextAppointmentsList(client).map((date, idx) => {
-                                const isCompleted = isAppointmentCompleted(date);
-                                return (
-                                    <div key={idx} className="flex items-center justify-between text-xs bg-white/80 p-2 rounded-lg shadow-sm border border-pink-50/50 hover:bg-white transition-colors group/item">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-pink-600 font-outfit">{date}</span>
-                                        </div>
-                                        {isCompleted ? (
-                                            <div className="flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded text-green-600 border border-green-100" title="Concluído">
-                                                <span className="text-[10px] font-bold uppercase">Concluído</span>
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                                                </svg>
-                                            </div>
-                                        ) : (
-                                            <span className="font-medium text-gray-400 text-[10px] uppercase tracking-wide group-hover/item:text-gray-600 transition-colors">Agendado</span>
-                                        )}
-                                    </div>
-                                );
-                            })
+                            <div className="flex flex-col items-center justify-center h-full text-center p-3">
+                                <span className="text-xl mb-1">📅</span>
+                                <p className="text-[11px] font-bold text-gray-500 leading-normal">
+                                    Sem agendamentos registrados para este mês.
+                                </p>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -738,12 +713,12 @@ const MonthlyClientCard: React.FC<{
                     <div className="flex items-center justify-between gap-3">
                         <button
                             onClick={(e) => { e.stopPropagation(); onTogglePaymentStatus(client, e); }}
-                            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${client.payment_status === 'Pendente'
+                            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${!isPaid
                                 ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200'
                                 : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
                                 }`}
                         >
-                            {client.payment_status === 'Pendente' ? '⏳ Pendente' : '✅ Pago'}
+                            {!isPaid ? '⏳ Pendente' : '✅ Pago'}
                         </button>
 
                         <button
