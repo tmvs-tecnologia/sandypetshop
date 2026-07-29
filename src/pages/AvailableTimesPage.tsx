@@ -66,8 +66,9 @@ export const AvailableTimesPage: React.FC = () => {
             if (!selectedDate) return;
             setLoading(true);
             try {
-                const startOfDay = `${selectedDate}T00:00:00`;
-                const endOfDay = `${selectedDate}T23:59:59`;
+                // Brasília é UTC-3: o dia local começa às 03:00 UTC e termina às 02:59:59 UTC do dia seguinte
+                const startOfDay = `${selectedDate}T00:00:00-03:00`;
+                const endOfDay   = `${selectedDate}T23:59:59-03:00`;
 
                 const [bathGroomData, petMobileData, regularData, inactiveClientsRes] = await Promise.all([
                     supabase.from('agendamento_banhotosa').select('appointment_time, condominium, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
@@ -96,11 +97,19 @@ export const AvailableTimesPage: React.FC = () => {
 
     const isCancelled = (apt: any) => apt.status === 'cancelled' || apt.status === 'cancelled_by_client';
 
+    // Extrai a hora do agendamento sempre no fuso de Brasília (America/Sao_Paulo)
+    const getHourBRT = (appointmentTime: string) => {
+        return parseInt(
+            new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Sao_Paulo' })
+                .format(new Date(appointmentTime)),
+            10
+        );
+    };
+
     const getBookedHours = (type: 'fixed' | 'mobile', condo?: string) => {
         return appointments
             .filter(apt => !isCancelled(apt))
             .filter(apt => {
-                const aptHour = new Date(apt.appointment_time).getHours();
                 if (type === 'fixed') {
                     return !apt.condominium || apt.condominium === 'Nenhum Condomínio' || apt.condominium === 'Banho & Tosa Fixo';
                 } else {
@@ -110,7 +119,7 @@ export const AvailableTimesPage: React.FC = () => {
                     return apt.condominium && apt.condominium !== 'Nenhum Condomínio' && apt.condominium !== 'Banho & Tosa Fixo';
                 }
             })
-            .map(apt => new Date(apt.appointment_time).getHours());
+            .map(apt => getHourBRT(apt.appointment_time));
     };
 
     const getAvailableHours = (type: 'fixed' | 'mobile', condo?: string) => {
