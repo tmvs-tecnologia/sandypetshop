@@ -8,7 +8,8 @@ import {
     PencilSquareIcon as EditIcon,
     SparklesIcon,
     DocumentTextIcon,
-    ArrowTopRightOnSquareIcon
+    ArrowTopRightOnSquareIcon,
+    ArrowsRightLeftIcon
 } from '@heroicons/react/24/outline';
 import { AdminAppointment, ServiceType, PetWeight, MonthlyClient } from '../../types';
 import { SERVICE_PRICES, PET_WEIGHT_OPTIONS } from '../../constants';
@@ -78,6 +79,7 @@ interface AppointmentCardProps {
     isEmittingNFe?: boolean;
     fiscalNotesMap?: Record<string, string>;
     monthlyClients?: MonthlyClient[];
+    onMigrate?: (appointment: AdminAppointment) => void;
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -94,7 +96,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     onEmitNFe,
     isEmittingNFe,
     fiscalNotesMap,
-    monthlyClients = []
+    monthlyClients = [],
+    onMigrate
 }) => {
     const {
         id,
@@ -426,6 +429,17 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                         >
                             <EditIcon className="w-5 h-5" />
                         </button>
+
+                        {onMigrate && (
+                            <button
+                                onClick={() => onMigrate(appointment)}
+                                disabled={isUpdating || isDeleting}
+                                className="p-1 rounded-full text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors disabled:opacity-50"
+                                title="Migrar agendamento (Banho & Tosa ↔ Pet Móvel)"
+                            >
+                                <ArrowsRightLeftIcon className="w-5 h-5" />
+                            </button>
+                        )}
 
                         <button
                             onClick={() => onDelete(appointment)}

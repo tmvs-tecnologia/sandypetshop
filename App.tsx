@@ -24,6 +24,7 @@ import { Badge } from './src/components/ui/badge';
 import { Select } from './src/components/ui/select';
 import MonthlyClientCard from './src/components/MonthlyClientCard';
 import AppointmentCard from './src/components/AppointmentCard';
+import MigrateAppointmentModal from './src/components/MigrateAppointmentModal';
 import StatisticsDashboardModal from './src/components/StatisticsDashboardModal';
 import MonthlyReminderModal from './src/components/MonthlyReminderModal';
 import InsightsDashboard from './src/components/InsightsDashboard';
@@ -5822,6 +5823,7 @@ interface AppointmentsViewProps {
     fiscalNotesMap?: Record<string, string>;
     onExportCsv?: () => Promise<void>;
     isExporting?: boolean;
+    onMigrate?: (appointment: AdminAppointment) => void;
 }
 
 const AppointmentsView: React.FC<AppointmentsViewProps> = ({ 
@@ -5838,6 +5840,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     deletingAppointmentId,
     monthlyClients = [], 
     onDataChanged, 
+    onMigrate,
     onOpenDashboard, 
     onOpenCloseDay,
     isAddModalOpen: _isAddModalOpen,
@@ -5948,6 +5951,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
             isUpdating={updatingStatusId === appt.id} 
             onEdit={onEdit} 
             onDelete={onDelete} 
+            onMigrate={onMigrate}
             isDeleting={deletingAppointmentId === appt.id} 
             onOpenActionMenu={(e) => onOpenActionMenu(appt, e)} 
             onDeleteObservation={() => onDeleteObservation(appt)} 
@@ -6022,30 +6026,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                     <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-200 p-3 max-h-[50vh] overflow-y-auto">
                         {filteredAppointments.length > 0 ? (
                             <div className="space-y-3">
-                                {filteredAppointments.map(app => (
-                                    <div key={app.id} className="w-full">
-                                <AppointmentCard
-                                    appointment={app}
-                                    isUpdating={updatingStatusId === app.id}
-                                    onEdit={onEdit}
-                                    onDelete={onDelete}
-                                    isDeleting={deletingAppointmentId === app.id}
-                                    onOpenActionMenu={(e) => onOpenActionMenu(app, e)}
-                                    onDeleteObservation={() => onDeleteObservation(app)}
-                                    onAddObservation={() => onAddObservation(app)}
-                                    onRequestCompletion={onRequestCompletion}
-                                    onShowLoyalty={onShowLoyalty}
-                                    onEmitNFe={onEmitNFe}
-                                    isEmittingNFe={emittingNFeId === app.id}
-                                    monthlyClients={monthlyClients}
-                                />
-                                    </div>
-                                ))}
-                                {dailyAppointments.length > 0 && dailyAppointments.some(a => !filteredAppointments.some(fa => fa.id === a.id)) && (
-                                    <p className="text-center text-xs text-orange-500 mt-1 font-medium italic">
-                                        ⚠️ Existem outros agendamentos hoje que não correspondem à sua busca.
-                                    </p>
-                                )}
+                                {filteredAppointments.map(renderCard)}
                             </div>
                         ) : (
                             <div className="text-center py-4">
@@ -6357,6 +6338,7 @@ interface PetMovelViewProps {
     fiscalNotesMap?: Record<string, string>;
     onExportCsv?: () => Promise<void>;
     isExporting?: boolean;
+    onMigrate?: (appointment: AdminAppointment) => void;
 }
 
 const PetMovelView: React.FC<PetMovelViewProps> = ({ 
@@ -6379,7 +6361,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
     onOpenAddModal,
     onCloseAddModal,
     onShowLoyalty, onEmitNFe, emittingNFeId, fiscalNotesMap,
-    onExportCsv, isExporting
+    onExportCsv, isExporting, onMigrate
 }) => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -6472,6 +6454,7 @@ const PetMovelView: React.FC<PetMovelViewProps> = ({
             isDeleting={deletingAppointmentId === appt.id}
             onEdit={onEdit}
             onDelete={onDelete}
+            onMigrate={onMigrate}
             onRequestCompletion={onRequestCompletion}
             onAddObservation={() => onAddObservation(appt)}
             onDeleteObservation={() => onDeleteObservation(appt)}
@@ -17829,6 +17812,100 @@ const AdminDashboard: React.FC<{
     const [confirmingCompletionId, setConfirmingCompletionId] = useState<string | null>(null);
     const [confirmingCompletionPrice, setConfirmingCompletionPrice] = useState<number | null>(null);
 
+    // Migration States
+    const [migratingAppointment, setMigratingAppointment] = useState<AdminAppointment | null>(null);
+    const [isMigrateModalOpen, setIsMigrateModalOpen] = useState(false);
+    const [isMigrateLoading, setIsMigrateLoading] = useState(false);
+
+    const handleOpenMigrateModal = (appointment: AdminAppointment) => {
+        setMigratingAppointment(appointment);
+        setIsMigrateModalOpen(true);
+    };
+
+    const handleCloseMigrateModal = () => {
+        setMigratingAppointment(null);
+        setIsMigrateModalOpen(false);
+    };
+
+    const handleConfirmMigration = async (targetCondominium?: string) => {
+        if (!migratingAppointment) return;
+        setIsMigrateLoading(true);
+
+        try {
+            const appt = migratingAppointment;
+            const currentTable = appt.table || (isMobileAppointment(appt) ? 'pet_movel_appointments' : 'agendamento_banhotosa');
+            const isFromMobile = currentTable === 'pet_movel_appointments' || 
+                (appt.condominium && appt.condominium !== 'Banho & Tosa Fixo' && !appt.condominium.toUpperCase().includes('FIXO'));
+            
+            const targetTable = isFromMobile ? 'agendamento_banhotosa' : 'pet_movel_appointments';
+
+            const finalCondo = isFromMobile 
+                ? 'Banho & Tosa Fixo' 
+                : (targetCondominium || 'Vitta Parque');
+
+            const payload: Record<string, any> = {
+                appointment_time: appt.appointment_time,
+                pet_name: appt.pet_name,
+                pet_breed: appt.pet_breed || null,
+                owner_name: appt.owner_name,
+                owner_address: appt.owner_address || null,
+                whatsapp: appt.whatsapp,
+                service: appt.service,
+                weight: appt.weight || 'UP_TO_5',
+                addons: appt.addons || [],
+                price: appt.price || 0,
+                status: appt.status || 'AGENDADO',
+                monthly_client_id: appt.monthly_client_id || null,
+                extra_services: appt.extra_services || {},
+                condominium: finalCondo,
+                owner_cpf: appt.owner_cpf || null,
+            };
+
+            console.log(`Migrando agendamento ${appt.id} de ${currentTable} para ${targetTable}:`, payload);
+
+            const { data: insertedData, error: insertError } = await supabase
+                .from(targetTable)
+                .insert([payload])
+                .select()
+                .single();
+
+            if (insertError) {
+                console.error('Erro ao inserir na tabela de destino:', insertError);
+                throw new Error(`Erro ao migrar para ${targetTable}: ${insertError.message}`);
+            }
+
+            const { error: deleteError } = await supabase
+                .from(currentTable)
+                .delete()
+                .eq('id', appt.id);
+
+            if (deleteError) {
+                console.error('Erro ao excluir da tabela antiga:', deleteError);
+            }
+
+            if (insertedData) {
+                const updatedAppt: AdminAppointment = {
+                    ...appt,
+                    id: insertedData.id,
+                    table: targetTable as any,
+                    condominium: finalCondo,
+                };
+                setAppointments(prev => [
+                    updatedAppt,
+                    ...prev.filter(a => a.id !== appt.id)
+                ]);
+            }
+
+            handleDataChanged();
+            handleCloseMigrateModal();
+        } catch (err: any) {
+            console.error('Erro na migração:', err);
+            alert(err.message || 'Erro ao realizar a migração. Tente novamente.');
+        } finally {
+            setIsMigrateLoading(false);
+        }
+    };
+
     // CRUD Handlers
     const handleOpenAddModal = () => setIsAddModalOpen(true);
     const handleCloseAddModal = () => setIsAddModalOpen(false);
@@ -18403,6 +18480,7 @@ const AdminDashboard: React.FC<{
                 onCloseAddModal={handleCloseAddModal}
                 onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap}
                 onExportCsv={exportAllCsv} isExporting={exporting}
+                onMigrate={handleOpenMigrateModal}
             />;
             case 'petMovel': return <PetMovelView 
                 key={dataKey} 
@@ -18426,6 +18504,7 @@ const AdminDashboard: React.FC<{
                 onCloseAddModal={handleCloseAddModal}
                 onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap}
                 onExportCsv={exportAllCsv} isExporting={exporting}
+                onMigrate={handleOpenMigrateModal}
             />;
             case 'daycare': return <DaycareView key={dataKey} refreshKey={dataKey} onFiscalNote={handleEmitNFe} emittingNFeId={emittingNFeId} fiscalNotesMap={fiscalNotesMap} onNavigate={setActiveView} />;
             case 'hotel': return <HotelView key={dataKey} refreshKey={dataKey} setShowHotelStatistics={setShowHotelStatistics} />;
@@ -18472,6 +18551,7 @@ const AdminDashboard: React.FC<{
                 onShowLoyalty={handleShowLoyalty} onEmitNFe={handleEmitNFe}
                 fiscalNotesMap={fiscalNotesMap}
                 onExportCsv={exportAllCsv} isExporting={exporting}
+                onMigrate={handleOpenMigrateModal}
             />;
         }
     };
@@ -18758,6 +18838,15 @@ const AdminDashboard: React.FC<{
                 onConfirm={handleConfirmCompletion}
                 isSubmitting={!!updatingStatusId}
             />
+            {isMigrateModalOpen && migratingAppointment && (
+                <MigrateAppointmentModal
+                    isOpen={isMigrateModalOpen}
+                    appointment={migratingAppointment}
+                    onClose={handleCloseMigrateModal}
+                    onConfirm={handleConfirmMigration}
+                    isLoading={isMigrateLoading}
+                />
+            )}
             {isEditModalOpen && editingAppointment && (
                 <EditAppointmentModal 
                     appointment={editingAppointment} 

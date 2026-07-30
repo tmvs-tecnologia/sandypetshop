@@ -23,7 +23,14 @@ import {
   Trash2,
   CheckCircle,
   AlertCircle,
-  Printer
+  Printer,
+  Search,
+  Dog,
+  User,
+  Sparkles,
+  X,
+  Filter,
+  CheckCircle2
 } from 'lucide-react';
 
 // Tipos para os dados do Supabase
@@ -224,8 +231,9 @@ const FinancialDashboardView: React.FC = () => {
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [showYearDropdown, setShowYearDropdown] = useState(false);
 
-  // Estados de Abas Secundárias (Visão Geral vs Gastos vs Relatório)
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'expenses' | 'report'>('overview');
+  // Estados de Abas Secundárias (Visão Geral vs Gastos vs Relatório vs Busca)
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'expenses' | 'report' | 'search'>('overview');
+  const [petSearchQuery, setPetSearchQuery] = useState('');
 
   // Estados de dados e loading (Visão Geral)
   const [loading, setLoading] = useState(true);
@@ -2754,6 +2762,488 @@ const FinancialDashboardView: React.FC = () => {
     );
   };
 
+  // Renderizador da Aba de Busca por Pet (Filtrado por Mês e Ano Selecionados)
+  const renderSearchTab = () => {
+    const currentMonth = selectedMonth;
+    const currentYear = selectedYear;
+
+    const allMonthRecords: Array<{
+      id?: string;
+      origem: 'Banho & Tosa' | 'Pet Móvel' | 'Creche' | 'Hotel Pet';
+      pet_name: string;
+      owner_name: string;
+      date: Date;
+      price: number;
+      status: string;
+      details?: string;
+      service?: string;
+    }> = [];
+
+    // 1. Banho & Tosa Fixo
+    (dbData.banhoTosa || []).forEach(d => {
+      const { year, month } = parseYearMonth(d.appointment_time);
+      if (year === currentYear && month === currentMonth) {
+        allMonthRecords.push({
+          id: d.id,
+          origem: 'Banho & Tosa',
+          pet_name: d.pet_name || 'Pet sem nome',
+          owner_name: d.owner_name || 'Tutor não informado',
+          date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
+          price: Number(d.price || 0),
+          status: d.status || 'AGENDADO',
+          service: 'Banho & Tosa Fixo'
+        });
+      }
+    });
+
+    // 2. Appointments / Pet Móvel
+    (dbData.appointments || []).forEach(d => {
+      const { year, month } = parseYearMonth(d.appointment_time);
+      if (year === currentYear && month === currentMonth) {
+        allMonthRecords.push({
+          id: d.id,
+          origem: 'Pet Móvel',
+          pet_name: d.pet_name || 'Pet sem nome',
+          owner_name: d.owner_name || 'Tutor não informado',
+          date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
+          price: Number(d.price || 0),
+          status: d.status || 'AGENDADO',
+          service: d.service || 'Pet Móvel'
+        });
+      }
+    });
+
+    (dbData.petMovel || []).forEach(d => {
+      const { year, month } = parseYearMonth(d.appointment_time);
+      if (year === currentYear && month === currentMonth) {
+        allMonthRecords.push({
+          id: d.id,
+          origem: 'Pet Móvel',
+          pet_name: d.pet_name || 'Pet sem nome',
+          owner_name: d.owner_name || 'Tutor não informado',
+          date: d.appointment_time ? new Date(d.appointment_time) : new Date(),
+          price: Number(d.price || 0),
+          status: d.status || 'AGENDADO',
+          service: 'Pet Móvel'
+        });
+      }
+    });
+
+    // 3. Creche
+    (dbData.daycare || []).forEach(d => {
+      const date = d.created_at ? new Date(d.created_at) : new Date();
+      if (date.getUTCMonth() === currentMonth && date.getUTCFullYear() === currentYear) {
+        allMonthRecords.push({
+          id: d.id,
+          origem: 'Creche',
+          pet_name: d.pet_name || 'Pet sem nome',
+          owner_name: d.tutor_name || 'Tutor não informado',
+          date,
+          price: Number(d.total_price || 0),
+          status: d.status || 'CONCLUÍDO',
+          details: d.pet_breed ? `Raça: ${d.pet_breed}` : undefined,
+          service: 'Creche Pet'
+        });
+      }
+    });
+
+    // 4. Hotel Pet
+    (dbData.hotel || []).forEach(d => {
+      if (isHotelApproved(d)) {
+        const date = d.check_in_date ? new Date(d.check_in_date) : d.registration_date ? new Date(d.registration_date) : new Date();
+        const { year, month } = parseYearMonth(d.check_in_date || d.registration_date);
+        if (year === currentYear && month === currentMonth) {
+          allMonthRecords.push({
+            id: d.id,
+            origem: 'Hotel Pet',
+            pet_name: d.pet_name || 'Pet sem nome',
+            owner_name: d.tutor_name || 'Tutor não informado',
+            date,
+            price: Number(d.total_services_price || 0),
+            status: d.status || 'CONCLUÍDO',
+            details: d.check_out_date ? `Check-out: ${new Date(d.check_out_date).toLocaleDateString('pt-BR')}` : undefined,
+            service: 'Hotel Pet'
+          });
+        }
+      }
+    });
+
+    // Nomes de pets únicos disponíveis no mês selecionado
+    const availablePetNames = Array.from(new Set(allMonthRecords.map(r => r.pet_name).filter(Boolean))).sort();
+
+    // Registros filtrados pela busca
+    const query = petSearchQuery.trim().toLowerCase();
+    const matchedRecords = query
+      ? allMonthRecords.filter(r => r.pet_name.toLowerCase().includes(query) || r.owner_name.toLowerCase().includes(query))
+      : [];
+
+    // Ordenar registros do mais recente para o mais antigo
+    matchedRecords.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    // Estatísticas do Pet Buscado
+    const totalSpent = matchedRecords.reduce((sum, r) => sum + r.price, 0);
+    const totalServicesCount = matchedRecords.length;
+
+    const countByOrigem = {
+      'Banho & Tosa': matchedRecords.filter(r => r.origem === 'Banho & Tosa'),
+      'Pet Móvel': matchedRecords.filter(r => r.origem === 'Pet Móvel'),
+      'Creche': matchedRecords.filter(r => r.origem === 'Creche'),
+      'Hotel Pet': matchedRecords.filter(r => r.origem === 'Hotel Pet')
+    };
+
+    const valByOrigem = {
+      'Banho & Tosa': countByOrigem['Banho & Tosa'].reduce((s, r) => s + r.price, 0),
+      'Pet Móvel': countByOrigem['Pet Móvel'].reduce((s, r) => s + r.price, 0),
+      'Creche': countByOrigem['Creche'].reduce((s, r) => s + r.price, 0),
+      'Hotel Pet': countByOrigem['Hotel Pet'].reduce((s, r) => s + r.price, 0)
+    };
+
+    // Identificar o serviço mais frequente para o pet
+    let topService = 'Nenhum';
+    let topCount = 0;
+    Object.keys(countByOrigem).forEach(k => {
+      const cnt = countByOrigem[k as keyof typeof countByOrigem].length;
+      if (cnt > topCount) {
+        topCount = cnt;
+        topService = k;
+      }
+    });
+
+    const primaryPetName = matchedRecords.length > 0 ? matchedRecords[0].pet_name : '';
+    const primaryTutorName = matchedRecords.length > 0 ? matchedRecords[0].owner_name : '';
+    const ticketMedio = totalServicesCount > 0 ? totalSpent / totalServicesCount : 0;
+
+    return (
+      <div className="space-y-8 animate-fadeIn">
+        {/* CARD PRINCIPAL DE BUSCA COM GLASSMORPHISM */}
+        <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-pink-100/60 shadow-xl space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-100/60 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 text-white flex items-center justify-center shadow-md">
+                <Dog className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-800">Busca Financeira por Pet</h3>
+                <p className="text-xs text-gray-500 font-bold">
+                  Consulte faturamentos, agendamentos e estatísticas individuais em {months[selectedMonth]} de {selectedYear}
+                </p>
+              </div>
+            </div>
+            <div className="px-4 py-2 bg-pink-50 text-pink-600 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-2 border border-pink-100">
+              <Calendar className="w-4 h-4" />
+              <span>{months[selectedMonth]} / {selectedYear}</span>
+            </div>
+          </div>
+
+          {/* INPUT DE BUSCA MODERNO */}
+          <div className="relative w-full">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-pink-500">
+              <Search className="w-5 h-5" />
+            </div>
+            <input
+              type="text"
+              value={petSearchQuery}
+              onChange={(e) => setPetSearchQuery(e.target.value)}
+              placeholder="Digite o nome do pet (ex: Chocolate, Luna, Athena, TED)..."
+              className="w-full pl-12 pr-12 py-4 bg-white/90 border-2 border-pink-100 rounded-2xl font-bold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 shadow-inner transition-all text-sm sm:text-base"
+            />
+            {petSearchQuery && (
+              <button
+                onClick={() => setPetSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-pink-600 transition-colors cursor-pointer"
+                title="Limpar busca"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {/* SUGESTÕES RÁPIDAS DE PETS COM ATENDIMENTO NO MÊS */}
+          <div className="space-y-2">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">
+              Pets com atendimentos em {months[selectedMonth]} ({availablePetNames.length}):
+            </span>
+            {availablePetNames.length === 0 ? (
+              <p className="text-xs text-gray-400 font-bold italic">Nenhum pet registrado no mês selecionado.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-1">
+                {availablePetNames.map(petName => {
+                  const isSelected = query && petName.toLowerCase().includes(query);
+                  return (
+                    <button
+                      key={petName}
+                      onClick={() => setPetSearchQuery(petName)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${isSelected
+                        ? 'bg-pink-600 text-white shadow-md scale-105'
+                        : 'bg-pink-50/80 text-pink-700 hover:bg-pink-100 border border-pink-100'
+                        }`}
+                    >
+                      <span>🐶</span>
+                      <span>{petName}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* EXIBIÇÃO DE RESULTADOS */}
+        {!query ? (
+          /* ESTADO INICIAL (SEM BUSCA DIGITADA) */
+          <div className="bg-white/60 backdrop-blur-md rounded-3xl p-10 border border-pink-100/50 shadow-sm text-center space-y-4">
+            <div className="w-16 h-16 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <Search className="w-8 h-8" />
+            </div>
+            <h4 className="text-lg font-black text-gray-800">Selecione ou digite o nome de um Pet</h4>
+            <p className="text-xs text-gray-500 font-bold max-w-md mx-auto leading-relaxed">
+              Clique em uma das tags acima ou digite o nome do pet no campo de pesquisa para ver todo o faturamento, histórico de serviços e estatísticas detalhadas no mês de <strong>{months[selectedMonth]} de {selectedYear}</strong>.
+            </p>
+          </div>
+        ) : matchedRecords.length === 0 ? (
+          /* ESTADO SEM RESULTADOS */
+          <div className="bg-white/60 backdrop-blur-md rounded-3xl p-10 border border-pink-100/50 shadow-sm text-center space-y-4">
+            <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <h4 className="text-lg font-black text-gray-800">Nenhum resultado para "{petSearchQuery}"</h4>
+            <p className="text-xs text-gray-500 font-bold max-w-md mx-auto leading-relaxed">
+              Não encontramos nenhum atendimento ou registro financeiro para este termo no mês de <strong>{months[selectedMonth]} de {selectedYear}</strong>.
+            </p>
+            {availablePetNames.length > 0 && (
+              <div className="pt-2">
+                <p className="text-xs font-black text-gray-600 mb-2">Sugestões de pets com serviços no período:</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {availablePetNames.slice(0, 8).map(name => (
+                    <button
+                      key={name}
+                      onClick={() => setPetSearchQuery(name)}
+                      className="px-3 py-1 bg-pink-50 text-pink-600 rounded-lg text-xs font-bold hover:bg-pink-100 transition-colors cursor-pointer"
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* DASHBOARD FINANCEIRO DO PET ENCONTRADO */
+          <div className="space-y-8 animate-fadeIn">
+            {/* PROFILE HEAD CARD DO PET */}
+            <div className="bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="flex items-center gap-5 text-center md:text-left">
+                <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md border-2 border-white/40 flex items-center justify-center text-4xl shadow-inner shrink-0">
+                  🐶
+                </div>
+                <div>
+                  <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest border border-white/30 inline-block mb-1">
+                    Relatório Individual do Pet
+                  </span>
+                  <h3 className="text-3xl font-black">{primaryPetName}</h3>
+                  <p className="text-xs text-white/80 font-bold mt-1 flex items-center justify-center md:justify-start gap-1">
+                    <User className="w-3.5 h-3.5" />
+                    Tutor: {primaryTutorName}
+                  </p>
+                </div>
+              </div>
+
+              {/* CARD DE TOTAL GASTO PELO PET */}
+              <div className="bg-white/15 backdrop-blur-md p-5 rounded-2xl border border-white/20 text-center min-w-[200px] shadow-lg">
+                <span className="text-[10px] font-black text-white/80 uppercase tracking-widest block mb-1">
+                  Total Gasto no Mês
+                </span>
+                <span className="text-3xl font-black text-white block">
+                  R$ {totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+                <span className="text-[10px] font-bold text-white/70 block mt-1">
+                  {totalServicesCount} {totalServicesCount === 1 ? 'atendimento' : 'atendimentos'} em {months[selectedMonth]}
+                </span>
+              </div>
+            </div>
+
+            {/* CARDS KPIS DO PET */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Total Faturamento */}
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center">
+                <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Faturamento Total</span>
+                  <span className="text-xl font-black text-emerald-600">R$ {totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-bold">No período selecionado</span>
+              </div>
+
+              {/* Atendimentos */}
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center">
+                <div className="w-10 h-10 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center mb-1">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Atendimentos</span>
+                  <span className="text-xl font-black text-gray-800">{totalServicesCount}</span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-bold">Serviços registrados</span>
+              </div>
+
+              {/* Serviço Principal */}
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center">
+                <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-1">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Serviço Principal</span>
+                  <span className="text-base font-black text-purple-700 truncate max-w-[150px]">{topService}</span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-bold">{topCount}x consumido</span>
+              </div>
+
+              {/* Ticket Médio */}
+              <div className="bg-white/80 p-5 rounded-3xl border border-pink-100/50 shadow-md flex flex-col items-center justify-between h-36 text-center">
+                <div className="w-10 h-10 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center mb-1">
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Ticket Médio</span>
+                  <span className="text-xl font-black text-cyan-600">R$ {ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-bold">Por atendimento</span>
+              </div>
+            </div>
+
+            {/* BREAKDOWN POR CATEGORIA DO PET */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-black text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                <Layers className="w-4 h-4 text-pink-500" />
+                Distribuição de Gastos do Pet por Serviço
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Banho & Tosa */}
+                <div className="bg-pink-50/50 border border-pink-100 p-4 rounded-2xl flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] font-black text-pink-500 uppercase tracking-wider block">Banho & Tosa Fixo</span>
+                    <span className="text-xs font-bold text-gray-600">{countByOrigem['Banho & Tosa'].length} atendimentos</span>
+                  </div>
+                  <span className="text-sm font-black text-pink-600">
+                    R$ {valByOrigem['Banho & Tosa'].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                {/* Pet Móvel */}
+                <div className="bg-cyan-50/50 border border-cyan-100 p-4 rounded-2xl flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] font-black text-cyan-500 uppercase tracking-wider block">Pet Móvel</span>
+                    <span className="text-xs font-bold text-gray-600">{countByOrigem['Pet Móvel'].length} atendimentos</span>
+                  </div>
+                  <span className="text-sm font-black text-cyan-600">
+                    R$ {valByOrigem['Pet Móvel'].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                {/* Creche */}
+                <div className="bg-purple-50/50 border border-purple-100 p-4 rounded-2xl flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] font-black text-purple-500 uppercase tracking-wider block">Creche Pet</span>
+                    <span className="text-xs font-bold text-gray-600">{countByOrigem['Creche'].length} registros</span>
+                  </div>
+                  <span className="text-sm font-black text-purple-600">
+                    R$ {valByOrigem['Creche'].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                {/* Hotel Pet */}
+                <div className="bg-amber-50/50 border border-amber-100 p-4 rounded-2xl flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider block">Hotel Pet</span>
+                    <span className="text-xs font-bold text-gray-600">{countByOrigem['Hotel Pet'].length} reservas</span>
+                  </div>
+                  <span className="text-sm font-black text-amber-600">
+                    R$ {valByOrigem['Hotel Pet'].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* TABELA DETALHADA DE ATENDIMENTOS DO PET NO MÊS */}
+            <div className="bg-white/80 backdrop-blur-md p-6 rounded-3xl border border-pink-100/50 shadow-md space-y-4">
+              <div className="flex justify-between items-center border-b border-pink-100/60 pb-4">
+                <h4 className="text-base font-black text-gray-800 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-pink-500" />
+                  Histórico de Atendimentos de {primaryPetName} em {months[selectedMonth]}/{selectedYear}
+                </h4>
+                <span className="text-xs bg-pink-100 text-pink-700 px-3 py-1 rounded-full font-black">
+                  {matchedRecords.length} {matchedRecords.length === 1 ? 'registro' : 'registros'}
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-gray-400 font-black uppercase tracking-wider">
+                      <th className="py-3 px-2">Data</th>
+                      <th className="py-3 px-2">Origem / Serviço</th>
+                      <th className="py-3 px-2">Tutor</th>
+                      <th className="py-3 px-2">Status</th>
+                      <th className="py-3 px-2 text-right">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="font-bold text-gray-600">
+                    {matchedRecords.map((item, idx) => {
+                      const isBanho = item.origem === 'Banho & Tosa';
+                      const isPetMovel = item.origem === 'Pet Móvel';
+                      const isCreche = item.origem === 'Creche';
+                      const isHotel = item.origem === 'Hotel Pet';
+
+                      const statusUpper = String(item.status || '').toUpperCase();
+                      const isCompleted = statusUpper === 'CONCLUIDO' || statusUpper === 'CONCLUÍDO' || statusUpper === 'APPROVED' || statusUpper === 'APROVADO';
+
+                      return (
+                        <tr key={idx} className="border-b border-gray-100 hover:bg-pink-50/30 transition-colors">
+                          <td className="py-3 px-2 font-black text-gray-800">
+                            {item.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          </td>
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2.5 h-2.5 rounded-full inline-block ${isBanho ? 'bg-pink-500' : isPetMovel ? 'bg-cyan-500' : isCreche ? 'bg-purple-500' : 'bg-amber-500'
+                                }`} />
+                              <div>
+                                <span className={`text-[10px] font-black uppercase tracking-wider block ${isBanho ? 'text-pink-600' : isPetMovel ? 'text-cyan-600' : isCreche ? 'text-purple-600' : 'text-amber-600'
+                                  }`}>
+                                  {item.origem}
+                                </span>
+                                <span className="text-xs font-black text-gray-800">{item.service || item.origem}</span>
+                                {item.details && <span className="text-[10px] text-gray-400 block font-normal">{item.details}</span>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-gray-700">{item.owner_name}</td>
+                          <td className="py-3 px-2">
+                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider inline-block ${isCompleted ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}>
+                              {item.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 text-right font-black text-gray-800">
+                            R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8 pb-12 max-w-7xl mx-auto px-1 sm:px-2 md:px-4">
 
@@ -2840,7 +3330,7 @@ const FinancialDashboardView: React.FC = () => {
       </div>
 
       {/* ABAS SECUNDÁRIAS PREMIUM (CHAVEADOR SLIDE GLASSMORPHISM) */}
-      <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-2xl border border-pink-100/50 w-full max-w-[550px] shadow-sm animate-fadeIn">
+      <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-2xl border border-pink-100/50 w-full max-w-[680px] shadow-sm animate-fadeIn">
         <button
           onClick={() => setActiveSubTab('overview')}
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${activeSubTab === 'overview'
@@ -2870,6 +3360,16 @@ const FinancialDashboardView: React.FC = () => {
         >
           <PieChart className="w-4 h-4" />
           Relatório
+        </button>
+        <button
+          onClick={() => setActiveSubTab('search')}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-1.5 ${activeSubTab === 'search'
+            ? 'bg-pink-500 text-white shadow-md'
+            : 'text-gray-600 hover:text-pink-600'
+            }`}
+        >
+          <Search className="w-4 h-4" />
+          Busca
         </button>
       </div>
 
@@ -3848,9 +4348,11 @@ const FinancialDashboardView: React.FC = () => {
             )}
           </div>
         </>
-      ) : (
+      ) : activeSubTab === 'report' ? (
         renderReportTab()
-      )}
+      ) : activeSubTab === 'search' ? (
+        renderSearchTab()
+      ) : null}
 
       {/* ==========================================
           MODAL: CADASTRO / EDIÇÃO DE GASTOS
