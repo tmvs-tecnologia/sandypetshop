@@ -9227,27 +9227,20 @@ const DaycareEnrollmentCard: React.FC<{
                         </button>
                     )}
 
-                    {/* Botão Emitir/Abrir Nota Fiscal */}
+                    {/* Botão Emitir Nota Fiscal (Sempre permite gerar nova nota para Creche Pet) */}
                     {status === 'Aprovado' && onFiscalNote && (
                         <button
                             onClick={(e) => { 
                                 e.stopPropagation(); 
-                                const nfeUrl = fiscalNotesMap?.[enrollment.id];
-                                if (nfeUrl) {
-                                    window.open(nfeUrl, '_blank');
-                                } else if (onFiscalNote) {
-                                    onFiscalNote(enrollment); 
-                                }
+                                onFiscalNote(enrollment); 
                             }}
                             disabled={isEmittingNFe}
                             className={`w-full py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-center whitespace-nowrap text-xs font-medium flex-1 sm:flex-none border ${
                                 isEmittingNFe 
                                 ? 'bg-pink-100 text-pink-400 border-pink-200 cursor-not-allowed' 
-                                : fiscalNotesMap?.[enrollment.id]
-                                ? 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200 font-bold'
                                 : 'bg-pink-50 text-pink-700 hover:bg-pink-100 border-pink-100'
                             }`}
-                            title={fiscalNotesMap?.[enrollment.id] ? "Abrir Nota Fiscal" : "Emitir Nota Fiscal"}
+                            title="Emitir Nota Fiscal"
                         >
                             {isEmittingNFe ? (
                                 <>
@@ -9256,11 +9249,6 @@ const DaycareEnrollmentCard: React.FC<{
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
                                     <span className="hidden sm:inline">Gerando...</span>
-                                </>
-                            ) : fiscalNotesMap?.[enrollment.id] ? (
-                                <>
-                                    <ArrowTopRightOnSquareIcon className="w-4 h-4 shrink-0" />
-                                    <span className="hidden sm:inline">Nota</span>
                                 </>
                             ) : (
                                 <>
