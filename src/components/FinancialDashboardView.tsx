@@ -234,6 +234,12 @@ const FinancialDashboardView: React.FC = () => {
   // Estados de Abas Secundárias (Visão Geral vs Gastos vs Relatório vs Busca)
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'expenses' | 'report' | 'search'>('overview');
   const [petSearchQuery, setPetSearchQuery] = useState('');
+  const [selectedPetNames, setSelectedPetNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    setPetSearchQuery('');
+    setSelectedPetNames([]);
+  }, [selectedMonth, selectedYear]);
 
   // Estados de dados e loading (Visão Geral)
   const [loading, setLoading] = useState(true);
@@ -2871,10 +2877,41 @@ const FinancialDashboardView: React.FC = () => {
     // Nomes de pets únicos disponíveis no mês selecionado
     const availablePetNames = Array.from(new Set(allMonthRecords.map(r => r.pet_name).filter(Boolean))).sort();
 
-    // Registros filtrados pela busca
-    const query = petSearchQuery.trim().toLowerCase();
-    const matchedRecords = query
-      ? allMonthRecords.filter(r => r.pet_name.toLowerCase().includes(query) || r.owner_name.toLowerCase().includes(query))
+    // Handlers para busca e seleção de tags
+    const handlePetSearchInputChange = (inputVal: string) => {
+      setPetSearchQuery(inputVal);
+      const q = inputVal.trim().toLowerCase();
+      if (!q) {
+        setSelectedPetNames([]);
+      } else {
+        const matchingPetNames = Array.from(
+          new Set(
+            allMonthRecords
+              .filter(r => r.pet_name.toLowerCase().includes(q) || r.owner_name.toLowerCase().includes(q))
+              .map(r => r.pet_name)
+              .filter(Boolean)
+          )
+        );
+        setSelectedPetNames(matchingPetNames);
+      }
+    };
+
+    const handleTogglePetTag = (petName: string) => {
+      if (selectedPetNames.includes(petName)) {
+        const updated = selectedPetNames.filter(n => n !== petName);
+        setSelectedPetNames(updated);
+        if (updated.length === 0) {
+          setPetSearchQuery('');
+        }
+      } else {
+        const updated = [...selectedPetNames, petName];
+        setSelectedPetNames(updated);
+      }
+    };
+
+    // Registros filtrados pelas tags selecionadas
+    const matchedRecords = selectedPetNames.length > 0
+      ? allMonthRecords.filter(r => selectedPetNames.includes(r.pet_name))
       : [];
 
     // Ordenar registros do mais recente para o mais antigo
@@ -2909,8 +2946,12 @@ const FinancialDashboardView: React.FC = () => {
       }
     });
 
-    const primaryPetName = matchedRecords.length > 0 ? matchedRecords[0].pet_name : '';
-    const primaryTutorName = matchedRecords.length > 0 ? matchedRecords[0].owner_name : '';
+    const primaryPetName = matchedRecords.length > 0
+      ? Array.from(new Set(matchedRecords.map(r => r.pet_name))).join(', ')
+      : '';
+    const primaryTutorName = matchedRecords.length > 0
+      ? Array.from(new Set(matchedRecords.map(r => r.owner_name))).join(', ')
+      : '';
     const ticketMedio = totalServicesCount > 0 ? totalSpent / totalServicesCount : 0;
 
     return (
@@ -2943,13 +2984,16 @@ const FinancialDashboardView: React.FC = () => {
             <input
               type="text"
               value={petSearchQuery}
-              onChange={(e) => setPetSearchQuery(e.target.value)}
+              onChange={(e) => handlePetSearchInputChange(e.target.value)}
               placeholder="Digite o nome do pet (ex: Chocolate, Luna, Athena, TED)..."
               className="w-full pl-12 pr-12 py-4 bg-white/90 border-2 border-pink-100 rounded-2xl font-bold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 shadow-inner transition-all text-sm sm:text-base"
             />
-            {petSearchQuery && (
+            {(petSearchQuery || selectedPetNames.length > 0) && (
               <button
-                onClick={() => setPetSearchQuery('')}
+                onClick={() => {
+                  setPetSearchQuery('');
+                  setSelectedPetNames([]);
+                }}
                 className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-pink-600 transition-colors cursor-pointer"
                 title="Limpar busca"
               >
@@ -2968,11 +3012,11 @@ const FinancialDashboardView: React.FC = () => {
             ) : (
               <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-1">
                 {availablePetNames.map(petName => {
-                  const isSelected = query && petName.toLowerCase().includes(query);
+                  const isSelected = selectedPetNames.includes(petName);
                   return (
                     <button
                       key={petName}
-                      onClick={() => setPetSearchQuery(petName)}
+                      onClick={() => handleTogglePetTag(petName)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${isSelected
                         ? 'bg-pink-600 text-white shadow-md scale-105'
                         : 'bg-pink-50/80 text-pink-700 hover:bg-pink-100 border border-pink-100'
@@ -2989,7 +3033,7 @@ const FinancialDashboardView: React.FC = () => {
         </div>
 
         {/* EXIBIÇÃO DE RESULTADOS */}
-        {!query ? (
+        {selectedPetNames.length === 0 && !petSearchQuery.trim() ? (
           /* ESTADO INICIAL (SEM BUSCA DIGITADA) */
           <div className="bg-white/60 backdrop-blur-md rounded-3xl p-10 border border-pink-100/50 shadow-sm text-center space-y-4">
             <div className="w-16 h-16 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
@@ -3006,7 +3050,7 @@ const FinancialDashboardView: React.FC = () => {
             <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
               <AlertCircle className="w-8 h-8" />
             </div>
-            <h4 className="text-lg font-black text-gray-800">Nenhum resultado para "{petSearchQuery}"</h4>
+            <h4 className="text-lg font-black text-gray-800">Nenhum resultado para "{petSearchQuery || selectedPetNames.join(', ')}"</h4>
             <p className="text-xs text-gray-500 font-bold max-w-md mx-auto leading-relaxed">
               Não encontramos nenhum atendimento ou registro financeiro para este termo no mês de <strong>{months[selectedMonth]} de {selectedYear}</strong>.
             </p>
@@ -3017,7 +3061,10 @@ const FinancialDashboardView: React.FC = () => {
                   {availablePetNames.slice(0, 8).map(name => (
                     <button
                       key={name}
-                      onClick={() => setPetSearchQuery(name)}
+                      onClick={() => {
+                        setPetSearchQuery(name);
+                        setSelectedPetNames([name]);
+                      }}
                       className="px-3 py-1 bg-pink-50 text-pink-600 rounded-lg text-xs font-bold hover:bg-pink-100 transition-colors cursor-pointer"
                     >
                       {name}
