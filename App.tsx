@@ -1043,6 +1043,26 @@ const isSaoPauloWeekend = (date: Date): boolean => {
 };
 
 /**
+ * Retorna uma nova data garantindo que ela caia estritamente em um dia útil (segunda a sexta).
+ * Se a data for sábado ou domingo, avança para a próxima segunda-feira.
+ * Se for após às 18h no dia atual, avança para o próximo dia útil.
+ */
+const getNextValidWeekday = (startDate: Date = new Date()): Date => {
+    const candidate = new Date(startDate);
+    const spParts = getSaoPauloTimeParts(startDate);
+    // Se o horário for a partir das 18h em São Paulo e for a data de hoje, avança 1 dia
+    if (spParts.hour >= 18 && isSameSaoPauloDay(startDate, new Date())) {
+        candidate.setDate(candidate.getDate() + 1);
+    }
+    // Avança a data enquanto for sábado (6) ou domingo (0)
+    while (isSaoPauloWeekend(candidate) || candidate.getDay() === 0 || candidate.getDay() === 6) {
+        candidate.setDate(candidate.getDate() + 1);
+    }
+    return candidate;
+};
+
+
+/**
  * Returns the timestamp of the first day (Sunday) of the week for a given date, 
  * considering São Paulo timezone.
  */
@@ -4252,20 +4272,20 @@ const AdminAddAppointmentModal: React.FC<{
     const [selectedWeight, setSelectedWeight] = useState<PetWeight | null>(null);
     const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>({});
     const [totalPrice, setTotalPrice] = useState(0);
-    // Initialize selectedDate with a smart default (today or tomorrow based on current time)
+    // Initialize selectedDate with a smart default (always a valid weekday: Mon-Fri)
     const getInitialDate = () => {
-        const now = new Date();
-        const currentHour = now.getHours();
-        // If it's after 6 PM, start with tomorrow, otherwise start with today
-        if (currentHour >= 18) {
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            return tomorrow;
-        }
-        return now;
+        return getNextValidWeekday(new Date());
     };
 
     const [selectedDate, setSelectedDate] = useState(getInitialDate());
+
+    // Strict weekend guard: ensure selectedDate never stays on Saturday (6) or Sunday (0)
+    useEffect(() => {
+        if (selectedDate && (isSaoPauloWeekend(selectedDate) || selectedDate.getDay() === 0 || selectedDate.getDay() === 6)) {
+            setSelectedDate(getNextValidWeekday(selectedDate));
+        }
+    }, [selectedDate]);
+
     const [selectedTime, setSelectedTime] = useState<number | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [allowedDays, setAllowedDays] = useState<number[] | undefined>(undefined);
@@ -4602,6 +4622,14 @@ const AdminAddAppointmentModal: React.FC<{
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedService || !selectedTime) return;
+
+        // Trava estrita: impede qualquer tentativa de agendamento no sábado (6) ou domingo (0)
+        if (isSaoPauloWeekend(selectedDate) || selectedDate.getDay() === 0 || selectedDate.getDay() === 6) {
+            alert('Não é permitido agendamento aos sábados e domingos. Por favor, escolha um dia útil (segunda a sexta-feira).');
+            setIsSubmitting(false);
+            return;
+        }
+
         setIsSubmitting(true);
 
         const year = selectedDate.getFullYear();
@@ -5121,7 +5149,9 @@ const Calendar: React.FC<{
                     type="button"
                     onClick={() => {
                         if (isDisabled) {
-                            if (!!disabledDates && disabledDates.includes(ymd)) {
+                            if (disableWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
+                                alert('Agendamentos não são permitidos aos sábados e domingos.');
+                            } else if (!!disabledDates && disabledDates.includes(ymd)) {
                                 alert('Atendimento Indisponível');
                             }
                             return;
@@ -12224,7 +12254,7 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
     const [selectedWeight, setSelectedWeight] = useState<PetWeight | null>(null);
     const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>({});
     const [totalPrice, setTotalPrice] = useState(0);
-    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date>(() => getNextValidWeekday(new Date()));
     const [selectedTime, setSelectedTime] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -12234,6 +12264,13 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
     const [disabledPetMovelDates, setDisabledPetMovelDates] = useState<string[]>([]);
     const [foundPets, setFoundPets] = useState<any[]>([]);
     const [isOtherBreed, setIsOtherBreed] = useState(false);
+
+    // Strict weekend guard: ensure selectedDate in Scheduler is never Saturday (6) or Sunday (0)
+    useEffect(() => {
+        if (selectedDate && (isSaoPauloWeekend(selectedDate) || selectedDate.getDay() === 0 || selectedDate.getDay() === 6)) {
+            setSelectedDate(getNextValidWeekday(selectedDate));
+        }
+    }, [selectedDate]);
 
     const isVisitService = useMemo(() =>
         selectedService === ServiceType.VISIT_DAYCARE || selectedService === ServiceType.VISIT_HOTEL,
@@ -12249,7 +12286,7 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
         if (prefillDate) {
             const date = new Date(prefillDate + 'T00:00:00');
             if (!isNaN(date.getTime())) {
-                setSelectedDate(date);
+                setSelectedDate(getNextValidWeekday(date));
             }
         }
         if (prefillTime) {
@@ -12639,6 +12676,14 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedService || !selectedTime) return;
+
+        // Trava estrita: impede qualquer tentativa de agendamento no sábado (6) ou domingo (0)
+        if (isSaoPauloWeekend(selectedDate) || selectedDate.getDay() === 0 || selectedDate.getDay() === 6) {
+            alert('Não é permitido agendamento aos sábados e domingos. Por favor, escolha um dia útil (segunda a sexta-feira).');
+            setIsSubmitting(false);
+            return;
+        }
+
         setIsSubmitting(true);
 
         const sp = getSaoPauloTimeParts(selectedDate);
@@ -19949,16 +19994,41 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
     const [whatsapp, setWhatsapp] = useState('');
     const [ownerAddress, setOwnerAddress] = useState('');
     const [observation, setObservation] = useState('');
-    const [date, setDate] = useState('');
+    const [date, setDate] = useState(() => getNextValidWeekday().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }));
     const [time, setTime] = useState<number | ''>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
+    const handleDateChange = (val: string) => {
+        if (!val) {
+            setDate('');
+            return;
+        }
+        const [y, m, d] = val.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        if (dt.getDay() === 0 || dt.getDay() === 6 || isSaoPauloWeekend(dt)) {
+            alert('Agendamentos não são permitidos aos sábados e domingos! Selecionando o próximo dia útil.');
+            const valid = getNextValidWeekday(dt);
+            const validStr = `${valid.getFullYear()}-${String(valid.getMonth() + 1).padStart(2, '0')}-${String(valid.getDate()).padStart(2, '0')}`;
+            setDate(validStr);
+        } else {
+            setDate(val);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!date || time === '' || !petName || !ownerName || !whatsapp) return;
-        setIsSubmitting(true);
+
         const [year, month, day] = date.split('-').map(Number);
+        const checkDate = new Date(year, month - 1, day);
+        if (checkDate.getDay() === 0 || checkDate.getDay() === 6 || isSaoPauloWeekend(checkDate)) {
+            alert('Agendamentos não são permitidos aos sábados e domingos. Por favor, escolha um dia útil (segunda a sexta-feira).');
+            setIsSubmitting(false);
+            return;
+        }
+
+        setIsSubmitting(true);
         const appt = toSaoPauloUTC(year, month - 1, day, Number(time));
         const payload = {
             appointment_time: appt.toISOString(),
@@ -20129,7 +20199,7 @@ const VisitAppointmentForm: React.FC<{ serviceLabel: string; onBack: () => void;
                                         <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                                             <SafeImage alt="Date Icon" className="h-5 w-5 opacity-60" src="https://cdn-icons-png.flaticon.com/512/10754/10754041.png" />
                                         </span>
-                                        <input id="date" type="date" required value={date} onChange={e => setDate(e.target.value)} className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 date-input-placeholder-override ${date ? 'has-value' : ''}`} />
+                                        <input id="date" type="date" required min={new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())} value={date} onChange={e => handleDateChange(e.target.value)} className={`block w-full pl-10 pr-5 py-4 bg-gray-50 border rounded-lg shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 text-gray-900 transition-colors border-gray-300 date-input-placeholder-override ${date ? 'has-value' : ''}`} />
                                     </div>
                                 </div>
 
