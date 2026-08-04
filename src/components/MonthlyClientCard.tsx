@@ -436,9 +436,26 @@ const MonthlyClientCard: React.FC<{
         return 'Não definido';
     };
 
+    const calculateExtrasTotal = (extraServices: any) => {
+        if (!extraServices || typeof extraServices !== 'object') return 0;
+        let total = 0;
+        Object.entries(extraServices).forEach(([key, service]: [string, any]) => {
+            if (service && service.enabled) {
+                if (key === 'dias_extras' && service.quantity) {
+                    total += (Number(service.value) || 0) * Number(service.quantity);
+                } else {
+                    total += Number(service.value) || 0;
+                }
+            }
+        });
+        return total;
+    };
+
     const calculateTotalInvoiceValue = (client: MonthlyClient, totalAppointments: number) => {
         const basePrice = Number(client.price || 0);
         if (!client.is_active || basePrice === 0) return 0;
+
+        const extrasTotal = calculateExtrasTotal(client.extra_services);
 
         const factor = client.recurrence_type === 'weekly' 
             ? 4 
@@ -446,13 +463,15 @@ const MonthlyClientCard: React.FC<{
                 ? 2 
                 : 1; // monthly ou outro
                 
+        let total = basePrice + extrasTotal;
+
         if (totalAppointments > factor) {
             const unitPrice = basePrice / factor;
             const extraCount = totalAppointments - factor;
-            return basePrice + unitPrice * extraCount;
+            total += unitPrice * extraCount;
         }
         
-        return basePrice;
+        return total;
     };
 
     const totalInvoiceValue = calculateTotalInvoiceValue(client, totalBathsThisMonthCount);

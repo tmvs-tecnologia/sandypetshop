@@ -472,6 +472,24 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ onB
         // Map for fallback name matching: "pet_owner" -> id
         const nameToIdMap: Record<string, string> = {};
 
+        // Helper for monthly extra services calculation
+        const calcMonthlyExtraServices = (mc: any) => {
+            const base = Number(mc.price || 0);
+            let extras = 0;
+            if (mc.extra_services && typeof mc.extra_services === 'object') {
+                Object.entries(mc.extra_services).forEach(([k, s]: [string, any]) => {
+                    if (s && s.enabled) {
+                        if (k === 'dias_extras' && s.quantity) {
+                            extras += (Number(s.value) || 0) * Number(s.quantity);
+                        } else {
+                            extras += Number(s.value) || 0;
+                        }
+                    }
+                });
+            }
+            return base + extras;
+        };
+
         // Initialize with all monthly clients (even if no services yet)
         rawData.monthly.filter((mc:any) => mc.is_active).forEach(mc => {
             // Index by ID for reliability
@@ -482,7 +500,7 @@ const StatisticsDashboardModal: React.FC<StatisticsDashboardModalProps> = ({ onB
                 photo_url: mc.pet_photo_url,
                 servicesCount: 0,
                 totalSpent: 0,
-                monthlyPrice: Number(mc.price || 0)
+                monthlyPrice: calcMonthlyExtraServices(mc)
             };
             
             // Populate fallback map
