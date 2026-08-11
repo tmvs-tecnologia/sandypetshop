@@ -18312,9 +18312,13 @@ const AdminDashboard: React.FC<{
             
             if (newStatus === 'CONCLUÍDO') {
                 const visitLabels = [SERVICES[ServiceType.VISIT_DAYCARE].label, SERVICES[ServiceType.VISIT_HOTEL].label];
+                const serviceStr = String(updatedAppointment.service || appointmentToUpdate.service || '').toLowerCase();
                 const isVisit = visitLabels.includes(appointmentToUpdate.service) || 
                                 isVisitAppointment(appointmentToUpdate) || 
-                                (appointmentToUpdate.service && String(appointmentToUpdate.service).toLowerCase().includes('visita'));
+                                isVisitAppointment(updatedAppointment) || 
+                                serviceStr.includes('visita') || 
+                                serviceStr.includes('creche') || 
+                                serviceStr.includes('hotel');
                 const isMonthly = !!appointmentToUpdate.monthly_client_id;
                 
                 if (isVisit) {
@@ -18353,7 +18357,17 @@ const AdminDashboard: React.FC<{
                         });
                         console.log('✅ Resposta Webhook visitaRealizada:', res.status, res.statusText);
                     } catch (webhookError) {
-                        console.error('❌ Erro ao enviar webhook de visita realizada:', webhookError);
+                        console.error('❌ Erro no POST padrão (CORS/rede). Tentando fallback no-cors:', webhookError);
+                        try {
+                            await fetch(webhookUrl, {
+                                method: 'POST',
+                                mode: 'no-cors',
+                                body: JSON.stringify(payload),
+                            });
+                            console.log('✅ Disparo de emergência no-cors efetuado para visitaRealizada');
+                        } catch (noCorsError) {
+                            console.error('❌ Erro ao enviar em no-cors:', noCorsError);
+                        }
                     }
                 } else {
                     // Determina se é um serviço de Banho & Tosa (avulso, móvel ou fixo/mensalista)
