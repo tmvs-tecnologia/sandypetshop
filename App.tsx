@@ -59,6 +59,7 @@ export function isVisitAppointment(appt: any) {
     if (!appt) return false;
     const s = String(appt.service || '').toUpperCase();
     return s.includes('VISIT') || s.includes('VISITA') || 
+           s.includes('CRECHE') || s.includes('HOTEL') ||
            appt.service === ServiceType.VISIT_DAYCARE || 
            appt.service === ServiceType.VISIT_HOTEL;
 }
@@ -3900,17 +3901,7 @@ const EditAppointmentModal: React.FC<{ appointment: AdminAppointment; onClose: (
                 const targetTime = toSaoPauloUTC(year, month, day, h).toISOString();
 
                 let count = allApps.filter((app: any) => {
-                    // Don't count the appointment currently being edited!
-                    // Note: We don't have ID in the fetch result above to exclude easily unless we select ID.
-                    // But we can just count. If count >= MAX and one of them is THIS appointment, we are fine (we are just moving to same slot or keeping it).
-                    // BUT if we move to a NEW slot, we need to know if THAT slot is full.
-                    // The 'allApps' includes the current appointment if it's on the same day.
-                    // We should probably filter out the current appointment by ID if we fetched IDs.
-                    // Let's assume we didn't fetch IDs for simplicity in this snippet, 
-                    // but wait, if we are editing, we might be moving to a slot that has 0 appointments, so it's fine.
-                    // If we move to a slot that has 1 appointment (and MAX=1), we are blocked.
-                    // Unless that 1 appointment is US.
-                    // So we MUST exclude ourselves.
+                    if (isVisitAppointment(app)) return false;
                     return app.appointment_time === targetTime;
                 }).length;
 
@@ -4686,7 +4677,7 @@ const AdminAddAppointmentModal: React.FC<{
                 return isPetMovelSubmit ? appIsMobile : !appIsMobile;
             });
 
-            if (allExistingAtTime.length >= MAX_CAPACITY_PER_SLOT) {
+            if (!isVisitService && allExistingAtTime.length >= MAX_CAPACITY_PER_SLOT) {
                 alert('Este horário já está ocupado. Por favor, selecione outro horário.');
                 setIsSubmitting(false);
                 return;
@@ -12064,6 +12055,12 @@ export const TimeSlotPicker: React.FC<{
         }).length;
     };
 
+    const isVisitService = selectedService === ServiceType.VISIT_DAYCARE || 
+                           selectedService === ServiceType.VISIT_HOTEL || 
+                           (selectedService && String(selectedService).toLowerCase().includes('visita')) ||
+                           (selectedService && String(selectedService).toLowerCase().includes('creche')) ||
+                           (selectedService && String(selectedService).toLowerCase().includes('hotel'));
+
     const isHourAvailable = (hour: number) => {
         // 1. Past Time Check
         if (disablePastTimes && !isAdmin) {
@@ -12072,6 +12069,11 @@ export const TimeSlotPicker: React.FC<{
             if (isSameSaoPauloDay(selectedDate, now) && hour <= currentHour) {
                 return false;
             }
+        }
+
+        // Visits do NOT consume slot capacity
+        if (isVisitService) {
+            return true;
         }
 
         // 2. Capacity Check — ANY appointment at this hour blocks the slot
@@ -12726,7 +12728,7 @@ const Scheduler: React.FC<SchedulerProps> = ({ setView, prefillService, prefillD
             return isPetMovelSubmit ? appIsMobile : !appIsMobile;
         });
 
-        if (appointmentsAtHour.length >= MAX_CAPACITY_PER_SLOT) {
+        if (!isVisitService && appointmentsAtHour.length >= MAX_CAPACITY_PER_SLOT) {
             alert('Desculpe, este horário acabou de ser preenchido. Por favor, escolha outro horário.');
             setIsSubmitting(false);
             return;
@@ -18234,10 +18236,28 @@ const AdminDashboard: React.FC<{
         if (responsible) updatePayload.responsible = responsible;
         if (finalPrice !== undefined) updatePayload.price = finalPrice;
 
-        const targetTable = appointmentToUpdate.table || tableToInsert || 'appointments';
-        const { error: updateError } = await supabase.from(targetTable).update(updatePayload).eq('id', actualId).select();
+        let primaryTable = appointmentToUpdate.table || tableToInsert || 'agendamento_banhotosa';
+        let updateResult = await supabase.from(primaryTable).update(updatePayload).eq('id', actualId).select();
+        let targetTable = primaryTable;
 
-        if (!updateError) {
+        if (!updateResult.error && (!updateResult.data || updateResult.data.length === 0)) {
+            const alternativeTables: Array<'agendamento_banhotosa' | 'appointments' | 'pet_movel_appointments'> = [
+                'agendamento_banhotosa',
+                'appointments',
+                'pet_movel_appointments'
+            ].filter(t => t !== primaryTable) as any;
+
+            for (const altTable of alternativeTables) {
+                const altRes = await supabase.from(altTable).update(updatePayload).eq('id', actualId).select();
+                if (!altRes.error && altRes.data && altRes.data.length > 0) {
+                    targetTable = altTable;
+                    updateResult = altRes;
+                    break;
+                }
+            }
+        }
+
+        if (!updateResult.error) {
             const updatedAppointment = { 
                 ...appointmentToUpdate, 
                 id: actualId, 
@@ -18250,44 +18270,86 @@ const AdminDashboard: React.FC<{
             
             if (newStatus === 'CONCLUÍDO') {
                 const visitLabels = [SERVICES[ServiceType.VISIT_DAYCARE].label, SERVICES[ServiceType.VISIT_HOTEL].label];
-                const isVisit = visitLabels.includes(appointmentToUpdate.service) && !appointmentToUpdate.monthly_client_id;
+                const isVisit = visitLabels.includes(appointmentToUpdate.service) || 
+                                isVisitAppointment(appointmentToUpdate) || 
+                                (appointmentToUpdate.service && String(appointmentToUpdate.service).toLowerCase().includes('visita'));
                 const isMonthly = !!appointmentToUpdate.monthly_client_id;
                 
-                // Determina se é um serviço de Banho & Tosa (avulso, móvel ou fixo/mensalista)
-                const isBathOrGrooming = targetTable === 'agendamento_banhotosa' || 
-                    targetTable === 'pet_movel_appointments' ||
-                    ['Banho', 'Banho & Tosa', 'Só Tosa', 'Banho (Pet Móvel)', 'Banho & Tosa (Pet Móvel)', 'Só Tosa (Pet Móvel)'].includes(appointmentToUpdate.service);
-                
-                if (!isVisit && (!isMonthly || isBathOrGrooming)) {
-                    // URL base sempre aponta para produção (Vercel), não para localhost
-                    const appBaseUrl = 'https://agendamento-sandyspetshop.vercel.app/';
-                    const feedbackParams = new URLSearchParams({
+                if (isVisit) {
+                    const webhookUrl = 'https://n8n.intelektus.tech/webhook/visitaRealizada';
+                    const defaultExtraServices = {
+                        pernoite: { enabled: false, quantity: 0 },
+                        so_banho: { value: 0, enabled: false },
+                        adestrador: { value: 0, enabled: false },
+                        banho_tosa: { value: 0, enabled: false },
+                        dias_extras: { enabled: false, quantity: 0 },
+                        despesa_medica: { value: 0, enabled: false }
+                    };
+                    const payload = {
                         id: actualId,
-                        table: targetTable,
-                        pet: updatedAppointment.pet_name || '',
-                        owner: updatedAppointment.owner_name || '',
-                        wa: updatedAppointment.whatsapp || '',
+                        appointment_time: updatedAppointment.appointment_time,
+                        pet_name: updatedAppointment.pet_name || '',
+                        pet_breed: updatedAppointment.pet_breed || '',
+                        owner_name: updatedAppointment.owner_name || '',
+                        owner_address: updatedAppointment.owner_address || '',
+                        whatsapp: updatedAppointment.whatsapp || '',
                         service: updatedAppointment.service || '',
-                        photo: updatedAppointment.pet_photo_url || '',
-                    });
-                    const feedbackUrl = `${appBaseUrl}#feedback?${feedbackParams.toString()}`;
-
-                    const url = 'https://n8n.intelektus.tech/webhook/servicoConcluido';
+                        weight: updatedAppointment.weight || 'N/A',
+                        addons: Array.isArray(updatedAppointment.addons) ? updatedAppointment.addons : [],
+                        price: finalPrice ?? Number(updatedAppointment.price || 0),
+                        status: 'CONCLUÍDO',
+                        extra_services: updatedAppointment.extra_services || defaultExtraServices,
+                        message: 'Visita Realizada',
+                        isVisit: true
+                    };
+                    console.log('🌐 Disparando Webhook visitaRealizada:', webhookUrl, payload);
                     try {
-                        await fetch(url, {
+                        const res = await fetch(webhookUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                ...updatedAppointment,
-                                id: actualId,
-                                price: finalPrice ?? updatedAppointment.price,
-                                message: 'Serviço Concluído',
-                                isVisit,
-                                responsible: responsible || null,
-                                feedback_url: feedbackUrl,
-                            }),
+                            body: JSON.stringify(payload),
                         });
-                    } catch (webhookError) {}
+                        console.log('✅ Resposta Webhook visitaRealizada:', res.status, res.statusText);
+                    } catch (webhookError) {
+                        console.error('❌ Erro ao enviar webhook de visita realizada:', webhookError);
+                    }
+                } else {
+                    // Determina se é um serviço de Banho & Tosa (avulso, móvel ou fixo/mensalista)
+                    const isBathOrGrooming = targetTable === 'agendamento_banhotosa' || 
+                        targetTable === 'pet_movel_appointments' ||
+                        ['Banho', 'Banho & Tosa', 'Só Tosa', 'Banho (Pet Móvel)', 'Banho & Tosa (Pet Móvel)', 'Só Tosa (Pet Móvel)'].includes(appointmentToUpdate.service);
+                    
+                    if (!isMonthly || isBathOrGrooming) {
+                        // URL base sempre aponta para produção (Vercel), não para localhost
+                        const appBaseUrl = 'https://agendamento-sandyspetshop.vercel.app/';
+                        const feedbackParams = new URLSearchParams({
+                            id: actualId,
+                            table: targetTable,
+                            pet: updatedAppointment.pet_name || '',
+                            owner: updatedAppointment.owner_name || '',
+                            wa: updatedAppointment.whatsapp || '',
+                            service: updatedAppointment.service || '',
+                            photo: updatedAppointment.pet_photo_url || '',
+                        });
+                        const feedbackUrl = `${appBaseUrl}#feedback?${feedbackParams.toString()}`;
+
+                        const url = 'https://n8n.intelektus.tech/webhook/servicoConcluido';
+                        try {
+                            await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    ...updatedAppointment,
+                                    id: actualId,
+                                    price: finalPrice ?? updatedAppointment.price,
+                                    message: 'Serviço Concluído',
+                                    isVisit,
+                                    responsible: responsible || null,
+                                    feedback_url: feedbackUrl,
+                                }),
+                            });
+                        } catch (webhookError) {}
+                    }
                 }
             }
         }

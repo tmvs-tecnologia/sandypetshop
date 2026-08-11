@@ -71,9 +71,9 @@ export const AvailableTimesPage: React.FC = () => {
                 const endOfDay   = `${selectedDate}T23:59:59-03:00`;
 
                 const [bathGroomData, petMobileData, regularData, inactiveClientsRes] = await Promise.all([
-                    supabase.from('agendamento_banhotosa').select('appointment_time, condominium, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
-                    supabase.from('pet_movel_appointments').select('appointment_time, condominium, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
-                    supabase.from('appointments').select('appointment_time, condominium, status, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+                    supabase.from('agendamento_banhotosa').select('appointment_time, condominium, status, monthly_client_id, service').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+                    supabase.from('pet_movel_appointments').select('appointment_time, condominium, status, monthly_client_id, service').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+                    supabase.from('appointments').select('appointment_time, condominium, status, monthly_client_id, service').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
                     supabase.from('monthly_clients').select('id').eq('is_active', false)
                 ]);
 
@@ -97,6 +97,12 @@ export const AvailableTimesPage: React.FC = () => {
 
     const isCancelled = (apt: any) => apt.status === 'cancelled' || apt.status === 'cancelled_by_client';
 
+    const isVisitAppointment = (apt: any) => {
+        if (!apt) return false;
+        const s = String(apt.service || '').toUpperCase();
+        return s.includes('VISIT') || s.includes('VISITA') || s.includes('CRECHE') || s.includes('HOTEL');
+    };
+
     // Extrai a hora do agendamento sempre no fuso de Brasília (America/Sao_Paulo)
     const getHourBRT = (appointmentTime: string) => {
         return parseInt(
@@ -109,6 +115,7 @@ export const AvailableTimesPage: React.FC = () => {
     const getBookedHours = (type: 'fixed' | 'mobile', condo?: string) => {
         return appointments
             .filter(apt => !isCancelled(apt))
+            .filter(apt => !isVisitAppointment(apt))
             .filter(apt => {
                 if (type === 'fixed') {
                     return !apt.condominium || apt.condominium === 'Nenhum Condomínio' || apt.condominium === 'Banho & Tosa Fixo';

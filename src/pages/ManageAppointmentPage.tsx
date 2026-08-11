@@ -233,7 +233,7 @@ export const ManageAppointmentPage: React.FC = () => {
         const targetTable = type === 'fixed' ? 'agendamento_banhotosa' : 'pet_movel_appointments';
         
         const [bookedRes, inactiveClientsRes] = await Promise.all([
-            supabase.from(targetTable).select('appointment_time, monthly_client_id').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
+            supabase.from(targetTable).select('appointment_time, monthly_client_id, service').gte('appointment_time', startOfDay).lte('appointment_time', endOfDay),
             supabase.from('monthly_clients').select('id').eq('is_active', false)
         ]);
 
@@ -244,9 +244,15 @@ export const ManageAppointmentPage: React.FC = () => {
         }
 
         const inactiveIds = new Set((inactiveClientsRes.data || []).map((c: any) => c.id));
+        const isVisitAppointment = (apt: any) => {
+            if (!apt) return false;
+            const s = String(apt.service || '').toUpperCase();
+            return s.includes('VISIT') || s.includes('VISITA') || s.includes('CRECHE') || s.includes('HOTEL');
+        };
 
         const hours = (bookedRes.data || [])
             .filter(apt => !apt.monthly_client_id || !inactiveIds.has(apt.monthly_client_id))
+            .filter(apt => !isVisitAppointment(apt))
             .map(apt => {
                 const d = new Date(apt.appointment_time);
                 return d.getHours();
@@ -305,7 +311,7 @@ export const ManageAppointmentPage: React.FC = () => {
                 .filter(apt => {
                     const aptDate = new Date(apt.appointment_time);
                     aptDate.setHours(0, 0, 0, 0);
-                    const isCancelled = apt.cancelled_by_client === true || apt.cancelled === true;
+                    const isCancelled = apt.cancelled_by_client === true || apt.status === 'cancelled' || apt.status === 'CANCELADO';
                     return aptDate >= now && !isCancelled;
                 })
                 .sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime())
