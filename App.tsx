@@ -18188,8 +18188,50 @@ const AdminDashboard: React.FC<{
     };
 
     const handleUpdateStatus = async (id: string, newStatus: 'AGENDADO' | 'CONCLUÍDO', responsible?: string, finalPrice?: number) => {
-        const appointmentToUpdate = appointments.find(app => app.id === id);
-        if (!appointmentToUpdate) return;
+        let appointmentToUpdate = appointments.find(app => app.id === id);
+
+        if (!appointmentToUpdate) {
+            console.log('🔍 appointmentToUpdate não encontrado no state local. Buscando no Supabase para ID:', id);
+            const tablesToTry: Array<'agendamento_banhotosa' | 'appointments' | 'pet_movel_appointments'> = [
+                'agendamento_banhotosa',
+                'appointments',
+                'pet_movel_appointments'
+            ];
+            for (const t of tablesToTry) {
+                const { data } = await supabase.from(t).select('*').eq('id', id).single();
+                if (data) {
+                    appointmentToUpdate = {
+                        id: data.id,
+                        appointment_time: data.appointment_time,
+                        pet_name: data.pet_name,
+                        pet_breed: data.pet_breed ?? undefined,
+                        owner_name: data.owner_name ?? (data as any).client_name ?? '',
+                        owner_address: data.owner_address ?? (data as any).address ?? undefined,
+                        whatsapp: data.whatsapp ?? (data as any).phone ?? '',
+                        service: data.service,
+                        weight: data.weight,
+                        addons: data.addons ?? [],
+                        price: data.price ?? 0,
+                        status: data.status,
+                        monthly_client_id: data.monthly_client_id ?? undefined,
+                        condominium: data.condominium ?? (data as any).condo ?? undefined,
+                        extra_services: data.extra_services ?? undefined,
+                        observation: data.observation ?? (data as any).notes ?? undefined,
+                        responsible: data.responsible ?? undefined,
+                        owner_cpf: data.owner_cpf ?? undefined,
+                        table: t,
+                    };
+                    break;
+                }
+            }
+        }
+
+        if (!appointmentToUpdate) {
+            console.error('❌ Não foi possível encontrar o agendamento no Supabase para o ID:', id);
+            alert('Não foi possível localizar este agendamento para alterar o status.');
+            return;
+        }
+
         setUpdatingStatusId(id);
 
         const isVirtual = id.startsWith('virtual-') || appointmentToUpdate.is_virtual;
