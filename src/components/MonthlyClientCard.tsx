@@ -450,9 +450,9 @@ const MonthlyClientCard: React.FC<{
 
         if (!client.is_active) {
             return (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200 leading-none whitespace-nowrap shadow-xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                    {text}
+                <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200 leading-none whitespace-nowrap shadow-xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                    <span className="truncate">{text}</span>
                 </span>
             );
         }
@@ -460,30 +460,30 @@ const MonthlyClientCard: React.FC<{
         switch (client.recurrence_type) {
             case 'weekly':
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-violet-50 text-violet-700 border border-violet-200/90 leading-none whitespace-nowrap shadow-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-violet-600 shadow-[0_0_6px_rgba(124,58,237,0.6)] animate-pulse" />
-                        {text}
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-violet-50 text-violet-700 border border-violet-200/90 leading-none whitespace-nowrap shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-violet-600 shadow-[0_0_6px_rgba(124,58,237,0.6)] animate-pulse shrink-0" />
+                        <span className="truncate">{text}</span>
                     </span>
                 );
             case 'bi-weekly':
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/90 leading-none whitespace-nowrap shadow-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)] animate-pulse" />
-                        {text}
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/90 leading-none whitespace-nowrap shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)] animate-pulse shrink-0" />
+                        <span className="truncate">{text}</span>
                     </span>
                 );
             case 'monthly':
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200/90 leading-none whitespace-nowrap shadow-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_6px_rgba(14,165,233,0.6)] animate-pulse" />
-                        {text}
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200/90 leading-none whitespace-nowrap shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_6px_rgba(14,165,233,0.6)] animate-pulse shrink-0" />
+                        <span className="truncate">{text}</span>
                     </span>
                 );
             default:
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-50 text-slate-600 border border-slate-200 leading-none whitespace-nowrap shadow-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                        {text}
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-slate-50 text-slate-600 border border-slate-200 leading-none whitespace-nowrap shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                        <span className="truncate">{text}</span>
                     </span>
                 );
         }
@@ -589,8 +589,9 @@ const MonthlyClientCard: React.FC<{
                                     </span>
                                 )}
                             </div>
-                            <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                                Tutor(a): <span className="font-semibold text-slate-700">{toTitleCase(client.owner_name)}</span>
+                            <p className="text-xs text-slate-500 font-medium truncate mt-0.5 flex items-center gap-1.5">
+                                <img src="https://cdn-icons-png.flaticon.com/512/14365/14365544.png" alt="Tutor" className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                <span className="font-semibold text-slate-700 truncate">{toTitleCase(client.owner_name)}</span>
                             </p>
                         </div>
                     </div>
@@ -619,29 +620,30 @@ const MonthlyClientCard: React.FC<{
                                 <><ClockIcon className="w-3 h-3 text-amber-500 shrink-0" />Pendente</>
                             )}
                         </button>
+                        <span className="text-[9px] font-semibold text-slate-400 mt-1 leading-none tracking-tight">Venc: {formatDateToBR(getLastDayOfCurrentMonth())}</span>
                     </div>
                 </div>
 
                 {/* Badges Row: Full width chips bar */}
-                <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-100/90">
+                <div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-hidden pt-2 border-t border-slate-100/90">
                     {/* Recurrence Badge (Semanal / Quinzenal / Mensal) */}
                     {renderRecurrenceBadge(client)}
 
                     {/* Service Badge */}
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-pink-50 text-pink-700 border border-pink-200/80 leading-none whitespace-nowrap shadow-xs">
-                        <svg className="w-3 h-3 text-pink-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-pink-50 text-pink-700 border border-pink-200/80 leading-none whitespace-nowrap shadow-xs">
+                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-pink-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                         </svg>
-                        {client.service || 'Banho & Tosa'}
+                        <span className="truncate">{client.service || 'Banho & Tosa'}</span>
                     </span>
 
                     {/* Condomínio Badge - Always shown for Pet Móvel & clients with condo! */}
                     {effectiveCondo && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 leading-none whitespace-nowrap shadow-xs" title={`Condomínio: ${effectiveCondo}`}>
-                            <svg className="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 leading-none whitespace-nowrap shadow-xs" title={`Condomínio: ${effectiveCondo}`}>
+                            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
-                            <span>{effectiveCondo}</span>
+                            <span className="truncate">{effectiveCondo}</span>
                         </span>
                     )}
                 </div>
@@ -660,8 +662,8 @@ const MonthlyClientCard: React.FC<{
                             className="flex items-center gap-2 min-w-0 p-2 rounded-xl bg-white border border-slate-100/80 shadow-2xs hover:border-emerald-200 hover:shadow-xs transition-all group/wa"
                             title="Abrir WhatsApp"
                         >
-                            <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 group-hover/wa:bg-emerald-500 group-hover/wa:text-white transition-colors">
-                                <PhoneIcon className="w-3.5 h-3.5" />
+                            <div className="w-7 h-7 flex items-center justify-center shrink-0">
+                                <img src="https://cdn-icons-png.flaticon.com/512/1944/1944502.png" alt="WhatsApp" className="w-5 h-5 object-contain opacity-80 group-hover/wa:opacity-100 group-hover/wa:scale-110 transition-all" />
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-[9px] font-bold text-slate-400 tracking-wider uppercase leading-none">WHATSAPP</p>
@@ -672,8 +674,8 @@ const MonthlyClientCard: React.FC<{
                         </a>
                     ) : (
                         <div className="flex items-center gap-2 min-w-0 p-2 rounded-xl bg-white border border-slate-100/80 shadow-2xs">
-                            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
-                                <PhoneIcon className="w-3.5 h-3.5" />
+                            <div className="w-7 h-7 flex items-center justify-center shrink-0 grayscale opacity-50">
+                                <img src="https://cdn-icons-png.flaticon.com/512/1944/1944502.png" alt="WhatsApp" className="w-5 h-5 object-contain" />
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-[9px] font-bold text-slate-400 tracking-wider uppercase leading-none">WHATSAPP</p>
@@ -684,10 +686,8 @@ const MonthlyClientCard: React.FC<{
 
                     {/* Condomínio / Local */}
                     <div className="flex items-center gap-2 min-w-0 p-2 rounded-xl bg-white border border-slate-100/80 shadow-2xs">
-                        <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
+                        <div className="w-7 h-7 flex items-center justify-center shrink-0">
+                            <img src="https://cdn-icons-png.flaticon.com/512/5792/5792154.png" alt="Condomínio" className="w-5 h-5 object-contain opacity-80" />
                         </div>
                         <div className="min-w-0 flex-1">
                             <p className="text-[9px] font-bold text-slate-400 tracking-wider uppercase leading-none">CONDOMÍNIO</p>
@@ -699,8 +699,8 @@ const MonthlyClientCard: React.FC<{
 
                     {/* Dia & Horário Fixo */}
                     <div className="flex items-center gap-2 min-w-0 p-2 rounded-xl bg-white border border-slate-100/80 shadow-2xs">
-                        <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-                            <ClockIcon className="w-3.5 h-3.5" />
+                        <div className="w-7 h-7 flex items-center justify-center shrink-0">
+                            <img src="https://cdn-icons-png.flaticon.com/512/2838/2838794.png" alt="Dia e Horário" className="w-5 h-5 object-contain opacity-80" />
                         </div>
                         <div className="min-w-0 flex-1">
                             <p className="text-[9px] font-bold text-slate-400 tracking-wider uppercase leading-none">DIA & HORÁRIO</p>
@@ -712,8 +712,8 @@ const MonthlyClientCard: React.FC<{
 
                     {/* Próximo Agendamento */}
                     <div className="flex items-center gap-2 min-w-0 p-2 rounded-xl bg-white border border-slate-100/80 shadow-2xs">
-                        <div className="w-7 h-7 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
-                            <CalendarIcon className="w-3.5 h-3.5" />
+                        <div className="w-7 h-7 flex items-center justify-center shrink-0">
+                            <img src="https://cdn-icons-png.flaticon.com/512/17370/17370918.png" alt="Próx. Agendamento" className="w-5 h-5 object-contain opacity-80" />
                         </div>
                         <div className="min-w-0 flex-1">
                             <p className="text-[9px] font-bold text-slate-400 tracking-wider uppercase leading-none">PRÓX. AGEND.</p>
@@ -725,41 +725,37 @@ const MonthlyClientCard: React.FC<{
                 </div>
             </section>
 
-            {/* PRÓX. PAGAMENTO */}
-            <div className="bg-slate-50/70 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between mb-3 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">PRÓX. PAGAM.</span>
-                <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
-                    <span className="text-xs font-bold text-sky-700 leading-tight">
-                        {formatDateToBR(getLastDayOfCurrentMonth())}
-                    </span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
-                </div>
-            </div>
+
 
             {/* OBSERVATION + EXTRAS */}
             {(client.observation || hasMonthlyExtras) && (
                 <div className="space-y-2 mb-3">
                     {client.observation && (
-                        <div className="bg-amber-50/80 border border-amber-200/70 rounded-xl p-2.5 flex items-center gap-2.5 text-xs text-amber-900 shadow-2xs">
-                            <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+                        <div className="bg-amber-50/80 border border-amber-200/70 rounded-xl p-2.5 flex items-start gap-2.5 text-xs text-amber-900 shadow-2xs h-[88px]">
+                            <div className="w-7 h-7 flex items-center justify-center shrink-0 mt-0.5">
+                                <img src="https://cdn-icons-png.flaticon.com/512/3756/3756712.png" alt="Observação" className="w-5 h-5 object-contain opacity-80" />
                             </div>
-                            <p className="font-medium italic leading-snug tracking-tight text-amber-900 line-clamp-2">
-                                "{client.observation}"
-                            </p>
+                            <div className="flex-1 overflow-y-auto custom-scroll h-full pr-1">
+                                <p className="font-medium italic leading-snug tracking-tight text-amber-900 whitespace-pre-wrap">
+                                    "{client.observation}"
+                                </p>
+                            </div>
                         </div>
                     )}
                     {hasMonthlyExtras && (
-                        <div className="flex flex-wrap gap-1.5">
-                            {client.extra_services && Object.entries(client.extra_services).map(([key, value]: [string, any]) => {
-                                if (!value.enabled) return null;
-                                const label = key.replace(/_/g, ' ').replace('so ', '');
-                                return (
-                                    <span key={key} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 capitalize">
-                                        <SparklesIcon className="w-3 h-3" />{label}
-                                    </span>
-                                );
-                            })}
+                        <div className="flex flex-col gap-1.5">
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide pl-1">Extras Adicionados</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {client.extra_services && Object.entries(client.extra_services).map(([key, value]: [string, any]) => {
+                                    if (!value.enabled) return null;
+                                    const label = key.replace(/_/g, ' ').replace('so ', '');
+                                    return (
+                                        <span key={key} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 capitalize">
+                                            <SparklesIcon className="w-3 h-3" />{label}
+                                        </span>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -809,7 +805,7 @@ const MonthlyClientCard: React.FC<{
             <section className="grid gap-1.5 mb-3 grid-cols-3">
                 <button onClick={(e) => { e.stopPropagation(); onAddExtraServices(client); }} className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-purple-50 hover:bg-purple-100 active:scale-95 text-purple-700 text-xs font-semibold rounded-xl border border-purple-100/70 transition-colors" type="button">
                     <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-                    <span>+ Extras</span>
+                    <span>Extras</span>
                 </button>
                 <button onClick={(e) => { e.stopPropagation(); onEdit(client); }} className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-xs font-semibold rounded-xl border border-indigo-100/70 transition-colors" type="button">
                     <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>

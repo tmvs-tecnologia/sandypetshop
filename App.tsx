@@ -8342,75 +8342,76 @@ const MonthlyClientsView: React.FC<{
                                 </svg>
                             </button>
                         </div>
-                        <button
-                            onClick={onAddClient}
-                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold h-11 px-3 sm:px-6 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-md hover:shadow-lg focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" />
-                            </svg>
-                            <span className="whitespace-nowrap text-sm sm:text-base truncate">Novo Mensalista</span>
-                        </button>
-                        
-                        <button
-                            onClick={() => setShowFilterPanel(!showFilterPanel)}
-                            className={`inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border ${showFilterPanel ? 'border-pink-300 bg-pink-50 text-pink-700' : 'border-gray-200 hover:border-gray-300'} focus:ring-2 focus:ring-gray-200`}
-                            title="Filtros"
-                        >
-                            <svg 
-                                className={`w-5 h-5 transition-transform duration-300 ${showFilterPanel ? 'rotate-180' : ''}`} 
-                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+
+                        <div className="flex gap-2 sm:gap-3 flex-nowrap w-full sm:w-auto overflow-x-auto no-scrollbar items-center pb-1 sm:pb-0">
+                            <button
+                                onClick={onAddClient}
+                                className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-pink-700 text-white font-bold h-11 px-3 sm:px-6 rounded-xl hover:from-pink-700 hover:to-pink-800 transition-all shadow-md hover:shadow-lg focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 shrink-0"
                             >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                            </svg>
-                        </button>
-
-                        <button
-                            onClick={() => setViewMode(prev => prev === 'cards' ? 'stack' : prev === 'stack' ? 'folders' : 'cards')}
-                            title={viewMode === 'cards' ? 'Modo Cartões' : viewMode === 'stack' ? 'Modo Pilha' : 'Modo Pastas'}
-                            className="inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-gray-200"
-                        >
-                            <div className="relative w-5 h-5">
-                                {/* Modo Cartões (Arrastar pro lado) - ViewColumns */}
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" />
+                                </svg>
+                                <span className="whitespace-nowrap text-sm sm:text-base truncate">Novo Mensalista</span>
+                            </button>
+                            
+                            <button
+                                onClick={() => setShowFilterPanel(!showFilterPanel)}
+                                className={`shrink-0 inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border ${showFilterPanel ? 'border-pink-300 bg-pink-50 text-pink-700' : 'border-gray-200 hover:border-gray-300'} focus:ring-2 focus:ring-gray-200`}
+                                title="Filtros"
+                            >
                                 <svg 
-                                    className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${viewMode === 'cards' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'}`} 
+                                    className={`w-5 h-5 transition-transform duration-300 ${showFilterPanel ? 'rotate-180' : ''}`} 
                                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                 >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 4.5v15m6-15v15m-10.5-15h15c.828 0 1.5.672 1.5 1.5v12c0 .828-.672 1.5-1.5 1.5h-15c-.828 0-1.5-.672-1.5-1.5v-12c0-.828.672-1.5 1.5-1.5z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                                 </svg>
+                            </button>
 
-                                {/* Modo Pilha - Square 3 Stack 3D */}
-                                <svg 
-                                    className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${viewMode === 'stack' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} 
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
+                            <button
+                                onClick={() => setViewMode(prev => prev === 'cards' ? 'stack' : prev === 'stack' ? 'folders' : 'cards')}
+                                title={viewMode === 'cards' ? 'Modo Cartões' : viewMode === 'stack' ? 'Modo Pilha' : 'Modo Pastas'}
+                                className="shrink-0 inline-flex items-center justify-center bg-white text-gray-700 font-bold h-11 w-11 rounded-xl hover:bg-gray-50 transition-all shadow-sm border border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                            >
+                                <div className="relative w-5 h-5">
+                                    {/* Modo Cartões (Arrastar pro lado) - ViewColumns */}
+                                    <svg 
+                                        className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${viewMode === 'cards' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'}`} 
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 4.5v15m6-15v15m-10.5-15h15c.828 0 1.5.672 1.5 1.5v12c0 .828-.672 1.5-1.5 1.5h-15c-.828 0-1.5-.672-1.5-1.5v-12c0-.828.672-1.5 1.5-1.5z" />
+                                    </svg>
+
+                                    {/* Modo Pilha - Square 3 Stack 3D */}
+                                    <svg 
+                                        className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${viewMode === 'stack' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} 
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
+                                    </svg>
+
+                                    {/* Modo Pastas */}
+                                    <svg 
+                                        className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${viewMode === 'folders' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} 
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                    </svg>
+                                </div>
+                            </button>
+
+
+                            <button
+                                onClick={handleCobrancaMensalistas}
+                                className="shrink-0 inline-flex items-center justify-center bg-white text-green-600 font-bold h-11 w-11 rounded-xl hover:bg-green-50 transition-all shadow-sm border border-gray-200 hover:border-green-300 focus:ring-2 focus:ring-green-200"
+                                title="Cobrar Mensalistas Pendentes"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-
-                                {/* Modo Pastas */}
-                                <svg 
-                                    className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${viewMode === 'folders' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} 
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                                </svg>
-                            </div>
-                        </button>
-
-
-
-                        <button
-                            onClick={handleCobrancaMensalistas}
-                            className="inline-flex items-center justify-center bg-white text-green-600 font-bold h-11 w-11 rounded-xl hover:bg-green-50 transition-all shadow-sm border border-gray-200 hover:border-green-300 focus:ring-2 focus:ring-green-200"
-                            title="Cobrar Mensalistas Pendentes"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </button>
+                            </button>
+                        </div>
                     </div>
                 </div>
-
                 <div className="mt-6 relative z-10">
                     <input
                         type="text"
